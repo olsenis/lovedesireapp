@@ -40,9 +40,11 @@ export default function ChallengeScreen() {
   }, [coupleId, authLoading]);
 
   const handleStart = (program: ChallengeProgram) => {
-    if (starting || !coupleId) { if (!coupleId) setStartError('Account not ready yet — try again shortly.'); return; }
-    setStartError('');
+    if (starting) return;
+    // Show desire modal before coupleId check so warning always appears
     if (program === 'desire') { setPendingProgram(program); setDesireModal(true); return; }
+    if (!coupleId) { setStartError('Account not ready yet — try again shortly.'); return; }
+    setStartError('');
     doStart(program);
   };
 
@@ -57,7 +59,12 @@ export default function ChallengeScreen() {
     }
   };
 
-  const confirmDesire = () => { setDesireModal(false); if (pendingProgram) doStart(pendingProgram); setPendingProgram(null); };
+  const confirmDesire = () => {
+    setDesireModal(false);
+    if (!coupleId) { setStartError('Account not ready yet — try again shortly.'); setPendingProgram(null); return; }
+    if (pendingProgram) doStart(pendingProgram);
+    setPendingProgram(null);
+  };
 
   const handleActivate = async () => {
     if (!coupleId) return;
