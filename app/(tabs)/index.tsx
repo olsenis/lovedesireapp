@@ -170,6 +170,22 @@ export default function HomeScreen() {
         )}
       </View>
 
+      {/* Daily Wishes */}
+      <TouchableOpacity
+        style={styles.dailyWishCard}
+        onPress={() => router.push('/daily-wishes' as any)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.dailyWishLeft}>
+          <Text style={styles.dailyWishEmoji}>🌹</Text>
+          <View>
+            <Text style={styles.dailyWishTitle}>Daily Wishes</Text>
+            <Text style={styles.dailyWishSub}>5 new wishes today · vote privately</Text>
+          </View>
+        </View>
+        <Text style={styles.dailyWishArrow}>›</Text>
+      </TouchableOpacity>
+
       {/* Quick actions */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Jump in</Text>
@@ -319,4 +335,15 @@ const styles = StyleSheet.create({
   },
   quickEmoji: { fontSize: 34 },
   quickLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text, textAlign: 'center' },
+
+  dailyWishCard: {
+    backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.lg,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm,
+  },
+  dailyWishLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  dailyWishEmoji: { fontSize: 32 },
+  dailyWishTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
+  dailyWishSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, marginTop: 2 },
+  dailyWishArrow: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.muted },
 });
