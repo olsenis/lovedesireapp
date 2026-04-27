@@ -1,7 +1,7 @@
 import { collection, addDoc, query, getDocs, onSnapshot, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
-export type MoodEmoji = '😍' | '🥰' | '😊' | '😌' | '😴' | '💪' | '😤' | '😢';
+export type MoodEmoji = '😍' | '🥰' | '😊' | '😌' | '😴' | '💪' | '😤' | '😢' | '😈' | '🥵';
 
 export const MOOD_LABELS: Record<MoodEmoji, string> = {
   '😍': 'In love',
@@ -12,9 +12,11 @@ export const MOOD_LABELS: Record<MoodEmoji, string> = {
   '💪': 'Motivated',
   '😤': 'Frustrated',
   '😢': 'Sad',
+  '😈': 'Kinky',
+  '🥵': 'Horny',
 };
 
-export const ALL_MOODS: MoodEmoji[] = ['😍', '🥰', '😊', '😌', '😴', '💪', '😤', '😢'];
+export const ALL_MOODS: MoodEmoji[] = ['😍', '🥰', '😊', '😌', '😴', '💪', '😤', '😢', '😈', '🥵'];
 
 export interface MoodEntry {
   id: string;
