@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -17,6 +17,8 @@ export default function ChallengeScreen() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState('');
+  const [desireModal, setDesireModal] = useState(false);
+  const [pendingProgram, setPendingProgram] = useState<ChallengeProgram | null>(null);
 
   const coupleId = profile?.coupleId;
 
@@ -30,17 +32,23 @@ export default function ChallengeScreen() {
     return unsub;
   }, [coupleId, authLoading]);
 
-  const handleStart = async (program: ChallengeProgram) => {
+  const handleStart = (program: ChallengeProgram) => {
     if (starting) return;
-    if (!coupleId) {
-      setStartError('Account not ready yet — wait a moment and try again.');
+    if (!coupleId) { setStartError('Account not ready yet — wait a moment and try again.'); return; }
+    setStartError('');
+    if (program === 'desire') {
+      setPendingProgram(program);
+      setDesireModal(true);
       return;
     }
-    setStartError('');
+    doStart(program);
+  };
+
+  const doStart = async (program: ChallengeProgram) => {
     setStarting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      await startChallenge(coupleId, program);
+      await startChallenge(coupleId!, program);
     } catch (e: any) {
       const msg = e?.code === 'permission-denied'
         ? 'Permission denied — Firestore rules may have expired. Check Firebase console.'
@@ -48,6 +56,12 @@ export default function ChallengeScreen() {
       setStartError(msg);
       setStarting(false);
     }
+  };
+
+  const confirmDesire = () => {
+    setDesireModal(false);
+    if (pendingProgram) doStart(pendingProgram);
+    setPendingProgram(null);
   };
 
   const handleMark = async () => {
@@ -122,6 +136,40 @@ export default function ChallengeScreen() {
             );
           })}
         </ScrollView>
+
+        {/* Desire content warning + rules modal */}
+        <Modal visible={desireModal} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modal}>
+              <Text style={styles.modalEmoji}>💋</Text>
+              <Text style={styles.modalTitle}>Desire — 18+ only</Text>
+              <Text style={styles.modalSubtitle}>
+                This program contains explicit sexual content. Make sure you're both comfortable before starting.
+              </Text>
+
+              <Text style={styles.rulesTitle}>Rules</Text>
+              {[
+                'Each partner can modify or replace 2 days before the challenge starts. No edits after.',
+                'Each partner gets 2 VETO days — use them to skip a day and just have regular sex.',
+                'If a day is missed, the challenge extends by one day (max 40 days total).',
+                'If a partner is uncomfortable and has no edits or vetoes left, they can borrow their partner\'s veto. The partner who gives theirs up picks the replacement activity.',
+                'Periods, illness, or travel can be treated as a pause.',
+              ].map((rule, i) => (
+                <View key={i} style={styles.ruleRow}>
+                  <Text style={styles.ruleDot}>·</Text>
+                  <Text style={styles.ruleText}>{rule}</Text>
+                </View>
+              ))}
+
+              <TouchableOpacity style={styles.confirmBtn} onPress={confirmDesire} activeOpacity={0.85}>
+                <Text style={styles.confirmBtnText}>I'm in — let's go 💋</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setDesireModal(false)} style={styles.cancelLink}>
+                <Text style={styles.cancelLinkText}>Not now</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -235,6 +283,21 @@ const styles = StyleSheet.create({
   debugText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
   errorBox: { backgroundColor: '#FFEBEE', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.error },
   errorText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.error, textAlign: 'center', lineHeight: 20 },
+
+  // Desire rules modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.55)', justifyContent: 'flex-end' },
+  modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
+  modalEmoji: { fontSize: 40, textAlign: 'center' },
+  modalTitle: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy, textAlign: 'center' },
+  modalSubtitle: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
+  rulesTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.sm },
+  ruleRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
+  ruleDot: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.rose, lineHeight: 22 },
+  ruleText: { flex: 1, fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22 },
+  confirmBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.sm },
+  confirmBtnText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.cream },
+  cancelLink: { alignItems: 'center', paddingVertical: Spacing.sm },
+  cancelLinkText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
 
   programCard: {
     borderRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.md,
