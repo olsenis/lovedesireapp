@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
-import { logout } from '../../services/authService';
+import { logout, createUserProfile } from '../../services/authService';
+import { createCouple } from '../../services/coupleService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -28,6 +29,19 @@ export default function HomeScreen() {
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
   const [picking, setPicking] = useState(false);
+
+  // Auto-create couple if user skipped pairing
+  useEffect(() => {
+    if (!user || !profile || profile.coupleId) return;
+    createCouple(user.uid).then((couple) => {
+      createUserProfile(user.uid, {
+        name: profile.name ?? '',
+        photoURL: profile.photoURL,
+        coupleId: couple.id,
+        inviteCode: couple.inviteCode,
+      });
+    });
+  }, [user, profile]);
 
   useEffect(() => {
     if (!user || !profile?.coupleId) return;
