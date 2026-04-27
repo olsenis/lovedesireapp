@@ -7,16 +7,16 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 
 const QUESTIONS = [
-  { key: 'communication', label: 'Communication', emoji: '💬' },
-  { key: 'time', label: 'Quality Time', emoji: '⏱️' },
-  { key: 'affection', label: 'Physical Affection', emoji: '🤗' },
-  { key: 'fun', label: 'Fun & Laughter', emoji: '😄' },
-  { key: 'support', label: 'Feeling Supported', emoji: '🙌' },
-  { key: 'trust', label: 'Trust & Honesty', emoji: '🔒' },
-  { key: 'intimacy', label: 'Intimacy', emoji: '🕯️' },
-  { key: 'appreciation', label: 'Feeling Appreciated', emoji: '⭐' },
-  { key: 'growth', label: 'Growing Together', emoji: '🌱' },
-  { key: 'overall', label: 'Overall Happiness', emoji: '❤️' },
+  { key: 'communication', label: 'Communication',       emoji: '💬' },
+  { key: 'time',          label: 'Quality Time',        emoji: '⏱️' },
+  { key: 'affection',     label: 'Physical Affection',  emoji: '🤗' },
+  { key: 'fun',           label: 'Fun & Laughter',      emoji: '😄' },
+  { key: 'support',       label: 'Feeling Supported',   emoji: '🙌' },
+  { key: 'trust',         label: 'Trust & Honesty',     emoji: '🔒' },
+  { key: 'intimacy',      label: 'Intimacy',            emoji: '🕯️' },
+  { key: 'appreciation',  label: 'Feeling Appreciated', emoji: '⭐' },
+  { key: 'growth',        label: 'Growing Together',    emoji: '🌱' },
+  { key: 'overall',       label: 'Overall Happiness',   emoji: '❤️' },
 ];
 
 const SCORE_LABELS = ['', 'Needs work', 'Could be better', 'It\'s okay', 'Pretty good', 'Amazing'];
@@ -72,6 +72,11 @@ export default function HitaScreen() {
               <View style={styles.qTop}>
                 <Text style={styles.qEmoji}>{q.emoji}</Text>
                 <Text style={styles.qLabel}>{q.label}</Text>
+                {scores[q.key] && (
+                  <Text style={[styles.qScore, { color: SCORE_COLORS[scores[q.key]] }]}>
+                    {SCORE_LABELS[scores[q.key]]}
+                  </Text>
+                )}
               </View>
               <View style={styles.ratingRow}>
                 {[1, 2, 3, 4, 5].map((n) => {
@@ -81,13 +86,13 @@ export default function HitaScreen() {
                       key={n}
                       style={[styles.ratingBtn, active && { backgroundColor: SCORE_COLORS[n], borderColor: SCORE_COLORS[n] }]}
                       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setScores((s) => ({ ...s, [q.key]: n })); }}
+                      activeOpacity={0.8}
                     >
                       <Text style={[styles.ratingNum, active && { color: Colors.white }]}>{n}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
-              {scores[q.key] && <Text style={[styles.ratingLabel, { color: SCORE_COLORS[scores[q.key]] }]}>{SCORE_LABELS[scores[q.key]]}</Text>}
             </View>
           ))}
 
@@ -145,35 +150,79 @@ export default function HitaScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.cream },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 56,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
-  title: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
-  list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
+  title: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
+
+  list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md, paddingTop: Spacing.md },
   intro: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
 
   qCard: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
   qTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   qEmoji: { fontSize: 22 },
-  qLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  qLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text, flex: 1 },
+  qScore: { fontFamily: Fonts.bodyItalic, fontSize: 12 },
+
   ratingRow: { flexDirection: 'row', gap: Spacing.sm },
-  ratingBtn: { flex: 1, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: Radius.md, borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.cream },
+  ratingBtn: {
+    flex: 1,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.cream,
+  },
   ratingNum: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.muted },
-  ratingLabel: { fontFamily: Fonts.bodyItalic, fontSize: 12, textAlign: 'center' },
 
   submitBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.md },
   submitDisabled: { opacity: 0.4 },
   submitText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.cream },
 
-  results: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg, alignItems: 'center' },
-  resultTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted, letterSpacing: 1, textTransform: 'uppercase' },
-  gauge: { width: 140, height: 140, borderRadius: 70, backgroundColor: Colors.blush, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.rose },
-  gaugeNum: { fontFamily: Fonts.heading, fontSize: 52, color: Colors.burgundy, lineHeight: 58 },
+  results: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg, alignItems: 'center', paddingTop: Spacing.xl },
+  resultTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, letterSpacing: 1.5, textTransform: 'uppercase' },
+  gauge: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: Colors.blush,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: Colors.rose,
+    shadowColor: Colors.burgundy,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  gaugeNum: { fontFamily: Fonts.heading, fontSize: 56, color: Colors.burgundy, lineHeight: 62 },
   gaugeLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   resultMsg: { fontFamily: Fonts.bodyItalic, fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 26 },
 
-  suggestionBox: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, width: '100%', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
-  suggestionTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  suggestionBox: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    width: '100%',
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.rose,
+  },
+  suggestionTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
   suggestionText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
 
   barList: { width: '100%', gap: Spacing.md },

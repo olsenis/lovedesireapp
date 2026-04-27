@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LoveLanguage } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+
+const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 
 export default function QuizScreen() {
   const [step, setStep] = useState(0);
@@ -48,20 +50,26 @@ export default function QuizScreen() {
       {!done ? (
         <View style={styles.quizContent}>
           {/* Progress */}
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${((step) / QUIZ_QUESTIONS.length) * 100}%` }]} />
+          <View style={styles.progressWrap}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${(step / QUIZ_QUESTIONS.length) * 100}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{step + 1} of {QUIZ_QUESTIONS.length}</Text>
           </View>
-          <Text style={styles.progressText}>{step + 1} of {QUIZ_QUESTIONS.length}</Text>
 
           <Text style={styles.question}>Which feels more meaningful to you?</Text>
 
-          <TouchableOpacity style={styles.optionCard} onPress={() => pick(q.a.language)}>
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[0] }]} onPress={() => pick(q.a.language)} activeOpacity={0.8}>
             <Text style={styles.optionText}>{q.a.text}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.or}>or</Text>
+          <View style={styles.orWrap}>
+            <View style={styles.orLine} />
+            <Text style={styles.or}>or</Text>
+            <View style={styles.orLine} />
+          </View>
 
-          <TouchableOpacity style={styles.optionCard} onPress={() => pick(q.b.language)}>
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[1] }]} onPress={() => pick(q.b.language)} activeOpacity={0.8}>
             <Text style={styles.optionText}>{q.b.text}</Text>
           </TouchableOpacity>
         </View>
@@ -102,29 +110,51 @@ export default function QuizScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.cream },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 56,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
 
   quizContent: { flex: 1, paddingHorizontal: Spacing.xl, justifyContent: 'center', gap: Spacing.lg },
-  progressBar: { height: 4, backgroundColor: Colors.border, borderRadius: 2, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: Colors.burgundy, borderRadius: 2 },
-  progressText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, textAlign: 'center' },
-  question: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.text, textAlign: 'center', lineHeight: 32 },
+
+  progressWrap: { gap: 6 },
+  progressBar: { height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: Colors.burgundy, borderRadius: 3 },
+  progressText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, textAlign: 'center' },
+
+  question: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, textAlign: 'center', lineHeight: 30 },
+
   optionCard: {
-    backgroundColor: Colors.white, borderRadius: Radius.xl,
-    padding: Spacing.xl, alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.border,
-    shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 4,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: Colors.burgundy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   optionText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 24 },
-  or: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center' },
 
-  results: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl, alignItems: 'center', gap: Spacing.lg },
-  resultTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.muted, letterSpacing: 0.5, textTransform: 'uppercase' },
-  primaryEmoji: { fontSize: 72 },
-  primaryLabel: { fontFamily: Fonts.heading, fontSize: 32, color: Colors.burgundy, textAlign: 'center' },
+  orWrap: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  orLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  or: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted },
+
+  results: { paddingHorizontal: Spacing.xl, paddingBottom: Spacing.xxl, alignItems: 'center', gap: Spacing.lg, paddingTop: Spacing.xl },
+  resultTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, letterSpacing: 1.5, textTransform: 'uppercase' },
+  primaryEmoji: { fontSize: 80 },
+  primaryLabel: { fontFamily: Fonts.heading, fontSize: 34, color: Colors.burgundy, textAlign: 'center' },
   primaryDesc: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text, textAlign: 'center', lineHeight: 24 },
 
   scoreList: { width: '100%', gap: Spacing.md },

@@ -45,7 +45,6 @@ export default function DareScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
           <Text style={styles.backText}>‹ Back</Text>
@@ -56,15 +55,16 @@ export default function DareScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Level selector */}
-        <View style={styles.levelRow}>
+        <View style={styles.levelSegment}>
           {LEVELS.map((level) => {
             const c = DARE_LEVEL_CONFIG[level];
             const active = selectedLevel === level;
             return (
               <TouchableOpacity
                 key={level}
-                style={[styles.levelBtn, active && { backgroundColor: c.color, borderColor: c.textColor }]}
+                style={[styles.levelTab, active && { backgroundColor: c.color }]}
                 onPress={() => { setSelectedLevel(level); setCurrentDare(null); }}
+                activeOpacity={0.8}
               >
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <Text style={[styles.levelLabel, active && { color: c.textColor }]}>{c.label}</Text>
@@ -73,28 +73,32 @@ export default function DareScreen() {
           })}
         </View>
 
-        {/* Spin wheel visual */}
-        <View style={styles.wheelContainer}>
-          <Animated.View style={[styles.wheel, { backgroundColor: cfg.color, transform: [{ rotate: spinRotate }] }]}>
-            <Text style={styles.wheelEmoji}>{cfg.emoji}</Text>
-          </Animated.View>
+        {/* Wheel */}
+        <View style={styles.wheelOuter}>
+          <View style={[styles.wheelRing, { borderColor: cfg.color }]}>
+            <Animated.View style={[styles.wheel, { backgroundColor: cfg.color, transform: [{ rotate: spinRotate }] }]}>
+              <Text style={styles.wheelEmoji}>{cfg.emoji}</Text>
+            </Animated.View>
+          </View>
         </View>
 
         {/* Spin button */}
         <TouchableOpacity
-          style={[styles.spinBtn, { backgroundColor: Colors.burgundy }]}
+          style={styles.spinBtn}
           onPress={spin}
           disabled={spinning}
           activeOpacity={0.85}
         >
-          <Text style={styles.spinBtnText}>{spinning ? 'Spinning...' : 'Spin!'}</Text>
+          <Text style={styles.spinBtnText}>{spinning ? 'Spinning…' : 'Spin!'}</Text>
         </TouchableOpacity>
 
         {/* Result */}
         {currentDare && (
-          <View style={[styles.resultCard, { backgroundColor: cfg.color }]}>
-            <Text style={styles.resultEmoji}>{cfg.emoji}</Text>
-            <Text style={[styles.resultLabel, { color: cfg.textColor }]}>{cfg.label} dare</Text>
+          <View style={[styles.resultCard, { borderLeftColor: cfg.textColor }]}>
+            <View style={styles.resultTop}>
+              <Text style={styles.resultEmoji}>{cfg.emoji}</Text>
+              <Text style={[styles.resultLabel, { color: cfg.textColor }]}>{cfg.label} dare</Text>
+            </View>
             <Text style={styles.resultText}>{currentDare}</Text>
             <TouchableOpacity onPress={spin} style={styles.rerollBtn}>
               <Text style={[styles.rerollText, { color: cfg.textColor }]}>Spin again ↻</Text>
@@ -115,62 +119,88 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
 
-  content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, alignItems: 'center' },
+  content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, alignItems: 'center', paddingTop: Spacing.lg },
 
-  levelRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.xl, marginTop: Spacing.sm },
-  levelBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
+  levelSegment: {
+    flexDirection: 'row',
     backgroundColor: Colors.white,
-    gap: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    marginBottom: Spacing.xl,
+    width: '100%',
   },
-  levelEmoji: { fontSize: 20 },
-  levelLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted },
-
-  wheelContainer: { marginBottom: Spacing.xl },
-  wheel: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+  levelTab: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: Colors.white,
-    shadowColor: Colors.burgundy,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
+    paddingVertical: 12,
+    gap: 6,
   },
-  wheelEmoji: { fontSize: 64 },
+  levelEmoji: { fontSize: 18 },
+  levelLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+
+  wheelOuter: { marginBottom: Spacing.xl, alignItems: 'center', justifyContent: 'center' },
+  wheelRing: {
+    width: 244,
+    height: 244,
+    borderRadius: 122,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.5,
+  },
+  wheel: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.burgundy,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  wheelEmoji: { fontSize: 78 },
 
   spinBtn: {
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xxl,
     borderRadius: Radius.full,
     marginBottom: Spacing.xl,
+    backgroundColor: Colors.burgundy,
   },
-  spinBtnText: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.cream, letterSpacing: 1 },
+  spinBtnText: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.cream, letterSpacing: 0.5 },
 
   resultCard: {
     width: '100%',
     borderRadius: Radius.xl,
     padding: Spacing.xl,
-    alignItems: 'center',
-    gap: Spacing.sm,
+    gap: Spacing.md,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    shadowColor: Colors.burgundy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  resultEmoji: { fontSize: 40 },
-  resultLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, letterSpacing: 0.5, textTransform: 'uppercase' },
-  resultText: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, textAlign: 'center', lineHeight: 30 },
-  rerollBtn: { marginTop: Spacing.sm },
+  resultTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  resultEmoji: { fontSize: 28 },
+  resultLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, letterSpacing: 0.8, textTransform: 'uppercase' },
+  resultText: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.text, lineHeight: 32 },
+  rerollBtn: { alignSelf: 'flex-end', marginTop: Spacing.xs },
   rerollText: { fontFamily: Fonts.bodyBold, fontSize: 14 },
 });

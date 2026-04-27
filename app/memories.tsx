@@ -72,17 +72,17 @@ export default function MemoriesScreen() {
             key={m.id}
             style={styles.card}
             onLongPress={() => handleDelete(m.id)}
-            activeOpacity={0.9}
+            activeOpacity={0.92}
           >
             <Image source={{ uri: m.photoURL }} style={styles.photo} contentFit="cover" />
-            {m.caption ? (
-              <View style={styles.captionRow}>
+            <View style={styles.cardFooter}>
+              {m.caption ? (
                 <Text style={styles.captionText}>{m.caption}</Text>
-              </View>
-            ) : null}
-            <Text style={styles.dateText}>
-              {new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-            </Text>
+              ) : null}
+              <Text style={styles.dateText}>
+                {new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -128,13 +128,22 @@ export default function MemoriesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.cream },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 56,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
   addBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
 
-  grid: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
+  grid: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md, paddingTop: Spacing.md },
 
   empty: { alignItems: 'center', paddingTop: Spacing.xxl, gap: Spacing.md },
   emptyEmoji: { fontSize: 56 },
@@ -143,11 +152,22 @@ const styles = StyleSheet.create({
   emptyBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full },
   emptyBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
-  card: { backgroundColor: Colors.white, borderRadius: Radius.xl, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border },
-  photo: { width: '100%', height: 260 },
-  captionRow: { padding: Spacing.md, paddingBottom: 0 },
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: Colors.burgundy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  photo: { width: '100%', height: 280 },
+  cardFooter: { padding: Spacing.md, gap: 4 },
   captionText: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text },
-  dateText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, paddingHorizontal: Spacing.md, paddingBottom: Spacing.md, paddingTop: 4 },
+  dateText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
