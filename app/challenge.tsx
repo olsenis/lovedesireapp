@@ -9,7 +9,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-const PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire'];
+const PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire', 'desire'];
 
 export default function ChallengeScreen() {
   const { user, profile, loading: authLoading } = useAuth();

@@ -559,7 +559,7 @@ export const FANTASY_PRESETS: FantasyPreset[] = [
 
 // ─── 30-DAY INTIMACY CHALLENGE ────────────────────────────────────────────────
 
-export type ChallengeProgram = 'reconnect' | 'spark' | 'fire';
+export type ChallengeProgram = 'reconnect' | 'spark' | 'fire' | 'desire';
 
 export interface ChallengeTask {
   day: number;
@@ -572,6 +572,7 @@ export const CHALLENGE_PROGRAM_CONFIG: Record<ChallengeProgram, {
   reconnect: { label: 'Reconnect', emoji: '🌱', color: '#E8F5E9', textColor: '#2E7D32', description: 'Emotional depth and gentle intimacy — rebuild the foundation' },
   spark:     { label: 'Spark',     emoji: '✨', color: '#FFF9C4', textColor: '#F57F17', description: 'Playful, flirty, and warm — reignite the energy between you' },
   fire:      { label: 'Fire',      emoji: '🔥', color: '#FFCCBC', textColor: '#BF360C', description: 'Bold, explicit, and unapologetic — for couples ready to burn bright' },
+  desire:    { label: 'Desire',    emoji: '💋', color: '#FCE4EC', textColor: '#880E4F', description: 'A 30-day sexual exploration — technique, communication, and discovery' },
 };
 
 export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
@@ -670,6 +671,38 @@ export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
     { day: 28, text: "Have a night with absolutely no agenda except full presence." },
     { day: 29, text: "Ask: 'Is there anything you've wanted that I haven't given you?' — give it." },
     { day: 30, text: "Celebrate what you've built — set your intention for the next month together." },
+  ],
+  desire: [
+    { day: 1,  text: "Tell your partner the last time you felt genuinely desired by them." },
+    { day: 2,  text: "Share one thing you love about your physical intimacy together." },
+    { day: 3,  text: "Ask your partner: 'What's one thing that always works for you?' — really listen." },
+    { day: 4,  text: "Give a 20-minute massage focused only on erogenous zones — no rush." },
+    { day: 5,  text: "Try extended kissing — 10 full minutes, nothing else allowed." },
+    { day: 6,  text: "Tell them in explicit detail what you want to do to them tonight." },
+    { day: 7,  text: "Explore their body with just your hands for 15 minutes — map every response." },
+    { day: 8,  text: "Let them guide your hands to exactly where they want them — no words, just pressure." },
+    { day: 9,  text: "Practice edging together — build and pause at least 3 times before allowing release." },
+    { day: 10, text: "Try a new position you've discussed but never done — commit fully." },
+    { day: 11, text: "Spend an evening on oral pleasure — give first, unhurried, then receive." },
+    { day: 12, text: "Use a blindfold — the sighted partner explores with hands and lips for 20 minutes." },
+    { day: 13, text: "Share one sexual fantasy you've never acted on — just talking, no pressure." },
+    { day: 14, text: "Have sex somewhere different than usual — different room, different time of day." },
+    { day: 15, text: "Take turns being completely in control — 30 minutes each, clear handover." },
+    { day: 16, text: "Try slow sex — move at half your normal pace throughout the entire experience." },
+    { day: 17, text: "Introduce temperature — alternate ice and warmth during foreplay." },
+    { day: 18, text: "Act out a roleplay scenario together — pick two roles and commit fully." },
+    { day: 19, text: "Have a 'yes night' — one partner sets the whole agenda in advance, the other agrees to all of it." },
+    { day: 20, text: "Take intimate photos or a short video together — private, just for you two." },
+    { day: 21, text: "Practice mindful sex — no goal, just full attention to sensation throughout." },
+    { day: 22, text: "Try consensual restraint — soft ties or held wrists, fully agreed beforehand." },
+    { day: 23, text: "Give a full sensory experience: blindfold, feather, ice cube, and warmth in sequence." },
+    { day: 24, text: "Spend the whole day sending each other explicit messages — save everything for the night." },
+    { day: 25, text: "Use a mirror — spend time watching each other and your own reactions." },
+    { day: 26, text: "Choose one item from Fantasy Match that you've both said Yes to — make it happen tonight." },
+    { day: 27, text: "The 'hour of power' — 60 full minutes of foreplay before anything else." },
+    { day: 28, text: "Tell each other the most explicit thing you've ever wanted and haven't had yet." },
+    { day: 29, text: "Have sex with no orgasm as the goal — pleasure only, wherever it leads." },
+    { day: 30, text: "Talk about what you discovered this month — what do you want to keep doing together?" },
   ],
 };
 
