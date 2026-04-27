@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '../services/firebase';
-import { getUserProfile, UserProfile } from '../services/authService';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
+import { UserProfile } from '../services/authService';
 
 interface AuthState {
   user: User | null;
@@ -10,23 +11,30 @@ interface AuthState {
 }
 
 export function useAuth(): AuthState {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    loading: true,
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const profile = await getUserProfile(user.uid);
-        setState({ user, profile, loading: false });
-      } else {
-        setState({ user: null, profile: null, loading: false });
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      if (!firebaseUser) {
+        setProfile(null);
+        setLoading(false);
       }
     });
-    return unsubscribe;
+    return unsubscribeAuth;
   }, []);
 
-  return state;
+  // Real-time profile listener — updates when coupleId or name changes
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+      setProfile(snap.exists() ? (snap.data() as UserProfile) : null);
+      setLoading(false);
+    });
+    return unsubscribeProfile;
+  }, [user]);
+
+  return { user, profile, loading };
 }
