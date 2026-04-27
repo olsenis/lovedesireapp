@@ -81,8 +81,8 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{getGreeting()},</Text>
           <Text style={styles.name}>{profile?.name ?? '...'}</Text>
         </View>
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout}>
-          <Text style={styles.signOut}>Sign out</Text>
+        <TouchableOpacity style={styles.signOutBtn} onPress={() => router.push('/profile' as any)}>
+          <Text style={styles.signOut}>Profile</Text>
         </TouchableOpacity>
       </View>
 

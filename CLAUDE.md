@@ -48,8 +48,9 @@ app/                         Full-screen sub-screens (pushed from tabs)
   wishlist.tsx               Double-blind Wishlist — mutual Yes reveals
   fantasy.tsx                Fantasy Match — double-blind fantasy exploration (60 presets)
   truth-dare.tsx             Truth or Dare Together — turn-based, 3 spice levels
-  challenge.tsx              30-Day Intimacy Challenge — Reconnect / Spark / Fire programs
-  blueprint.tsx              Erotic Blueprint Quiz — 5 intimacy types, compatibility results
+  challenge.tsx              30-Day Intimacy Challenge — Reconnect / Spark / Fire / Desire programs
+  blueprint.tsx              Erotic Blueprint Quiz — 5 intimacy types, couple compatibility results
+  profile.tsx                Profile & Settings — name, photo, password, notifications, couple info
   sensate.tsx                Guided Sensate Focus — 3-stage guided touch sessions with timer
   notes.tsx                  Love Notes — timed secret messages
   memories.tsx               Memory Wall — shared private photo album
@@ -66,7 +67,7 @@ The root layout in `app/_layout.tsx` is the auth guard: listens to Firebase auth
 Firebase project: `lovedesireapp-8c7f2`
 
 ```
-users/{uid}                          UserProfile — name, photoURL, coupleId, inviteCode
+users/{uid}                          UserProfile — name, photoURL, coupleId, inviteCode, pushToken
 users/{uid}/private/blueprint        BlueprintResult — type, scores, completedAt
 
 couples/{coupleId}                   Couple — partner1Uid, partner2Uid, inviteCode, createdAt
@@ -78,7 +79,8 @@ couples/{coupleId}/wishlist/{id}     WishlistItem — text, category, votes {uid
 couples/{coupleId}/fantasy/{id}      FantasyItem — text, category, votes {uid: 'yes'|'maybe'|'no'}
 couples/{coupleId}/reminders/{id}    FlirtReminder — message, time, days[], active, createdBy
 couples/{coupleId}/dates/{id}        ImportantDate — label, date, emoji, createdBy
-couples/{coupleId}/challenge/active  ChallengeState — program, currentDay, completedDays[], completedBy {day: [uid]}
+couples/{coupleId}/challenge/active  ChallengeState — program, phase, currentDay, completedDays[], completedBy, customTasks, editsUsed, vetoesUsed
+couples/{coupleId}/blueprints/{uid}  BlueprintResult — type, scores, completedAt (readable by both partners)
 ```
 
 Couple linking: partner1 creates couple doc → gets 6-char invite code → partner2 enters code → `coupleService.joinCouple()` sets `partner2Uid`.
@@ -98,8 +100,9 @@ All real-time listeners use Firestore `onSnapshot` and return an unsubscribe fun
 | `reminderService.ts` | `subscribeReminders`, `addReminder`, `toggleReminder`, `deleteReminder` |
 | `wishlistService.ts` | `subscribeWishlist`, `addWishlistItem`, `voteOnWish`, `isMatch` |
 | `fantasyService.ts` | `subscribeFantasy`, `addFantasyItem`, `voteOnFantasy`, `isFantasyMatch` |
-| `challengeService.ts` | `subscribeChallenge`, `startChallenge`, `markDayComplete`, `resetChallenge` |
-| `blueprintService.ts` | `subscribeBlueprintResult`, `saveBlueprintResult` |
+| `challengeService.ts` | `subscribeChallenge`, `startChallenge`, `activateChallenge`, `editTask`, `markDayComplete`, `vetoDay`, `resetChallenge` |
+| `blueprintService.ts` | `subscribeCoupleBlueprints`, `saveBlueprintResult` |
+| `notificationService.ts` | `notifyPartner` — POSTs to Expo Push API using partner's stored token |
 | `memoryService.ts` | `subscribeMemories`, `addMemory`, `deleteMemory` |
 | `importantDateService.ts` | `subscribeDates`, `addImportantDate`, `deleteImportantDate`, `getDaysUntil` |
 
@@ -117,6 +120,10 @@ All static game content lives here — import from this file, never hardcode in 
 - `DATE_IDEAS` — 48 date night ideas with type (home/out/adventure, 16 each)
 - `PRESET_WISHES` + `WISH_CATEGORY_CONFIG` — 60 wishlist presets across Romantic / Adventure / Intimate / Spicy (15 each)
 - `QUIZ_QUESTIONS` + `LOVE_LANGUAGE_LABELS` — 10 A/B quiz questions mapping to 5 love languages
+- `BLUEPRINT_QUESTIONS` + `BLUEPRINT_TYPE_CONFIG` + `BLUEPRINT_COMPATIBILITY` — 15 A/B questions, 5 erotic types, full 25-pair guidance (summary + challenge + tips[])
+- `FANTASY_PRESETS` + `FANTASY_CATEGORY_CONFIG` — 60 presets across Roleplay / Sensual / Bold / Adventurous
+- `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 4 programs × 30 tasks (Reconnect / Spark / Fire / Desire)
+- `TRUTHS` — 30 truths for Truth or Dare (Sweet / Flirty / Spicy)
 - `BLUEPRINT_QUESTIONS` + `BLUEPRINT_TYPE_CONFIG` + `BLUEPRINT_COMPATIBILITY` — 15 A/B questions, 5 erotic types (sensual/sexual/energetic/kinky/shapeshifter), compatibility bridge phrases
 - `FANTASY_PRESETS` + `FANTASY_CATEGORY_CONFIG` — 60 fantasy presets across Roleplay / Sensual / Bold / Adventurous (15 each)
 - `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 3 programs × 30 daily tasks (Reconnect / Spark / Fire)
@@ -169,8 +176,8 @@ EAS profiles in `eas.json`: `development` (internal), `preview` (internal), `pro
 ## Outstanding before production
 
 - Firestore security rules — currently in **test mode**. Must restrict reads/writes to couple members only before launch. Fantasy and challenge collections also need rules.
-- `expo-notifications` push scheduling — implemented in UI/Firestore but native scheduling (`Notifications.scheduleNotificationAsync`) not yet wired to reminder saves.
-- Firestore indexes — compound indexes needed for mood queries (`uid` + `createdAt`).
+- Push notifications — infrastructure complete. Expo Push tokens registered, partner notifications fire on key events, Flirt Reminders use local scheduling. Push only works on real devices (not web/simulator).
+- Firestore indexes — moodService simplified to avoid compound index requirement (client-side date filter). No outstanding index issues.
 - Photo upload — memory photos currently store local URIs; needs Firebase Storage or Cloudinary for persistence across devices.
 - Blueprint privacy — `users/{uid}/private/blueprint` subcollection requires security rules so only the user themselves (and optionally their partner) can read it.
 - Challenge `completedBy` merge — currently uses `updateDoc` without a transaction; under heavy concurrent writes this could race. Consider Firestore `arrayUnion` or a transaction for production.
