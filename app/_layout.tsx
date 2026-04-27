@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import {
   useFonts,
   CormorantGaramond_400Regular,
@@ -17,6 +19,17 @@ import { useAuth } from '../hooks/useAuth';
 import { createCouple } from '../services/coupleService';
 import { createUserProfile } from '../services/authService';
 import { Colors } from '../constants/colors';
+
+// Show notifications even when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -60,6 +73,23 @@ export default function RootLayout() {
       });
     }).catch((e) => console.error('createCouple failed:', e));
   }, [loading, user, profile?.coupleId]);
+
+  // Request notification permissions and register push token
+  useEffect(() => {
+    if (loading || !user) return;
+    if (Platform.OS === 'web') return; // push not supported on web
+    (async () => {
+      const { status: existing } = await Notifications.getPermissionsAsync();
+      const { status } = existing === 'granted'
+        ? { status: existing }
+        : await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') return;
+      const token = (await Notifications.getExpoPushTokenAsync()).data;
+      if (token && token !== profile?.pushToken) {
+        createUserProfile(user.uid, { pushToken: token } as any);
+      }
+    })();
+  }, [loading, user]);
 
   if (!fontsLoaded && !fontError) return null;
 

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { notifyPartner } from '../services/notificationService';
 import { FantasyItem, FantasyVote, subscribeFantasy, addFantasyItem, voteOnFantasy, isFantasyMatch } from '../services/fantasyService';
 import { FANTASY_PRESETS, FANTASY_CATEGORY_CONFIG, FantasyCategory } from '../constants/content';
 import { Colors } from '../constants/colors';
@@ -34,6 +35,12 @@ export default function FantasyScreen() {
     if (!coupleId || !user) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await voteOnFantasy(coupleId, item.id, user.uid, vote);
+    if (vote === 'yes' && partnerId) {
+      const updated = { ...item, votes: { ...item.votes, [user.uid]: 'yes' as const } };
+      if (isFantasyMatch(updated, user.uid, partnerId)) {
+        notifyPartner(coupleId, user.uid, 'New match ✨', 'You have a shared fantasy').catch(() => {});
+      }
+    }
   };
 
   const handleAdd = async () => {

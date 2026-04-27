@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { notifyPartner } from '../services/notificationService';
 import {
   WishlistItem, WishCategory, WishVote,
   WISH_CATEGORY_CONFIG, subscribeWishlist, addWishlistItem, voteOnWish, isMatch,
@@ -36,6 +37,12 @@ export default function WishlistScreen() {
     if (!coupleId || !user) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await voteOnWish(coupleId, item.id, user.uid, vote);
+    if (vote === 'yes' && partnerId) {
+      const updated = { ...item, votes: { ...item.votes, [user.uid]: 'yes' as const } };
+      if (isMatch(updated, user.uid, partnerId)) {
+        notifyPartner(coupleId, user.uid, 'New match 🌹', "You both want the same thing").catch(() => {});
+      }
+    }
   };
 
   const handleAdd = async () => {

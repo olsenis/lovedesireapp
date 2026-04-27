@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
+import { notifyPartner } from '../../services/notificationService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -57,6 +58,7 @@ export default function HomeScreen() {
       await setMood(profile.coupleId, user.uid, emoji);
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
       setPicking(false);
+      notifyPartner(profile.coupleId, user.uid, 'New mood 💫', `${profile.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
     } catch (e) {
       console.error('setMood failed:', e);
     }

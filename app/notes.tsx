@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { subscribeNotes, createNote, openNote, LoveNote } from '../services/noteService';
+import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -65,6 +66,7 @@ export default function NotesScreen() {
   const handleCreate = async () => {
     if (!message.trim() || !profile?.coupleId || !user) return;
     await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion));
+    notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌', 'A message is waiting for you').catch(() => {});
     setMessage('');
     setShowCreate(false);
   };

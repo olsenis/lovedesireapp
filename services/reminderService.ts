@@ -1,4 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import { db } from './firebase';
 
 export interface FlirtReminder {
@@ -35,11 +37,10 @@ export function subscribeReminders(coupleId: string, onChange: (reminders: Flirt
 export async function addReminder(
   coupleId: string,
   reminder: Omit<FlirtReminder, 'id' | 'createdAt'>
-): Promise<void> {
-  await addDoc(collection(db, 'couples', coupleId, 'reminders'), {
-    ...reminder,
-    createdAt: Date.now(),
-  });
+): Promise<FlirtReminder> {
+  const createdAt = Date.now();
+  const ref = await addDoc(collection(db, 'couples', coupleId, 'reminders'), { ...reminder, createdAt });
+  return { ...reminder, id: ref.id, createdAt };
 }
 
 export async function toggleReminder(coupleId: string, id: string, active: boolean): Promise<void> {
@@ -48,4 +49,37 @@ export async function toggleReminder(coupleId: string, id: string, active: boole
 
 export async function deleteReminder(coupleId: string, id: string): Promise<void> {
   await deleteDoc(doc(db, 'couples', coupleId, 'reminders', id));
+}
+
+// ─── Local notification scheduling ───────────────────────────────────────────
+
+function notifIdForDay(reminderId: string, day: number): string {
+  return `reminder-${reminderId}-day${day}`;
+}
+
+export async function scheduleReminderNotifications(reminder: FlirtReminder): Promise<void> {
+  if (Platform.OS === 'web') return;
+  await cancelReminderNotifications(reminder.id);
+  if (!reminder.active) return;
+  const [hour, minute] = reminder.time.split(':').map(Number);
+  for (const day of reminder.days) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: notifIdForDay(reminder.id, day),
+      content: {
+        title: 'Love Desire 💝',
+        body: reminder.message,
+        sound: true,
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: day + 1, hour, minute },
+    });
+  }
+}
+
+export async function cancelReminderNotifications(reminderId: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  for (let day = 0; day < 7; day++) {
+    try {
+      await Notifications.cancelScheduledNotificationAsync(notifIdForDay(reminderId, day));
+    } catch { /* already cancelled */ }
+  }
 }

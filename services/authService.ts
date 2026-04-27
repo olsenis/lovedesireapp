@@ -13,6 +13,7 @@ export interface UserProfile {
   photoURL?: string;
   coupleId?: string;
   inviteCode?: string;
+  pushToken?: string;
   createdAt: number;
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Switch } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
-import { FlirtReminder, DAY_LABELS, REMINDER_SUGGESTIONS, subscribeReminders, addReminder, toggleReminder, deleteReminder } from '../services/reminderService';
+import { FlirtReminder, DAY_LABELS, REMINDER_SUGGESTIONS, subscribeReminders, addReminder, toggleReminder, deleteReminder, scheduleReminderNotifications, cancelReminderNotifications } from '../services/reminderService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -30,7 +30,8 @@ export default function RemindersScreen() {
       return;
     }
     setTimeError('');
-    await addReminder(coupleId, { message: message.trim(), time, days, active: true, createdBy: user.uid });
+    const saved = await addReminder(coupleId, { message: message.trim(), time, days, active: true, createdBy: user.uid });
+    scheduleReminderNotifications(saved);
     setMessage(''); setShowCreate(false);
   };
 
@@ -68,11 +69,11 @@ export default function RemindersScreen() {
             <View style={styles.cardRight}>
               <Switch
                 value={r.active}
-                onValueChange={(val) => { if (coupleId) toggleReminder(coupleId, r.id, val); }}
+                onValueChange={(val) => { if (coupleId) { toggleReminder(coupleId, r.id, val); if (val) scheduleReminderNotifications({ ...r, active: true }); else cancelReminderNotifications(r.id); } }}
                 trackColor={{ false: Colors.border, true: Colors.rose }}
                 thumbColor={r.active ? Colors.burgundy : Colors.muted}
               />
-              <TouchableOpacity onPress={() => coupleId && deleteReminder(coupleId, r.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { if (coupleId) { deleteReminder(coupleId, r.id); cancelReminderNotifications(r.id); } }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Text style={styles.deleteBtn}>✕</Text>
               </TouchableOpacity>
             </View>

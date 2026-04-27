@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput 
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
+import { notifyPartner } from '../services/notificationService';
 import {
   ChallengeState, subscribeChallenge, startChallenge, activateChallenge,
   editTask, markDayComplete, vetoDay, resetChallenge, MAX_EDITS, MAX_VETOES,
@@ -92,6 +93,7 @@ export default function ChallengeScreen() {
     if (!coupleId || !user || !state) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await markDayComplete(coupleId, user.uid, state.currentDay, state);
+    notifyPartner(coupleId, user.uid, 'Challenge update ✓', `${profile?.name ?? 'Your partner'} marked day ${state.currentDay} done — your turn`).catch(() => {});
   };
 
   const handleVeto = async () => {
