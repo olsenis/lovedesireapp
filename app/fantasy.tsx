@@ -20,6 +20,7 @@ export default function FantasyScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [newText, setNewText] = useState('');
   const [newCat, setNewCat] = useState<FantasyCategory>('sensual');
+  const [loadingPresets, setLoadingPresets] = useState(false);
 
   const coupleId = profile?.coupleId;
   const partnerId = couple?.partner1Uid === user?.uid ? couple?.partner2Uid : couple?.partner1Uid;
@@ -43,9 +44,12 @@ export default function FantasyScreen() {
   };
 
   const loadPresets = async () => {
-    if (!coupleId) return;
-    for (const p of FANTASY_PRESETS) {
-      await addFantasyItem(coupleId, p.text, p.category);
+    if (!coupleId || loadingPresets) return;
+    setLoadingPresets(true);
+    try {
+      await Promise.all(FANTASY_PRESETS.map((p) => addFantasyItem(coupleId, p.text, p.category)));
+    } finally {
+      setLoadingPresets(false);
     }
   };
 
@@ -85,10 +89,14 @@ export default function FantasyScreen() {
         {activeTab === 'vote' ? (
           <>
             {items.length === 0 && (
-              <TouchableOpacity style={styles.emptyCard} onPress={loadPresets}>
-                <Text style={styles.emptyEmoji}>✨</Text>
-                <Text style={styles.emptyTitle}>Explore together</Text>
-                <Text style={styles.emptyText}>Tap to load 60 fantasy scenarios — or add your own. Only mutual interests are ever revealed.</Text>
+              <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7}>
+                <Text style={styles.emptyEmoji}>{loadingPresets ? '⏳' : '✨'}</Text>
+                <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
+                <Text style={styles.emptyText}>
+                  {loadingPresets
+                    ? 'Adding 60 scenarios — this takes a moment'
+                    : 'Tap to load 60 fantasy scenarios — or add your own. Only mutual interests are ever revealed.'}
+                </Text>
               </TouchableOpacity>
             )}
             {unvoted.length > 0 && <Text style={styles.groupLabel}>To explore</Text>}

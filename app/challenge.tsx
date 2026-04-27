@@ -15,22 +15,27 @@ export default function ChallengeScreen() {
   const { user, profile } = useAuth();
   const [state, setState] = useState<ChallengeState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
 
   const coupleId = profile?.coupleId;
 
   useEffect(() => {
+    // If profile has loaded but no coupleId, stop loading
+    if (profile !== undefined && !coupleId) { setLoading(false); return; }
     if (!coupleId) return;
     const unsub = subscribeChallenge(coupleId, (s) => {
       setState(s);
       setLoading(false);
     });
     return unsub;
-  }, [coupleId]);
+  }, [coupleId, profile]);
 
   const handleStart = async (program: ChallengeProgram) => {
-    if (!coupleId) return;
+    if (!coupleId || starting) return;
+    setStarting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await startChallenge(coupleId, program);
+    setStarting(false);
   };
 
   const handleMark = async () => {
@@ -78,9 +83,10 @@ export default function ChallengeScreen() {
             return (
               <TouchableOpacity
                 key={p}
-                style={[styles.programCard, { backgroundColor: cfg.color, borderColor: cfg.color }]}
+                style={[styles.programCard, { backgroundColor: cfg.color, borderColor: cfg.color }, starting && { opacity: 0.6 }]}
                 onPress={() => handleStart(p)}
                 activeOpacity={0.85}
+                disabled={starting}
               >
                 <View style={styles.programTop}>
                   <Text style={styles.programEmoji}>{cfg.emoji}</Text>
@@ -89,7 +95,9 @@ export default function ChallengeScreen() {
                     <Text style={styles.programDesc}>{cfg.description}</Text>
                   </View>
                 </View>
-                <Text style={[styles.programStart, { color: cfg.textColor }]}>Start this program →</Text>
+                <Text style={[styles.programStart, { color: cfg.textColor }]}>
+                  {starting ? 'Starting…' : 'Start this program →'}
+                </Text>
               </TouchableOpacity>
             );
           })}
