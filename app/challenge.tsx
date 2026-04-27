@@ -12,7 +12,7 @@ import { Spacing, Radius, Shadow } from '../constants/spacing';
 const PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire'];
 
 export default function ChallengeScreen() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [state, setState] = useState<ChallengeState | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -20,15 +20,14 @@ export default function ChallengeScreen() {
   const coupleId = profile?.coupleId;
 
   useEffect(() => {
-    // If profile has loaded but no coupleId, stop loading
-    if (profile !== undefined && !coupleId) { setLoading(false); return; }
-    if (!coupleId) return;
+    if (authLoading) return;
+    if (!coupleId) { setLoading(false); return; }
     const unsub = subscribeChallenge(coupleId, (s) => {
       setState(s);
       setLoading(false);
     });
     return unsub;
-  }, [coupleId, profile]);
+  }, [coupleId, authLoading]);
 
   const handleStart = async (program: ChallengeProgram) => {
     if (!coupleId || starting) return;

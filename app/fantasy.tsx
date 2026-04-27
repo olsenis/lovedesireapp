@@ -44,10 +44,11 @@ export default function FantasyScreen() {
   };
 
   const loadPresets = async () => {
-    if (!coupleId || loadingPresets) return;
+    const id = profile?.coupleId;
+    if (!id || loadingPresets) return;
     setLoadingPresets(true);
     try {
-      await Promise.all(FANTASY_PRESETS.map((p) => addFantasyItem(coupleId, p.text, p.category)));
+      await Promise.all(FANTASY_PRESETS.map((p) => addFantasyItem(id, p.text, p.category)));
     } finally {
       setLoadingPresets(false);
     }
