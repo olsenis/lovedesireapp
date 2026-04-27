@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { saveBlueprintResult, subscribeCoupleBlueprints, CoupleBlueprints } from '../services/blueprintService';
 import {
   BLUEPRINT_QUESTIONS, BLUEPRINT_TYPE_CONFIG, BLUEPRINT_COMPATIBILITY,
-  BlueprintType,
+  BlueprintType, BlueprintCompatibilityEntry,
 } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -63,7 +63,9 @@ export default function BlueprintScreen() {
   const myType = myResult?.type ?? sorted[0][0];
   const myPrimary = BLUEPRINT_TYPE_CONFIG[myType];
   const partnerCfg = partnerResult ? BLUEPRINT_TYPE_CONFIG[partnerResult.type] : null;
-  const compatibility = partnerResult ? BLUEPRINT_COMPATIBILITY[myType]?.[partnerResult.type] : null;
+  const compatibility: BlueprintCompatibilityEntry | null = partnerResult
+    ? BLUEPRINT_COMPATIBILITY[myType]?.[partnerResult.type] ?? null
+    : null;
 
   return (
     <View style={styles.screen}>
@@ -134,20 +136,30 @@ export default function BlueprintScreen() {
                 </View>
               </View>
 
-              {/* Compatibility bridge */}
-              {compatibility ? (
-                <View style={styles.compatCard}>
+              {/* Compatibility card */}
+              {compatibility && (
+                <View style={[styles.compatCard, { borderLeftColor: partnerCfg?.color ?? Colors.rose }]}>
                   <Text style={styles.compatTitle}>
-                    {myPrimary.label} + {partnerCfg.label}
+                    {myPrimary.emoji} {myPrimary.label} + {partnerCfg?.emoji} {partnerCfg?.label}
                   </Text>
-                  <Text style={styles.compatText}>{compatibility}</Text>
+                  <Text style={styles.compatText}>{compatibility.summary}</Text>
+
+                  <View style={styles.compatSection}>
+                    <Text style={styles.compatSectionLabel}>⚠ Watch out for</Text>
+                    <Text style={styles.compatChallenge}>{compatibility.challenge}</Text>
+                  </View>
+
+                  <View style={styles.compatSection}>
+                    <Text style={styles.compatSectionLabel}>✦ Try this</Text>
+                    {compatibility.tips.map((tip, i) => (
+                      <View key={i} style={styles.tipRow}>
+                        <Text style={styles.tipDot}>·</Text>
+                        <Text style={styles.tipText}>{tip}</Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              ) : myType === partnerResult.type ? (
-                <View style={styles.compatCard}>
-                  <Text style={styles.compatTitle}>You're both {myPrimary.label}</Text>
-                  <Text style={styles.compatText}>You speak the same erotic language — lean into it and explore the depth of what you share.</Text>
-                </View>
-              ) : null}
+              )}
             </>
           ) : (
             <View style={styles.partnerPending}>
@@ -240,10 +252,16 @@ const styles = StyleSheet.create({
   // Compatibility
   compatCard: {
     backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg,
-    gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, borderLeftColor: Colors.rose,
+    gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, borderLeftColor: Colors.rose,
   },
   compatTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
   compatText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
+  compatSection: { gap: 6 },
+  compatSectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  compatChallenge: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.text, lineHeight: 20 },
+  tipRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  tipDot: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.rose, lineHeight: 22, marginTop: -1 },
+  tipText: { flex: 1, fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22 },
 
   // Partner pending
   partnerPending: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
