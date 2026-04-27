@@ -16,6 +16,7 @@ export default function ChallengeScreen() {
   const [state, setState] = useState<ChallengeState | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState('');
 
   const coupleId = profile?.coupleId;
 
@@ -30,13 +31,21 @@ export default function ChallengeScreen() {
   }, [coupleId, authLoading]);
 
   const handleStart = async (program: ChallengeProgram) => {
-    if (!coupleId || starting) return;
+    if (starting) return;
+    if (!coupleId) {
+      setStartError('Account not ready yet — wait a moment and try again.');
+      return;
+    }
+    setStartError('');
     setStarting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       await startChallenge(coupleId, program);
-    } catch (e) {
-      console.error('startChallenge failed:', e);
+    } catch (e: any) {
+      const msg = e?.code === 'permission-denied'
+        ? 'Permission denied — Firestore rules may have expired. Check Firebase console.'
+        : `Error: ${e?.message ?? String(e)}`;
+      setStartError(msg);
       setStarting(false);
     }
   };
@@ -81,6 +90,14 @@ export default function ChallengeScreen() {
           <Text style={styles.pickerIntro}>
             A daily practice for 30 days. Each task builds on the last — choose your intensity.
           </Text>
+          {!coupleId && (
+            <Text style={styles.debugText}>⏳ Setting up account… please wait a moment then try again.</Text>
+          )}
+          {startError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{startError}</Text>
+            </View>
+          ) : null}
           {PROGRAMS.map((p) => {
             const cfg = CHALLENGE_PROGRAM_CONFIG[p];
             return (
@@ -215,6 +232,9 @@ const styles = StyleSheet.create({
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
   noCoupleWarning: { backgroundColor: '#FFF3CD', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#F9A825' },
   noCoupleText: { fontFamily: Fonts.body, fontSize: 14, color: '#7B5200', textAlign: 'center', lineHeight: 20 },
+  debugText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+  errorBox: { backgroundColor: '#FFEBEE', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.error },
+  errorText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.error, textAlign: 'center', lineHeight: 20 },
 
   programCard: {
     borderRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.md,

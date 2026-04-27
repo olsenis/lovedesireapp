@@ -48,9 +48,10 @@ export async function createUserProfile(
   uid: string,
   profile: Omit<UserProfile, 'uid' | 'createdAt'>
 ): Promise<void> {
-  await setDoc(doc(db, 'users', uid), {
-    ...profile,
-    uid,
-    createdAt: Date.now(),
-  }, { merge: true });
+  // Strip undefined values — Firestore rejects them
+  const data: Record<string, unknown> = { uid, createdAt: Date.now() };
+  for (const [k, v] of Object.entries(profile)) {
+    if (v !== undefined) data[k] = v;
+  }
+  await setDoc(doc(db, 'users', uid), data, { merge: true });
 }
