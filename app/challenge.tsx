@@ -3,8 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
-import { createCouple } from '../services/coupleService';
-import { createUserProfile } from '../services/authService';
 import { ChallengeState, subscribeChallenge, startChallenge, markDayComplete, resetChallenge } from '../services/challengeService';
 import { CHALLENGE_PROGRAMS, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '../constants/content';
 import { Colors } from '../constants/colors';
@@ -20,20 +18,6 @@ export default function ChallengeScreen() {
   const [starting, setStarting] = useState(false);
 
   const coupleId = profile?.coupleId;
-
-  // Auto-create couple if missing (same pattern as home screen)
-  useEffect(() => {
-    if (authLoading || !user) return;
-    if (coupleId) return;
-    createCouple(user.uid).then((couple) => {
-      createUserProfile(user.uid, {
-        name: profile?.name ?? '',
-        photoURL: profile?.photoURL,
-        coupleId: couple.id,
-        inviteCode: couple.inviteCode,
-      });
-    }).catch((e) => console.error('createCouple failed:', e));
-  }, [authLoading, user, coupleId]);
 
   useEffect(() => {
     if (authLoading) return;

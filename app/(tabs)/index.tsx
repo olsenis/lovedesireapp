@@ -4,8 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
-import { logout, createUserProfile } from '../../services/authService';
-import { createCouple } from '../../services/coupleService';
+import { logout } from '../../services/authService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -33,25 +32,11 @@ const QUICK_ACTIONS = [
 ];
 
 export default function HomeScreen() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
   const [picking, setPicking] = useState(false);
-
-  // Create couple only after auth has fully loaded and user has no coupleId yet
-  useEffect(() => {
-    if (authLoading || !user) return;
-    if (profile?.coupleId) return;
-    createCouple(user.uid).then((couple) => {
-      createUserProfile(user.uid, {
-        name: profile?.name ?? '',
-        photoURL: profile?.photoURL,
-        coupleId: couple.id,
-        inviteCode: couple.inviteCode,
-      });
-    }).catch((e) => console.error('createCouple failed:', e));
-  }, [authLoading, user, profile?.coupleId]);
 
   useEffect(() => {
     if (!user || !profile?.coupleId) return;
