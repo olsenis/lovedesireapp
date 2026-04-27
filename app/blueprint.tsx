@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
-import { saveBlueprintResult, subscribeBlueprintResult, BlueprintResult } from '../services/blueprintService';
+import { useCouple } from '../hooks/useCouple';
+import { saveBlueprintResult, subscribeCoupleBlueprints, CoupleBlueprints } from '../services/blueprintService';
 import {
   BLUEPRINT_QUESTIONS, BLUEPRINT_TYPE_CONFIG, BLUEPRINT_COMPATIBILITY,
   BlueprintType,
@@ -12,22 +13,27 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-const ALL_TYPES: BlueprintType[] = ['sensual', 'sexual', 'energetic', 'kinky', 'shapeshifter'];
 const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 
 export default function BlueprintScreen() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<Record<BlueprintType, number>>({ sensual: 0, sexual: 0, energetic: 0, kinky: 0, shapeshifter: 0 });
   const [done, setDone] = useState(false);
-  const [saved, setSaved] = useState<BlueprintResult | null>(null);
+  const [coupleResults, setCoupleResults] = useState<CoupleBlueprints>({});
+
+  const coupleId = profile?.coupleId;
+  const uid = user?.uid ?? '';
+  const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
 
   useEffect(() => {
-    if (!user) return;
-    return subscribeBlueprintResult(user.uid, (r) => {
-      if (r) { setSaved(r); setDone(true); }
+    if (!coupleId) return;
+    return subscribeCoupleBlueprints(coupleId, (results) => {
+      setCoupleResults(results);
+      if (results[uid]) setDone(true);
     });
-  }, [user]);
+  }, [coupleId, uid]);
 
   const q = BLUEPRINT_QUESTIONS[step];
 
@@ -36,25 +42,28 @@ export default function BlueprintScreen() {
     const next = { ...scores, [type]: scores[type] + 1 };
     setScores(next);
     if (step + 1 >= BLUEPRINT_QUESTIONS.length) {
-      if (user) await saveBlueprintResult(user.uid, next);
+      if (user) await saveBlueprintResult(user.uid, coupleId, next);
       setDone(true);
     } else {
       setStep((s) => s + 1);
     }
   };
 
-  const retake = () => {
+  const retake = async () => {
     setStep(0);
     setScores({ sensual: 0, sexual: 0, energetic: 0, kinky: 0, shapeshifter: 0 });
     setDone(false);
-    setSaved(null);
   };
 
-  const sorted = (Object.entries(scores) as [BlueprintType, number][]).sort((a, b) => b[1] - a[1]);
-  const primaryType = sorted[0][0];
-  const secondaryType = sorted.length > 1 ? sorted[1][0] : sorted[0][0];
-  const primary = BLUEPRINT_TYPE_CONFIG[primaryType];
-  const bridge = BLUEPRINT_COMPATIBILITY[primaryType]?.[secondaryType];
+  // Results data
+  const myResult = coupleResults[uid];
+  const partnerResult = partnerId ? coupleResults[partnerId] : null;
+  const activeScores = myResult?.scores ?? scores;
+  const sorted = (Object.entries(activeScores) as [BlueprintType, number][]).sort((a, b) => b[1] - a[1]);
+  const myType = myResult?.type ?? sorted[0][0];
+  const myPrimary = BLUEPRINT_TYPE_CONFIG[myType];
+  const partnerCfg = partnerResult ? BLUEPRINT_TYPE_CONFIG[partnerResult.type] : null;
+  const compatibility = partnerResult ? BLUEPRINT_COMPATIBILITY[myType]?.[partnerResult.type] : null;
 
   return (
     <View style={styles.screen}>
@@ -93,26 +102,64 @@ export default function BlueprintScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.results}>
-          {/* Primary type hero */}
-          <View style={[styles.heroCard, { backgroundColor: primary.color }]}>
-            <Text style={styles.heroEmoji}>{primary.emoji}</Text>
-            <Text style={styles.heroLabel}>{primary.label}</Text>
-            <Text style={styles.heroDesc}>{primary.description}</Text>
+
+          {/* Your type hero */}
+          <View style={[styles.heroCard, { backgroundColor: myPrimary.color }]}>
+            <Text style={styles.heroEmoji}>{myPrimary.emoji}</Text>
+            <Text style={styles.heroLabel}>{myPrimary.label}</Text>
+            <Text style={styles.heroDesc}>{myPrimary.description}</Text>
           </View>
 
           {/* Turn ons / offs */}
           <View style={styles.traitRow}>
             <View style={[styles.traitCard, styles.traitOn]}>
               <Text style={styles.traitTitle}>Turns you on</Text>
-              <Text style={styles.traitText}>{primary.turnOns}</Text>
+              <Text style={styles.traitText}>{myPrimary.turnOns}</Text>
             </View>
             <View style={[styles.traitCard, styles.traitOff]}>
               <Text style={styles.traitTitle}>Turns you off</Text>
-              <Text style={styles.traitText}>{primary.turnOffs}</Text>
+              <Text style={styles.traitText}>{myPrimary.turnOffs}</Text>
             </View>
           </View>
 
-          {/* Score breakdown */}
+          {/* Partner result */}
+          {partnerResult && partnerCfg ? (
+            <>
+              <Text style={styles.sectionLabel}>{partner?.name ?? 'Your partner'}'s type</Text>
+              <View style={[styles.partnerCard, { backgroundColor: partnerCfg.color }]}>
+                <Text style={styles.partnerEmoji}>{partnerCfg.emoji}</Text>
+                <View style={styles.partnerInfo}>
+                  <Text style={styles.partnerLabel}>{partnerCfg.label}</Text>
+                  <Text style={styles.partnerDesc}>{partnerCfg.description}</Text>
+                </View>
+              </View>
+
+              {/* Compatibility bridge */}
+              {compatibility ? (
+                <View style={styles.compatCard}>
+                  <Text style={styles.compatTitle}>
+                    {myPrimary.label} + {partnerCfg.label}
+                  </Text>
+                  <Text style={styles.compatText}>{compatibility}</Text>
+                </View>
+              ) : myType === partnerResult.type ? (
+                <View style={styles.compatCard}>
+                  <Text style={styles.compatTitle}>You're both {myPrimary.label}</Text>
+                  <Text style={styles.compatText}>You speak the same erotic language — lean into it and explore the depth of what you share.</Text>
+                </View>
+              ) : null}
+            </>
+          ) : (
+            <View style={styles.partnerPending}>
+              <Text style={styles.partnerPendingEmoji}>⏳</Text>
+              <Text style={styles.partnerPendingText}>
+                Waiting for {partner?.name ?? 'your partner'} to complete the quiz
+              </Text>
+              <Text style={styles.partnerPendingHint}>When they finish, your compatibility will appear here.</Text>
+            </View>
+          )}
+
+          {/* Your score breakdown */}
           <Text style={styles.sectionLabel}>Your full profile</Text>
           <View style={styles.scoreList}>
             {sorted.map(([type, score]) => {
@@ -132,14 +179,6 @@ export default function BlueprintScreen() {
               );
             })}
           </View>
-
-          {/* Partner bridge tip */}
-          {bridge && (
-            <View style={styles.bridgeCard}>
-              <Text style={styles.bridgeTitle}>A note on your mix</Text>
-              <Text style={styles.bridgeText}>{bridge}</Text>
-            </View>
-          )}
 
           <TouchableOpacity style={styles.retakeBtn} onPress={retake}>
             <Text style={styles.retakeText}>Retake quiz ↻</Text>
@@ -166,7 +205,6 @@ const styles = StyleSheet.create({
   progressBar: { height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: Colors.burgundy, borderRadius: 3 },
   progressText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, textAlign: 'center' },
-
   question: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, textAlign: 'center', lineHeight: 30 },
   optionCard: {
     borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center',
@@ -179,15 +217,10 @@ const styles = StyleSheet.create({
   or: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted },
 
   results: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg, paddingTop: Spacing.lg },
-
-  heroCard: {
-    borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md,
-    ...Shadow.sm,
-  },
+  heroCard: { borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md, ...Shadow.sm },
   heroEmoji: { fontSize: 64 },
   heroLabel: { fontFamily: Fonts.heading, fontSize: 30, color: Colors.text },
   heroDesc: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text, textAlign: 'center', lineHeight: 24 },
-
   traitRow: { flexDirection: 'row', gap: Spacing.md },
   traitCard: { flex: 1, borderRadius: Radius.lg, padding: Spacing.md, gap: 6, borderWidth: 1, borderColor: Colors.border },
   traitOn: { backgroundColor: '#F1F8E9' },
@@ -196,6 +229,29 @@ const styles = StyleSheet.create({
   traitText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 18 },
 
   sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+
+  // Partner card
+  partnerCard: { borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, ...Shadow.sm },
+  partnerEmoji: { fontSize: 44 },
+  partnerInfo: { flex: 1, gap: 4 },
+  partnerLabel: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.text },
+  partnerDesc: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.text, lineHeight: 20 },
+
+  // Compatibility
+  compatCard: {
+    backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg,
+    gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, borderLeftColor: Colors.rose,
+  },
+  compatTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
+  compatText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
+
+  // Partner pending
+  partnerPending: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
+  partnerPendingEmoji: { fontSize: 36 },
+  partnerPendingText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text, textAlign: 'center' },
+  partnerPendingHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+
+  // Score breakdown
   scoreList: { gap: Spacing.md },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   scoreEmoji: { fontSize: 20, width: 28 },
@@ -204,13 +260,6 @@ const styles = StyleSheet.create({
   scoreBarBg: { height: 8, backgroundColor: Colors.border, borderRadius: 4, overflow: 'hidden' },
   scoreBarFill: { height: '100%', borderRadius: 4 },
   scoreNum: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text, width: 20, textAlign: 'right' },
-
-  bridgeCard: {
-    backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg,
-    gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, borderLeftColor: Colors.rose,
-  },
-  bridgeTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
-  bridgeText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
 
   retakeBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignSelf: 'center' },
   retakeText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
