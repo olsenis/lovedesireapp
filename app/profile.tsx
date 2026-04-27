@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Modal, Alert, Switch, Platform,
+  TextInput, Modal, Alert, Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { createUserProfile, logout } from '../services/authService';
+import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
+import { joinCouple } from '../services/coupleService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -21,12 +22,23 @@ export default function ProfileScreen() {
 
   const [editNameModal, setEditNameModal] = useState(false);
   const [editName, setEditName] = useState('');
+
   const [passwordModal, setPasswordModal] = useState(false);
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
+
+  const [pairModal, setPairModal] = useState(false);
+  const [partnerCode, setPartnerCode] = useState('');
+  const [pairError, setPairError] = useState('');
+  const [pairLoading, setPairLoading] = useState(false);
+
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deletePw, setDeletePw] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
   const [saving, setSaving] = useState(false);
 
   const isConnected = !!couple?.partner2Uid;
@@ -36,10 +48,7 @@ export default function ProfileScreen() {
 
   const handlePickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
     if (!result.canceled && user) {
       await createUserProfile(user.uid, { photoURL: result.assets[0].uri } as any);
@@ -70,29 +79,83 @@ export default function ProfileScreen() {
       setTimeout(() => { setPwSuccess(false); setPasswordModal(false); }, 1500);
     } catch (e: any) {
       const code = e?.code ?? '';
-      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-        setPwError('Current password is incorrect.');
-      } else {
-        setPwError('Something went wrong. Try again.');
-      }
+      setPwError(code === 'auth/wrong-password' || code === 'auth/invalid-credential'
+        ? 'Current password is incorrect.'
+        : 'Something went wrong. Try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert('Sign out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: async () => { await logout(); router.replace('/(auth)/login'); } },
-    ]);
+  const handleJoinCouple = async () => {
+    if (partnerCode.trim().length !== 6) { setPairError('Enter a 6-character code.'); return; }
+    if (!user) return;
+    setPairError('');
+    setPairLoading(true);
+    try {
+      // Disconnect from current couple first if needed
+      if (profile?.coupleId) await disconnectFromCouple(user.uid);
+      const result = await joinCouple(partnerCode.trim().toUpperCase(), user.uid);
+      if (!result) { setPairError('Code not found or couple is already full.'); return; }
+      await createUserProfile(user.uid, {
+        name: profile?.name ?? '',
+        coupleId: result.id,
+        inviteCode: result.inviteCode,
+      } as any);
+      setPairModal(false);
+      setPartnerCode('');
+    } catch {
+      setPairError('Something went wrong. Try again.');
+    } finally {
+      setPairLoading(false);
+    }
   };
 
   const handleDisconnect = () => {
     Alert.alert(
       'Disconnect couple',
-      'This will unlink you from your partner. You will need to pair again. Are you sure?',
-      [{ text: 'Cancel', style: 'cancel' }, { text: 'Disconnect', style: 'destructive', onPress: () => {} }]
+      'This will unlink you from your partner. Your data stays but you will need to pair again.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect', style: 'destructive',
+          onPress: async () => {
+            if (!user) return;
+            await disconnectFromCouple(user.uid);
+          },
+        },
+      ]
     );
+  };
+
+  const handleLogout = async () => {
+    Alert.alert('Sign out', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign out', style: 'destructive',
+        onPress: async () => { await logout(); router.replace('/(auth)/login'); },
+      },
+    ]);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deletePw || !user?.email) { setDeleteError('Enter your password to confirm.'); return; }
+    setDeleteError('');
+    setSaving(true);
+    try {
+      const cred = EmailAuthProvider.credential(user.email, deletePw);
+      await reauthenticateWithCredential(user, cred);
+      if (profile?.coupleId) await disconnectFromCouple(user.uid);
+      await deleteUser(user);
+      router.replace('/(auth)/login');
+    } catch (e: any) {
+      const code = e?.code ?? '';
+      setDeleteError(code === 'auth/wrong-password' || code === 'auth/invalid-credential'
+        ? 'Password is incorrect.'
+        : 'Something went wrong. Try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -125,7 +188,7 @@ export default function ProfileScreen() {
           <Text style={styles.profileEmail}>{user?.email ?? ''}</Text>
         </View>
 
-        {/* Account settings */}
+        {/* Account */}
         <Text style={styles.sectionLabel}>Account</Text>
         <View style={styles.card}>
           <TouchableOpacity style={styles.row} onPress={() => { setEditName(profile?.name ?? ''); setEditNameModal(true); }}>
@@ -147,7 +210,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Couple info */}
+        {/* Couple */}
         <Text style={styles.sectionLabel}>Your couple</Text>
         <View style={styles.card}>
           {isConnected ? (
@@ -163,9 +226,14 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.divider} />
               <View style={styles.row}>
-                <Text style={styles.rowLabel}>Invite code</Text>
+                <Text style={styles.rowLabel}>Your invite code</Text>
                 <Text style={styles.inviteCode}>{profile?.inviteCode ?? '—'}</Text>
               </View>
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }}>
+                <Text style={styles.rowLabel}>Enter partner's code</Text>
+                <Text style={styles.rowChevron}>›</Text>
+              </TouchableOpacity>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={handleDisconnect}>
                 <Text style={[styles.rowLabel, { color: Colors.error }]}>Disconnect couple</Text>
@@ -179,8 +247,8 @@ export default function ProfileScreen() {
                 <Text style={styles.inviteCode}>{profile?.inviteCode ?? '—'}</Text>
               </View>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => router.push('/(auth)/pairing')}>
-                <Text style={[styles.rowLabel, { color: Colors.burgundy }]}>Invite a partner</Text>
+              <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }}>
+                <Text style={[styles.rowLabel, { color: Colors.burgundy }]}>Enter partner's code</Text>
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
             </>
@@ -203,7 +271,7 @@ export default function ProfileScreen() {
             <>
               <View style={styles.divider} />
               <Text style={styles.notifHint}>
-                Notifications are off. Open your device settings to enable them for Love Desire.
+                Open your device Settings → Notifications → Love Desire to enable.
               </Text>
             </>
           )}
@@ -214,21 +282,20 @@ export default function ProfileScreen() {
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
 
+        {/* Delete account */}
+        <TouchableOpacity style={styles.deleteAccountBtn} onPress={() => { setDeleteError(''); setDeletePw(''); setDeleteModal(true); }} activeOpacity={0.8}>
+          <Text style={styles.deleteAccountText}>Delete account</Text>
+        </TouchableOpacity>
+
       </ScrollView>
 
-      {/* Edit name modal */}
+      {/* Edit name */}
       <Modal visible={editNameModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Display name</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="Your name"
-              placeholderTextColor={Colors.muted}
-              autoFocus
-            />
+            <TextInput style={styles.modalInput} value={editName} onChangeText={setEditName}
+              placeholder="Your name" placeholderTextColor={Colors.muted} autoFocus />
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditNameModal(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -241,7 +308,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Change password modal */}
+      {/* Change password */}
       <Modal visible={passwordModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
@@ -250,13 +317,13 @@ export default function ProfileScreen() {
               <Text style={styles.pwSuccess}>✓ Password updated</Text>
             ) : (
               <>
-                <TextInput style={styles.modalInput} placeholder="Current password" placeholderTextColor={Colors.muted}
-                  value={currentPw} onChangeText={setCurrentPw} secureTextEntry />
-                <TextInput style={styles.modalInput} placeholder="New password (min 6 chars)" placeholderTextColor={Colors.muted}
-                  value={newPw} onChangeText={setNewPw} secureTextEntry />
-                <TextInput style={styles.modalInput} placeholder="Confirm new password" placeholderTextColor={Colors.muted}
-                  value={confirmPw} onChangeText={setConfirmPw} secureTextEntry />
-                {pwError ? <Text style={styles.pwError}>{pwError}</Text> : null}
+                <TextInput style={styles.modalInput} placeholder="Current password"
+                  placeholderTextColor={Colors.muted} value={currentPw} onChangeText={setCurrentPw} secureTextEntry />
+                <TextInput style={styles.modalInput} placeholder="New password (min 6)"
+                  placeholderTextColor={Colors.muted} value={newPw} onChangeText={setNewPw} secureTextEntry />
+                <TextInput style={styles.modalInput} placeholder="Confirm new password"
+                  placeholderTextColor={Colors.muted} value={confirmPw} onChangeText={setConfirmPw} secureTextEntry />
+                {pwError ? <Text style={styles.errorText}>{pwError}</Text> : null}
                 <View style={styles.modalBtns}>
                   <TouchableOpacity style={styles.cancelBtn} onPress={() => setPasswordModal(false)}>
                     <Text style={styles.cancelText}>Cancel</Text>
@@ -267,6 +334,59 @@ export default function ProfileScreen() {
                 </View>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Enter partner code */}
+      <Modal visible={pairModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Connect with partner</Text>
+            <Text style={styles.modalHint}>Enter your partner's 6-character invite code.</Text>
+            <TextInput
+              style={[styles.modalInput, styles.codeInput]}
+              placeholder="ABC123"
+              placeholderTextColor={Colors.muted}
+              value={partnerCode}
+              onChangeText={(t) => setPartnerCode(t.toUpperCase())}
+              maxLength={6}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              autoFocus
+            />
+            {pairError ? <Text style={styles.errorText}>{pairError}</Text> : null}
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setPairModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleJoinCouple} disabled={pairLoading}>
+                <Text style={styles.saveBtnText}>{pairLoading ? 'Connecting…' : 'Connect'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete account */}
+      <Modal visible={deleteModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Delete account</Text>
+            <Text style={styles.modalHint}>
+              This permanently deletes your account. Your couple's shared data will remain until your partner also deletes their account.
+            </Text>
+            <TextInput style={styles.modalInput} placeholder="Enter your password to confirm"
+              placeholderTextColor={Colors.muted} value={deletePw} onChangeText={setDeletePw} secureTextEntry autoFocus />
+            {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeleteModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={handleDeleteAccount} disabled={saving}>
+                <Text style={styles.saveBtnText}>{saving ? 'Deleting…' : 'Delete'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -291,15 +411,13 @@ const styles = StyleSheet.create({
   avatarWrap: { position: 'relative' },
   avatar: { width: 96, height: 96, borderRadius: 48 },
   avatarFallback: {
-    width: 96, height: 96, borderRadius: 48,
-    backgroundColor: Colors.blush, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: Colors.rose,
+    width: 96, height: 96, borderRadius: 48, backgroundColor: Colors.blush,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.rose,
   },
   avatarInitial: { fontFamily: Fonts.heading, fontSize: 40, color: Colors.burgundy },
   avatarEditBadge: {
-    position: 'absolute', bottom: 0, right: 0,
-    backgroundColor: Colors.burgundy, borderRadius: 16, width: 32, height: 32,
-    alignItems: 'center', justifyContent: 'center',
+    position: 'absolute', bottom: 0, right: 0, backgroundColor: Colors.burgundy,
+    borderRadius: 16, width: 32, height: 32, alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: Colors.cream,
   },
   avatarEditIcon: { fontSize: 14 },
@@ -310,11 +428,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted,
     textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.md,
   },
-
-  card: {
-    backgroundColor: Colors.white, borderRadius: Radius.xl,
-    borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadow.sm,
-  },
+  card: { backgroundColor: Colors.white, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadow.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: 14 },
   rowTextStack: { flex: 1 },
   rowLabel: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text },
@@ -324,26 +438,26 @@ const styles = StyleSheet.create({
   rowChevron: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.muted },
   inviteCode: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy, letterSpacing: 4 },
   divider: { height: 1, backgroundColor: Colors.border, marginHorizontal: Spacing.lg },
-
-  notifOn: { color: Colors.success, fontFamily: Fonts.bodyBold },
-  notifOff: { color: Colors.muted },
+  notifOn: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.success },
+  notifOff: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
   notifHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, paddingHorizontal: Spacing.lg, paddingBottom: 14, lineHeight: 20 },
 
-  signOutBtn: {
-    marginTop: Spacing.lg, paddingVertical: Spacing.md, borderRadius: Radius.full,
-    borderWidth: 1.5, borderColor: Colors.error, alignItems: 'center',
-  },
-  signOutText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.error },
+  signOutBtn: { marginTop: Spacing.lg, paddingVertical: Spacing.md, borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy, alignItems: 'center' },
+  signOutText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  deleteAccountBtn: { paddingVertical: Spacing.sm, alignItems: 'center' },
+  deleteAccountText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
+  modalHint: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, lineHeight: 20 },
   modalInput: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border },
+  codeInput: { fontFamily: Fonts.heading, fontSize: 24, textAlign: 'center', letterSpacing: 8, color: Colors.burgundy },
   modalBtns: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
-  pwError: { fontFamily: Fonts.body, fontSize: 13, color: Colors.error },
+  errorText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.error },
   pwSuccess: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.success, textAlign: 'center', paddingVertical: Spacing.lg },
 });

@@ -4,7 +4,7 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 export interface UserProfile {
@@ -40,9 +40,15 @@ export async function logout(): Promise<void> {
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  // TODO: fetch user profile from Firestore
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? (snap.data() as UserProfile) : null;
+}
+
+export async function disconnectFromCouple(uid: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), {
+    coupleId: deleteField(),
+    inviteCode: deleteField(),
+  });
 }
 
 export async function createUserProfile(
