@@ -17,8 +17,13 @@ export interface UserProfile {
 }
 
 export async function register(email: string, password: string): Promise<User> {
-  // TODO: implement registration + create user doc in Firestore
   const credential = await createUserWithEmailAndPassword(auth, email, password);
+  // Create minimal profile immediately so profile is never null after registration
+  await setDoc(doc(db, 'users', credential.user.uid), {
+    uid: credential.user.uid,
+    name: '',
+    createdAt: Date.now(),
+  });
   return credential.user;
 }
 

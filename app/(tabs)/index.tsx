@@ -30,18 +30,19 @@ export default function HomeScreen() {
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
   const [picking, setPicking] = useState(false);
 
-  // Auto-create couple if user skipped pairing
+  // Auto-create couple if user has no coupleId (handles race conditions from pairing screen)
   useEffect(() => {
-    if (!user || !profile || profile.coupleId) return;
+    if (!user) return;
+    if (profile?.coupleId) return;
     createCouple(user.uid).then((couple) => {
       createUserProfile(user.uid, {
-        name: profile.name ?? '',
-        photoURL: profile.photoURL,
+        name: profile?.name ?? '',
+        photoURL: profile?.photoURL,
         coupleId: couple.id,
         inviteCode: couple.inviteCode,
       });
     });
-  }, [user, profile]);
+  }, [user, profile?.coupleId]);
 
   useEffect(() => {
     if (!user || !profile?.coupleId) return;

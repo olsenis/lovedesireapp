@@ -84,7 +84,11 @@ export default function PairingScreen() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    // Wait for couple creation to finish before navigating
+    if (loadingCreate) {
+      await new Promise((r) => setTimeout(r, 2500));
+    }
     router.replace('/(tabs)');
   };
 
