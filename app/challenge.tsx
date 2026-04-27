@@ -33,8 +33,12 @@ export default function ChallengeScreen() {
     if (!coupleId || starting) return;
     setStarting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await startChallenge(coupleId, program);
-    setStarting(false);
+    try {
+      await startChallenge(coupleId, program);
+    } catch (e) {
+      console.error('startChallenge failed:', e);
+      setStarting(false);
+    }
   };
 
   const handleMark = async () => {
@@ -74,6 +78,13 @@ export default function ChallengeScreen() {
           <View style={{ width: 60 }} />
         </View>
         <ScrollView contentContainerStyle={styles.pickerContent}>
+          {!coupleId && (
+            <View style={styles.noCoupleWarning}>
+              <Text style={styles.noCoupleText}>
+                ⚠️ Your account isn't fully set up yet. Go back to the home screen first.
+              </Text>
+            </View>
+          )}
           <Text style={styles.pickerIntro}>
             A daily practice for 30 days. Each task builds on the last — choose your intensity.
           </Text>
@@ -209,6 +220,8 @@ const styles = StyleSheet.create({
 
   pickerContent: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg, paddingTop: Spacing.lg },
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
+  noCoupleWarning: { backgroundColor: '#FFF3CD', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#F9A825' },
+  noCoupleText: { fontFamily: Fonts.body, fontSize: 14, color: '#7B5200', textAlign: 'center', lineHeight: 20 },
 
   programCard: {
     borderRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.md,

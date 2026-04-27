@@ -33,14 +33,15 @@ const QUICK_ACTIONS = [
 ];
 
 export default function HomeScreen() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
   const [picking, setPicking] = useState(false);
 
+  // Create couple only after auth has fully loaded and user has no coupleId yet
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || !user) return;
     if (profile?.coupleId) return;
     createCouple(user.uid).then((couple) => {
       createUserProfile(user.uid, {
@@ -49,8 +50,8 @@ export default function HomeScreen() {
         coupleId: couple.id,
         inviteCode: couple.inviteCode,
       });
-    });
-  }, [user, profile?.coupleId]);
+    }).catch((e) => console.error('createCouple failed:', e));
+  }, [authLoading, user, profile?.coupleId]);
 
   useEffect(() => {
     if (!user || !profile?.coupleId) return;
@@ -67,8 +68,13 @@ export default function HomeScreen() {
   const handleMoodPick = async (emoji: MoodEmoji) => {
     if (!user || !profile?.coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await setMood(profile.coupleId, user.uid, emoji);
-    setPicking(false);
+    try {
+      await setMood(profile.coupleId, user.uid, emoji);
+      setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
+      setPicking(false);
+    } catch (e) {
+      console.error('setMood failed:', e);
+    }
   };
 
   const handleLogout = async () => {
