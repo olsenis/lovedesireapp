@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Desire — Icon Generator</title>
+  <style>
+    body { background: #1a1a1a; display: flex; flex-direction: column; align-items: center; padding: 40px; font-family: sans-serif; gap: 32px; }
+    h2 { color: #fff; margin: 0; }
+    .row { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+    .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    label { color: #aaa; font-size: 13px; }
+    button { background: #880E4F; color: #fff; border: none; padding: 10px 22px; border-radius: 999px; cursor: pointer; font-size: 14px; font-weight: bold; }
+    button:hover { background: #a01060; }
+  </style>
+</head>
+<body>
+  <h2>Desire App Icon Generator</h2>
+
+  <div class="row">
+    <div class="col">
+      <label>1024×1024 (icon.png)</label>
+      <canvas id="c1024" width="1024" height="1024"></canvas>
+      <button onclick="download('c1024','icon.png')">Download icon.png</button>
+    </div>
+    <div class="col">
+      <label>1024×1024 (adaptive-icon.png — transparent bg)</label>
+      <canvas id="cadapt" width="1024" height="1024"></canvas>
+      <button onclick="download('cadapt','adaptive-icon.png')">Download adaptive-icon.png</button>
+    </div>
+    <div class="col">
+      <label>196×196 (favicon.png)</label>
+      <canvas id="cfav" width="196" height="196"></canvas>
+      <button onclick="download('cfav','favicon.png')">Download favicon.png</button>
+    </div>
+    <div class="col">
+      <label>1024×1024 (splash-icon.png)</label>
+      <canvas id="csplash" width="1024" height="1024"></canvas>
+      <button onclick="download('csplash','splash-icon.png')">Download splash-icon.png</button>
+    </div>
+  </div>
+
+  <script>
+    function drawIcon(canvas, transparentBg) {
+      const ctx = canvas.getContext('2d');
+      const S = canvas.width;
+      const cx = S / 2, cy = S / 2;
+
+      ctx.clearRect(0, 0, S, S);
+
+      if (!transparentBg) {
+        // Rounded square background
+        const r = S * 0.22;
+        ctx.beginPath();
+        ctx.moveTo(r, 0);
+        ctx.lineTo(S - r, 0);
+        ctx.quadraticCurveTo(S, 0, S, r);
+        ctx.lineTo(S, S - r);
+        ctx.quadraticCurveTo(S, S, S - r, S);
+        ctx.lineTo(r, S);
+        ctx.quadraticCurveTo(0, S, 0, S - r);
+        ctx.lineTo(0, r);
+        ctx.quadraticCurveTo(0, 0, r, 0);
+        ctx.closePath();
+
+        // Burgundy gradient
+        const grad = ctx.createRadialGradient(cx, cy * 0.8, 0, cx, cy, S * 0.65);
+        grad.addColorStop(0, '#B01058');
+        grad.addColorStop(0.5, '#880E4F');
+        grad.addColorStop(1, '#5C0832');
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Subtle texture overlay
+        ctx.save();
+        ctx.clip();
+        for (let i = 0; i < S; i += 3) {
+          ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.012})`;
+          ctx.fillRect(i, 0, 1.5, S);
+        }
+        ctx.restore();
+      }
+
+      // === HEART SHAPE ===
+      const heartScale = transparentBg ? 0.72 : 0.60;
+      const heartY = transparentBg ? cy * 1.05 : cy * 1.02;
+
+      ctx.save();
+      ctx.translate(cx, heartY);
+
+      function drawHeart(scale, fillStyle, alpha) {
+        const w = S * scale;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.moveTo(0, w * 0.30);
+        ctx.bezierCurveTo(-w * 0.05, w * 0.10, -w * 0.50, w * 0.00, -w * 0.50, -w * 0.20);
+        ctx.bezierCurveTo(-w * 0.50, -w * 0.44, -w * 0.25, -w * 0.55, 0, -w * 0.32);
+        ctx.bezierCurveTo( w * 0.25, -w * 0.55,  w * 0.50, -w * 0.44,  w * 0.50, -w * 0.20);
+        ctx.bezierCurveTo( w * 0.50,  w * 0.00,  w * 0.05,  w * 0.10, 0,  w * 0.30);
+        ctx.closePath();
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Outer glow
+      drawHeart(heartScale * 1.06, 'rgba(244,167,185,0.18)', 1);
+
+      // Main cream heart
+      const creamGrad = ctx.createRadialGradient(-S * heartScale * 0.1, -S * heartScale * 0.15, 0, 0, 0, S * heartScale * 0.6);
+      creamGrad.addColorStop(0, '#FFF8F0');
+      creamGrad.addColorStop(0.5, '#F8E0E8');
+      creamGrad.addColorStop(1, '#F4A7B9');
+      drawHeart(heartScale, creamGrad, 1);
+
+      // Inner rose highlight
+      drawHeart(heartScale * 0.55, 'rgba(244,167,185,0.45)', 1);
+
+      // Tiny flame tip at top center
+      ctx.save();
+      ctx.globalAlpha = 0.75;
+      const flameH = S * heartScale * 0.38;
+      const flameW = S * heartScale * 0.10;
+      const flameY = -S * heartScale * 0.32;
+      const flameGrad = ctx.createLinearGradient(0, flameY - flameH, 0, flameY);
+      flameGrad.addColorStop(0, 'rgba(255,200,100,0)');
+      flameGrad.addColorStop(0.4, 'rgba(255,160,60,0.6)');
+      flameGrad.addColorStop(1, 'rgba(200,50,50,0.85)');
+      ctx.beginPath();
+      ctx.moveTo(0, flameY);
+      ctx.bezierCurveTo(-flameW * 0.6, flameY - flameH * 0.4, -flameW * 0.3, flameY - flameH * 0.8, 0, flameY - flameH);
+      ctx.bezierCurveTo( flameW * 0.3, flameY - flameH * 0.8, flameW * 0.6, flameY - flameH * 0.4, 0, flameY);
+      ctx.fillStyle = flameGrad;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.restore();
+
+      // === "D" lettermark (subtle, bottom) — only on full icon ===
+      if (!transparentBg && S >= 512) {
+        ctx.save();
+        ctx.globalAlpha = 0.22;
+        ctx.font = `bold ${S * 0.11}px Georgia, serif`;
+        ctx.fillStyle = '#FFF8F0';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('love desire', cx, cy + S * 0.38);
+        ctx.restore();
+      }
+    }
+
+    function drawSplash(canvas) {
+      const ctx = canvas.getContext('2d');
+      const S = canvas.width;
+      const cx = S / 2, cy = S / 2;
+      ctx.clearRect(0, 0, S, S);
+
+      // Cream background
+      ctx.fillStyle = '#FFF8F0';
+      ctx.fillRect(0, 0, S, S);
+
+      // Central icon (smaller, centered)
+      const tmp = document.createElement('canvas');
+      tmp.width = 512; tmp.height = 512;
+      drawIcon(tmp, false);
+      const size = S * 0.35;
+      ctx.drawImage(tmp, cx - size / 2, cy - size / 2, size, size);
+
+      // App name below
+      ctx.font = `${S * 0.08}px Georgia, 'Times New Roman', serif`;
+      ctx.fillStyle = '#880E4F';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Love Desire', cx, cy + size * 0.72);
+    }
+
+    // Render all
+    drawIcon(document.getElementById('c1024'), false);
+    drawIcon(document.getElementById('cadapt'), true);
+    drawIcon(document.getElementById('cfav'), false);
+    drawSplash(document.getElementById('csplash'));
+
+    // Scale preview canvases
+    ['c1024','cadapt','csplash'].forEach(id => {
+      const c = document.getElementById(id);
+      c.style.width = '200px';
+      c.style.height = '200px';
+    });
+    const cfav = document.getElementById('cfav');
+    cfav.style.width = '196px';
+    cfav.style.height = '196px';
+
+    function download(id, filename) {
+      const c = document.getElementById(id);
+      const a = document.createElement('a');
+      a.href = c.toDataURL('image/png');
+      a.download = filename;
+      a.click();
+    }
+  </script>
+</body>
+</html>

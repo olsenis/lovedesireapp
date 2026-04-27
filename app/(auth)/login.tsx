@@ -56,7 +56,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.container}>
-        <Text style={styles.title}>Desire</Text>
+        <Text style={styles.title}>Love Desire</Text>
         <Text style={styles.subtitle}>Your couple's space</Text>
 
         <View style={styles.form}>
