@@ -30,6 +30,7 @@ export default function RouletteScreen() {
       useNativeDriver: true,
     }).start(() => {
       const pool = filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter);
+      if (pool.length === 0) { setSpinning(false); return; }
       const picked = pool[Math.floor(Math.random() * pool.length)];
       setResult(picked);
       setSpinning(false);

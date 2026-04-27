@@ -46,6 +46,9 @@ export async function joinCouple(inviteCode: string, joinerUid: string): Promise
   const coupleDoc = snap.docs[0];
   const couple = coupleDoc.data() as Couple;
 
+  if (couple.partner2Uid) return null; // couple is already full
+  if (couple.partner1Uid === joinerUid) return null; // can't join your own couple
+
   await updateDoc(coupleDoc.ref, { partner2Uid: joinerUid });
   return { ...couple, partner2Uid: joinerUid };
 }

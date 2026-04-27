@@ -19,7 +19,7 @@ import { Spacing, Radius, Shadow } from '../../constants/spacing';
 import { Button } from '../../components/Button';
 
 export default function PairingScreen() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [inviteCode, setInviteCode] = useState('');
   const [partnerCode, setPartnerCode] = useState('');
   const [loadingCreate, setLoadingCreate] = useState(false);
@@ -27,15 +27,19 @@ export default function PairingScreen() {
   const [joinError, setJoinError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Generate invite code on mount if user doesn't have one yet
   useEffect(() => {
-    if (!user) return;
+    if (!user || authLoading) return;
+    // If user already has a couple, just show the existing code
+    if (profile?.inviteCode) {
+      setInviteCode(profile.inviteCode);
+      return;
+    }
+    if (profile?.coupleId) return; // paired but code not in profile — skip
     const generate = async () => {
       setLoadingCreate(true);
       try {
         const couple = await createCouple(user.uid);
         setInviteCode(couple.inviteCode);
-        // Save coupleId to user profile
         await createUserProfile(user.uid, {
           name: profile?.name ?? '',
           photoURL: profile?.photoURL,
@@ -47,7 +51,7 @@ export default function PairingScreen() {
       }
     };
     generate();
-  }, [user]);
+  }, [user, authLoading, profile?.coupleId]);
 
   const handleCopy = async () => {
     await Clipboard.setStringAsync(inviteCode);
@@ -66,7 +70,7 @@ export default function PairingScreen() {
     try {
       const couple = await joinCouple(partnerCode.trim().toUpperCase(), user.uid);
       if (!couple) {
-        setJoinError('Code not found. Check with your partner.');
+        setJoinError('Code not found or couple is already full.');
         return;
       }
       // Save coupleId to this user's profile

@@ -29,6 +29,7 @@ export default function DareScreen() {
       useNativeDriver: true,
     }).start(() => {
       const filtered = DARES.filter((d) => d.level === selectedLevel);
+      if (filtered.length === 0) { setSpinning(false); return; }
       const picked = filtered[Math.floor(Math.random() * filtered.length)];
       setCurrentDare(picked.text);
       setSpinning(false);

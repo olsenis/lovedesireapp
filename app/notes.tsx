@@ -40,11 +40,13 @@ function getOccasionTime(label: string): number {
 function timeLabel(openAt: number): string {
   const diff = openAt - Date.now();
   if (diff <= 0) return 'Ready to open';
+  if (diff < 60000) return 'Opens very soon';
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
-  if (d > 0) return `Opens in ${d}d ${h}h`;
   const m = Math.floor((diff % 3600000) / 60000);
-  return `Opens in ${h}h ${m}m`;
+  if (d > 0) return `Opens in ${d}d${h > 0 ? ` ${h}h` : ''}`;
+  if (h > 0) return `Opens in ${h}h${m > 0 ? ` ${m}m` : ''}`;
+  return `Opens in ${m}m`;
 }
 
 export default function NotesScreen() {

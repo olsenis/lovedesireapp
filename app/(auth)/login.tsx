@@ -33,7 +33,18 @@ export default function LoginScreen() {
       await login(email.trim(), password);
       router.replace('/(tabs)');
     } catch (e: any) {
-      setError('Invalid email or password. Please try again.');
+      const code = e?.code ?? '';
+      if (code === 'auth/network-request-failed') {
+        setError('No internet connection. Please try again.');
+      } else if (code === 'auth/user-disabled') {
+        setError('This account has been disabled.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many attempts. Please wait a moment and try again.');
+      } else if (code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else {
+        setError('Incorrect email or password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

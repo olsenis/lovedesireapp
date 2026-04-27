@@ -21,5 +21,5 @@ export async function saveBlueprintResult(uid: string, scores: Record<BlueprintT
     type: primaryType,
     scores,
     completedAt: Date.now(),
-  });
+  }, { merge: true });
 }

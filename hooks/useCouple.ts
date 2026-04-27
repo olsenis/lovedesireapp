@@ -23,28 +23,28 @@ export function useCouple(myUid: string | null | undefined, coupleId: string | n
       return;
     }
 
+    let seq = 0;
+
     const unsubscribe = onSnapshot(doc(db, 'couples', coupleId), async (snap) => {
+      const thisSeq = ++seq;
+
       if (!snap.exists()) {
-        setState({ couple: null, partner: null, loading: false });
+        if (seq === thisSeq) setState({ couple: null, partner: null, loading: false });
         return;
       }
 
       const couple = { id: snap.id, ...snap.data() } as Couple;
-
-      // Find partner's uid (the other person in the couple)
-      const partnerUid = couple.partner1Uid === myUid
-        ? couple.partner2Uid
-        : couple.partner1Uid;
+      const partnerUid = couple.partner1Uid === myUid ? couple.partner2Uid : couple.partner1Uid;
 
       let partner: UserProfile | null = null;
       if (partnerUid) {
         const partnerSnap = await getDoc(doc(db, 'users', partnerUid));
-        if (partnerSnap.exists()) {
+        if (seq === thisSeq && partnerSnap.exists()) {
           partner = partnerSnap.data() as UserProfile;
         }
       }
 
-      setState({ couple, partner, loading: false });
+      if (seq === thisSeq) setState({ couple, partner, loading: false });
     });
 
     return unsubscribe;

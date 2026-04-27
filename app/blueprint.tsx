@@ -52,7 +52,7 @@ export default function BlueprintScreen() {
 
   const sorted = (Object.entries(scores) as [BlueprintType, number][]).sort((a, b) => b[1] - a[1]);
   const primaryType = sorted[0][0];
-  const secondaryType = sorted[1][0];
+  const secondaryType = sorted.length > 1 ? sorted[1][0] : sorted[0][0];
   const primary = BLUEPRINT_TYPE_CONFIG[primaryType];
   const bridge = BLUEPRINT_COMPATIBILITY[primaryType]?.[secondaryType];
 

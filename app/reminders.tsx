@@ -14,6 +14,7 @@ export default function RemindersScreen() {
   const [message, setMessage] = useState('');
   const [time, setTime] = useState('09:00');
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [timeError, setTimeError] = useState('');
 
   const coupleId = profile?.coupleId;
 
@@ -24,6 +25,11 @@ export default function RemindersScreen() {
 
   const handleSave = async () => {
     if (!message.trim() || !coupleId || !user) return;
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+      setTimeError('Enter a valid time (HH:MM, e.g. 09:00)');
+      return;
+    }
+    setTimeError('');
     await addReminder(coupleId, { message: message.trim(), time, days, active: true, createdBy: user.uid });
     setMessage(''); setShowCreate(false);
   };
@@ -117,10 +123,11 @@ export default function RemindersScreen() {
             <TextInput
               style={[styles.input, { textAlign: 'center', fontFamily: Fonts.heading, fontSize: 24 }]}
               value={time}
-              onChangeText={setTime}
+              onChangeText={(t) => { setTime(t); setTimeError(''); }}
               placeholder="09:00"
               placeholderTextColor={Colors.muted}
             />
+            {timeError ? <Text style={styles.inputError}>{timeError}</Text> : null}
 
             <Text style={styles.modalLabel}>Days</Text>
             <View style={styles.daysRow}>
@@ -227,4 +234,5 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  inputError: { fontFamily: Fonts.body, fontSize: 12, color: Colors.error },
 });

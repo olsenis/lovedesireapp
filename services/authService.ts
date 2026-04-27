@@ -48,10 +48,9 @@ export async function createUserProfile(
   uid: string,
   profile: Omit<UserProfile, 'uid' | 'createdAt'>
 ): Promise<void> {
-  // TODO: create/update user profile in Firestore
   await setDoc(doc(db, 'users', uid), {
     ...profile,
     uid,
     createdAt: Date.now(),
-  });
+  }, { merge: true });
 }

@@ -82,7 +82,7 @@ export default function TogetherScreen() {
 
       <ScrollView contentContainerStyle={styles.list}>
         {incomplete.map((todo) => {
-          const cat = CATEGORIES.find((c) => c.key === todo.category)!;
+          const cat = CATEGORIES.find((c) => c.key === todo.category) ?? CATEGORIES[0];
           return (
             <TodoRow key={todo.id} todo={todo} cat={cat} onToggle={handleToggle} onDelete={handleDelete} />
           );
@@ -92,7 +92,7 @@ export default function TogetherScreen() {
           <>
             <Text style={styles.doneLabel}>Done ✓</Text>
             {complete.map((todo) => {
-              const cat = CATEGORIES.find((c) => c.key === todo.category)!;
+              const cat = CATEGORIES.find((c) => c.key === todo.category) ?? CATEGORIES[0];
               return (
                 <TodoRow key={todo.id} todo={todo} cat={cat} onToggle={handleToggle} onDelete={handleDelete} />
               );

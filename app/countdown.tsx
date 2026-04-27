@@ -16,6 +16,7 @@ export default function CountdownScreen() {
   const [label, setLabel] = useState('');
   const [dateStr, setDateStr] = useState('');
   const [emoji, setEmoji] = useState('❤️');
+  const [dateError, setDateError] = useState('');
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -25,7 +26,8 @@ export default function CountdownScreen() {
   const handleAdd = async () => {
     if (!label.trim() || !dateStr || !profile?.coupleId || !user) return;
     const ts = new Date(dateStr).getTime();
-    if (isNaN(ts)) return;
+    if (isNaN(ts)) { setDateError('Enter a valid date (YYYY-MM-DD)'); return; }
+    setDateError('');
     await addImportantDate(profile.coupleId, label.trim(), ts, emoji, user.uid);
     setLabel(''); setDateStr(''); setShowAdd(false);
   };
@@ -106,7 +108,8 @@ export default function CountdownScreen() {
             </View>
 
             <TextInput style={styles.input} placeholder="Label (e.g. Our Anniversary)" placeholderTextColor={Colors.muted} value={label} onChangeText={setLabel} />
-            <TextInput style={styles.input} placeholder="Date (YYYY-MM-DD)" placeholderTextColor={Colors.muted} value={dateStr} onChangeText={setDateStr} />
+            <TextInput style={styles.input} placeholder="Date (YYYY-MM-DD)" placeholderTextColor={Colors.muted} value={dateStr} onChangeText={(t) => { setDateStr(t); setDateError(''); }} />
+            {dateError ? <Text style={styles.inputError}>{dateError}</Text> : null}
 
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)}>
@@ -186,4 +189,5 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  inputError: { fontFamily: Fonts.body, fontSize: 12, color: Colors.error },
 });

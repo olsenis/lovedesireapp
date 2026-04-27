@@ -3,11 +3,11 @@ import { db } from './firebase';
 import { ChallengeProgram } from '../constants/content';
 
 export interface ChallengeState {
-  program: ChallengeProgram;
+  program: ChallengeProgram | null;
   currentDay: number;
   completedDays: number[];
   startedAt: number;
-  completedBy: Record<number, string[]>; // day -> [uid, uid]
+  completedBy: Record<number, string[]>;
 }
 
 export function subscribeChallenge(coupleId: string, onChange: (state: ChallengeState | null) => void): Unsubscribe {

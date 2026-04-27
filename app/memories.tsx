@@ -68,22 +68,28 @@ export default function MemoriesScreen() {
         )}
 
         {memories.map((m) => (
-          <TouchableOpacity
-            key={m.id}
-            style={styles.card}
-            onLongPress={() => handleDelete(m.id)}
-            activeOpacity={0.92}
-          >
+          <View key={m.id} style={styles.card}>
             <Image source={{ uri: m.photoURL }} style={styles.photo} contentFit="cover" />
             <View style={styles.cardFooter}>
+              <View style={styles.cardFooterRow}>
+                {m.caption ? (
+                  <Text style={[styles.captionText, { flex: 1 }]}>{m.caption}</Text>
+                ) : (
+                  <Text style={[styles.dateText, { flex: 1 }]}>
+                    {new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </Text>
+                )}
+                <TouchableOpacity onPress={() => handleDelete(m.id)} style={styles.deleteBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.deleteTxt}>✕</Text>
+                </TouchableOpacity>
+              </View>
               {m.caption ? (
-                <Text style={styles.captionText}>{m.caption}</Text>
+                <Text style={styles.dateText}>
+                  {new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </Text>
               ) : null}
-              <Text style={styles.dateText}>
-                {new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </Text>
             </View>
-          </TouchableOpacity>
+          </View>
         ))}
       </ScrollView>
 
@@ -168,6 +174,9 @@ const styles = StyleSheet.create({
   cardFooter: { padding: Spacing.md, gap: 4 },
   captionText: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text },
   dateText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
+  cardFooterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  deleteBtn: { padding: 2 },
+  deleteTxt: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },

@@ -22,10 +22,11 @@ export default function TruthDareScreen() {
   const cfg = DARE_LEVEL_CONFIG[level];
 
   const choose = (type: 'truth' | 'dare') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const pool = type === 'truth'
       ? TRUTHS.filter((t) => t.level === level)
       : DARES.filter((d) => d.level === level);
+    if (pool.length === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const picked = pickRandom(pool);
     setCard({ type, text: picked.text });
     setChoosing(false);
