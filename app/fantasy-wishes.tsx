@@ -23,6 +23,7 @@ export default function FantasyWishesScreen() {
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(10);
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
   const help = useHelp('fantasy-wishes');
 
@@ -136,8 +137,15 @@ export default function FantasyWishesScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            {unvoted.length > 0 && <Text style={styles.groupLabel}>To vote on</Text>}
-            {unvoted.map((item) => <WishCard key={item.id} item={item} onVote={handleVote} myVote={null} />)}
+            {unvoted.length > 0 && <Text style={styles.groupLabel}>To vote on ({unvoted.length} remaining)</Text>}
+            {unvoted.slice(0, visibleCount).map((item) => (
+              <WishCard key={item.id} item={item} onVote={(i, v) => { handleVote(i, v); }} myVote={null} />
+            ))}
+            {unvoted.length > visibleCount && (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setVisibleCount((c) => c + 5)} activeOpacity={0.8}>
+                <Text style={styles.loadMoreText}>Load 5 more ({unvoted.length - visibleCount} left) ↓</Text>
+              </TouchableOpacity>
+            )}
             {voted.length > 0 && <Text style={styles.groupLabel}>Already voted</Text>}
             {voted.map((item) => <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />)}
           </>
@@ -260,6 +268,8 @@ const styles = StyleSheet.create({
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
   addBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   resetBtn: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.muted },
+  loadMoreBtn: { paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  loadMoreText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
   infoBanner: { marginHorizontal: Spacing.lg, marginTop: Spacing.sm, backgroundColor: '#F3E5F5', borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.sm },
   infoText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: '#6A1B9A', textAlign: 'center' },
   tabRow: { flexDirection: 'row', marginHorizontal: Spacing.lg, marginBottom: Spacing.md, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
