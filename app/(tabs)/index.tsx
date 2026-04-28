@@ -25,7 +25,7 @@ function getDaysTogether(createdAt: number): number {
 
 const QUICK_ACTIONS = [
   { emoji: '🎲', label: 'Dare Wheel',   route: '/dare',            bg: '#FFF0F3' },
-  { emoji: '🌹', label: 'Wishlist',     route: '/wishlist',        bg: '#FFF8F0' },
+  { emoji: '✨', label: 'Fantasy Wishes', route: '/fantasy-wishes',  bg: '#F3E5F5' },
   { emoji: '💬', label: 'Questions',    route: '/questions-game',  bg: '#FFF0F3' },
   { emoji: '🎰', label: 'Date Night',   route: '/roulette',        bg: '#FFF8F0' },
   { emoji: '💌', label: 'Love Notes',   route: '/notes',           bg: '#FFF0F3' },
@@ -179,8 +179,8 @@ export default function HomeScreen() {
         <View style={styles.dailyWishLeft}>
           <Text style={styles.dailyWishEmoji}>🌹</Text>
           <View>
-            <Text style={styles.dailyWishTitle}>Daily Wishes</Text>
-            <Text style={styles.dailyWishSub}>5 new wishes today · vote privately</Text>
+            <Text style={styles.dailyWishTitle}>Daily Picks</Text>
+            <Text style={styles.dailyWishSub}>5 new picks today · vote privately</Text>
           </View>
         </View>
         <Text style={styles.dailyWishArrow}>›</Text>

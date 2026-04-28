@@ -64,7 +64,7 @@ export default function DailyWishesScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.back}>
             <Text style={styles.backText}>‹ Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Daily Wishes</Text>
+          <Text style={styles.title}>Daily Picks</Text>
           <View style={{ width: 60 }} />
         </View>
       </View>
@@ -77,7 +77,7 @@ export default function DailyWishesScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back}>
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Daily Wishes</Text>
+        <Text style={styles.title}>Daily Picks</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -171,7 +171,7 @@ export default function DailyWishesScreen() {
           );
         })}
 
-        <Text style={styles.refreshHint}>New 5 per category every day ✨</Text>
+        <Text style={styles.refreshHint}>New 5 picks per category every day ✨</Text>
       </ScrollView>
 
       <HelpModal

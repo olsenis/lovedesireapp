@@ -902,6 +902,125 @@ export const DAILY_WISH_CATEGORY_CONFIG: Record<DailyWishCategory, { label: stri
   sexual:  { label: 'Sexual',  emoji: '💋', color: '#FFEBEE', textColor: '#C62828' },
 };
 
+// ─── FANTASY WISHES (merged Wishlist + Fantasy) ───────────────────────────────
+
+export interface FantasyWishesItem {
+  text: string;
+}
+
+// 120 items ordered romantic → intimate → sensual → roleplay → bold → sexual
+// No categories shown in UI — content spans the full spectrum
+export const FANTASY_WISHES_PRESETS: FantasyWishesItem[] = [
+  // Romantic & sweet experiences
+  { text: "Cook dinner together by candlelight" },
+  { text: "Spend a whole lazy Sunday in bed" },
+  { text: "Take a weekend trip somewhere new" },
+  { text: "Write each other love letters to keep forever" },
+  { text: "Watch the sunrise or sunset together" },
+  { text: "Recreate our first date exactly" },
+  { text: "Plan a month of small surprise gestures" },
+  { text: "Write a bucket list of 20 things to do together" },
+  { text: "Take a proper couples portrait photo together" },
+  { text: "Plan a romantic overnight stay somewhere nearby" },
+  { text: "Spend a full day entirely without phones" },
+  { text: "Make a playlist that tells the story of us" },
+  { text: "Dance together in the kitchen to our songs" },
+  { text: "Have breakfast in bed and stay there all morning" },
+  // Adventure & experiences
+  { text: "Take a spontaneous road trip with no plan" },
+  { text: "Go skinny dipping together" },
+  { text: "Try a dance class together" },
+  { text: "Camp overnight under the stars" },
+  { text: "Try cold water swimming together" },
+  { text: "Plan a mystery trip where only one person knows the destination" },
+  { text: "Visit a city neither of us has been to" },
+  { text: "Try an escape room challenge together" },
+  { text: "Go to a festival or event outside our comfort zone" },
+  { text: "Try a couples adrenaline experience — bungee, zip line, or skydive" },
+  // Intimate & tender
+  { text: "Give each other a long full body massage" },
+  { text: "Take a bath together with candles and music" },
+  { text: "Leave flirty notes around the house for a week" },
+  { text: "Spend a whole evening just touching and talking" },
+  { text: "Read to each other in bed" },
+  { text: "Sleep in and spend the morning in bed talking" },
+  { text: "Spend an evening focused only on physical touch — no screens" },
+  { text: "Give each other a full facial and skin care treatment" },
+  { text: "Share a bath and take turns washing each other's hair" },
+  { text: "Try a guided couples breathing or meditation exercise" },
+  { text: "Write down everything we love about each other and read in silence" },
+  { text: "Spend a whole night in total darkness — touch only" },
+  { text: "Give each other a foot and hand massage while talking" },
+  // Sensual experiences
+  { text: "Full-body massage by candlelight with no goal except touch" },
+  { text: "A bath together where you wash each other slowly" },
+  { text: "Lying together in complete silence, exploring touch for one hour" },
+  { text: "A blindfolded sensory experience — warm, cold, soft, rough" },
+  { text: "Dancing slowly together in the dark to a playlist made for the night" },
+  { text: "Being undressed slowly with only hands and lips" },
+  { text: "A full evening where one partner is focused entirely on pleasuring the other" },
+  { text: "Waking each other up with slow, gentle touch" },
+  { text: "Feather-light touch across the whole body for 30 minutes" },
+  { text: "One partner controls the pace and pressure the entire evening" },
+  { text: "A slow-burn evening — no rushing, no goal, just presence" },
+  { text: "Lying face to face breathing together until completely connected" },
+  // Roleplay scenarios
+  { text: "Strangers meeting for the first time at a bar" },
+  { text: "Hotel check-in with a mysterious stranger" },
+  { text: "Boss and employee after hours" },
+  { text: "Royalty and devoted servant" },
+  { text: "Celebrity and fan meeting backstage" },
+  { text: "Forbidden attraction between neighbors" },
+  { text: "Photographer and model session" },
+  { text: "Old flames reuniting after years apart" },
+  { text: "Two strangers sharing a cabin on a night train" },
+  { text: "A masquerade — you don't know who the other person is" },
+  { text: "A dare game that goes further than expected" },
+  { text: "First night in a new city — no one knows who you are" },
+  // Bold & adventurous intimate
+  { text: "A hotel room booked for nothing except pleasure" },
+  { text: "Outdoors under the stars — somewhere private and remote" },
+  { text: "A cabin in the woods with no other people for miles" },
+  { text: "In water — pool, lake, or ocean" },
+  { text: "In a car in a remote location" },
+  { text: "A balcony at night with a view" },
+  { text: "A private beach at dusk or dawn" },
+  { text: "An outdoor hot tub" },
+  { text: "Somewhere you've always thought about but never done" },
+  { text: "A hotel where neither of you has ever been — completely anonymous" },
+  // Spicy experiences
+  { text: "Try something completely new together in the bedroom" },
+  { text: "Do a sensory experience — blindfold massage" },
+  { text: "Roleplay a fantasy scenario together" },
+  { text: "Write each other intimate letters and read them aloud" },
+  { text: "Take intimate photos together (private, just for us)" },
+  { text: "Send each other provocative voice messages during the day" },
+  { text: "Act out a full fantasy scenario — from beginning to end" },
+  { text: "Have a full 'yes night' — one partner sets the whole agenda" },
+  { text: "Mirror each other's touch — one leads, one follows exactly" },
+  { text: "Use ice, warmth, and touch in a full sensory massage" },
+  { text: "Spend a whole weekend focused on rekindling physical intimacy" },
+  { text: "Plan a hotel night entirely focused on pleasure" },
+  // Bold explicit
+  { text: "Try edging — building and pausing, over and over" },
+  { text: "Consensual light restraint — wrists, agreed in advance" },
+  { text: "Temperature play — ice and warmth explored together" },
+  { text: "Sensory deprivation — blindfold and stillness" },
+  { text: "Being told exactly what to do for one whole evening" },
+  { text: "One partner chooses everything — the other agrees to it all beforehand" },
+  { text: "Role reversal — whoever usually leads gives up control" },
+  { text: "Taking turns reading erotic scenarios aloud and reacting" },
+  { text: "A private photo or video session together" },
+  { text: "A night with absolutely no agenda except full presence and pleasure" },
+  { text: "Try double penetration with a toy" },
+  { text: "Use a vibrating couples toy simultaneously" },
+  { text: "Watch each other — use a mirror throughout" },
+  { text: "Try consensual restraint — soft, fully agreed in advance" },
+  { text: "Act out a full power-exchange scenario — from setup to resolution" },
+];
+
+// ─── DAILY WISH ITEMS ──────────────────────────────────────────────────────────
+
 const sw = (text: string): DailyWishItem => ({ id: `sw-${text.slice(0,20)}`, text, category: 'sweet' });
 const fl = (text: string): DailyWishItem => ({ id: `fl-${text.slice(0,20)}`, text, category: 'flirty' });
 const sp = (text: string): DailyWishItem => ({ id: `sp-${text.slice(0,20)}`, text, category: 'spicy' });
