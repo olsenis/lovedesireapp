@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -18,6 +18,7 @@ export default function DailyWishesScreen() {
   const [dailyDoc, setDailyDoc] = useState<DailyWishDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState<DailyWishCategory>('sweet');
+  const scrollRef = useRef<ScrollView>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -86,7 +87,7 @@ export default function DailyWishesScreen() {
             <TouchableOpacity
               key={cat}
               style={[styles.catTab, active && { backgroundColor: c.color }]}
-              onPress={() => { setSelectedCat(cat); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              onPress={() => { setSelectedCat(cat); scrollRef.current?.scrollTo({ y: 0, animated: false }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               activeOpacity={0.8}
             >
               <Text style={styles.catTabEmoji}>{c.emoji}</Text>
@@ -98,7 +99,7 @@ export default function DailyWishesScreen() {
         })}
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Progress for this category */}
         <View style={[styles.progressCard, { borderLeftColor: cfg.textColor }]}>
