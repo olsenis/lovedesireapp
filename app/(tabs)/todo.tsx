@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal 
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { Todo, TodoCategory, subscribeTodos, addTodo, toggleTodo, deleteTodo } from '../../services/todoService';
+import { useHelp } from '../../hooks/useHelp';
+import { HelpModal } from '../../components/HelpModal';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius } from '../../constants/spacing';
@@ -19,6 +21,7 @@ export default function TogetherScreen() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<TodoCategory | 'all'>('all');
   const [showAdd, setShowAdd] = useState(false);
+  const help = useHelp('together-list');
   const [newText, setNewText] = useState('');
   const [newCat, setNewCat] = useState<TodoCategory>('daily');
 
@@ -144,6 +147,20 @@ export default function TogetherScreen() {
           </View>
         </View>
       </Modal>
+
+      <HelpModal
+        visible={help.visible}
+        title="Together List"
+        description="A shared to-do list that both of you can add to and check off in real time."
+        tips={[
+          'Tap + Add to add a new item',
+          'Choose a category — Daily Life, Date Ideas, Intimacy, or Goals',
+          'Tap the circle to mark something done',
+          'Both partners see all changes instantly',
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }
