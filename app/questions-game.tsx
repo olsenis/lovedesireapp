@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { QUESTIONS, QUESTION_CATEGORY_CONFIG, QuestionCategory } from '../constants/content';
+import { QUESTION_CATEGORY_CONFIG, QuestionCategory } from '../constants/content';
 import {
   DailyQuestionDoc, subscribeDailyQuestions, markDiscussed, bothDiscussed,
 } from '../services/dailyQuestionsService';
@@ -20,11 +20,8 @@ export default function QuestionsGameScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
 
-  const [mode, setMode] = useState<'daily' | 'free'>('daily');
   const help = useHelp('questions');
   const [category, setCategory] = useState<QuestionCategory>('romantic');
-  const [index, setIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
   const [dailyDoc, setDailyDoc] = useState<DailyQuestionDoc | null>(null);
 
   const coupleId = profile?.coupleId;
@@ -32,27 +29,9 @@ export default function QuestionsGameScreen() {
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
 
   useEffect(() => {
-    if (!coupleId || mode !== 'daily') return;
+    if (!coupleId) return;
     return subscribeDailyQuestions(coupleId, setDailyDoc);
-  }, [coupleId, mode]);
-
-  // ── Free mode ────────────────────────────────────────────────────────────
-  const freeFiltered = QUESTIONS.filter((q) => q.category === category);
-  const freeCurrent = freeFiltered[index % freeFiltered.length];
-  const freeCfg = QUESTION_CATEGORY_CONFIG[category];
-
-  const next = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIndex((i) => (i + 1) % freeFiltered.length);
-    setFlipped(false);
-  };
-
-  const flip = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setFlipped((f) => !f);
-  };
-
-  // ── Daily mode ───────────────────────────────────────────────────────────
+  }, [coupleId]);
   const dailyCatItems = (dailyDoc?.items ?? [])
     .map((q, gi) => ({ q, gi }))
     .filter(({ q }) => q.category === category);
@@ -83,27 +62,6 @@ export default function QuestionsGameScreen() {
         <View style={{ width: 60 }} />
       </View>
 
-      {/* Mode toggle */}
-      <View style={styles.modeRow}>
-        <TouchableOpacity
-          style={[styles.modeBtn, mode === 'daily' && styles.modeBtnActive]}
-          onPress={() => setMode('daily')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.modeBtnText, mode === 'daily' && styles.modeBtnTextActive]}>
-            📅 Daily · 3/day
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modeBtn, mode === 'free' && styles.modeBtnActive]}
-          onPress={() => setMode('free')}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.modeBtnText, mode === 'free' && styles.modeBtnTextActive]}>
-            ∞ Free · all
-          </Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Category tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={styles.catRow}>
@@ -114,7 +72,7 @@ export default function QuestionsGameScreen() {
             <TouchableOpacity
               key={cat}
               style={[styles.catBtn, active && { backgroundColor: c.color, borderColor: Colors.border }]}
-              onPress={() => { setCategory(cat); setIndex(0); setFlipped(false); }}
+              onPress={() => { setCategory(cat); }}
               activeOpacity={0.8}
             >
               <Text style={styles.catEmoji}>{c.emoji}</Text>
@@ -124,9 +82,7 @@ export default function QuestionsGameScreen() {
         })}
       </ScrollView>
 
-      {/* ── Daily mode ──────────────────────────────────────────────────── */}
-      {mode === 'daily' ? (
-        <ScrollView contentContainerStyle={styles.dailyContent}>
+      <ScrollView contentContainerStyle={styles.dailyContent}>
           {/* Progress */}
           <View style={[styles.dailyProgress, { borderLeftColor: dailyCfg.color }]}>
             <Text style={styles.dailyProgressText}>
@@ -173,57 +129,16 @@ export default function QuestionsGameScreen() {
             <Text style={styles.loadingText}>Loading today's questions…</Text>
           )}
         </ScrollView>
-      ) : (
-        /* ── Free mode ────────────────────────────────────────────────── */
-        <View style={styles.content}>
-          <View style={styles.progressWrap}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${((index % freeFiltered.length) / freeFiltered.length) * 100}%` }]} />
-            </View>
-            <Text style={styles.progressText}>{(index % freeFiltered.length) + 1} / {freeFiltered.length}</Text>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.card, { backgroundColor: flipped ? Colors.white : freeCfg.color }]}
-            onPress={flip}
-            activeOpacity={0.92}
-          >
-            {!flipped ? (
-              <View style={styles.cardFront}>
-                <Text style={styles.cardEmoji}>{freeCfg.emoji}</Text>
-                <Text style={styles.cardCategory}>{freeCfg.label}</Text>
-                <Text style={styles.cardQuestion}>{freeCurrent.text}</Text>
-                <View style={styles.hintPill}>
-                  <Text style={styles.cardHint}>Tap to discuss</Text>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.cardFront}>
-                <Text style={styles.cardEmoji}>💬</Text>
-                <Text style={styles.cardCategory}>Answer time!</Text>
-                <Text style={styles.cardQuestion}>{freeCurrent.text}</Text>
-                <View style={styles.hintPill}>
-                  <Text style={styles.cardHint}>Each of you answer — then share</Text>
-                </View>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.nextBtn} onPress={next}>
-            <Text style={styles.nextBtnText}>Next question →</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       <HelpModal
         visible={help.visible}
         title="Questions Game"
-        description="Two modes — Daily gives you 3 questions per category each day to discuss with your partner. Free lets you go through all questions freely."
+        description="3 questions per category every day — both partners see the same ones. Discuss each together and mark it done."
         tips={[
-          "Daily mode: both partners see the same 3 questions",
+          "Both partners see the same 3 questions each day",
+          "Choose a category — Fun, Deep, Romantic, Spicy, Therapy, or Fantasy",
           "Tap 'We discussed this' when you've talked about it",
           "When your partner also taps it → '✓ Both discussed'",
-          "Free mode: flip cards, go through as many as you like",
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

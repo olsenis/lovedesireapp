@@ -5,6 +5,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
 import { Memory, subscribeMemories, addMemory, deleteMemory } from '../services/memoryService';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -13,6 +15,7 @@ export default function MemoriesScreen() {
   const { user, profile } = useAuth();
   const [memories, setMemories] = useState<Memory[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const help = useHelp('memories');
   const [photoURI, setPhotoURI] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
 
@@ -128,6 +131,19 @@ export default function MemoriesScreen() {
           </View>
         </View>
       </Modal>
+
+      <HelpModal
+        visible={help.visible}
+        title="Memories"
+        description="A private shared photo album — only the two of you can see it."
+        tips={[
+          'Tap + Add to add a photo with an optional caption',
+          'Tap ✕ to delete a memory',
+          'Photos are private — not visible to anyone else',
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

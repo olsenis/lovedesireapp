@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { subscribeNotes, createNote, openNote, LoveNote } from '../services/noteService';
 import { notifyPartner } from '../services/notificationService';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -54,6 +56,7 @@ export default function NotesScreen() {
   const { user, profile } = useAuth();
   const [notes, setNotes] = useState<LoveNote[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const help = useHelp('love-notes');
   const [message, setMessage] = useState('');
   const [occasion, setOccasion] = useState(OCCASIONS[0].label);
   const [openedNote, setOpenedNote] = useState<LoveNote | null>(null);
@@ -207,6 +210,20 @@ export default function NotesScreen() {
           </TouchableOpacity>
         </Modal>
       )}
+
+      <HelpModal
+        visible={help.visible}
+        title="Love Notes"
+        description="Write a timed message that your partner can't open until the moment you choose."
+        tips={[
+          'Tap Write to compose a note',
+          'Choose when it unlocks — right now, tonight, tomorrow, or next week',
+          'Partner sees it exists but can\'t read it until the time comes',
+          'Tap a ready note to open it',
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

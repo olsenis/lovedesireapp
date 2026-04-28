@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, ScrollView 
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { DATE_IDEAS, DateIdea } from '../constants/content';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -15,6 +17,7 @@ export default function RouletteScreen() {
   const [spinning, setSpinning] = useState(false);
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [filter, setFilter] = useState<'all' | 'home' | 'out' | 'adventure'>('all');
+  const help = useHelp('date-night');
 
   const spin = () => {
     if (spinning) return;
@@ -112,6 +115,20 @@ export default function RouletteScreen() {
           </View>
         ))}
       </ScrollView>
+
+      <HelpModal
+        visible={help.visible}
+        title="Date Night Roulette"
+        description="Let fate decide your next date. Spin for a random date idea from 48 options across three types."
+        tips={[
+          'Filter by At Home, Going Out, or Adventure',
+          'Spin and get a random date idea',
+          'Tap Try again to get a different one',
+          'Browse all 48 ideas in the list below',
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }
