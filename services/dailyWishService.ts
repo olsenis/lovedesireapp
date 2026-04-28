@@ -44,7 +44,16 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
   const ref = doc(db, 'couples', coupleId, 'dailyWishes', date);
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
-      onChange(snap.data() as DailyWishDoc);
+      const existing = snap.data() as DailyWishDoc;
+      // Migrate old format: was 5 items total, now 20 (5 per category)
+      if (existing.items.length < 20) {
+        const items = pickDailyItems(date, coupleId);
+        const migrated: DailyWishDoc = { date, items, votes: {} };
+        await setDoc(ref, migrated);
+        onChange(migrated);
+      } else {
+        onChange(existing);
+      }
     } else {
       const items = pickDailyItems(date, coupleId);
       const newDoc: DailyWishDoc = { date, items, votes: {} };
