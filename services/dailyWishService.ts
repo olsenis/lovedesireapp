@@ -1,32 +1,42 @@
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
-import { DAILY_WISH_ITEMS, DailyWishItem } from '../constants/content';
+import { DAILY_WISH_ITEMS, DailyWishItem, DailyWishCategory } from '../constants/content';
 
 export type DailyVote = 'yes' | 'no';
 
 export interface DailyWishDoc {
   date: string;
-  items: DailyWishItem[];
-  votes: Record<string, Record<number, DailyVote>>; // { uid: { index: vote } }
+  items: DailyWishItem[];                              // 20 items: 5 per category
+  votes: Record<string, Record<number, DailyVote>>;   // { uid: { globalIndex: vote } }
 }
 
 function todayKey(): string {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  return new Date().toISOString().slice(0, 10);
 }
 
-function pickDailyItems(date: string, coupleId: string, count = 5): DailyWishItem[] {
-  // Deterministic shuffle based on date + coupleId so both partners get same items
+function deterministicShuffle(pool: DailyWishItem[], seedStr: string): DailyWishItem[] {
   let seed = 0;
-  for (let i = 0; i < (date + coupleId).length; i++) {
-    seed = ((seed << 5) - seed + (date + coupleId).charCodeAt(i)) | 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    seed = ((seed << 5) - seed + seedStr.charCodeAt(i)) | 0;
   }
-  const pool = [...DAILY_WISH_ITEMS];
-  for (let i = pool.length - 1; i > 0; i--) {
+  const arr = [...pool];
+  for (let i = arr.length - 1; i > 0; i--) {
     seed = (Math.imul(seed, 1664525) + 1013904223) | 0;
     const j = Math.abs(seed) % (i + 1);
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return pool.slice(0, count);
+  return arr;
+}
+
+function pickDailyItems(date: string, coupleId: string): DailyWishItem[] {
+  const categories: DailyWishCategory[] = ['sweet', 'flirty', 'spicy', 'sexual'];
+  const result: DailyWishItem[] = [];
+  for (const cat of categories) {
+    const pool = DAILY_WISH_ITEMS.filter((i) => i.category === cat);
+    const shuffled = deterministicShuffle(pool, date + coupleId + cat);
+    result.push(...shuffled.slice(0, 5));
+  }
+  return result; // 20 items total: sweet[0-4], flirty[5-9], spicy[10-14], sexual[15-19]
 }
 
 export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWishDoc) => void): Unsubscribe {
@@ -36,7 +46,6 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
     if (snap.exists()) {
       onChange(snap.data() as DailyWishDoc);
     } else {
-      // First access today — generate and store
       const items = pickDailyItems(date, coupleId);
       const newDoc: DailyWishDoc = { date, items, votes: {} };
       await setDoc(ref, newDoc);
@@ -48,12 +57,12 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
 export async function voteDailyWish(
   coupleId: string,
   uid: string,
-  itemIndex: number,
+  globalIndex: number,
   vote: DailyVote
 ): Promise<void> {
   const date = todayKey();
   await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', date), {
-    [`votes.${uid}.${itemIndex}`]: vote,
+    [`votes.${uid}.${globalIndex}`]: vote,
   });
 }
 
