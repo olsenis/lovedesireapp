@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { notifyPartner } from '../services/notificationService';
+import { addTodo } from '../services/todoService';
 import {
   WishlistItem, WishCategory, WishVote,
   WISH_CATEGORY_CONFIG, subscribeWishlist, addWishlistItem, voteOnWish, isMatch,
@@ -24,6 +25,7 @@ export default function WishlistScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [newText, setNewText] = useState('');
   const [newCat, setNewCat] = useState<WishCategory>('romantic');
+  const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
 
   const coupleId = profile?.coupleId;
   const partnerId = couple?.partner1Uid === user?.uid ? couple?.partner2Uid : couple?.partner1Uid;
@@ -43,6 +45,13 @@ export default function WishlistScreen() {
         notifyPartner(coupleId, user.uid, 'New match 🌹', "You both want the same thing").catch(() => {});
       }
     }
+  };
+
+  const handleAddToTogether = async (item: WishlistItem) => {
+    if (!coupleId || !user || addedToList.has(item.id)) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await addTodo(coupleId, item.text, 'dates', user.uid);
+    setAddedToList((prev) => new Set(prev).add(item.id));
   };
 
   const handleAdd = async () => {
@@ -119,12 +128,23 @@ export default function WishlistScreen() {
             ) : (
               matched.map((item) => {
                 const cfg = WISH_CATEGORY_CONFIG[item.category];
+                const added = addedToList.has(item.id);
                 return (
                   <View key={item.id} style={[styles.matchCard, { backgroundColor: cfg.color }]}>
                     <Text style={styles.matchEmoji}>{cfg.emoji}</Text>
                     <View style={styles.matchInfo}>
                       <Text style={styles.matchText}>{item.text}</Text>
                       <Text style={styles.matchBadge}>✓ Both want this!</Text>
+                      <TouchableOpacity
+                        style={[styles.addToListBtn, added && styles.addToListBtnDone]}
+                        onPress={() => handleAddToTogether(item)}
+                        activeOpacity={0.8}
+                        disabled={added}
+                      >
+                        <Text style={styles.addToListBtnText}>
+                          {added ? '✓ Added to Together List' : '+ Add to Together List'}
+                        </Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 );
@@ -261,6 +281,9 @@ const styles = StyleSheet.create({
   matchInfo: { flex: 1, gap: 4 },
   matchText: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.text },
   matchBadge: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success },
+  addToListBtn: { marginTop: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, borderRadius: Radius.full, backgroundColor: 'rgba(0,0,0,0.08)' },
+  addToListBtnDone: { backgroundColor: 'rgba(76,175,80,0.15)' },
+  addToListBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.text },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
