@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -86,6 +88,7 @@ const STAGES: Stage[] = [
 export default function SensateScreen() {
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
   const [running, setRunning] = useState(false);
+  const help = useHelp('sensate');
   const [elapsed, setElapsed] = useState(0);
   const [promptIndex, setPromptIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -248,6 +251,20 @@ export default function SensateScreen() {
           </Text>
         )}
       </ScrollView>
+
+      <HelpModal
+        visible={help.visible}
+        title="Sensate Focus"
+        description="A research-backed approach from sex therapy (Masters & Johnson) for rekindling physical intimacy through mindful touch."
+        tips={[
+          '3 progressive stages — start with Stage 1',
+          'Stage 1: non-sexual touch only, 15 min each',
+          'Stage 2: full body, still no goal, 20 min each',
+          'Stage 3: no timer, no goal — just presence and sensation',
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

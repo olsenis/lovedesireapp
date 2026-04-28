@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Modal, Alert, Platform,
+  TextInput, Modal, Alert, Platform, Switch,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
 import { joinCouple } from '../services/coupleService';
+import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -40,6 +41,24 @@ export default function ProfileScreen() {
   const [deleteError, setDeleteError] = useState('');
 
   const [saving, setSaving] = useState(false);
+  const [helpOn, setHelpOn] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    getHelpState(user.uid).then((s) => setHelpOn(s.enabled));
+  }, [user]);
+
+  const toggleHelp = async (val: boolean) => {
+    setHelpOn(val);
+    if (user) await setHelpEnabled(user.uid, val);
+  };
+
+  const handleResetHelp = async () => {
+    if (!user) return;
+    await resetHelp(user.uid);
+    setHelpOn(true);
+    Alert.alert('Help reset', 'All feature hints will show again.');
+  };
 
   const isConnected = !!couple?.partner2Uid;
   const daysStr = couple
@@ -273,6 +292,32 @@ export default function ProfileScreen() {
               <Text style={styles.notifHint}>
                 Open your device Settings → Notifications → Love Desire to enable.
               </Text>
+            </>
+          )}
+        </View>
+
+        {/* Help */}
+        <Text style={styles.sectionLabel}>Help</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>Feature hints</Text>
+              <Text style={styles.rowHint}>Show how-it-works popup on first visit</Text>
+            </View>
+            <Switch
+              value={helpOn}
+              onValueChange={toggleHelp}
+              trackColor={{ false: Colors.border, true: Colors.rose }}
+              thumbColor={helpOn ? Colors.burgundy : Colors.muted}
+            />
+          </View>
+          {helpOn && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.row} onPress={handleResetHelp}>
+                <Text style={styles.rowLabel}>Reset all hints</Text>
+                <Text style={styles.rowChevron}>›</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>

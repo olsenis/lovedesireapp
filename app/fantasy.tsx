@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
 import { FantasyItem, FantasyVote, subscribeFantasy, addFantasyItem, voteOnFantasy, isFantasyMatch } from '../services/fantasyService';
 import { FANTASY_PRESETS, FANTASY_CATEGORY_CONFIG, FantasyCategory } from '../constants/content';
@@ -22,6 +24,7 @@ export default function FantasyScreen() {
   const [newText, setNewText] = useState('');
   const [newCat, setNewCat] = useState<FantasyCategory>('sensual');
   const [loadingPresets, setLoadingPresets] = useState(false);
+  const help = useHelp('fantasy');
 
   const coupleId = profile?.coupleId;
   const partnerId = couple?.partner1Uid === user?.uid ? couple?.partner2Uid : couple?.partner1Uid;
@@ -180,6 +183,20 @@ export default function FantasyScreen() {
           </View>
         </View>
       </Modal>
+
+      <HelpModal
+        visible={help.visible}
+        title="Fantasy Match"
+        description="Explore fantasies privately. Like Wishlist but for intimate scenarios — completely double-blind. Only mutual Yes matches are shown."
+        tips={[
+          'Rate each scenario privately',
+          'Partner never sees your individual choices',
+          'Mutual Yes → match revealed to both',
+          'Add your own scenarios with + Add',
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

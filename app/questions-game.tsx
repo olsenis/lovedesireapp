@@ -8,6 +8,8 @@ import { QUESTIONS, QUESTION_CATEGORY_CONFIG, QuestionCategory } from '../consta
 import {
   DailyQuestionDoc, subscribeDailyQuestions, markDiscussed, bothDiscussed,
 } from '../services/dailyQuestionsService';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -19,6 +21,7 @@ export default function QuestionsGameScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
 
   const [mode, setMode] = useState<'daily' | 'free'>('daily');
+  const help = useHelp('questions');
   const [category, setCategory] = useState<QuestionCategory>('romantic');
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -211,6 +214,20 @@ export default function QuestionsGameScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <HelpModal
+        visible={help.visible}
+        title="Questions Game"
+        description="Two modes — Daily gives you 3 questions per category each day to discuss with your partner. Free lets you go through all questions freely."
+        tips={[
+          "Daily mode: both partners see the same 3 questions",
+          "Tap 'We discussed this' when you've talked about it",
+          "When your partner also taps it → '✓ Both discussed'",
+          "Free mode: flip cards, go through as many as you like",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

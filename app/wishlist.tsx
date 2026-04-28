@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
 import {
@@ -26,6 +28,7 @@ export default function WishlistScreen() {
   const [newText, setNewText] = useState('');
   const [newCat, setNewCat] = useState<WishCategory>('romantic');
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
+  const help = useHelp('wishlist');
 
   const coupleId = profile?.coupleId;
   const partnerId = couple?.partner1Uid === user?.uid ? couple?.partner2Uid : couple?.partner1Uid;
@@ -193,6 +196,20 @@ export default function WishlistScreen() {
           </View>
         </View>
       </Modal>
+
+      <HelpModal
+        visible={help.visible}
+        title="Shared Wishlist"
+        description="Vote on shared experiences privately. Your partner never sees your individual votes — only mutual Yes matches are ever revealed."
+        tips={[
+          'Tap ✓ Yes, ~ Maybe, or ✗ No on each wish',
+          'Your votes are always private',
+          'When you both say Yes → it appears in Matches',
+          "Tap 'Add to Together List' on matches to plan them",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

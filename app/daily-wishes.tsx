@@ -6,6 +6,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { DailyWishDoc, DailyVote, subscribeDailyWishes, voteDailyWish, isMatch } from '../services/dailyWishService';
 import { DAILY_WISH_CATEGORY_CONFIG, DailyWishCategory } from '../constants/content';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -19,6 +21,7 @@ export default function DailyWishesScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState<DailyWishCategory>('sweet');
   const scrollRef = useRef<ScrollView>(null);
+  const help = useHelp('daily-wishes');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -170,6 +173,20 @@ export default function DailyWishesScreen() {
 
         <Text style={styles.refreshHint}>New 5 per category every day ✨</Text>
       </ScrollView>
+
+      <HelpModal
+        visible={help.visible}
+        title="Daily Wishes"
+        description="Every day you and your partner each get 5 new wishes per category to vote on — privately."
+        tips={[
+          "Tap ✓ Yes or ✗ Not for me on each wish",
+          "Your partner never sees your individual votes",
+          "When you both say Yes → it becomes a match",
+          "New 5 wishes appear in each category every day",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

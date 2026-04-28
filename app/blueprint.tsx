@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { saveBlueprintResult, subscribeCoupleBlueprints, CoupleBlueprints } from '../services/blueprintService';
 import {
   BLUEPRINT_QUESTIONS, BLUEPRINT_TYPE_CONFIG, BLUEPRINT_COMPATIBILITY,
@@ -22,6 +24,7 @@ export default function BlueprintScreen() {
   const [scores, setScores] = useState<Record<BlueprintType, number>>({ sensual: 0, sexual: 0, energetic: 0, kinky: 0, shapeshifter: 0 });
   const [done, setDone] = useState(false);
   const [coupleResults, setCoupleResults] = useState<CoupleBlueprints>({});
+  const help = useHelp('blueprint');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -197,6 +200,20 @@ export default function BlueprintScreen() {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      <HelpModal
+        visible={help.visible}
+        title="Erotic Blueprint"
+        description="15 questions that identify your erotic type — how you feel most alive in intimacy. When both partners complete it, your compatibility appears."
+        tips={[
+          '5 types: Sensual, Sexual, Energetic, Kinky, Shapeshifter',
+          'Answer honestly — no right or wrong type',
+          "When both complete it: see your partner's type + compatibility tips",
+          'Includes 3 actionable tips for your specific combination',
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }
