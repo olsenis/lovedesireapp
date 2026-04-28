@@ -6,6 +6,8 @@ import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LoveLanguage } from '../constants
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 
 const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 
@@ -13,6 +15,7 @@ export default function QuizScreen() {
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<Record<LoveLanguage, number>>({ words: 0, acts: 0, gifts: 0, time: 0, touch: 0 });
   const [done, setDone] = useState(false);
+  const help = useHelp('love-language');
 
   const q = QUIZ_QUESTIONS[step];
 
@@ -104,6 +107,20 @@ export default function QuizScreen() {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      <HelpModal
+        visible={help.visible}
+        title="Love Language Quiz"
+        description="10 questions that reveal how you feel most loved — through words, acts, gifts, time, or touch."
+        tips={[
+          "Choose A or B for each question — go with your gut",
+          "Results show your primary love language",
+          "Share your result with your partner so they know how to love you best",
+          "Retake the quiz if your preferences change over time",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

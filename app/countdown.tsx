@@ -6,6 +6,8 @@ import { ImportantDate, subscribeDates, addImportantDate, deleteImportantDate, g
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 
 const EMOJIS = ['❤️', '💍', '🎂', '✈️', '🎉', '🌹', '⭐', '🏠', '🐾', '🌟'];
 
@@ -17,6 +19,7 @@ export default function CountdownScreen() {
   const [dateStr, setDateStr] = useState('');
   const [emoji, setEmoji] = useState('❤️');
   const [dateError, setDateError] = useState('');
+  const help = useHelp('countdowns');
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -122,6 +125,20 @@ export default function CountdownScreen() {
           </View>
         </View>
       </Modal>
+
+      <HelpModal
+        visible={help.visible}
+        title="Countdowns"
+        description="Track important dates and see how many days until they arrive."
+        tips={[
+          "Tap + Add to add a date",
+          "Choose an emoji and enter the label and date (YYYY-MM-DD)",
+          "Dates are sorted by how soon they arrive",
+          "On the day itself it shows 🎉 Today!",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

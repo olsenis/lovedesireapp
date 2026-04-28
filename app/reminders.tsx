@@ -6,6 +6,8 @@ import { FlirtReminder, DAY_LABELS, REMINDER_SUGGESTIONS, subscribeReminders, ad
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 
 export default function RemindersScreen() {
   const { user, profile } = useAuth();
@@ -15,6 +17,7 @@ export default function RemindersScreen() {
   const [time, setTime] = useState('09:00');
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [timeError, setTimeError] = useState('');
+  const help = useHelp('reminders');
 
   const coupleId = profile?.coupleId;
 
@@ -154,6 +157,20 @@ export default function RemindersScreen() {
           </View>
         </View>
       </Modal>
+
+      <HelpModal
+        visible={help.visible}
+        title="Flirt Reminders"
+        description="Schedule daily nudges that arrive as notifications — reminders to do something sweet or flirty for your partner."
+        tips={[
+          "Tap + New to create a reminder",
+          "Set a time and which days of the week",
+          "Toggle the switch to turn a reminder on or off",
+          "Tap a Suggestion to pre-fill the message",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

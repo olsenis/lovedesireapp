@@ -6,6 +6,8 @@ import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/conten
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 
 const LEVELS: DareLevel[] = ['sweet', 'flirty', 'spicy'];
 
@@ -18,6 +20,7 @@ export default function TruthDareScreen() {
   const [turn, setTurn] = useState<'A' | 'B'>('A');
   const [card, setCard] = useState<{ type: 'truth' | 'dare'; text: string } | null>(null);
   const [choosing, setChoosing] = useState(true);
+  const help = useHelp('truth-dare');
 
   const cfg = DARE_LEVEL_CONFIG[level];
 
@@ -123,6 +126,20 @@ export default function TruthDareScreen() {
           </View>
         )}
       </ScrollView>
+
+      <HelpModal
+        visible={help.visible}
+        title="Truth or Dare"
+        description="A turn-based game for two. Each round, one partner chooses Truth or Dare — then you switch."
+        tips={[
+          "Choose an intensity level at the top — Sweet, Flirty, or Spicy",
+          "Player A chooses Truth or Dare",
+          "Answer or do the challenge",
+          "Tap 'Done — next player' to switch turns",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

@@ -5,6 +5,8 @@ import * as Haptics from 'expo-haptics';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 
 const QUESTIONS = [
   { key: 'communication', label: 'Communication',       emoji: '💬' },
@@ -25,6 +27,7 @@ const SCORE_COLORS = ['', Colors.error, '#F9A825', Colors.muted, Colors.success,
 export default function HitaScreen() {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [done, setDone] = useState(false);
+  const help = useHelp('relationship-pulse');
 
   const allAnswered = QUESTIONS.every((q) => scores[q.key] !== undefined);
   const avg = allAnswered ? Object.values(scores).reduce((a, b) => a + b, 0) / QUESTIONS.length : 0;
@@ -144,6 +147,20 @@ export default function HitaScreen() {
           </TouchableOpacity>
         </ScrollView>
       )}
+
+      <HelpModal
+        visible={help.visible}
+        title="Relationship Pulse"
+        description="A private check-in on how you're feeling about your relationship. Your partner never sees your individual scores."
+        tips={[
+          "Rate 10 areas from 1 (needs work) to 5 (amazing)",
+          "Completely private — your partner cannot see your answers",
+          "After submitting, you see your overall score and a personalised suggestion",
+          "Come back monthly to track how things change",
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }
