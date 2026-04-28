@@ -4,6 +4,10 @@ import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
+const TOGETHER = [
+  { emoji: '✅', title: 'Together List',       subtitle: 'Shared to-do list — daily life, dates, intimacy & goals', route: '/todo',      bg: '#F1F8E9' },
+];
+
 const INTIMACY = [
   { emoji: '🧬', title: 'Erotic Blueprint',    subtitle: 'Discover your intimacy type & partner compatibility', route: '/blueprint', bg: '#F3E5F5' },
   { emoji: '🫁', title: 'Sensate Focus',       subtitle: 'Guided touch sessions — rekindling through presence',  route: '/sensate',   bg: '#E8F5E9' },
@@ -42,7 +46,10 @@ export default function LoveScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Love</Text>
-      <Text style={styles.subtitle}>Nurture your connection</Text>
+      <Text style={styles.subtitle}>Connection, intimacy & insights</Text>
+
+      <Text style={styles.sectionLabel}>Together</Text>
+      {TOGETHER.map((f) => <FeatureCard key={f.route} {...f} />)}
 
       <Text style={styles.sectionLabel}>Intimacy</Text>
       {INTIMACY.map((f) => <FeatureCard key={f.route} {...f} />)}

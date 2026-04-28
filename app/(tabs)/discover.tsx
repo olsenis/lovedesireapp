@@ -36,8 +36,8 @@ function FeatureCard({ emoji, title, subtitle, route, bg }: { emoji: string; tit
 export default function DiscoverScreen() {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Discover</Text>
-      <Text style={styles.subtitle}>Games & ideas for you two</Text>
+      <Text style={styles.title}>Together</Text>
+      <Text style={styles.subtitle}>Games & challenges for the two of you</Text>
 
       <Text style={styles.sectionLabel}>Games</Text>
       {GAMES.map((f) => <FeatureCard key={f.route} {...f} />)}

@@ -37,18 +37,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="todo"
+        name="discover"
         options={{
           title: 'Together',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="✅" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon symbol="🎲" focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="discover"
-        options={{
-          title: 'Discover',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="🎲" focused={focused} />,
-        }}
+        name="todo"
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="love"
