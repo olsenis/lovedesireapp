@@ -113,7 +113,7 @@ export default function FantasyWishesScreen() {
                 <Text style={styles.emptyText}>
                   {loadingPresets
                     ? 'Adding 120 wishes — this takes a moment'
-                    : 'Tap to load 120 wishes — from romantic to bold. Only mutual Yes is ever revealed.'}
+                    : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -186,9 +186,9 @@ export default function FantasyWishesScreen() {
       <HelpModal
         visible={help.visible}
         title="Fantasy Wishes"
-        description="A private list of wishes spanning everything from romantic to bold. Vote independently — only mutual Yes is ever revealed."
+        description="A private list of explicit sexual scenarios. Vote independently — only mutual Yes is ever revealed to both of you."
         tips={[
-          'Tap to load 120 preset wishes, or add your own',
+          'Tap to load preset scenarios, or add your own',
           'Vote Yes, Maybe, or No — your partner never sees your choices',
           'When you both say Yes → it appears in Matches',
           'Tap matches to add them to your Together List',
