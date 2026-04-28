@@ -8,7 +8,7 @@ import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch } from '../services/fantasyWishesService';
+import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_PRESETS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -22,6 +22,7 @@ export default function FantasyWishesScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
   const help = useHelp('fantasy-wishes');
 
@@ -64,6 +65,17 @@ export default function FantasyWishesScreen() {
     }
   };
 
+  const handleReset = async () => {
+    const id = profile?.coupleId;
+    if (!id || resetting) return;
+    setResetting(true);
+    try {
+      await clearAndReloadFantasyWishes(id, FANTASY_WISHES_PRESETS);
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const handleAddToTogether = async (item: FantasyWishesItem) => {
     if (!coupleId || !user || addedToList.has(item.id)) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -85,9 +97,16 @@ export default function FantasyWishesScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Fantasy Wishes</Text>
-        <TouchableOpacity onPress={() => setShowAdd(true)}>
-          <Text style={styles.addBtn}>+ Add</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: Spacing.md }}>
+          {items.length > 0 && (
+            <TouchableOpacity onPress={handleReset} disabled={resetting}>
+              <Text style={styles.resetBtn}>{resetting ? '…' : '↺'}</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={() => setShowAdd(true)}>
+            <Text style={styles.addBtn}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.infoBanner}>
@@ -240,6 +259,7 @@ const styles = StyleSheet.create({
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
   addBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  resetBtn: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.muted },
   infoBanner: { marginHorizontal: Spacing.lg, marginTop: Spacing.sm, backgroundColor: '#F3E5F5', borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.sm },
   infoText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: '#6A1B9A', textAlign: 'center' },
   tabRow: { flexDirection: 'row', marginHorizontal: Spacing.lg, marginBottom: Spacing.md, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },

@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, doc, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type FWVote = 'yes' | 'maybe' | 'no';
@@ -33,4 +33,17 @@ export async function voteOnFantasyWish(coupleId: string, itemId: string, uid: s
 
 export function isFWMatch(item: FantasyWishesItem, uid1: string, uid2: string): boolean {
   return item.votes[uid1] === 'yes' && item.votes[uid2] === 'yes';
+}
+
+export async function clearAndReloadFantasyWishes(
+  coupleId: string,
+  presets: { text: string }[]
+): Promise<void> {
+  // Delete all existing items
+  const snap = await getDocs(collection(db, 'couples', coupleId, 'fantasyWishes'));
+  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+  // Load new presets
+  await Promise.all(presets.map((p) => addDoc(collection(db, 'couples', coupleId, 'fantasyWishes'), {
+    text: p.text, votes: {}, createdAt: Date.now(),
+  })));
 }
