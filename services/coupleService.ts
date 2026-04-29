@@ -16,6 +16,7 @@ export interface Couple {
   partner2Uid?: string;
   inviteCode: string;
   createdAt: number;
+  startDate?: number; // actual relationship start date (set by couple)
 }
 
 export function generateInviteCode(): string {
@@ -53,6 +54,10 @@ export async function joinCouple(inviteCode: string, joinerUid: string): Promise
 
   await updateDoc(coupleDoc.ref, { partner2Uid: joinerUid });
   return { ...couple, partner2Uid: joinerUid };
+}
+
+export async function setCoupleStartDate(coupleId: string, startDate: number): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId), { startDate });
 }
 
 export async function getCouple(coupleId: string): Promise<Couple | null> {

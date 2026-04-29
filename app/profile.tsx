@@ -11,7 +11,7 @@ import { auth } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
-import { joinCouple } from '../services/coupleService';
+import { joinCouple, setCoupleStartDate } from '../services/coupleService';
 import { uploadProfilePhoto } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
 import { Colors } from '../constants/colors';
@@ -40,6 +40,9 @@ export default function ProfileScreen() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deletePw, setDeletePw] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  const [startDateModal, setStartDateModal] = useState(false);
+  const [startDateStr, setStartDateStr] = useState('');
+  const [startDateError, setStartDateError] = useState('');
 
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -138,6 +141,16 @@ export default function ProfileScreen() {
     } finally {
       setPairLoading(false);
     }
+  };
+
+  const handleSaveStartDate = async () => {
+    if (!startDateStr || !profile?.coupleId) return;
+    const ts = new Date(startDateStr).getTime();
+    if (isNaN(ts)) { setStartDateError('Enter a valid date (YYYY-MM-DD)'); return; }
+    setStartDateError('');
+    await setCoupleStartDate(profile.coupleId, ts);
+    setStartDateModal(false);
+    setStartDateStr('');
   };
 
   const handleDisconnect = () => {
@@ -249,10 +262,16 @@ export default function ProfileScreen() {
                 <Text style={styles.rowValue}>{partner?.name ?? '—'}</Text>
               </View>
               <View style={styles.divider} />
-              <View style={styles.row}>
-                <Text style={styles.rowLabel}>Days together</Text>
-                <Text style={styles.rowValue}>{daysStr}</Text>
-              </View>
+              <TouchableOpacity style={styles.row} onPress={() => { setStartDateStr(''); setStartDateError(''); setStartDateModal(true); }}>
+                <View style={styles.rowTextStack}>
+                  <Text style={styles.rowLabel}>Days together</Text>
+                  <Text style={styles.rowHint}>{couple?.startDate ? 'Custom date set' : 'Tap to set your real start date'}</Text>
+                </View>
+                <View style={styles.rowRight}>
+                  <Text style={styles.rowValue}>{daysStr}</Text>
+                  <Text style={styles.rowChevron}>›</Text>
+                </View>
+              </TouchableOpacity>
               <View style={styles.divider} />
               <View style={styles.row}>
                 <Text style={styles.rowLabel}>Your invite code</Text>
@@ -440,6 +459,33 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={handleDeleteAccount} disabled={saving}>
                 <Text style={styles.saveBtnText}>{saving ? 'Deleting…' : 'Delete'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Start date modal */}
+      <Modal visible={startDateModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>When did you get together?</Text>
+            <Text style={styles.modalHint}>Set your real relationship start date to get the correct days together count.</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="YYYY-MM-DD (e.g. 2018-03-14)"
+              placeholderTextColor={Colors.muted}
+              value={startDateStr}
+              onChangeText={(t) => { setStartDateStr(t); setStartDateError(''); }}
+              autoFocus
+            />
+            {startDateError ? <Text style={styles.errorText}>{startDateError}</Text> : null}
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setStartDateModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveStartDate}>
+                <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -24,8 +24,9 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-function getDaysTogether(createdAt: number): number {
-  return Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+function getDaysTogether(couple: { createdAt: number; startDate?: number }): number {
+  const from = couple.startDate ?? couple.createdAt;
+  return Math.floor((Date.now() - from) / (1000 * 60 * 60 * 24));
 }
 
 interface NudgeItem {
@@ -98,7 +99,7 @@ export default function HomeScreen() {
   };
 
   const isConnected = !!couple?.partner2Uid;
-  const days = couple ? getDaysTogether(couple.createdAt) : 0;
+  const days = couple ? getDaysTogether(couple) : 0;
 
   // Build nudge items
   const nudges: NudgeItem[] = [];
