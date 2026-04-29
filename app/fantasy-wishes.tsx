@@ -137,7 +137,7 @@ export default function FantasyWishesScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            {unvoted.length > 0 && <Text style={styles.groupLabel}>To vote on ({unvoted.length} remaining)</Text>}
+            {unvoted.length > 0 && <Text style={styles.groupLabel}>To vote on</Text>}
             {unvoted.slice(0, visibleCount).map((item) => (
               <WishCard key={item.id} item={item} onVote={(i, v) => { handleVote(i, v); }} myVote={null} />
             ))}
