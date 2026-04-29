@@ -116,7 +116,7 @@ export default function FantasyWishesScreen() {
 
       <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tab, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')}>
-          <Text style={[styles.tabText, activeTab === 'explore' && styles.tabTextActive]}>Explore ({items.length})</Text>
+          <Text style={[styles.tabText, activeTab === 'explore' && styles.tabTextActive]}>Explore</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === 'matches' && styles.tabActive]} onPress={() => setActiveTab('matches')}>
           <Text style={[styles.tabText, activeTab === 'matches' && styles.tabTextActive]}>✓ Matches ({matched.length})</Text>
