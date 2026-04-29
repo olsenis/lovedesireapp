@@ -23,7 +23,7 @@ export default function FantasyWishesScreen() {
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [page, setPage] = useState(0);
+  const [shownCount, setShownCount] = useState(5);
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
   const help = useHelp('fantasy-wishes');
 
@@ -94,10 +94,9 @@ export default function FantasyWishesScreen() {
     item.votes[uid] as FWVote ?? null;
 
   const matched = items.filter((i) => partnerId && isFWMatch(i, uid, partnerId));
-  const pageSize = 5;
-  const pageItems = items.slice(page * pageSize, (page + 1) * pageSize);
-  const pageAllVoted = pageItems.length > 0 && pageItems.every((i) => myVote(i) !== null);
-  const hasMore = (page + 1) * pageSize < items.length;
+  const shownItems = items.slice(0, shownCount);
+  const shownAllVoted = shownItems.length > 0 && shownItems.every((i) => myVote(i) !== null);
+  const hasMore = shownCount < items.length;
 
   return (
     <View style={styles.screen}>
@@ -145,20 +144,19 @@ export default function FantasyWishesScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            {pageItems.length > 0 && (
+            {shownItems.length > 0 && (
               <>
-                <Text style={styles.groupLabel}>To vote on</Text>
-                {pageItems.map((item) => (
+                {shownItems.map((item) => (
                   <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />
                 ))}
               </>
             )}
-            {pageAllVoted && hasMore && (
-              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setPage((p) => p + 1)} activeOpacity={0.8}>
+            {shownAllVoted && hasMore && (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setShownCount((c) => c + 5)} activeOpacity={0.8}>
                 <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
               </TouchableOpacity>
             )}
-            {pageAllVoted && !hasMore && items.length > 0 && (
+            {shownAllVoted && !hasMore && items.length > 0 && (
               <View style={styles.allDoneCard}>
                 <Text style={styles.allDoneEmoji}>✨</Text>
                 <Text style={styles.allDoneText}>You've voted on everything!</Text>
