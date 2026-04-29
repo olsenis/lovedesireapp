@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
 import { joinCouple } from '../services/coupleService';
+import { uploadProfilePhoto } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -41,6 +42,7 @@ export default function ProfileScreen() {
   const [deleteError, setDeleteError] = useState('');
 
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [helpOn, setHelpOn] = useState(true);
 
   useEffect(() => {
@@ -70,7 +72,15 @@ export default function ProfileScreen() {
       mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
     if (!result.canceled && user) {
-      await createUserProfile(user.uid, { photoURL: result.assets[0].uri } as any);
+      setUploadingPhoto(true);
+      try {
+        const downloadURL = await uploadProfilePhoto(user.uid, result.assets[0].uri);
+        await createUserProfile(user.uid, { photoURL: downloadURL } as any);
+      } catch (e) {
+        console.error('Photo upload failed:', e);
+      } finally {
+        setUploadingPhoto(false);
+      }
     }
   };
 
@@ -200,7 +210,7 @@ export default function ProfileScreen() {
               </View>
             )}
             <View style={styles.avatarEditBadge}>
-              <Text style={styles.avatarEditIcon}>📷</Text>
+              <Text style={styles.avatarEditIcon}>{uploadingPhoto ? '⏳' : '📷'}</Text>
             </View>
           </TouchableOpacity>
           <Text style={styles.profileName}>{profile?.name ?? '...'}</Text>
