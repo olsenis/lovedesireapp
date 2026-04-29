@@ -80,7 +80,7 @@ export default function FantasyWishesScreen() {
   const handleAddToTogether = async (item: FantasyWishesItem) => {
     if (!coupleId || !user || addedToList.has(item.id)) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await addTodo(coupleId, item.text, 'dates', uid);
+    await addTodo(coupleId, item.text, 'intimacy', uid);
     setAddedToList((prev) => new Set(prev).add(item.id));
   };
 
