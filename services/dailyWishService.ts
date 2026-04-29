@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DAILY_WISH_ITEMS, DailyWishItem, DailyWishCategory } from '../constants/content';
 
@@ -6,8 +6,9 @@ export type DailyVote = 'yes' | 'no';
 
 export interface DailyWishDoc {
   date: string;
-  items: DailyWishItem[];                              // 20 items: 5 per category
-  votes: Record<string, Record<number, DailyVote>>;   // { uid: { globalIndex: vote } }
+  items: DailyWishItem[];
+  votes: Record<string, Record<number, DailyVote>>;
+  addToList?: Record<number, string[]>; // globalIndex -> [uid, ...] who pressed "Add to List"
 }
 
 function todayKey(): string {
@@ -36,7 +37,7 @@ function pickDailyItems(date: string, coupleId: string): DailyWishItem[] {
     const shuffled = deterministicShuffle(pool, date + coupleId + cat);
     result.push(...shuffled.slice(0, 5));
   }
-  return result; // 20 items total: sweet[0-4], flirty[5-9], spicy[10-14], sexual[15-19]
+  return result;
 }
 
 export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWishDoc) => void): Unsubscribe {
@@ -45,10 +46,9 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
       const existing = snap.data() as DailyWishDoc;
-      // Migrate old format: was 5 items total, now 20 (5 per category)
       if (existing.items.length < 20) {
         const items = pickDailyItems(date, coupleId);
-        const migrated: DailyWishDoc = { date, items, votes: {} };
+        const migrated: DailyWishDoc = { date, items, votes: {}, addToList: {} };
         await setDoc(ref, migrated);
         onChange(migrated);
       } else {
@@ -56,25 +56,34 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
       }
     } else {
       const items = pickDailyItems(date, coupleId);
-      const newDoc: DailyWishDoc = { date, items, votes: {} };
+      const newDoc: DailyWishDoc = { date, items, votes: {}, addToList: {} };
       await setDoc(ref, newDoc);
       onChange(newDoc);
     }
   });
 }
 
-export async function voteDailyWish(
-  coupleId: string,
-  uid: string,
-  globalIndex: number,
-  vote: DailyVote
-): Promise<void> {
+export async function voteDailyWish(coupleId: string, uid: string, globalIndex: number, vote: DailyVote): Promise<void> {
   const date = todayKey();
   await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', date), {
     [`votes.${uid}.${globalIndex}`]: vote,
   });
 }
 
+// Mark that this user wants to add this match to the Together List
+// Returns true if BOTH partners have now pressed it (caller should then add the todo)
+export async function markAddToList(coupleId: string, uid: string, globalIndex: number): Promise<void> {
+  const date = todayKey();
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', date), {
+    [`addToList.${globalIndex}`]: arrayUnion(uid),
+  });
+}
+
 export function isMatch(doc: DailyWishDoc, index: number, uid1: string, uid2: string): boolean {
   return doc.votes[uid1]?.[index] === 'yes' && doc.votes[uid2]?.[index] === 'yes';
+}
+
+export function bothWantToAdd(doc: DailyWishDoc, index: number, uid1: string, uid2: string): boolean {
+  const list = doc.addToList?.[index] ?? [];
+  return list.includes(uid1) && list.includes(uid2);
 }
