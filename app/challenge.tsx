@@ -195,7 +195,7 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleReset} style={styles.back}><Text style={styles.backText}>‹ Programs</Text></TouchableOpacity>
+          <TouchableOpacity onPress={handleReset} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Review Days</Text>
           <View style={{ width: 60 }} />
         </View>
