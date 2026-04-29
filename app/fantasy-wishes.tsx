@@ -23,7 +23,7 @@ export default function FantasyWishesScreen() {
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(5);
+  const [page, setPage] = useState(0);
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
   const help = useHelp('fantasy-wishes');
 
@@ -94,8 +94,10 @@ export default function FantasyWishesScreen() {
     item.votes[uid] as FWVote ?? null;
 
   const matched = items.filter((i) => partnerId && isFWMatch(i, uid, partnerId));
-  const unvoted = items.filter((i) => !myVote(i));
-  const voted = items.filter((i) => myVote(i));
+  const pageSize = 5;
+  const pageItems = items.slice(page * pageSize, (page + 1) * pageSize);
+  const pageAllVoted = pageItems.length > 0 && pageItems.every((i) => myVote(i) !== null);
+  const hasMore = (page + 1) * pageSize < items.length;
 
   return (
     <View style={styles.screen}>
@@ -143,17 +145,25 @@ export default function FantasyWishesScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            {unvoted.length > 0 && <Text style={styles.groupLabel}>To vote on</Text>}
-            {unvoted.slice(0, visibleCount).map((item) => (
-              <WishCard key={item.id} item={item} onVote={(i, v) => { handleVote(i, v); }} myVote={null} />
-            ))}
-            {unvoted.length > visibleCount && (
-              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setVisibleCount((c) => c + 5)} activeOpacity={0.8}>
+            {pageItems.length > 0 && (
+              <>
+                <Text style={styles.groupLabel}>To vote on</Text>
+                {pageItems.map((item) => (
+                  <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />
+                ))}
+              </>
+            )}
+            {pageAllVoted && hasMore && (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setPage((p) => p + 1)} activeOpacity={0.8}>
                 <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
               </TouchableOpacity>
             )}
-            {voted.length > 0 && <Text style={styles.groupLabel}>Already voted</Text>}
-            {voted.map((item) => <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />)}
+            {pageAllVoted && !hasMore && items.length > 0 && (
+              <View style={styles.allDoneCard}>
+                <Text style={styles.allDoneEmoji}>✨</Text>
+                <Text style={styles.allDoneText}>You've voted on everything!</Text>
+              </View>
+            )}
           </>
         ) : (
           <>
@@ -279,6 +289,9 @@ const styles = StyleSheet.create({
   resetBtn: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.muted },
   loadMoreBtn: { paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy, backgroundColor: Colors.white, marginTop: Spacing.sm },
   loadMoreText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  allDoneCard: { alignItems: 'center', paddingVertical: Spacing.xl, gap: Spacing.sm },
+  allDoneEmoji: { fontSize: 36 },
+  allDoneText: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted },
   infoBanner: { marginHorizontal: Spacing.lg, marginTop: Spacing.sm, backgroundColor: '#F3E5F5', borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.sm },
   infoText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: '#6A1B9A', textAlign: 'center' },
   tabRow: { flexDirection: 'row', marginHorizontal: Spacing.lg, marginBottom: Spacing.md, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
