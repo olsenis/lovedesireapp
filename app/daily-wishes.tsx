@@ -25,7 +25,6 @@ export default function DailyWishesScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState<DailyWishCategory>('sweet');
   const [showMatches, setShowMatches] = useState(false);
-  const [addedGlobals, setAddedGlobals] = useState<Set<number>>(new Set());
   const scrollRef = useRef<ScrollView>(null);
   const help = useHelp('daily-wishes');
 
@@ -42,20 +41,6 @@ export default function DailyWishesScreen() {
     return unsub;
   }, [coupleId]);
 
-  // Auto-add to Together List when both have pressed "Add to List"
-  useEffect(() => {
-    if (!dailyDoc || !coupleId || !uid || !partnerId) return;
-    dailyDoc.items.forEach((item, gi) => {
-      if (
-        isMatch(dailyDoc, gi, uid, partnerId) &&
-        bothWantToAdd(dailyDoc, gi, uid, partnerId) &&
-        !addedGlobals.has(gi)
-      ) {
-        addTodo(coupleId, item.text, 'intimacy', uid);
-        setAddedGlobals((prev) => new Set(prev).add(gi));
-      }
-    });
-  }, [dailyDoc, partnerId]);
 
   const handleVote = async (globalIndex: number, vote: DailyVote) => {
     if (!coupleId) return;
@@ -67,8 +52,13 @@ export default function DailyWishesScreen() {
     if (!coupleId || !dailyDoc) return;
     const alreadyPressed = (dailyDoc.addToList?.[globalIndex] ?? []).includes(uid);
     if (alreadyPressed) return;
+    const partnerAlreadyPressed = !!partnerId && (dailyDoc.addToList?.[globalIndex] ?? []).includes(partnerId);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await markAddToList(coupleId, uid, globalIndex);
+    // Only add todo if partner already pressed (we're second → add once)
+    if (partnerAlreadyPressed) {
+      await addTodo(coupleId, dailyDoc.items[globalIndex].text, 'fantasy', uid);
+    }
   };
 
   const myVote = (idx: number): DailyVote | null => dailyDoc?.votes[uid]?.[idx] ?? null;
@@ -171,7 +161,7 @@ export default function DailyWishesScreen() {
           const theyVoted = partnerVoted(globalIndex);
           const iAdded = myAddedToList(globalIndex);
           const theyAdded = partnerAddedToList(globalIndex);
-          const alreadyAdded = bothAdded(globalIndex) || addedGlobals.has(globalIndex);
+          const alreadyAdded = bothAdded(globalIndex) ;
 
           return (
             <View key={globalIndex} style={[styles.wishCard, didMatch && styles.wishCardMatched]}>
@@ -246,7 +236,7 @@ export default function DailyWishesScreen() {
                 allMatches.map(({ item, gi }) => {
                   const iAdded = myAddedToList(gi);
                   const theyAdded = partnerAddedToList(gi);
-                  const alreadyAdded = bothAdded(gi) || addedGlobals.has(gi);
+                  const alreadyAdded = bothAdded(gi) ;
                   const cat = DAILY_WISH_CATEGORY_CONFIG[item.category];
                   return (
                     <View key={gi} style={styles.matchModalCard}>

@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-export type TodoCategory = 'daily' | 'dates' | 'intimacy' | 'goals';
+export type TodoCategory = 'daily' | 'dates' | 'intimacy' | 'goals' | 'fantasy';
 
 export interface Todo {
   id: string;

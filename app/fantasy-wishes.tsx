@@ -8,7 +8,7 @@ import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes } from '../services/fantasyWishesService';
+import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToList, fwBothWantToAdd } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_PRESETS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -78,10 +78,16 @@ export default function FantasyWishesScreen() {
   };
 
   const handleAddToTogether = async (item: FantasyWishesItem) => {
-    if (!coupleId || !user || addedToList.has(item.id)) return;
+    if (!coupleId || !user) return;
+    const alreadyPressed = (item.addToList ?? []).includes(uid);
+    if (alreadyPressed) return;
+    const partnerAlreadyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await addTodo(coupleId, item.text, 'intimacy', uid);
-    setAddedToList((prev) => new Set(prev).add(item.id));
+    await markFWAddToList(coupleId, uid, item.id);
+    // Only add todo if partner already pressed (we're second → add once)
+    if (partnerAlreadyPressed) {
+      await addTodo(coupleId, item.text, 'fantasy', uid);
+    }
   };
 
   const myVote = (item: FantasyWishesItem): FWVote | null =>
@@ -159,23 +165,26 @@ export default function FantasyWishesScreen() {
               </View>
             ) : (
               matched.map((item) => {
-                const added = addedToList.has(item.id);
+                const iPressed = (item.addToList ?? []).includes(uid);
+                const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
+                const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
                 return (
                   <View key={item.id} style={styles.matchCard}>
                     <Text style={styles.matchEmoji}>✨</Text>
                     <View style={styles.matchInfo}>
                       <Text style={styles.matchText}>{item.text}</Text>
                       <Text style={styles.matchBadge}>✓ You both want this</Text>
-                      <TouchableOpacity
-                        style={[styles.addToListBtn, added && styles.addToListBtnDone]}
-                        onPress={() => handleAddToTogether(item)}
-                        disabled={added}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={styles.addToListBtnText}>
-                          {added ? '✓ Added to Together List' : '+ Add to Together List'}
-                        </Text>
-                      </TouchableOpacity>
+                      {bothPressed ? (
+                        <Text style={styles.addedText}>✓ Added to Together List</Text>
+                      ) : iPressed ? (
+                        <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
+                      ) : (
+                        <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8}>
+                          <Text style={styles.addToListBtnText}>
+                            {theyPressed ? `${partner?.name ?? 'Partner'} wants to add — tap to confirm` : '+ Add to Together List'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
                 );
@@ -294,9 +303,10 @@ const styles = StyleSheet.create({
   matchInfo: { flex: 1, gap: 4 },
   matchText: { fontFamily: Fonts.heading, fontSize: 17, color: Colors.text, lineHeight: 24 },
   matchBadge: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success },
-  addToListBtn: { marginTop: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, borderRadius: Radius.full, backgroundColor: 'rgba(0,0,0,0.08)' },
-  addToListBtnDone: { backgroundColor: 'rgba(76,175,80,0.15)' },
-  addToListBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.text },
+  addToListBtn: { marginTop: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, borderRadius: Radius.full, backgroundColor: Colors.burgundy },
+  addToListBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.cream },
+  addedText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success, marginTop: 4 },
+  waitingText: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 4 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },

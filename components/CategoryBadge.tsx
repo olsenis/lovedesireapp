@@ -9,7 +9,8 @@ const CATEGORY_CONFIG: Record<TodoCategory, { label: string; emoji: string; colo
   daily:    { label: 'Daily Life',  emoji: '🏠', color: '#FFF3E0' },
   dates:    { label: 'Date Ideas',  emoji: '💑', color: '#FCE4EC' },
   intimacy: { label: 'Intimacy',    emoji: '🔥', color: '#FCE4EC' },
-  goals:    { label: 'Goals',       emoji: '🌟', color: '#F3E5F5' },
+  fantasy:  { label: 'Fantasy',     emoji: '💋', color: '#F3E5F5' },
+  goals:    { label: 'Goals',       emoji: '🌟', color: '#FFF9C4' },
 };
 
 interface CategoryBadgeProps {

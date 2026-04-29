@@ -13,7 +13,8 @@ const CATEGORIES: { key: TodoCategory; label: string; emoji: string; color: stri
   { key: 'daily',    label: 'Daily Life',  emoji: '🏠', color: '#FFF3E0' },
   { key: 'dates',    label: 'Date Ideas',  emoji: '💑', color: '#FCE4EC' },
   { key: 'intimacy', label: 'Intimacy',    emoji: '🔥', color: '#FFEBEE' },
-  { key: 'goals',    label: 'Goals',       emoji: '🌟', color: '#F3E5F5' },
+  { key: 'fantasy',  label: 'Fantasy',     emoji: '💋', color: '#F3E5F5' },
+  { key: 'goals',    label: 'Goals',       emoji: '🌟', color: '#FFF9C4' },
 ];
 
 export default function TogetherScreen() {

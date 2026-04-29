@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, arrayUnion, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type FWVote = 'yes' | 'maybe' | 'no';
@@ -7,6 +7,7 @@ export interface FantasyWishesItem {
   id: string;
   text: string;
   votes: Record<string, FWVote>;
+  addToList?: string[]; // uids who pressed "Add to Together List"
   createdAt: number;
 }
 
@@ -33,6 +34,16 @@ export async function voteOnFantasyWish(coupleId: string, itemId: string, uid: s
 
 export function isFWMatch(item: FantasyWishesItem, uid1: string, uid2: string): boolean {
   return item.votes[uid1] === 'yes' && item.votes[uid2] === 'yes';
+}
+
+export async function markFWAddToList(coupleId: string, uid: string, itemId: string): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
+    addToList: arrayUnion(uid),
+  });
+}
+
+export function fwBothWantToAdd(item: FantasyWishesItem, uid1: string, uid2: string): boolean {
+  return (item.addToList ?? []).includes(uid1) && (item.addToList ?? []).includes(uid2);
 }
 
 export async function clearAndReloadFantasyWishes(
