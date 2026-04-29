@@ -145,8 +145,16 @@ export default function ProfileScreen() {
 
   const handleSaveStartDate = async () => {
     if (!startDateStr || !profile?.coupleId) return;
-    const ts = new Date(startDateStr).getTime();
-    if (isNaN(ts)) { setStartDateError('Enter a valid date (YYYY-MM-DD)'); return; }
+    // Accept DD.MM.YYYY format
+    const parts = startDateStr.trim().split('.');
+    let ts: number;
+    if (parts.length === 3) {
+      const [dd, mm, yyyy] = parts;
+      ts = new Date(`${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`).getTime();
+    } else {
+      ts = new Date(startDateStr).getTime();
+    }
+    if (isNaN(ts)) { setStartDateError('Sláðu inn gilda dagsetningu (DD.MM.YYYY)'); return; }
     setStartDateError('');
     await setCoupleStartDate(profile.coupleId, ts);
     setStartDateModal(false);
@@ -473,10 +481,11 @@ export default function ProfileScreen() {
             <Text style={styles.modalHint}>Set your real relationship start date to get the correct days together count.</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="YYYY-MM-DD (e.g. 2018-03-14)"
+              placeholder="DD.MM.YYYY (t.d. 14.03.2018)"
               placeholderTextColor={Colors.muted}
               value={startDateStr}
               onChangeText={(t) => { setStartDateStr(t); setStartDateError(''); }}
+              keyboardType="numeric"
               autoFocus
             />
             {startDateError ? <Text style={styles.errorText}>{startDateError}</Text> : null}
