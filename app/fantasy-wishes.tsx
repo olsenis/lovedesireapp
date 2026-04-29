@@ -23,7 +23,7 @@ export default function FantasyWishesScreen() {
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [shownCount, setShownCount] = useState(5);
+  const [releasedCount, setReleasedCount] = useState(5);
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
   const help = useHelp('fantasy-wishes');
 
@@ -94,9 +94,10 @@ export default function FantasyWishesScreen() {
     item.votes[uid] as FWVote ?? null;
 
   const matched = items.filter((i) => partnerId && isFWMatch(i, uid, partnerId));
-  const shownItems = items.slice(0, shownCount);
-  const shownAllVoted = shownItems.length > 0 && shownItems.every((i) => myVote(i) !== null);
-  const hasMore = shownCount < items.length;
+  const released = items.slice(0, releasedCount);
+  const toVote = released.filter((i) => myVote(i) === null);
+  const voted = released.filter((i) => myVote(i) !== null);
+  const canLoadMore = toVote.length === 0 && releasedCount < items.length;
 
   return (
     <View style={styles.screen}>
@@ -144,23 +145,33 @@ export default function FantasyWishesScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            {shownItems.length > 0 && (
-              <>
-                {shownItems.map((item) => (
-                  <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />
-                ))}
-              </>
-            )}
-            {shownAllVoted && hasMore && (
-              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setShownCount((c) => c + 5)} activeOpacity={0.8}>
+            {/* Unvoted — always at top */}
+            {toVote.map((item) => (
+              <WishCard key={item.id} item={item} onVote={handleVote} myVote={null} />
+            ))}
+
+            {/* Load 5 more — appears when all current released are voted */}
+            {canLoadMore && (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setReleasedCount((c) => c + 5)} activeOpacity={0.8}>
                 <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
               </TouchableOpacity>
             )}
-            {shownAllVoted && !hasMore && items.length > 0 && (
+
+            {!canLoadMore && toVote.length === 0 && items.length > 0 && releasedCount >= items.length && (
               <View style={styles.allDoneCard}>
                 <Text style={styles.allDoneEmoji}>✨</Text>
                 <Text style={styles.allDoneText}>You've voted on everything!</Text>
               </View>
+            )}
+
+            {/* Voted — accumulate below */}
+            {voted.length > 0 && (
+              <>
+                <Text style={styles.groupLabel}>Already voted</Text>
+                {voted.map((item) => (
+                  <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />
+                ))}
+              </>
             )}
           </>
         ) : (
