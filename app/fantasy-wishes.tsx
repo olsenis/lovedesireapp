@@ -143,7 +143,7 @@ export default function FantasyWishesScreen() {
             ))}
             {unvoted.length > visibleCount && (
               <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setVisibleCount((c) => c + 5)} activeOpacity={0.8}>
-                <Text style={styles.loadMoreText}>Load 5 more ({unvoted.length - visibleCount} left) ↓</Text>
+                <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
               </TouchableOpacity>
             )}
             {voted.length > 0 && <Text style={styles.groupLabel}>Already voted</Text>}
