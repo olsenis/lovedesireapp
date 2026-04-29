@@ -23,7 +23,7 @@ export default function FantasyWishesScreen() {
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [releasedCount, setReleasedCount] = useState(5);
+  const [shownUnvotedIds, setShownUnvotedIds] = useState<string[]>([]);
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
   const help = useHelp('fantasy-wishes');
 
@@ -35,6 +35,17 @@ export default function FantasyWishesScreen() {
     if (!coupleId) return;
     return subscribeFantasyWishes(coupleId, setItems);
   }, [coupleId]);
+
+  // Initialize locked batch of 5 unvoted items when items first load
+  useEffect(() => {
+    if (shownUnvotedIds.length === 0 && items.length > 0 && uid) {
+      const first5 = items
+        .filter(i => !i.votes[uid])
+        .slice(0, 5)
+        .map(i => i.id);
+      setShownUnvotedIds(first5);
+    }
+  }, [items.length, uid]);
 
   const handleVote = async (item: FantasyWishesItem, vote: FWVote) => {
     if (!coupleId || !user) return;
@@ -72,6 +83,7 @@ export default function FantasyWishesScreen() {
     setResetting(true);
     try {
       await clearAndReloadFantasyWishes(id, FANTASY_WISHES_PRESETS);
+      setShownUnvotedIds([]); // will re-init from fresh items
     } finally {
       setResetting(false);
     }
@@ -94,10 +106,20 @@ export default function FantasyWishesScreen() {
     item.votes[uid] as FWVote ?? null;
 
   const matched = items.filter((i) => partnerId && isFWMatch(i, uid, partnerId));
-  const released = items.slice(0, releasedCount);
-  const toVote = released.filter((i) => myVote(i) === null);
-  const voted = released.filter((i) => myVote(i) !== null);
-  const canLoadMore = toVote.length === 0 && releasedCount < items.length;
+  const allVoted = items.filter((i) => myVote(i) !== null);
+  // Locked batch: items in shownUnvotedIds that are still unvoted
+  const currentBatch = items.filter((i) => shownUnvotedIds.includes(i.id) && myVote(i) === null);
+  const canLoadMore = currentBatch.length === 0 && allVoted.length < items.length;
+
+  const loadMore = () => {
+    const alreadyShown = new Set(shownUnvotedIds);
+    const votedIds = new Set(allVoted.map(i => i.id));
+    const next5 = items
+      .filter(i => !votedIds.has(i.id) && !alreadyShown.has(i.id))
+      .slice(0, 5)
+      .map(i => i.id);
+    setShownUnvotedIds(prev => [...prev, ...next5]);
+  };
 
   return (
     <View style={styles.screen}>
@@ -145,30 +167,31 @@ export default function FantasyWishesScreen() {
                 </Text>
               </TouchableOpacity>
             )}
-            {/* Unvoted — always at top */}
-            {toVote.map((item) => (
+            {/* Current locked batch — unvoted only, fixed until Load 5 more */}
+            {currentBatch.map((item) => (
               <WishCard key={item.id} item={item} onVote={handleVote} myVote={null} />
             ))}
 
-            {/* Load 5 more — appears when all current released are voted */}
+            {/* Load 5 more — only when all in current batch are voted */}
             {canLoadMore && (
-              <TouchableOpacity style={styles.loadMoreBtn} onPress={() => setReleasedCount((c) => c + 5)} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8}>
                 <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
               </TouchableOpacity>
             )}
 
-            {!canLoadMore && toVote.length === 0 && items.length > 0 && releasedCount >= items.length && (
+            {/* All done */}
+            {!canLoadMore && currentBatch.length === 0 && allVoted.length === items.length && items.length > 0 && (
               <View style={styles.allDoneCard}>
                 <Text style={styles.allDoneEmoji}>✨</Text>
                 <Text style={styles.allDoneText}>You've voted on everything!</Text>
               </View>
             )}
 
-            {/* Voted — accumulate below */}
-            {voted.length > 0 && (
+            {/* Already voted — accumulate below */}
+            {allVoted.length > 0 && (
               <>
                 <Text style={styles.groupLabel}>Already voted</Text>
-                {voted.map((item) => (
+                {allVoted.map((item) => (
                   <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />
                 ))}
               </>
