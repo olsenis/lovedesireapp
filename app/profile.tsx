@@ -67,7 +67,7 @@ export default function ProfileScreen() {
 
   const isConnected = !!couple?.partner2Uid;
   const daysStr = couple
-    ? `${Math.floor((Date.now() - couple.createdAt) / 86400000)} days`
+    ? `${Math.floor((Date.now() - (couple.startDate ?? couple.createdAt)) / 86400000)} days`
     : '—';
 
   const handlePickPhoto = async () => {
