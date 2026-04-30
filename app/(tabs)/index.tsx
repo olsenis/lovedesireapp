@@ -11,6 +11,7 @@ import { subscribeChallenge, ChallengeState } from '../../services/challengeServ
 import { subscribeNotes, LoveNote } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
+import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -54,6 +55,7 @@ export default function HomeScreen() {
   const [notes, setNotes] = useState<LoveNote[]>([]);
   const [fwItems, setFwItems] = useState<FantasyWishesItem[]>([]);
   const [dailyQDoc, setDailyQDoc] = useState<DailyQuestionDoc | null>(null);
+  const [dailyWishDoc, setDailyWishDoc] = useState<DailyWishDoc | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -77,7 +79,8 @@ export default function HomeScreen() {
     const u2 = subscribeNotes(coupleId, setNotes);
     const u3 = subscribeFantasyWishes(coupleId, setFwItems);
     const u4 = subscribeDailyQuestions(coupleId, setDailyQDoc);
-    return () => { u1(); u2(); u3(); u4(); };
+    const u5 = subscribeDailyWishes(coupleId, setDailyWishDoc);
+    return () => { u1(); u2(); u3(); u4(); u5(); };
   }, [coupleId]);
 
   const handleMoodPick = async (emoji: MoodEmoji) => {
@@ -157,6 +160,36 @@ export default function HomeScreen() {
         subtitle: `${partner?.name ?? 'Partner'} discussed ${waiting.length} question${waiting.length > 1 ? 's' : ''} today`,
         route: '/questions-game',
         bg: '#E3F2FD',
+      });
+    }
+  }
+
+  // Daily Picks: partner voted but you haven't voted as much
+  if (dailyWishDoc && partnerId) {
+    const partnerVoteCount = Object.keys(dailyWishDoc.votes[partnerId] ?? {}).length;
+    const myVoteCount = Object.keys(dailyWishDoc.votes[uid] ?? {}).length;
+    if (partnerVoteCount > 0 && myVoteCount < 20) {
+      nudges.push({
+        emoji: '🌹',
+        title: "Daily Picks",
+        subtitle: `${partner?.name ?? 'Partner'} has voted on today's picks — your turn`,
+        route: '/daily-wishes',
+        bg: Colors.blush,
+      });
+    }
+  }
+
+  // Fantasy Wishes: partner has voted on items you haven't seen yet
+  if (partnerId && fwItems.length > 0) {
+    const partnerVoted = fwItems.filter(i => !!i.votes[partnerId]).length;
+    const myVoted = fwItems.filter(i => !!i.votes[uid]).length;
+    if (partnerVoted > myVoted) {
+      nudges.push({
+        emoji: '✨',
+        title: 'Fantasy Wishes',
+        subtitle: `${partner?.name ?? 'Partner'} is exploring — vote to find your matches`,
+        route: '/fantasy-wishes',
+        bg: '#F3E5F5',
       });
     }
   }
