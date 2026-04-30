@@ -8,6 +8,9 @@ const GAMES = [
   { emoji: '🎲', title: 'Dare Wheel',          subtitle: 'Spin for Sweet, Flirty or Spicy challenges',   route: '/dare',        bg: '#FCE4EC' },
   { emoji: '💬', title: 'Questions Game',       subtitle: 'Fun, Deep, Romantic, Spicy, Therapy & Fantasy', route: '/questions-game', bg: '#E3F2FD' },
   { emoji: '🃏', title: 'Truth or Dare',        subtitle: 'Turn-based game — your partner challenges you', route: '/truth-dare',  bg: '#F3E5F5' },
+  { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time — then reveal',   route: '/would-you-rather', bg: '#FFF9C4' },
+  { emoji: '🎯', title: 'Two Truths One Lie',   subtitle: 'Guess the lie — get it wrong and do a dare',   route: '/two-truths',  bg: '#E8F5E9' },
+  { emoji: '🟩', title: 'Intimacy Bingo',       subtitle: 'Monthly card — complete activities together',  route: '/bingo',       bg: '#FCE4EC' },
   { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately — only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5' },
 ];
 
