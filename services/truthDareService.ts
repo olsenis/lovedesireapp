@@ -42,7 +42,6 @@ export async function submitTruthAnswer(coupleId: string, uid: string, answer: s
   await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
     'card.answer': answer,
     'card.answeredBy': uid,
-    'card.revealed': true,
   });
 }
 

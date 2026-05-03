@@ -115,9 +115,9 @@ export default function TruthDareScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleReset} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Truth or Dare</Text>
-        <Text style={styles.roundText}>Round {session.round}</Text>
+        <TouchableOpacity onPress={handleReset} style={styles.resetBtn}><Text style={styles.resetBtnText}>↺ New</Text></TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -159,11 +159,12 @@ export default function TruthDareScreen() {
             </View>
             <Text style={styles.cardText}>{session.card.text}</Text>
 
-            {/* Truth answer flow */}
-            {session.card.type === 'truth' && !session.card.revealed && isMyTurn && (
+            {/* TRUTH: my turn, not yet answered → show TextInput */}
+            {session.card.type === 'truth' && isMyTurn && !session.card.answeredBy && (
               <>
+                <Text style={styles.answerPrompt}>Your answer:</Text>
                 <TextInput
-                  style={styles.answerInput}
+                  style={styles.answerInput2}
                   placeholder="Type your answer here..."
                   placeholderTextColor={Colors.muted}
                   value={answerText}
@@ -172,33 +173,35 @@ export default function TruthDareScreen() {
                   autoFocus
                 />
                 <TouchableOpacity
-                  style={[styles.doneBtn, { backgroundColor: '#1565C0' }, !answerText.trim() && { opacity: 0.4 }]}
+                  style={[styles.shareBtn, !answerText.trim() && { opacity: 0.4 }]}
                   onPress={handleSubmitAnswer}
                   disabled={!answerText.trim()}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.doneBtnText}>Share answer with {partner?.name ?? 'partner'} →</Text>
+                  <Text style={styles.shareBtnText}>Share answer with {partner?.name ?? 'partner'} →</Text>
                 </TouchableOpacity>
               </>
             )}
 
-            {/* Partner waiting for truth answer */}
-            {session.card.type === 'truth' && !session.card.revealed && !isMyTurn && (
-              <Text style={styles.waitingAnswerHint}>
-                ✍️ {session.card.answeredBy ? '' : `${isMyTurn ? 'You are' : (partner?.name ?? 'Partner') + ' is'}`} writing their answer…
-              </Text>
+            {/* TRUTH: partner's turn, no answer yet → show waiting */}
+            {session.card.type === 'truth' && !isMyTurn && !session.card.answeredBy && (
+              <View style={styles.waitingCard2}>
+                <Text style={styles.waitingAnswerHint}>
+                  ✍️ {partner?.name ?? 'Partner'} is writing their answer…
+                </Text>
+              </View>
             )}
 
-            {/* Revealed truth answer */}
-            {session.card.type === 'truth' && session.card.revealed && (
+            {/* TRUTH: answer submitted → show to both */}
+            {session.card.type === 'truth' && !!session.card.answeredBy && (
               <View style={styles.answerReveal}>
                 <Text style={styles.answerLabel}>Answer:</Text>
                 <Text style={styles.answerText}>{session.card.answer}</Text>
               </View>
             )}
 
-            {/* Done button — show after dare OR after truth is revealed */}
-            {(session.card.type === 'dare' || session.card.revealed) && (
+            {/* Done button: show for dare always, or for truth after answer submitted */}
+            {(session.card.type === 'dare' || !!session.card.answeredBy) && (
               <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
                 <Text style={styles.doneBtnText}>Done — {partner?.name ?? 'partner'}'s turn →</Text>
               </TouchableOpacity>
@@ -255,6 +258,13 @@ const styles = StyleSheet.create({
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
   roundText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted, width: 60, textAlign: 'right' },
+  resetBtn: { paddingVertical: 4, paddingHorizontal: 8 },
+  resetBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  answerPrompt: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted, marginTop: Spacing.sm },
+  answerInput2: { backgroundColor: Colors.cream, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, minHeight: 80, borderWidth: 1, borderColor: Colors.border },
+  shareBtn: { backgroundColor: '#1565C0', paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  shareBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+  waitingCard2: { backgroundColor: Colors.blush, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
 
   picker: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.md },
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
