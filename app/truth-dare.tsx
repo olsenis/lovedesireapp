@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
+import { TruthDareSession, subscribeTruthDare, startTruthDare, playCard, nextTurn, resetTruthDare } from '../services/truthDareService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
-import { useHelp } from '../hooks/useHelp';
-import { HelpModal } from '../components/HelpModal';
 
 const LEVELS: DareLevel[] = ['sweet', 'flirty', 'spicy'];
 
@@ -16,57 +19,113 @@ function pickRandom<T>(arr: T[]): T {
 }
 
 export default function TruthDareScreen() {
-  const [level, setLevel] = useState<DareLevel>('flirty');
-  const [turn, setTurn] = useState<'A' | 'B'>('A');
-  const [card, setCard] = useState<{ type: 'truth' | 'dare'; text: string } | null>(null);
-  const [choosing, setChoosing] = useState(true);
+  const { user, profile } = useAuth();
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const [session, setSession] = useState<TruthDareSession | null>(null);
+  const [loading, setLoading] = useState(true);
   const help = useHelp('truth-dare');
 
-  const cfg = DARE_LEVEL_CONFIG[level];
+  const coupleId = profile?.coupleId;
+  const uid = user?.uid ?? '';
+  const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
 
-  const choose = (type: 'truth' | 'dare') => {
-    const pool = type === 'truth'
-      ? TRUTHS.filter((t) => t.level === level)
-      : DARES.filter((d) => d.level === level);
-    if (pool.length === 0) return;
+  useEffect(() => {
+    if (!coupleId) return;
+    const unsub = subscribeTruthDare(coupleId, (s) => { setSession(s); setLoading(false); });
+    return unsub;
+  }, [coupleId]);
+
+  const isMyTurn = session?.turnUid === uid;
+  const cfg = DARE_LEVEL_CONFIG[session?.level ?? 'flirty'];
+
+  const handleStart = async (level: DareLevel) => {
+    if (!coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const picked = pickRandom(pool);
-    setCard({ type, text: picked.text });
-    setChoosing(false);
+    await startTruthDare(coupleId, uid, level);
   };
 
-  const next = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCard(null);
-    setChoosing(true);
-    setTurn((t) => (t === 'A' ? 'B' : 'A'));
+  const handleChoose = async (type: 'truth' | 'dare') => {
+    if (!coupleId || !session) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const pool = type === 'truth'
+      ? TRUTHS.filter(t => t.level === session.level)
+      : DARES.filter(d => d.level === session.level);
+    if (pool.length === 0) return;
+    await playCard(coupleId, { type, text: pickRandom(pool).text });
   };
 
+  const handleDone = async () => {
+    if (!coupleId || !session || !partnerId) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await nextTurn(coupleId, session, uid, partnerId);
+  };
+
+  const handleReset = async () => {
+    if (!coupleId) return;
+    await resetTruthDare(coupleId);
+  };
+
+  // ── Picker (no active game) ──────────────────────────────────────────────────
+  if (!loading && (!session || session.round === 0)) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <Text style={styles.title}>Truth or Dare</Text>
+          <View style={{ width: 60 }} />
+        </View>
+        <ScrollView contentContainerStyle={styles.picker}>
+          <Text style={styles.pickerIntro}>
+            Take turns on your own phones. When it's your turn, pick Truth or Dare — your partner sees the result instantly.
+          </Text>
+          {LEVELS.map(level => {
+            const c = DARE_LEVEL_CONFIG[level];
+            return (
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => handleStart(level)} activeOpacity={0.85}>
+                <Text style={styles.levelEmoji}>{c.emoji}</Text>
+                <View style={styles.levelInfo}>
+                  <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
+                  <Text style={styles.levelSub}>You go first · partner joins automatically</Text>
+                </View>
+                <Text style={[styles.levelArrow, { color: c.textColor }]}>›</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+        <HelpModal visible={help.visible} title="Truth or Dare"
+          description="A real 2-phone game. Take turns picking Truth or Dare — your partner sees your choice instantly on their phone."
+          tips={["One partner starts and picks the level","When it's your turn — you see Truth and Dare buttons","Your partner sees 'Waiting for you...'","When the card appears, both phones show it at the same time"]}
+          onDismiss={help.dismiss} onDismissAll={help.dismissAll} />
+      </View>
+    );
+  }
+
+  if (!session) return null;
+
+  // ── Active game ──────────────────────────────────────────────────────────────
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Text style={styles.backText}>‹ Back</Text>
-        </TouchableOpacity>
+        <TouchableOpacity onPress={handleReset} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Truth or Dare</Text>
-        <View style={{ width: 60 }} />
+        <Text style={styles.roundText}>Round {session.round}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Level selector */}
         <View style={styles.levelSegment}>
-          {LEVELS.map((l) => {
-            const c = DARE_LEVEL_CONFIG[l];
-            const active = level === l;
+          {LEVELS.map(level => {
+            const c = DARE_LEVEL_CONFIG[level];
+            const active = session.level === level;
             return (
               <TouchableOpacity
-                key={l}
+                key={level}
                 style={[styles.levelTab, active && { backgroundColor: c.color }]}
-                onPress={() => { setLevel(l); setCard(null); setChoosing(true); }}
+                onPress={async () => { if (coupleId) await startTruthDare(coupleId, uid, level); }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.levelEmoji}>{c.emoji}</Text>
-                <Text style={[styles.levelLabel, active && { color: c.textColor }]}>{c.label}</Text>
+                <Text style={styles.levelTabEmoji}>{c.emoji}</Text>
+                <Text style={[styles.levelTabLabel, active && { color: c.textColor }]}>{c.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -75,127 +134,119 @@ export default function TruthDareScreen() {
         {/* Turn indicator */}
         <View style={[styles.turnBadge, { backgroundColor: cfg.color }]}>
           <Text style={[styles.turnText, { color: cfg.textColor }]}>
-            {choosing ? `Player ${turn}'s turn — choose:` : `Player ${turn}'s card`}
+            {isMyTurn ? 'Your turn — choose:' : `${partner?.name ?? 'Partner'}'s turn`}
           </Text>
         </View>
 
-        {/* Choice buttons or card */}
-        {choosing ? (
+        {/* Card or choice buttons */}
+        {session.card ? (
+          // Card revealed — both see it
+          <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+            <View style={styles.cardTypeRow}>
+              <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
+              <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+                {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+              </Text>
+            </View>
+            <Text style={styles.cardText}>{session.card.text}</Text>
+            <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
+              <Text style={styles.doneBtnText}>Done — {partner?.name ?? 'partner'}'s turn →</Text>
+            </TouchableOpacity>
+          </View>
+        ) : isMyTurn ? (
+          // My turn — show choice buttons
           <View style={styles.choiceRow}>
-            <TouchableOpacity
-              style={[styles.choiceBtn, styles.truthBtn]}
-              onPress={() => choose('truth')}
-              activeOpacity={0.85}
-            >
+            <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85}>
               <Text style={styles.choiceBtnEmoji}>🤔</Text>
               <Text style={styles.choiceBtnLabel}>Truth</Text>
               <Text style={styles.choiceBtnSub}>Answer honestly</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.choiceBtn, styles.dareBtn, { borderColor: cfg.textColor }]}
-              onPress={() => choose('dare')}
-              activeOpacity={0.85}
-            >
+            <TouchableOpacity style={[styles.choiceBtn, { borderColor: cfg.textColor }]} onPress={() => handleChoose('dare')} activeOpacity={0.85}>
               <Text style={styles.choiceBtnEmoji}>{cfg.emoji}</Text>
               <Text style={[styles.choiceBtnLabel, { color: cfg.textColor }]}>Dare</Text>
               <Text style={styles.choiceBtnSub}>Do the challenge</Text>
             </TouchableOpacity>
           </View>
-        ) : card && (
-          <View style={[styles.cardView, card.type === 'dare' ? { borderLeftColor: cfg.textColor } : styles.cardTruth]}>
-            <View style={styles.cardTypeRow}>
-              <Text style={styles.cardTypeEmoji}>{card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
-              <Text style={[styles.cardTypeBadge, card.type === 'dare' && { color: cfg.textColor }]}>
-                {card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
-              </Text>
-            </View>
-            <Text style={styles.cardText}>{card.text}</Text>
-            <TouchableOpacity style={styles.nextBtn} onPress={next}>
-              <Text style={styles.nextBtnText}>Done — next player →</Text>
-            </TouchableOpacity>
+        ) : (
+          // Partner's turn — waiting
+          <View style={styles.waitingCard}>
+            <Text style={styles.waitingEmoji}>⏳</Text>
+            <Text style={styles.waitingText}>
+              Waiting for {partner?.name ?? 'partner'} to choose…
+            </Text>
+            <Text style={styles.waitingHint}>Their card will appear here automatically</Text>
           </View>
         )}
 
-        {/* Instructions */}
-        {choosing && (
-          <View style={styles.howTo}>
-            <Text style={styles.howToTitle}>How to play</Text>
-            <Text style={styles.howToText}>
-              Take turns choosing Truth or Dare. Truth = answer the question honestly. Dare = complete the challenge. Switch after each turn.
-            </Text>
+        {/* Scores */}
+        {(session.scores[uid] ?? 0) + (session.scores[partnerId ?? ''] ?? 0) > 0 && (
+          <View style={styles.scoreRow}>
+            <View style={styles.scoreItem}>
+              <Text style={styles.scoreNum}>{session.scores[uid] ?? 0}</Text>
+              <Text style={styles.scoreLabel}>You</Text>
+            </View>
+            <Text style={styles.scoreDivider}>—</Text>
+            <View style={styles.scoreItem}>
+              <Text style={styles.scoreNum}>{session.scores[partnerId ?? ''] ?? 0}</Text>
+              <Text style={styles.scoreLabel}>{partner?.name ?? 'Partner'}</Text>
+            </View>
           </View>
         )}
       </ScrollView>
-
-      <HelpModal
-        visible={help.visible}
-        title="Truth or Dare"
-        description="A turn-based game for two. Each round, one partner chooses Truth or Dare — then you switch."
-        tips={[
-          "Choose an intensity level at the top — Sweet, Flirty, or Spicy",
-          "Player A chooses Truth or Dare",
-          "Answer or do the challenge",
-          "Tap 'Done — next player' to switch turns",
-        ]}
-        onDismiss={help.dismiss}
-        onDismissAll={help.dismissAll}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.cream },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
+  roundText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted, width: 60, textAlign: 'right' },
 
-  content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, alignItems: 'center', paddingTop: Spacing.lg, gap: Spacing.lg },
+  picker: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.md },
+  pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
+  levelCard: { borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, ...Shadow.sm },
+  levelEmoji: { fontSize: 36 },
+  levelInfo: { flex: 1 },
+  levelLabel: { fontFamily: Fonts.heading, fontSize: 22 },
+  levelSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  levelArrow: { fontFamily: Fonts.heading, fontSize: 28 },
 
-  levelSegment: {
-    flexDirection: 'row', backgroundColor: Colors.white, borderRadius: Radius.full,
-    borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', width: '100%',
-  },
-  levelTab: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, gap: 6,
-  },
-  levelEmoji: { fontSize: 18 },
-  levelLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.lg },
 
-  turnBadge: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: Radius.full },
-  turnText: { fontFamily: Fonts.bodyBold, fontSize: 14 },
+  levelSegment: { flexDirection: 'row', backgroundColor: Colors.white, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  levelTab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, gap: 6 },
+  levelTabEmoji: { fontSize: 18 },
+  levelTabLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
 
-  choiceRow: { flexDirection: 'row', gap: Spacing.md, width: '100%' },
-  choiceBtn: {
-    flex: 1, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center',
-    gap: Spacing.sm, borderWidth: 2, ...Shadow.sm,
-  },
-  truthBtn: { backgroundColor: Colors.white, borderColor: Colors.border },
-  dareBtn: { backgroundColor: Colors.white },
+  turnBadge: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: Radius.full, alignItems: 'center' },
+  turnText: { fontFamily: Fonts.bodyBold, fontSize: 15 },
+
+  choiceRow: { flexDirection: 'row', gap: Spacing.md },
+  choiceBtn: { flex: 1, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', gap: Spacing.sm, borderWidth: 2, backgroundColor: Colors.white, ...Shadow.sm },
+  truthBtn: { borderColor: Colors.border },
   choiceBtnEmoji: { fontSize: 36 },
   choiceBtnLabel: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },
   choiceBtnSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
 
-  cardView: {
-    width: '100%', backgroundColor: Colors.white, borderRadius: Radius.xl,
-    padding: Spacing.xl, gap: Spacing.md, borderWidth: 1, borderColor: Colors.border,
-    borderLeftWidth: 4, ...Shadow.sm,
-  },
-  cardTruth: { borderLeftColor: '#1565C0' },
+  cardView: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, ...Shadow.sm },
   cardTypeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   cardTypeEmoji: { fontSize: 22 },
-  cardTypeBadge: { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#1565C0', textTransform: 'uppercase', letterSpacing: 0.8 },
+  cardTypeBadge: { fontFamily: Fonts.bodyBold, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8 },
   cardText: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, lineHeight: 30 },
-  nextBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.sm },
-  nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  doneBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.sm },
+  doneBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
-  howTo: { width: '100%', backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: 6, borderWidth: 1, borderColor: Colors.border },
-  howToTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text },
-  howToText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, lineHeight: 20 },
+  waitingCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  waitingEmoji: { fontSize: 40 },
+  waitingText: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.text, textAlign: 'center' },
+  waitingHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+
+  scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xl },
+  scoreItem: { alignItems: 'center', gap: 2 },
+  scoreNum: { fontFamily: Fonts.heading, fontSize: 36, color: Colors.burgundy },
+  scoreLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+  scoreDivider: { fontFamily: Fonts.bodyItalic, fontSize: 20, color: Colors.muted },
 });
