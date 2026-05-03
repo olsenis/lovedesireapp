@@ -5,6 +5,9 @@ import { DareLevel } from '../constants/content';
 export interface TruthDareCard {
   type: 'truth' | 'dare';
   text: string;
+  answer?: string;      // typed answer for truths
+  answeredBy?: string;  // uid who answered
+  revealed?: boolean;   // true when answer is shared with partner
 }
 
 export interface TruthDareSession {
@@ -33,6 +36,14 @@ export async function startTruthDare(coupleId: string, starterUid: string, level
 
 export async function playCard(coupleId: string, card: TruthDareCard): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), { card });
+}
+
+export async function submitTruthAnswer(coupleId: string, uid: string, answer: string): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
+    'card.answer': answer,
+    'card.answeredBy': uid,
+    'card.revealed': true,
+  });
 }
 
 export async function nextTurn(

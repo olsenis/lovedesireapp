@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
-import { TruthDareSession, subscribeTruthDare, startTruthDare, playCard, nextTurn, resetTruthDare } from '../services/truthDareService';
+import { TruthDareSession, subscribeTruthDare, startTruthDare, playCard, nextTurn, resetTruthDare, submitTruthAnswer } from '../services/truthDareService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -23,6 +23,7 @@ export default function TruthDareScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<TruthDareSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const [answerText, setAnswerText] = useState('');
   const help = useHelp('truth-dare');
 
   const coupleId = profile?.coupleId;
@@ -54,9 +55,17 @@ export default function TruthDareScreen() {
     await playCard(coupleId, { type, text: pickRandom(pool).text });
   };
 
+  const handleSubmitAnswer = async () => {
+    if (!coupleId || !answerText.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await submitTruthAnswer(coupleId, uid, answerText.trim());
+    setAnswerText('');
+  };
+
   const handleDone = async () => {
     if (!coupleId || !session || !partnerId) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setAnswerText('');
     await nextTurn(coupleId, session, uid, partnerId);
   };
 
@@ -140,7 +149,7 @@ export default function TruthDareScreen() {
 
         {/* Card or choice buttons */}
         {session.card ? (
-          // Card revealed — both see it
+          // Card view
           <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
             <View style={styles.cardTypeRow}>
               <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
@@ -149,9 +158,51 @@ export default function TruthDareScreen() {
               </Text>
             </View>
             <Text style={styles.cardText}>{session.card.text}</Text>
-            <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-              <Text style={styles.doneBtnText}>Done — {partner?.name ?? 'partner'}'s turn →</Text>
-            </TouchableOpacity>
+
+            {/* Truth answer flow */}
+            {session.card.type === 'truth' && !session.card.revealed && isMyTurn && (
+              <>
+                <TextInput
+                  style={styles.answerInput}
+                  placeholder="Type your answer here..."
+                  placeholderTextColor={Colors.muted}
+                  value={answerText}
+                  onChangeText={setAnswerText}
+                  multiline
+                  autoFocus
+                />
+                <TouchableOpacity
+                  style={[styles.doneBtn, { backgroundColor: '#1565C0' }, !answerText.trim() && { opacity: 0.4 }]}
+                  onPress={handleSubmitAnswer}
+                  disabled={!answerText.trim()}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.doneBtnText}>Share answer with {partner?.name ?? 'partner'} →</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* Partner waiting for truth answer */}
+            {session.card.type === 'truth' && !session.card.revealed && !isMyTurn && (
+              <Text style={styles.waitingAnswerHint}>
+                ✍️ {session.card.answeredBy ? '' : `${isMyTurn ? 'You are' : (partner?.name ?? 'Partner') + ' is'}`} writing their answer…
+              </Text>
+            )}
+
+            {/* Revealed truth answer */}
+            {session.card.type === 'truth' && session.card.revealed && (
+              <View style={styles.answerReveal}>
+                <Text style={styles.answerLabel}>Answer:</Text>
+                <Text style={styles.answerText}>{session.card.answer}</Text>
+              </View>
+            )}
+
+            {/* Done button — show after dare OR after truth is revealed */}
+            {(session.card.type === 'dare' || session.card.revealed) && (
+              <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
+                <Text style={styles.doneBtnText}>Done — {partner?.name ?? 'partner'}'s turn →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : isMyTurn ? (
           // My turn — show choice buttons
@@ -238,6 +289,11 @@ const styles = StyleSheet.create({
   cardText: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, lineHeight: 30 },
   doneBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.sm },
   doneBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  answerInput: { backgroundColor: Colors.cream, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, minHeight: 80, borderWidth: 1, borderColor: Colors.border, marginTop: Spacing.sm },
+  waitingAnswerHint: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
+  answerReveal: { backgroundColor: '#E3F2FD', borderRadius: Radius.lg, padding: Spacing.md, gap: 4, marginTop: Spacing.sm },
+  answerLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#1565C0', textTransform: 'uppercase', letterSpacing: 0.8 },
+  answerText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
 
   waitingCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border },
   waitingEmoji: { fontSize: 40 },
