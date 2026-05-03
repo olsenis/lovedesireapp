@@ -9,6 +9,7 @@ export interface TruthDareCard {
   text: string;
   answer?: string;
   answeredBy?: string;
+  dareConfirmed?: string[]; // uids who confirmed the dare was done
 }
 
 export interface TruthDareSession {
@@ -38,10 +39,22 @@ export async function startTruthDare(coupleId: string, starterUid: string, level
 }
 
 export async function playCard(coupleId: string, card: TruthDareCard): Promise<void> {
-  // Dare → immediately 'done' (both see it, no answer needed)
-  // Truth → 'answering' (partner must type answer)
-  const phase: TDPhase = card.type === 'dare' ? 'done' : 'answering';
-  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), { card, phase });
+  // Both Truth and Dare go to 'answering' — dare needs both to confirm
+  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
+    card: { ...card, dareConfirmed: [] },
+    phase: 'answering',
+  });
+}
+
+export async function confirmDare(coupleId: string, uid: string, session: TruthDareSession): Promise<void> {
+  const current = session.card?.dareConfirmed ?? [];
+  if (current.includes(uid)) return;
+  const updated = [...current, uid];
+  const bothConfirmed = updated.length >= 2;
+  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
+    'card.dareConfirmed': updated,
+    ...(bothConfirmed ? { phase: 'done' } : {}),
+  });
 }
 
 export async function submitTruthAnswer(coupleId: string, uid: string, answer: string): Promise<void> {

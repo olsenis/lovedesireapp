@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
-import { TruthDareSession, subscribeTruthDare, startTruthDare, playCard, nextTurn, resetTruthDare, submitTruthAnswer } from '../services/truthDareService';
+import { TruthDareSession, subscribeTruthDare, startTruthDare, playCard, nextTurn, resetTruthDare, submitTruthAnswer, confirmDare } from '../services/truthDareService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -53,6 +53,12 @@ export default function TruthDareScreen() {
       : DARES.filter(d => d.level === session.level);
     if (pool.length === 0) return;
     await playCard(coupleId, { type, text: pickRandom(pool).text });
+  };
+
+  const handleConfirmDare = async () => {
+    if (!coupleId || !session) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await confirmDare(coupleId, uid, session);
   };
 
   const handleSubmitAnswer = async () => {
@@ -173,25 +179,25 @@ export default function TruthDareScreen() {
           </View>
         )}
 
-        {/* ── PHASE: answering (Truth only) ────────────────────────────── */}
+        {/* ── PHASE: answering ─────────────────────────────────────────── */}
         {session.phase === 'answering' && session.card && (
-          <View style={[styles.cardView, { borderLeftColor: '#1565C0' }]}>
+          <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
             <View style={styles.cardTypeRow}>
-              <Text style={styles.cardTypeEmoji}>🤔</Text>
-              <Text style={[styles.cardTypeBadge, { color: '#1565C0' }]}>Truth</Text>
+              <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
+              <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+                {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+              </Text>
             </View>
             <Text style={styles.cardText}>{session.card.text}</Text>
 
-            {/* Picker sees: question was sent, waiting */}
-            {isMyTurn && (
+            {/* ── TRUTH ── */}
+            {session.card.type === 'truth' && isMyTurn && (
               <View style={styles.sentBanner}>
                 <Text style={styles.sentText}>✅ Question sent to {partner?.name ?? 'partner'}!</Text>
                 <Text style={styles.sentHint}>Waiting for their answer…</Text>
               </View>
             )}
-
-            {/* Answerer sees: text input */}
-            {!isMyTurn && (
+            {session.card.type === 'truth' && !isMyTurn && (
               <>
                 <Text style={styles.answerPrompt}>Your truth — answer honestly:</Text>
                 <TextInput
@@ -213,6 +219,35 @@ export default function TruthDareScreen() {
                 </TouchableOpacity>
               </>
             )}
+
+            {/* ── DARE — both must confirm ── */}
+            {session.card.type === 'dare' && (() => {
+              const confirmed = session.card.dareConfirmed ?? [];
+              const iConfirmed = confirmed.includes(uid);
+              const theyConfirmed = !!partnerId && confirmed.includes(partnerId);
+              return (
+                <>
+                  {/* Picker: "[Partner] did it!" */}
+                  <TouchableOpacity
+                    style={[styles.dareConfirmBtn, iConfirmed && styles.dareConfirmBtnDone]}
+                    onPress={handleConfirmDare}
+                    disabled={iConfirmed}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.dareConfirmText, iConfirmed && styles.dareConfirmTextDone]}>
+                      {iConfirmed
+                        ? (isMyTurn ? `✓ You confirmed ${partner?.name ?? 'partner'} did it` : '✓ You confirmed: I did it')
+                        : (isMyTurn ? `${partner?.name ?? 'Partner'} did it! ✓` : 'I did it! ✓')}
+                    </Text>
+                  </TouchableOpacity>
+                  {iConfirmed && !theyConfirmed && (
+                    <Text style={styles.sentHint}>
+                      Waiting for {isMyTurn ? (partner?.name ?? 'partner') : 'the other person'} to confirm…
+                    </Text>
+                  )}
+                </>
+              );
+            })()}
           </View>
         )}
 
@@ -276,7 +311,11 @@ const styles = StyleSheet.create({
   waitingCard2: { backgroundColor: Colors.blush, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
   sentBanner: { backgroundColor: '#E8F5E9', borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', gap: 4, marginTop: Spacing.sm },
   sentText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.success },
-  sentHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+  sentHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: 4 },
+  dareConfirmBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.md },
+  dareConfirmBtnDone: { backgroundColor: '#E8F5E9', borderWidth: 1, borderColor: Colors.success },
+  dareConfirmText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  dareConfirmTextDone: { color: Colors.success },
 
   picker: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.md },
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
