@@ -140,29 +140,60 @@ export default function TruthDareScreen() {
           })}
         </View>
 
-        {/* Turn indicator */}
-        <View style={[styles.turnBadge, { backgroundColor: cfg.color }]}>
-          <Text style={[styles.turnText, { color: cfg.textColor }]}>
-            {isMyTurn ? `Your turn — pick for ${partner?.name ?? 'partner'}:` : `${partner?.name ?? 'Partner'}'s turn`}
-          </Text>
-        </View>
-
-        {/* Card or choice buttons */}
-        {session.card ? (
-          // Card view
-          <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
-            <View style={styles.cardTypeRow}>
-              <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
-              <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
-                {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+        {/* ── PHASE: picking ─────────────────────────────────────────── */}
+        {session.phase === 'picking' && isMyTurn && (
+          <>
+            <View style={[styles.turnBadge, { backgroundColor: cfg.color }]}>
+              <Text style={[styles.turnText, { color: cfg.textColor }]}>
+                Your turn — challenge {partner?.name ?? 'partner'}:
               </Text>
+            </View>
+            <View style={styles.choiceRow}>
+              <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85}>
+                <Text style={styles.choiceBtnEmoji}>🤔</Text>
+                <Text style={styles.choiceBtnLabel}>Truth</Text>
+                <Text style={styles.choiceBtnSub}>{partner?.name ?? 'Partner'} answers a question</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.choiceBtn, { borderColor: cfg.textColor }]} onPress={() => handleChoose('dare')} activeOpacity={0.85}>
+                <Text style={styles.choiceBtnEmoji}>{cfg.emoji}</Text>
+                <Text style={[styles.choiceBtnLabel, { color: cfg.textColor }]}>Dare</Text>
+                <Text style={styles.choiceBtnSub}>{partner?.name ?? 'Partner'} does a challenge</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {session.phase === 'picking' && !isMyTurn && (
+          <View style={styles.waitingCard}>
+            <Text style={styles.waitingEmoji}>🎲</Text>
+            <Text style={styles.waitingText}>
+              {partner?.name ?? 'Partner'} is choosing your challenge…
+            </Text>
+            <Text style={styles.waitingHint}>Get ready — Truth or Dare is coming your way</Text>
+          </View>
+        )}
+
+        {/* ── PHASE: answering (Truth only) ────────────────────────────── */}
+        {session.phase === 'answering' && session.card && (
+          <View style={[styles.cardView, { borderLeftColor: '#1565C0' }]}>
+            <View style={styles.cardTypeRow}>
+              <Text style={styles.cardTypeEmoji}>🤔</Text>
+              <Text style={[styles.cardTypeBadge, { color: '#1565C0' }]}>Truth</Text>
             </View>
             <Text style={styles.cardText}>{session.card.text}</Text>
 
-            {/* TRUTH: partner picked for ME → I answer */}
-            {session.card.type === 'truth' && !isMyTurn && !session.card.answeredBy && (
+            {/* Picker sees: question was sent, waiting */}
+            {isMyTurn && (
+              <View style={styles.sentBanner}>
+                <Text style={styles.sentText}>✅ Question sent to {partner?.name ?? 'partner'}!</Text>
+                <Text style={styles.sentHint}>Waiting for their answer…</Text>
+              </View>
+            )}
+
+            {/* Answerer sees: text input */}
+            {!isMyTurn && (
               <>
-                <Text style={styles.answerPrompt}>Your answer:</Text>
+                <Text style={styles.answerPrompt}>Your truth — answer honestly:</Text>
                 <TextInput
                   style={styles.answerInput2}
                   placeholder="Type your answer here..."
@@ -178,57 +209,35 @@ export default function TruthDareScreen() {
                   disabled={!answerText.trim()}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.shareBtnText}>Share my answer →</Text>
+                  <Text style={styles.shareBtnText}>Send my answer →</Text>
                 </TouchableOpacity>
               </>
             )}
+          </View>
+        )}
 
-            {/* TRUTH: I picked for partner → waiting for their answer */}
-            {session.card.type === 'truth' && isMyTurn && !session.card.answeredBy && (
-              <View style={styles.waitingCard2}>
-                <Text style={styles.waitingAnswerHint}>
-                  ✍️ {partner?.name ?? 'Partner'} is writing their answer…
-                </Text>
-              </View>
-            )}
+        {/* ── PHASE: done ──────────────────────────────────────────────── */}
+        {session.phase === 'done' && session.card && (
+          <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+            <View style={styles.cardTypeRow}>
+              <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
+              <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+                {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+              </Text>
+            </View>
+            <Text style={styles.cardText}>{session.card.text}</Text>
 
-            {/* TRUTH: answer submitted → show to both */}
-            {session.card.type === 'truth' && !!session.card.answeredBy && (
+            {/* Show answer for truths */}
+            {session.card.type === 'truth' && session.card.answer && (
               <View style={styles.answerReveal}>
-                <Text style={styles.answerLabel}>Answer:</Text>
+                <Text style={styles.answerLabel}>{!isMyTurn ? 'Your answer:' : `${partner?.name ?? 'Partner'}'s answer:`}</Text>
                 <Text style={styles.answerText}>{session.card.answer}</Text>
               </View>
             )}
 
-            {/* Done button: show for dare always, or for truth after answer submitted */}
-            {(session.card.type === 'dare' || !!session.card.answeredBy) && (
-              <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-                <Text style={styles.doneBtnText}>Done — {partner?.name ?? 'partner'}'s turn →</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : isMyTurn ? (
-          // My turn — show choice buttons
-          <View style={styles.choiceRow}>
-            <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85}>
-              <Text style={styles.choiceBtnEmoji}>🤔</Text>
-              <Text style={styles.choiceBtnLabel}>Truth</Text>
-              <Text style={styles.choiceBtnSub}>Answer honestly</Text>
+            <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
+              <Text style={styles.doneBtnText}>Done — {partner?.name ?? 'partner'}'s turn →</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.choiceBtn, { borderColor: cfg.textColor }]} onPress={() => handleChoose('dare')} activeOpacity={0.85}>
-              <Text style={styles.choiceBtnEmoji}>{cfg.emoji}</Text>
-              <Text style={[styles.choiceBtnLabel, { color: cfg.textColor }]}>Dare</Text>
-              <Text style={styles.choiceBtnSub}>Do the challenge</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          // Partner's turn — waiting
-          <View style={styles.waitingCard}>
-            <Text style={styles.waitingEmoji}>⏳</Text>
-            <Text style={styles.waitingText}>
-              {partner?.name ?? 'Partner'} is choosing for you…
-            </Text>
-            <Text style={styles.waitingHint}>Get ready — Truth or Dare is coming your way</Text>
           </View>
         )}
 
@@ -265,6 +274,9 @@ const styles = StyleSheet.create({
   shareBtn: { backgroundColor: '#1565C0', paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
   shareBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   waitingCard2: { backgroundColor: Colors.blush, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
+  sentBanner: { backgroundColor: '#E8F5E9', borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', gap: 4, marginTop: Spacing.sm },
+  sentText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.success },
+  sentHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
   picker: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.md },
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
