@@ -9,16 +9,17 @@ export interface TruthDareCard {
   text: string;
   answer?: string;
   answeredBy?: string;
-  dareConfirmed?: string[]; // uids who confirmed the dare was done
+  dareConfirmed?: string[]; // uids who confirmed dare was done
 }
 
 export interface TruthDareSession {
   level: DareLevel;
-  turnUid: string;
+  turnUid: string;       // uid of person whose turn it is to PICK
   phase: TDPhase;
   card: TruthDareCard | null;
   scores: Record<string, number>;
   round: number;
+  skipsUsed: Record<string, number>; // uid → skip count
 }
 
 export function subscribeTruthDare(coupleId: string, onChange: (s: TruthDareSession | null) => void): Unsubscribe {
@@ -35,14 +36,22 @@ export async function startTruthDare(coupleId: string, starterUid: string, level
     card: null,
     scores: {},
     round: 1,
+    skipsUsed: {},
   });
 }
 
 export async function playCard(coupleId: string, card: TruthDareCard): Promise<void> {
-  // Both Truth and Dare go to 'answering' — dare needs both to confirm
   await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
     card: { ...card, dareConfirmed: [] },
     phase: 'answering',
+  });
+}
+
+export async function submitTruthAnswer(coupleId: string, uid: string, answer: string): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
+    'card.answer': answer,
+    'card.answeredBy': uid,
+    phase: 'done',
   });
 }
 
@@ -57,15 +66,27 @@ export async function confirmDare(coupleId: string, uid: string, session: TruthD
   });
 }
 
-export async function submitTruthAnswer(coupleId: string, uid: string, answer: string): Promise<void> {
+// Score goes to the CHALLENGED person (not the picker)
+export async function nextTurn(
+  coupleId: string,
+  session: TruthDareSession,
+  uid: string,
+  partnerId: string
+): Promise<void> {
+  const nextUid = session.turnUid === uid ? partnerId : uid;
+  // The challenged person is the one who is NOT the current picker
+  const challengedUid = session.turnUid === uid ? partnerId : uid;
   await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
-    'card.answer': answer,
-    'card.answeredBy': uid,
-    phase: 'done',
+    turnUid: nextUid,
+    phase: 'picking',
+    card: null,
+    round: session.round + 1,
+    [`scores.${challengedUid}`]: (session.scores[challengedUid] ?? 0) + 1,
   });
 }
 
-export async function nextTurn(
+// Only the challenged person (NOT turnUid) can skip
+export async function skipCard(
   coupleId: string,
   session: TruthDareSession,
   uid: string,
@@ -77,17 +98,8 @@ export async function nextTurn(
     phase: 'picking',
     card: null,
     round: session.round + 1,
-    [`scores.${uid}`]: (session.scores[uid] ?? 0) + 1,
-  });
-}
-
-export async function skipCard(coupleId: string, session: TruthDareSession, uid: string, partnerId: string): Promise<void> {
-  const nextUid = session.turnUid === uid ? partnerId : uid;
-  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
-    turnUid: nextUid,
-    phase: 'picking',
-    card: null,
-    round: session.round + 1,
+    [`skipsUsed.${uid}`]: (session.skipsUsed?.[uid] ?? 0) + 1,
+    // No score change
   });
 }
 
@@ -99,5 +111,6 @@ export async function resetTruthDare(coupleId: string): Promise<void> {
     card: null,
     scores: {},
     round: 0,
+    skipsUsed: {},
   });
 }
