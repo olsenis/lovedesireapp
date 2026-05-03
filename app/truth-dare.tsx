@@ -143,7 +143,7 @@ export default function TruthDareScreen() {
         {/* Turn indicator */}
         <View style={[styles.turnBadge, { backgroundColor: cfg.color }]}>
           <Text style={[styles.turnText, { color: cfg.textColor }]}>
-            {isMyTurn ? 'Your turn — choose:' : `${partner?.name ?? 'Partner'}'s turn`}
+            {isMyTurn ? `Your turn — pick for ${partner?.name ?? 'partner'}:` : `${partner?.name ?? 'Partner'}'s turn`}
           </Text>
         </View>
 
@@ -159,8 +159,8 @@ export default function TruthDareScreen() {
             </View>
             <Text style={styles.cardText}>{session.card.text}</Text>
 
-            {/* TRUTH: my turn, not yet answered → show TextInput */}
-            {session.card.type === 'truth' && isMyTurn && !session.card.answeredBy && (
+            {/* TRUTH: partner picked for ME → I answer */}
+            {session.card.type === 'truth' && !isMyTurn && !session.card.answeredBy && (
               <>
                 <Text style={styles.answerPrompt}>Your answer:</Text>
                 <TextInput
@@ -178,13 +178,13 @@ export default function TruthDareScreen() {
                   disabled={!answerText.trim()}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.shareBtnText}>Share answer with {partner?.name ?? 'partner'} →</Text>
+                  <Text style={styles.shareBtnText}>Share my answer →</Text>
                 </TouchableOpacity>
               </>
             )}
 
-            {/* TRUTH: partner's turn, no answer yet → show waiting */}
-            {session.card.type === 'truth' && !isMyTurn && !session.card.answeredBy && (
+            {/* TRUTH: I picked for partner → waiting for their answer */}
+            {session.card.type === 'truth' && isMyTurn && !session.card.answeredBy && (
               <View style={styles.waitingCard2}>
                 <Text style={styles.waitingAnswerHint}>
                   ✍️ {partner?.name ?? 'Partner'} is writing their answer…
@@ -226,9 +226,9 @@ export default function TruthDareScreen() {
           <View style={styles.waitingCard}>
             <Text style={styles.waitingEmoji}>⏳</Text>
             <Text style={styles.waitingText}>
-              Waiting for {partner?.name ?? 'partner'} to choose…
+              {partner?.name ?? 'Partner'} is choosing for you…
             </Text>
-            <Text style={styles.waitingHint}>Their card will appear here automatically</Text>
+            <Text style={styles.waitingHint}>Get ready — Truth or Dare is coming your way</Text>
           </View>
         )}
 
