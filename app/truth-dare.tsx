@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
-import { TruthDareSession, subscribeTruthDare, startTruthDare, playCard, nextTurn, resetTruthDare, submitTruthAnswer, confirmDare } from '../services/truthDareService';
+import { TruthDareSession, subscribeTruthDare, startTruthDare, playCard, nextTurn, resetTruthDare, submitTruthAnswer, confirmDare, skipCard } from '../services/truthDareService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -59,6 +59,12 @@ export default function TruthDareScreen() {
     if (!coupleId || !session) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await confirmDare(coupleId, uid, session);
+  };
+
+  const handleSkip = async () => {
+    if (!coupleId || !session || !partnerId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await skipCard(coupleId, session, uid, partnerId);
   };
 
   const handleSubmitAnswer = async () => {
@@ -197,6 +203,11 @@ export default function TruthDareScreen() {
                 <Text style={styles.sentHint}>Waiting for their answer…</Text>
               </View>
             )}
+
+            {/* Skip */}
+            <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
+              <Text style={styles.skipText}>Skip →</Text>
+            </TouchableOpacity>
             {session.card.type === 'truth' && !isMyTurn && (
               <>
                 <Text style={styles.answerPrompt}>Your truth — answer honestly:</Text>
@@ -220,33 +231,49 @@ export default function TruthDareScreen() {
               </>
             )}
 
-            {/* ── DARE — both must confirm ── */}
+            {/* ── DARE — sequential: partner first, then picker confirms ── */}
             {session.card.type === 'dare' && (() => {
               const confirmed = session.card.dareConfirmed ?? [];
               const iConfirmed = confirmed.includes(uid);
               const theyConfirmed = !!partnerId && confirmed.includes(partnerId);
-              return (
-                <>
-                  {/* Picker: "[Partner] did it!" */}
-                  <TouchableOpacity
-                    style={[styles.dareConfirmBtn, iConfirmed && styles.dareConfirmBtnDone]}
-                    onPress={handleConfirmDare}
-                    disabled={iConfirmed}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={[styles.dareConfirmText, iConfirmed && styles.dareConfirmTextDone]}>
-                      {iConfirmed
-                        ? (isMyTurn ? `✓ You confirmed ${partner?.name ?? 'partner'} did it` : '✓ You confirmed: I did it')
-                        : (isMyTurn ? `${partner?.name ?? 'Partner'} did it! ✓` : 'I did it! ✓')}
-                    </Text>
-                  </TouchableOpacity>
-                  {iConfirmed && !theyConfirmed && (
-                    <Text style={styles.sentHint}>
-                      Waiting for {isMyTurn ? (partner?.name ?? 'partner') : 'the other person'} to confirm…
-                    </Text>
-                  )}
-                </>
-              );
+
+              if (isMyTurn) {
+                // PICKER
+                if (!theyConfirmed) {
+                  // Eva hasn't done it yet — show waiting
+                  return (
+                    <View style={styles.sentBanner}>
+                      <Text style={styles.sentText}>✅ Dare sent to {partner?.name ?? 'partner'}!</Text>
+                      <Text style={styles.sentHint}>Waiting for them to do it and confirm…</Text>
+                    </View>
+                  );
+                } else if (!iConfirmed) {
+                  // Eva confirmed — now picker confirms they saw it happen
+                  return (
+                    <TouchableOpacity style={styles.dareConfirmBtn} onPress={handleConfirmDare} activeOpacity={0.85}>
+                      <Text style={styles.dareConfirmText}>✓ {partner?.name ?? 'Partner'} did it — confirm!</Text>
+                    </TouchableOpacity>
+                  );
+                }
+                return null;
+              } else {
+                // PARTNER (Eva)
+                if (!iConfirmed) {
+                  // Eva needs to confirm she did it
+                  return (
+                    <TouchableOpacity style={styles.dareConfirmBtn} onPress={handleConfirmDare} activeOpacity={0.85}>
+                      <Text style={styles.dareConfirmText}>✓ I did it!</Text>
+                    </TouchableOpacity>
+                  );
+                } else {
+                  // Eva confirmed, waiting for picker
+                  return (
+                    <View style={styles.sentBanner}>
+                      <Text style={styles.sentText}>✓ Done — waiting for {partner?.name ?? 'partner'} to confirm…</Text>
+                    </View>
+                  );
+                }
+              }
             })()}
           </View>
         )}
@@ -316,6 +343,8 @@ const styles = StyleSheet.create({
   dareConfirmBtnDone: { backgroundColor: '#E8F5E9', borderWidth: 1, borderColor: Colors.success },
   dareConfirmText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   dareConfirmTextDone: { color: Colors.success },
+  skipBtn: { alignItems: 'center', paddingVertical: Spacing.sm, marginTop: Spacing.xs },
+  skipText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
   picker: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.md },
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },

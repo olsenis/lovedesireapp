@@ -81,6 +81,16 @@ export async function nextTurn(
   });
 }
 
+export async function skipCard(coupleId: string, session: TruthDareSession, uid: string, partnerId: string): Promise<void> {
+  const nextUid = session.turnUid === uid ? partnerId : uid;
+  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
+    turnUid: nextUid,
+    phase: 'picking',
+    card: null,
+    round: session.round + 1,
+  });
+}
+
 export async function resetTruthDare(coupleId: string): Promise<void> {
   await setDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
     level: 'flirty',
