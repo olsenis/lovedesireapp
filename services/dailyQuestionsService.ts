@@ -1,15 +1,27 @@
-import { doc, setDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, getDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 
 export interface DailyQuestionDoc {
   date: string;
-  items: Question[];                                   // 18 questions: 3 per category
-  discussed: Record<string, number[]>;                 // { uid: [globalIndex, ...] }
+  items: Question[];
+  discussed: Record<string, number[]>;
+  answers: Record<string, Record<string, string>>; // uid -> { "gi": answer }
+}
+
+export interface QuestionStreak {
+  count: number;
+  lastDate: string; // YYYY-MM-DD
 }
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function yesterdayKey(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
 }
 
 function deterministicShuffle(pool: Question[], seedStr: string): Question[] {
@@ -35,7 +47,7 @@ function pickDailyQuestions(date: string, coupleId: string): Question[] {
     const shuffled = deterministicShuffle(pool, date + coupleId + cat);
     result.push(...shuffled.slice(0, 3));
   }
-  return result; // 18 questions: fun[0-2], deep[3-5], romantic[6-8], spicy[9-11], therapy[12-14], fantasy[15-17]
+  return result;
 }
 
 export function subscribeDailyQuestions(
@@ -49,11 +61,54 @@ export function subscribeDailyQuestions(
       onChange(snap.data() as DailyQuestionDoc);
     } else {
       const items = pickDailyQuestions(date, coupleId);
-      const newDoc: DailyQuestionDoc = { date, items, discussed: {} };
+      const newDoc: DailyQuestionDoc = { date, items, discussed: {}, answers: {} };
       await setDoc(ref, newDoc);
       onChange(newDoc);
     }
   });
+}
+
+export function subscribeStreak(
+  coupleId: string,
+  onChange: (s: QuestionStreak) => void
+): Unsubscribe {
+  return onSnapshot(doc(db, 'couples', coupleId, 'streaks', 'questions'), (snap) => {
+    onChange(snap.exists() ? (snap.data() as QuestionStreak) : { count: 0, lastDate: '' });
+  });
+}
+
+export async function submitAnswer(
+  coupleId: string,
+  uid: string,
+  globalIndex: number,
+  answer: string
+): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
+    [`answers.${uid}.${globalIndex}`]: answer,
+  });
+}
+
+export async function checkAndUpdateStreak(coupleId: string): Promise<void> {
+  const streakRef = doc(db, 'couples', coupleId, 'streaks', 'questions');
+  const today = todayKey();
+  const snap = await getDoc(streakRef);
+  if (!snap.exists()) {
+    await setDoc(streakRef, { count: 1, lastDate: today });
+    return;
+  }
+  const streak = snap.data() as QuestionStreak;
+  if (streak.lastDate === today) return;
+  const newCount = streak.lastDate === yesterdayKey() ? streak.count + 1 : 1;
+  await setDoc(streakRef, { count: newCount, lastDate: today });
+}
+
+export function bothAnswered(
+  dailyDoc: DailyQuestionDoc,
+  index: number,
+  uid1: string,
+  uid2: string
+): boolean {
+  return !!(dailyDoc.answers?.[uid1]?.[String(index)]) && !!(dailyDoc.answers?.[uid2]?.[String(index)]);
 }
 
 export async function markDiscussed(
@@ -64,12 +119,19 @@ export async function markDiscussed(
 ): Promise<void> {
   const already = current.discussed[uid] ?? [];
   if (already.includes(globalIndex)) return;
-  const date = todayKey();
-  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', date), {
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
     [`discussed.${uid}`]: [...already, globalIndex],
   });
 }
 
-export function bothDiscussed(doc: DailyQuestionDoc, index: number, uid1: string, uid2: string): boolean {
-  return (doc.discussed[uid1] ?? []).includes(index) && (doc.discussed[uid2] ?? []).includes(index);
+export function bothDiscussed(
+  dailyDoc: DailyQuestionDoc,
+  index: number,
+  uid1: string,
+  uid2: string
+): boolean {
+  return (
+    (dailyDoc.discussed[uid1] ?? []).includes(index) &&
+    (dailyDoc.discussed[uid2] ?? []).includes(index)
+  );
 }
