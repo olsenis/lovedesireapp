@@ -44,12 +44,12 @@ app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
 app/                         Full-screen sub-screens
   dare.tsx                   Dare Wheel — Sweet / Flirty / Spicy spin
   roulette.tsx               Date Night Roulette — spin for a date idea
-  questions-game.tsx         Questions — Daily (3/day synced) across 6 categories
+  questions-game.tsx         Questions — 3/day per category, private answers, reveal when both answered, daily streak
   fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, 5 at a time
-  truth-dare.tsx             Truth or Dare — real 2-phone multiplayer (phase: picking/answering/done)
-  would-you-rather.tsx       Would You Rather — simultaneous answer reveal, 3 levels
+  truth-dare.tsx             Truth or Dare — real 2-phone multiplayer (picking/answering/done), audio answers
+  would-you-rather.tsx       Would You Rather — simultaneous answer reveal, 3 levels, session persists
   two-truths.tsx             Two Truths One Lie — guessing game with dares, local state
-  bingo.tsx                  Intimacy Bingo — 5×5 monthly card, both partners sync
+  bingo.tsx                  Intimacy Bingo — 5x5 monthly card, collaborative win, reset button
   challenge.tsx              30-Day Challenge — Reconnect/Spark/Fire/Desire + edit/veto system
   blueprint.tsx              Erotic Blueprint Quiz — 5 types, couple compatibility
   profile.tsx                Profile & Settings — name, photo, password, notifications, relationship date
@@ -86,11 +86,12 @@ couples/{coupleId}/reminders/{id}    FlirtReminder — message, time, days[], ac
 couples/{coupleId}/dates/{id}        ImportantDate — label, date, emoji, createdBy
 couples/{coupleId}/challenge/active  ChallengeState — program, phase, currentDay, completedDays[], completedBy, customTasks, editsUsed, vetoesUsed
 couples/{coupleId}/blueprints/{uid}  BlueprintResult — type, scores, completedAt (readable by both)
-couples/{coupleId}/wyr/active        WYRSession — level, questionIndex, answers{uid:a|b}, phase, score
-couples/{coupleId}/bingo/{month}     BingoSession — squares[], checked[], checkedBy{}, winner?
-couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(picking|answering|done), card, scores, round
+couples/{coupleId}/wyr/active        WYRSession — level, questionIndex, answers{uid:a|b}, revealed, score
+couples/{coupleId}/bingo/{month}     BingoSession — squares[], checked[], checkedBy{}, winner('both'|null), resetCount
+couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(picking|answering|done), card{type,text,answer,audioURL,answeredBy,dareConfirmed[]}, scores, round, skipsUsed
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
-couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}
+couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
+couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
 ```
 
 ### Services (`/services`)
@@ -112,13 +113,13 @@ couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed
 | `notificationService.ts` | `notifyPartner` — POSTs to Expo Push API |
 | `memoryService.ts` | `subscribeMemories`, `addMemory`, `deleteMemory` |
 | `importantDateService.ts` | `subscribeDates`, `addImportantDate`, `deleteImportantDate`, `getDaysUntil` |
-| `storageService.ts` | `uploadProfilePhoto`, `uploadMemoryPhoto` — Firebase Storage |
+| `storageService.ts` | `uploadProfilePhoto`, `uploadMemoryPhoto`, `uploadTruthDareAudio` — Firebase Storage |
 | `helpService.ts` | `getHelpState`, `markFeatureSeen`, `setHelpEnabled`, `disableAllHelp`, `resetHelp` |
 | `dailyWishService.ts` | `subscribeDailyWishes`, `voteDailyWish`, `markAddToList`, `bothWantToAdd` |
-| `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `markDiscussed`, `bothDiscussed` |
+| `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `subscribeStreak`, `submitAnswer`, `checkAndUpdateStreak`, `bothAnswered`, `markDiscussed`, `bothDiscussed` |
 | `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR` |
-| `bingoService.ts` | `subscribeBingo`, `checkBingoSquare`, `hasBingo` |
-| `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `nextTurn`, `resetTruthDare` |
+| `bingoService.ts` | `subscribeBingo`, `checkBingoSquare`, `resetBingo`, `hasBingo` |
+| `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 
 ### Hooks
 
@@ -131,15 +132,15 @@ couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed
 All static game content lives here — import from this file, never hardcode in screens:
 
 - `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 120 questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy (20 each)
-- `DARES` + `DARE_LEVEL_CONFIG` — 90 dares across Sweet/Flirty/Spicy (30 each)
-- `TRUTHS` — 30 truths across Sweet/Flirty/Spicy (10 each)
+- `DARES` + `DARE_LEVEL_CONFIG` — ~145 dares across Sweet (~45)/Flirty (~46)/Spicy (~50). Clear level separation: Sweet=cute/romantic, Flirty=sensual kissing/touch, Spicy=explicitly sexual/X-rated
+- `TRUTHS` — 74 truths across Sweet(25)/Flirty(24)/Spicy(25). Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual
 - `DATE_IDEAS` — 48 date ideas (home/out/adventure, 16 each)
 - `PRESET_WISHES` — 60 wishlist presets (Romantic/Adventure/Intimate/Spicy, 15 each)
 - `QUIZ_QUESTIONS` + `LOVE_LANGUAGE_LABELS` — 10 A/B love language questions
 - `BLUEPRINT_QUESTIONS` + `BLUEPRINT_TYPE_CONFIG` + `BLUEPRINT_COMPATIBILITY` — 15 A/B questions, 5 types, 25-pair compatibility guidance
 - `FANTASY_PRESETS` + `FANTASY_CATEGORY_CONFIG` — 60 fantasy presets (Roleplay/Sensual/Bold/Adventurous)
 - `FANTASY_WISHES_PRESETS` — 290+ explicit sexual scenarios for Fantasy Wishes
-- `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 4 programs × 30 tasks
+- `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 4 programs x 30 tasks
 - `WYR_QUESTIONS` + `WYR_LEVEL_CONFIG` — 90 Would You Rather questions (Playful/Romantic/Spicy)
 - `BINGO_ACTIVITIES` + `BINGO_REWARDS` — 55 activities + 10 rewards for Intimacy Bingo
 - `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 240+ items for Daily Picks (Sweet/Flirty/Spicy/Sexual)
@@ -152,7 +153,13 @@ All static game content lives here — import from this file, never hardcode in 
 
 ### Key implementation patterns
 
-**Truth or Dare multiplayer:** Uses `phase` field (picking/answering/done) in Firestore. Picker sees choice buttons; partner sees waiting screen. For Truth: partner types answer → both see reveal. For Dare: both see immediately. Session persists between app visits.
+**Truth or Dare multiplayer:** Phase-based state machine (picking/answering/done) in Firestore. Picker draws card locally first (can skip/redraw before sending), then commits with `playCard()`. Truth: partner types text OR records audio (expo-av, uploaded to Firebase Storage). Dare: sequential confirmation — partner confirms first ("Dare completed"), then picker confirms. Score goes to challenged person, not picker. `skipsUsed` tracks skips per uid.
+
+**WYR session persistence:** Session stored in Firestore — Back button and app exit do NOT reset the game. Push notification sent when you answer. Home screen nudge appears when partner answered but you haven't.
+
+**Questions Game reveal:** Both partners answer privately (text input). Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side. Daily streak (`couples/{coupleId}/streaks/questions`) increments when both answer on the same day. Streak shown as 🔥 N in header.
+
+**Intimacy Bingo:** Collaborative — `winner: 'both'` set when any bingo line is completed. Reset button generates a new card using `resetCount` as extra seed component, ensuring each reset gives a different card. Card is deterministic per month+coupleId+resetCount.
 
 **Double-blind voting (Wishlist, Fantasy, Fantasy Wishes):** `votes: { [uid]: 'yes'|'maybe'|'no' }`. Only mutual `yes` surfaces in Matches. Never expose individual votes.
 
@@ -164,9 +171,13 @@ All static game content lives here — import from this file, never hardcode in 
 
 **Help system:** `useHelp(key)` hook checks `users/{uid}/private/help` — shows HelpModal once per feature. Toggle in Profile.
 
-**Push notifications:** Expo Push tokens registered on startup. `notifyPartner()` POSTs to Expo Push API. Only works on real devices.
+**Push notifications:** Expo Push tokens registered on startup. `notifyPartner()` POSTs to Expo Push API. Only works on real devices. Used in: mood, WYR answers, Questions Game answers, Truth or Dare answers.
 
-**Firebase Storage:** Profile photos and memories stored at `users/{uid}/profile.jpg` and `couples/{coupleId}/memories/`. `storageService.ts` handles upload + getDownloadURL.
+**Home screen nudges ("Waiting for you"):** index.tsx subscribes to challenge, notes, fantasyWishes, dailyQuestions, dailyWishes, and WYR. Shows nudge card when partner has acted but current user hasn't.
+
+**Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`.
+
+**Content rules:** No em dashes (—) anywhere in UI strings — use commas instead. Dares must be physical actions (do something), not verbal (say/tell/describe). Spicy level = explicitly X-rated language.
 
 ## App Store / Play Store deployment
 
