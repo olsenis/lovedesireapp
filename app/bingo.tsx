@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { BingoSession, subscribeBingo, checkBingoSquare, hasBingo } from '../services/bingoService';
+import { BingoSession, subscribeBingo, checkBingoSquare, resetBingo, hasBingo } from '../services/bingoService';
 import { BINGO_REWARDS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -22,6 +22,7 @@ export default function BingoScreen() {
   const [session, setSession] = useState<BingoSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [reward] = useState(() => pickRandom(BINGO_REWARDS));
   const help = useHelp('bingo');
 
@@ -47,10 +48,16 @@ export default function BingoScreen() {
     setSelectedSquare(null);
   };
 
+  const handleReset = async () => {
+    if (!coupleId || !session) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await resetBingo(coupleId, session);
+    setConfirmReset(false);
+  };
+
   if (loading || !session) return null;
 
   const checkedSet = new Set(session.checked);
-  const winnerName = session.winner === uid ? 'You' : partner?.name ?? 'Partner';
   const currentMonthName = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' });
 
   return (
@@ -58,16 +65,18 @@ export default function BingoScreen() {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Intimacy Bingo</Text>
-        <Text style={styles.month}>{currentMonthName}</Text>
+        <TouchableOpacity onPress={() => setConfirmReset(true)} style={styles.resetBtn}>
+          <Text style={styles.resetBtnText}>↺ New</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.intro}>Complete activities together to mark them off. First to get 5 in a row wins!</Text>
+        <Text style={styles.intro}>Complete activities together and mark them off. Get 5 in a row to win together!</Text>
 
-        {session.winner && (
+        {session.winner === 'both' && (
           <View style={styles.winnerBanner}>
             <Text style={styles.winnerEmoji}>🎉</Text>
-            <Text style={styles.winnerTitle}>{winnerName} got Bingo!</Text>
+            <Text style={styles.winnerTitle}>You both got Bingo!</Text>
             <Text style={styles.winnerReward}>Reward: {reward}</Text>
           </View>
         )}
@@ -110,7 +119,7 @@ export default function BingoScreen() {
         <Text style={styles.hint}>Tap a square after you've done it together to mark it off.</Text>
       </ScrollView>
 
-      {/* Confirm modal */}
+      {/* Mark done modal */}
       <Modal visible={selectedSquare !== null} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
@@ -129,11 +138,29 @@ export default function BingoScreen() {
         </View>
       </Modal>
 
+      {/* Reset confirmation modal */}
+      <Modal visible={confirmReset} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>New card?</Text>
+            <Text style={styles.modalText}>This will clear the current card and deal a fresh one. Both partners will see the new card.</Text>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setConfirmReset(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmBtn} onPress={handleReset}>
+                <Text style={styles.confirmText}>↺ New card</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <HelpModal
         visible={help.visible}
         title="Intimacy Bingo"
-        description="A shared 5×5 bingo card with activities to try together. New card every month. First to get 5 in a row wins!"
-        tips={["Tap a square after you've done the activity together","Both partners see the same card in real time","Get 5 in a row (horizontal, vertical, or diagonal) to win","Winner gets to choose a reward from the list"]}
+        description="A shared 5×5 bingo card with activities to try together. Work as a team to get 5 in a row!"
+        tips={["Tap a square after you've done the activity together","Both partners see the same card in real time","Get 5 in a row (horizontal, vertical, or diagonal) to win together","Tap '↺ New' in the header to get a fresh card any time"]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />
@@ -147,7 +174,8 @@ const styles = StyleSheet.create({
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
-  month: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, width: 60, textAlign: 'right' },
+  resetBtn: { width: 60, alignItems: 'flex-end' },
+  resetBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
 
   content: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xxl, paddingTop: Spacing.md, gap: Spacing.md },
   intro: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 22, paddingHorizontal: Spacing.md },
