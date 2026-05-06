@@ -1043,7 +1043,7 @@ export interface Truth {
 }
 
 export const TRUTHS: Truth[] = [
-  // Sweet
+  // Sweet — emotional, romantic, connection-focused
   { text: "What's the most thoughtful thing I've ever done for you?", level: 'sweet' },
   { text: "What's a quality you love about me that you've never properly told me?", level: 'sweet' },
   { text: "What did you first notice about me when we met?", level: 'sweet' },
@@ -1054,28 +1054,43 @@ export const TRUTHS: Truth[] = [
   { text: "What's something about me that genuinely surprised you?", level: 'sweet' },
   { text: "What's a moment from our relationship you wish you could relive?", level: 'sweet' },
   { text: "What's something I've done that you've never properly thanked me for?", level: 'sweet' },
-  // Flirty
+  { text: "What's something you wish we did more of together?", level: 'sweet' },
+  { text: "What does our relationship give you that you didn't know you needed?", level: 'sweet' },
+  { text: "What's one thing about me you hope never changes?", level: 'sweet' },
+  { text: "What's something I do that makes you feel genuinely seen?", level: 'sweet' },
+  { text: "What's a small ritual of ours that you never want to lose?", level: 'sweet' },
+  // Flirty — physical attraction, desire, sensual but not explicit
   { text: "What's your favorite physical feature of mine?", level: 'flirty' },
-  { text: "When did you last think about me in a romantic way?", level: 'flirty' },
+  { text: "When did you last think about me in a romantic way — and what triggered it?", level: 'flirty' },
   { text: "What's the most attractive thing I do without realizing it?", level: 'flirty' },
-  { text: "What's the first thing you think about when I walk into a room?", level: 'flirty' },
-  { text: "What's a compliment you've wanted to give me but haven't yet?", level: 'flirty' },
-  { text: "What do I wear that you love the most?", level: 'flirty' },
+  { text: "What's the first thing you notice when I walk into a room?", level: 'flirty' },
+  { text: "What outfit or item of clothing of mine turns you on the most?", level: 'flirty' },
+  { text: "Where is your favorite place on my body to be touched or kissed?", level: 'flirty' },
   { text: "What's something I've done recently that you found irresistible?", level: 'flirty' },
   { text: "When have I been at my most attractive to you?", level: 'flirty' },
   { text: "What part of me do you find yourself looking at most?", level: 'flirty' },
-  { text: "What's something you'd love me to do more of?", level: 'flirty' },
-  // Spicy
-  { text: "What's something you've thought about but never asked for?", level: 'spicy' },
-  { text: "What's your favorite intimate memory of us — describe it.", level: 'spicy' },
-  { text: "What's one thing you'd want to try that we haven't yet?", level: 'spicy' },
-  { text: "What time or place has felt especially exciting to you?", level: 'spicy' },
-  { text: "What's the boldest thing you've ever wanted to say to me?", level: 'spicy' },
-  { text: "What would you want our perfect evening to look like in full detail?", level: 'spicy' },
-  { text: "Is there a fantasy you've been curious about?", level: 'spicy' },
-  { text: "What's one thing I could do that would drive you completely wild?", level: 'spicy' },
-  { text: "What do you find most exciting about our physical relationship?", level: 'spicy' },
-  { text: "What's something you've wanted to tell me but felt shy about?", level: 'spicy' },
+  { text: "What's the most attractive thing I say or do during a kiss?", level: 'flirty' },
+  { text: "What's the best kiss we've ever shared — what made it special?", level: 'flirty' },
+  { text: "What's something about my appearance you noticed early on but never mentioned?", level: 'flirty' },
+  { text: "What's the most turned on you've ever been by something I did — what was it?", level: 'flirty' },
+  { text: "Is there a part of my body you could never get enough of?", level: 'flirty' },
+  { text: "What's a compliment you've wanted to give me but never quite said?", level: 'flirty' },
+  // Spicy — explicitly sexual, honest and specific
+  { text: "What's your favorite thing I do in bed — be specific.", level: 'spicy' },
+  { text: "What's your favorite sex position — and what do you love most about it?", level: 'spicy' },
+  { text: "What's one kinky thing you'd love to try that we haven't done yet?", level: 'spicy' },
+  { text: "What's the most daring place you've wanted to have sex?", level: 'spicy' },
+  { text: "What's your dirtiest sexual fantasy — the one you've never told me?", level: 'spicy' },
+  { text: "What could I do in bed that would completely blow your mind?", level: 'spicy' },
+  { text: "Have you ever had a sex dream about me — what happened?", level: 'spicy' },
+  { text: "What part of my body do you find most sexually attractive — be honest.", level: 'spicy' },
+  { text: "What's something you wish I did more of in bed — be specific.", level: 'spicy' },
+  { text: "What's the most intimate or sexual thing you've done that you've never told me?", level: 'spicy' },
+  { text: "What's the most unexpected thing that turns you on about me?", level: 'spicy' },
+  { text: "What's your favorite sex prop or toy — or one you've always wanted to try?", level: 'spicy' },
+  { text: "What's something I've said or done during sex that you found especially hot?", level: 'spicy' },
+  { text: "If you could take complete control tonight — what exactly would you do?", level: 'spicy' },
+  { text: "What's the most turned on you've ever been — describe exactly what happened?", level: 'spicy' },
 ];
 
 // ─── WOULD YOU RATHER ────────────────────────────────────────────────────────
