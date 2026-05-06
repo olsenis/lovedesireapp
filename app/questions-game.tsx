@@ -64,7 +64,7 @@ export default function QuestionsGameScreen() {
 
 
       {/* Category tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={styles.catRow}>
+      <View style={styles.catRow}>
         {ALL_CATEGORIES.map((cat) => {
           const c = QUESTION_CATEGORY_CONFIG[cat];
           const active = category === cat;
@@ -80,7 +80,7 @@ export default function QuestionsGameScreen() {
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       <ScrollView contentContainerStyle={styles.dailyContent}>
           {/* Progress */}
@@ -168,8 +168,7 @@ const styles = StyleSheet.create({
   modeBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   modeBtnTextActive: { color: Colors.cream },
 
-  catScroll: { maxHeight: 64, flexGrow: 0 },
-  catRow: { paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingVertical: Spacing.sm, alignItems: 'center' },
+  catRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingVertical: Spacing.sm },
   catBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 8, paddingHorizontal: Spacing.md,
