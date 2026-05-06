@@ -89,13 +89,14 @@ export default function TruthDareScreen() {
     setDrawnCard({ type, text: pickRandom(pool).text });
   };
 
-  // Redraw locally
+  // Redraw locally — exclude current card so you never get the same one twice
   const handleRedraw = () => {
     if (!session || !drawnCard) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const pool = drawnCard.type === 'truth'
+    const pool = (drawnCard.type === 'truth'
       ? TRUTHS.filter(t => t.level === session.level)
-      : DARES.filter(d => d.level === session.level);
+      : DARES.filter(d => d.level === session.level)
+    ).filter(item => item.text !== drawnCard.text);
     if (pool.length === 0) return;
     setDrawnCard({ type: drawnCard.type, text: pickRandom(pool).text });
   };
