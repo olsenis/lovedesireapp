@@ -204,10 +204,10 @@ export default function BlueprintScreen() {
       <HelpModal
         visible={help.visible}
         title="Erotic Blueprint"
-        description="15 questions that identify your erotic type — how you feel most alive in intimacy. When both partners complete it, your compatibility appears."
+        description="15 questions that identify your erotic type, how you feel most alive in intimacy. When both partners complete it, your compatibility appears."
         tips={[
           '5 types: Sensual, Sexual, Energetic, Kinky, Shapeshifter',
-          'Answer honestly — no right or wrong type',
+          'Answer honestly, no right or wrong type',
           "When both complete it: see your partner's type + compatibility tips",
           'Includes 3 actionable tips for your specific combination',
         ]}

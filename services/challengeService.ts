@@ -38,7 +38,7 @@ export async function startChallenge(coupleId: string, program: ChallengeProgram
   });
 }
 
-// Move from setup to active — anyone can trigger this
+// Move from setup to active, anyone can trigger this
 export async function activateChallenge(coupleId: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'challenge', 'active'), { phase: 'active' });
 }
@@ -95,7 +95,7 @@ export async function vetoDay(coupleId: string, uid: string, state: ChallengeSta
     completedBy: updatedBy,
     completedDays: newCompleted,
     currentDay: nextDay,
-    [`customTasks.${day}`]: '🎲 Free day — just have sex however you like.',
+    [`customTasks.${day}`]: '🎲 Free day, just have sex however you like.',
     [`vetoesUsed.${uid}`]: used + 1,
   });
 }

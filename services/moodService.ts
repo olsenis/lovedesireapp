@@ -41,7 +41,7 @@ export async function setMood(coupleId: string, uid: string, emoji: MoodEmoji, n
   });
 }
 
-// Fetches today's mood without compound index — uses single-field orderBy + client-side filter
+// Fetches today's mood without compound index, uses single-field orderBy + client-side filter
 export async function getTodaysMood(coupleId: string, uid: string): Promise<MoodEntry | null> {
   const today = todayStart();
   const q = query(collection(db, 'couples', coupleId, 'moods'), orderBy('createdAt', 'desc'), limit(50));
@@ -52,7 +52,7 @@ export async function getTodaysMood(coupleId: string, uid: string): Promise<Mood
   return mood ?? null;
 }
 
-// Subscribes to today's moods without compound index — single-field orderBy, client-side date filter
+// Subscribes to today's moods without compound index, single-field orderBy, client-side date filter
 export function subscribeToMoods(coupleId: string, onChange: (moods: MoodEntry[]) => void): Unsubscribe {
   const q = query(collection(db, 'couples', coupleId, 'moods'), orderBy('createdAt', 'desc'), limit(50));
   return onSnapshot(q, (snap) => {

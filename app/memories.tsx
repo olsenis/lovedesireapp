@@ -135,11 +135,11 @@ export default function MemoriesScreen() {
       <HelpModal
         visible={help.visible}
         title="Memories"
-        description="A private shared photo album — only the two of you can see it."
+        description="A private shared photo album, only the two of you can see it."
         tips={[
           'Tap + Add to add a photo with an optional caption',
           'Tap ✕ to delete a memory',
-          'Photos are private — not visible to anyone else',
+          'Photos are private, not visible to anyone else',
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

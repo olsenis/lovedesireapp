@@ -19,7 +19,7 @@ export default function QuestionsScreen() {
       <Text style={styles.title}>Question Game</Text>
       <Text style={styles.subtitle}>Answer separately, reveal together</Text>
 
-      {/* Category picker — TODO: make tappable */}
+      {/* Category picker, TODO: make tappable */}
       <View style={styles.categoryGrid}>
         {CATEGORIES.map((cat) => (
           <Card key={cat.label} style={StyleSheet.flatten([styles.catCard, { backgroundColor: cat.color }])}>

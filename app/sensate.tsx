@@ -23,14 +23,14 @@ const STAGES: Stage[] = [
   {
     id: 1,
     title: 'Discover',
-    subtitle: 'Non-genital touch — sensation only',
+    subtitle: 'Non-genital touch, sensation only',
     durationMinutes: 15,
     color: '#E8F5E9',
     textColor: '#2E7D32',
-    instruction: 'Partner A touches Partner B for 15 minutes — back, arms, face, scalp. Partner B only receives and notices. No goal. No performance. Switch when the timer ends.',
+    instruction: 'Partner A touches Partner B for 15 minutes, back, arms, face, scalp. Partner B only receives and notices. No goal. No performance. Switch when the timer ends.',
     prompts: [
       'Notice the temperature of their skin.',
-      'Pay attention to texture — smooth, rough, soft.',
+      'Pay attention to texture, smooth, rough, soft.',
       'There is no goal here. Just sensation.',
       'Follow what feels interesting to your hands.',
       'Breathe slowly. Stay present.',
@@ -44,17 +44,17 @@ const STAGES: Stage[] = [
   {
     id: 2,
     title: 'Connect',
-    subtitle: 'Full body — still no goal',
+    subtitle: 'Full body, still no goal',
     durationMinutes: 20,
     color: '#FCE4EC',
     textColor: '#880E4F',
-    instruction: 'Full body now, including intimate areas — but the rule is the same. No goal, no performance. The receiver can guide with their hand (show, don\'t tell). Switch after 20 minutes.',
+    instruction: 'Full body now, including intimate areas, but the rule is the same. No goal, no performance. The receiver can guide with their hand (show, don\'t tell). Switch after 20 minutes.',
     prompts: [
       'Let your hands be curious, not purposeful.',
-      'The receiver can gently guide — no words needed.',
+      'The receiver can gently guide, no words needed.',
       'Notice what you want to linger on.',
       'There is nowhere to arrive. This is the whole thing.',
-      'Breathe together — slowly.',
+      'Breathe together, slowly.',
       'Pay attention to their responses without chasing them.',
       'Receiver: if something feels good, let it show.',
       'Follow warmth. Follow what feels alive.',
@@ -69,7 +69,7 @@ const STAGES: Stage[] = [
     durationMinutes: 0,
     color: '#F3E5F5',
     textColor: '#6A1B9A',
-    instruction: 'No timer. No goal. Move together with full sensory awareness — sensation, not performance. If arousal comes, let it be part of the experience without chasing it. Stay curious.',
+    instruction: 'No timer. No goal. Move together with full sensory awareness, sensation, not performance. If arousal comes, let it be part of the experience without chasing it. Stay curious.',
     prompts: [
       'There is nothing to achieve.',
       'Follow sensation, not expectation.',
@@ -159,7 +159,7 @@ export default function SensateScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.stageList}>
           <Text style={styles.intro}>
-            A research-backed approach to rekindling physical intimacy. Three stages — each building presence, not performance.
+            A research-backed approach to rekindling physical intimacy. Three stages, each building presence, not performance.
           </Text>
           {STAGES.map((stage) => (
             <TouchableOpacity
@@ -247,7 +247,7 @@ export default function SensateScreen() {
         {/* Flow stage has no timer */}
         {activeStage.durationMinutes === 0 && (
           <Text style={[styles.flowNote, { color: activeStage.textColor, opacity: 0.7 }]}>
-            No timer — this stage has no end. Stay as long as you want.
+            No timer, this stage has no end. Stay as long as you want.
           </Text>
         )}
       </ScrollView>
@@ -257,10 +257,10 @@ export default function SensateScreen() {
         title="Sensate Focus"
         description="A research-backed approach from sex therapy (Masters & Johnson) for rekindling physical intimacy through mindful touch."
         tips={[
-          '3 progressive stages — start with Stage 1',
+          '3 progressive stages, start with Stage 1',
           'Stage 1: non-sexual touch only, 15 min each',
           'Stage 2: full body, still no goal, 20 min each',
-          'Stage 3: no timer, no goal — just presence and sensation',
+          'Stage 3: no timer, no goal, just presence and sensation',
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

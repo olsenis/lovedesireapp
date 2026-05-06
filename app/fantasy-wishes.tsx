@@ -141,7 +141,7 @@ export default function FantasyWishesScreen() {
       </View>
 
       <View style={styles.infoBanner}>
-        <Text style={styles.infoText}>✨ Vote privately — only mutual Yes matches are ever revealed</Text>
+        <Text style={styles.infoText}>✨ Vote privately, only mutual Yes matches are ever revealed</Text>
       </View>
 
       <View style={styles.tabRow}>
@@ -162,17 +162,17 @@ export default function FantasyWishesScreen() {
                 <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
                 <Text style={styles.emptyText}>
                   {loadingPresets
-                    ? 'Adding 120 wishes — this takes a moment'
+                    ? 'Adding 120 wishes, this takes a moment'
                     : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
                 </Text>
               </TouchableOpacity>
             )}
-            {/* Current locked batch — unvoted only, fixed until Load 5 more */}
+            {/* Current locked batch, unvoted only, fixed until Load 5 more */}
             {currentBatch.map((item) => (
               <WishCard key={item.id} item={item} onVote={handleVote} myVote={null} />
             ))}
 
-            {/* Load 5 more — only when all in current batch are voted */}
+            {/* Load 5 more, only when all in current batch are voted */}
             {canLoadMore && (
               <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8}>
                 <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
@@ -187,7 +187,7 @@ export default function FantasyWishesScreen() {
               </View>
             )}
 
-            {/* Already voted — accumulate below */}
+            {/* Already voted, accumulate below */}
             {allVoted.length > 0 && (
               <>
                 <Text style={styles.groupLabel}>Already voted</Text>
@@ -223,7 +223,7 @@ export default function FantasyWishesScreen() {
                       ) : (
                         <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8}>
                           <Text style={styles.addToListBtnText}>
-                            {theyPressed ? `${partner?.name ?? 'Partner'} wants to add — tap to confirm` : '+ Add to Together List'}
+                            {theyPressed ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -264,10 +264,10 @@ export default function FantasyWishesScreen() {
       <HelpModal
         visible={help.visible}
         title="Fantasy Wishes"
-        description="A private list of explicit sexual scenarios. Vote independently — only mutual Yes is ever revealed to both of you."
+        description="A private list of explicit sexual scenarios. Vote independently, only mutual Yes is ever revealed to both of you."
         tips={[
           'Tap to load preset scenarios, or add your own',
-          'Vote Yes, Maybe, or No — your partner never sees your choices',
+          'Vote Yes, Maybe, or No, your partner never sees your choices',
           'When you both say Yes → it appears in Matches',
           'Tap matches to add them to your Together List',
         ]}

@@ -4,7 +4,7 @@ import { db } from './firebase';
 export interface ImportantDate {
   id: string;
   label: string;
-  date: number; // timestamp (year/month/day only — ignore time)
+  date: number; // timestamp (year/month/day only, ignore time)
   emoji: string;
   createdBy: string;
   createdAt: number;

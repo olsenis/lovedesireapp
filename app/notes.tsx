@@ -217,7 +217,7 @@ export default function NotesScreen() {
         description="Write a timed message that your partner can't open until the moment you choose."
         tips={[
           'Tap Write to compose a note',
-          'Choose when it unlocks — right now, tonight, tomorrow, or next week',
+          'Choose when it unlocks, right now, tonight, tomorrow, or next week',
           'Partner sees it exists but can\'t read it until the time comes',
           'Tap a ready note to open it',
         ]}

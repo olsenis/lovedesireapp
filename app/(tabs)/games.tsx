@@ -4,7 +4,7 @@ import { Fonts } from '../../constants/fonts';
 import { Spacing } from '../../constants/spacing';
 import { Card } from '../../components/Card';
 
-// Static activity suggestions — these will grow into a full screen
+// Static activity suggestions, these will grow into a full screen
 const ACTIVITIES = [
   { emoji: '🍳', title: 'Cook Together', description: 'Pick a new recipe and cook as a team.' },
   { emoji: '🎬', title: 'Movie Night', description: 'Take turns picking a film, no skipping!' },

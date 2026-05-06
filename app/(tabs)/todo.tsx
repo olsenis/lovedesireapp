@@ -155,7 +155,7 @@ export default function TogetherScreen() {
         description="A shared to-do list that both of you can add to and check off in real time."
         tips={[
           'Tap + Add to add a new item',
-          'Choose a category — Daily Life, Date Ideas, Intimacy, or Goals',
+          'Choose a category, Daily Life, Date Ideas, Intimacy, or Goals',
           'Tap the circle to mark something done',
           'Both partners see all changes instantly',
         ]}

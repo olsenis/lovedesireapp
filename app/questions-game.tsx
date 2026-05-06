@@ -133,10 +133,10 @@ export default function QuestionsGameScreen() {
       <HelpModal
         visible={help.visible}
         title="Questions Game"
-        description="3 questions per category every day — both partners see the same ones. Discuss each together and mark it done."
+        description="3 questions per category every day, both partners see the same ones. Discuss each together and mark it done."
         tips={[
           "Both partners see the same 3 questions each day",
-          "Choose a category — Fun, Deep, Romantic, Spicy, Therapy, or Fantasy",
+          "Choose a category, Fun, Deep, Romantic, Spicy, Therapy, or Fantasy",
           "Tap 'We discussed this' when you've talked about it",
           "When your partner also taps it → '✓ Both discussed'",
         ]}

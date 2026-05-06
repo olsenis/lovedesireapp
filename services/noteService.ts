@@ -4,7 +4,7 @@ import { db } from './firebase';
 export interface LoveNote {
   id: string;
   message: string;
-  openAt: number; // timestamp — when the note can be opened
+  openAt: number; // timestamp, when the note can be opened
   fromUid: string;
   opened: boolean;
   createdAt: number;

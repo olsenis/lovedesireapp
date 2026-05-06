@@ -161,7 +161,7 @@ export default function RemindersScreen() {
       <HelpModal
         visible={help.visible}
         title="Flirt Reminders"
-        description="Schedule daily nudges that arrive as notifications — reminders to do something sweet or flirty for your partner."
+        description="Schedule daily nudges that arrive as notifications, reminders to do something sweet or flirty for your partner."
         tips={[
           "Tap + New to create a reminder",
           "Set a time and which days of the week",

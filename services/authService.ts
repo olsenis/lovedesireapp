@@ -55,7 +55,7 @@ export async function createUserProfile(
   uid: string,
   profile: Omit<UserProfile, 'uid' | 'createdAt'>
 ): Promise<void> {
-  // Strip undefined values — Firestore rejects them
+  // Strip undefined values, Firestore rejects them
   const data: Record<string, unknown> = { uid, createdAt: Date.now() };
   for (const [k, v] of Object.entries(profile)) {
     if (v !== undefined) data[k] = v;

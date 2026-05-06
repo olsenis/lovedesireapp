@@ -92,7 +92,7 @@ export default function WishlistScreen() {
 
       {/* Info banner */}
       <View style={styles.infoBanner}>
-        <Text style={styles.infoText}>🔒 Vote privately — only mutual matches are revealed</Text>
+        <Text style={styles.infoText}>🔒 Vote privately, only mutual matches are revealed</Text>
       </View>
 
       {/* Tabs */}
@@ -200,7 +200,7 @@ export default function WishlistScreen() {
       <HelpModal
         visible={help.visible}
         title="Shared Wishlist"
-        description="Vote on shared experiences privately. Your partner never sees your individual votes — only mutual Yes matches are ever revealed."
+        description="Vote on shared experiences privately. Your partner never sees your individual votes, only mutual Yes matches are ever revealed."
         tips={[
           'Tap ✓ Yes, ~ Maybe, or ✗ No on each wish',
           'Your votes are always private',

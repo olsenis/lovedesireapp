@@ -114,11 +114,11 @@ export default function DareScreen() {
       <HelpModal
         visible={help.visible}
         title="Dare Wheel"
-        description="Spin for a dare. Three intensity levels — Sweet, Flirty, and Spicy. 30 dares per level."
+        description="Spin for a dare. Three intensity levels, Sweet, Flirty, and Spicy. 30 dares per level."
         tips={[
           'Choose a level with the selector at the top',
           'Tap Spin and get a random dare',
-          'Both do the dare together — or take turns',
+          'Both do the dare together, or take turns',
           'Spin again for a different one',
         ]}
         onDismiss={help.dismiss}

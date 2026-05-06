@@ -43,13 +43,13 @@ export default function HitaScreen() {
       communication: "Try a 15-minute phone-free conversation tonight.",
       time: "Plan one activity together this week with no distractions.",
       affection: "Give a long hug every morning and evening for a week.",
-      fun: "Do something silly together — a game, a new activity, anything.",
+      fun: "Do something silly together, a game, a new activity, anything.",
       support: "Ask your partner: 'What do you need from me right now?'",
       trust: "Share something vulnerable you haven't mentioned recently.",
       intimacy: "Check your Wishlist together and pick something mutual.",
       appreciation: "Tell your partner 3 specific things you noticed this week.",
-      growth: "Set a small shared goal — something to work on together.",
-      overall: "Spend an evening just talking — no phones, no TV.",
+      growth: "Set a small shared goal, something to work on together.",
+      overall: "Spend an evening just talking, no phones, no TV.",
     };
     return suggestions[lowest.key] ?? "Take time this week for each other.";
   };
@@ -67,7 +67,7 @@ export default function HitaScreen() {
       {!done ? (
         <ScrollView contentContainerStyle={styles.list}>
           <Text style={styles.intro}>
-            Rate how things are going — privately. Use this to understand yourself, not to judge your partner.
+            Rate how things are going, privately. Use this to understand yourself, not to judge your partner.
           </Text>
 
           {QUESTIONS.map((q) => (
@@ -154,7 +154,7 @@ export default function HitaScreen() {
         description="A private check-in on how you're feeling about your relationship. Your partner never sees your individual scores."
         tips={[
           "Rate 10 areas from 1 (needs work) to 5 (amazing)",
-          "Completely private — your partner cannot see your answers",
+          "Completely private, your partner cannot see your answers",
           "After submitting, you see your overall score and a personalised suggestion",
           "Come back monthly to track how things change",
         ]}

@@ -111,9 +111,9 @@ export default function QuizScreen() {
       <HelpModal
         visible={help.visible}
         title="Love Language Quiz"
-        description="10 questions that reveal how you feel most loved — through words, acts, gifts, time, or touch."
+        description="10 questions that reveal how you feel most loved, through words, acts, gifts, time, or touch."
         tips={[
-          "Choose A or B for each question — go with your gut",
+          "Choose A or B for each question, go with your gut",
           "Results show your primary love language",
           "Share your result with your partner so they know how to love you best",
           "Retake the quiz if your preferences change over time",

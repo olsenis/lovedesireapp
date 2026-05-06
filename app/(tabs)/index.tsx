@@ -117,7 +117,7 @@ export default function HomeScreen() {
       nudges.push({
         emoji: cfg?.emoji ?? '🗓️',
         title: `Challenge day ${day}`,
-        subtitle: `${partner?.name ?? 'Partner'} marked it done — your turn ✓`,
+        subtitle: `${partner?.name ?? 'Partner'} marked it done, your turn ✓`,
         route: '/challenge',
         bg: cfg?.color ?? '#FFF9C4',
       });
@@ -142,7 +142,7 @@ export default function HomeScreen() {
     nudges.push({
       emoji: '✨',
       title: `${fwMatches.length} ${fwMatches.length === 1 ? 'match' : 'matches'}`,
-      subtitle: 'You both want the same thing — tap to see',
+      subtitle: 'You both want the same thing, tap to see',
       route: '/fantasy-wishes',
       bg: '#F3E5F5',
     });
@@ -172,7 +172,7 @@ export default function HomeScreen() {
       nudges.push({
         emoji: '🌹',
         title: "Daily Picks",
-        subtitle: `${partner?.name ?? 'Partner'} has voted on today's picks — your turn`,
+        subtitle: `${partner?.name ?? 'Partner'} has voted on today's picks, your turn`,
         route: '/daily-wishes',
         bg: Colors.blush,
       });
@@ -187,7 +187,7 @@ export default function HomeScreen() {
       nudges.push({
         emoji: '✨',
         title: 'Fantasy Wishes',
-        subtitle: `${partner?.name ?? 'Partner'} is exploring — vote to find your matches`,
+        subtitle: `${partner?.name ?? 'Partner'} is exploring, vote to find your matches`,
         route: '/fantasy-wishes',
         bg: '#F3E5F5',
       });

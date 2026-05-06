@@ -78,7 +78,7 @@ export default function TruthDareScreen() {
     await startTruthDare(coupleId, uid, level);
   };
 
-  // Draw card locally — no Firestore write
+  // Draw card locally, no Firestore write
   const handleChoose = (type: 'truth' | 'dare') => {
     if (!session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -89,7 +89,7 @@ export default function TruthDareScreen() {
     setDrawnCard({ type, text: pickRandom(pool).text });
   };
 
-  // Redraw locally — exclude current card so you never get the same one twice
+  // Redraw locally, exclude current card so you never get the same one twice
   const handleRedraw = () => {
     if (!session || !drawnCard) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -214,9 +214,9 @@ export default function TruthDareScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.picker}>
           <Text style={styles.pickerIntro}>
-            A real 2-phone game. You challenge your partner — they answer or do the dare on their phone.
+            A real 2-phone game. You challenge your partner, they answer or do the dare on their phone.
           </Text>
-          <Text style={styles.pickerSectionLabel}>New Game — choose level</Text>
+          <Text style={styles.pickerSectionLabel}>New Game, choose level</Text>
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             return (
@@ -234,12 +234,12 @@ export default function TruthDareScreen() {
         <HelpModal
           visible={help.visible}
           title="Truth or Dare"
-          description="Pick Truth or Dare for your partner — they see it on their phone and must respond."
+          description="Pick Truth or Dare for your partner, they see it on their phone and must respond."
           tips={[
             "Your turn = you draw a card and send it to your partner",
             "Pick Truth → partner types or records their answer",
             "Pick Dare → partner confirms they did it, then you confirm",
-            "Back saves the game — return anytime",
+            "Back saves the game, return anytime",
           ]}
           onDismiss={help.dismiss}
           onDismissAll={help.dismissAll}
@@ -286,7 +286,7 @@ export default function TruthDareScreen() {
         {/* Turn badge */}
         <View style={[styles.turnBadge, { backgroundColor: cfg.color }]}>
           <Text style={[styles.turnText, { color: cfg.textColor }]}>
-            Round {session.round} · {isMyTurn ? `Your turn — challenge ${partnerName}:` : `${partnerName}'s turn`}
+            Round {session.round} · {isMyTurn ? `Your turn, challenge ${partnerName}:` : `${partnerName}'s turn`}
           </Text>
         </View>
 
@@ -308,7 +308,7 @@ export default function TruthDareScreen() {
           </View>
         )}
 
-        {/* Local card preview — before send */}
+        {/* Local card preview, before send */}
         {session.phase === 'picking' && isMyTurn && drawnCard && (
           <View style={[styles.cardView, { borderLeftColor: drawnCard.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
             <View style={styles.cardTypeRow}>
@@ -325,7 +325,7 @@ export default function TruthDareScreen() {
               <Text style={styles.sendBtnText}>Send to {partnerName} →</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleRedraw} style={styles.skipBtn}>
-              <Text style={styles.skipText}>Skip — get a different one →</Text>
+              <Text style={styles.skipText}>Skip, get a different one →</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -334,7 +334,7 @@ export default function TruthDareScreen() {
           <View style={styles.waitingCard}>
             <Text style={styles.waitingEmoji}>🎲</Text>
             <Text style={styles.waitingText}>{partnerName} is choosing your challenge…</Text>
-            <Text style={styles.waitingHint}>Get ready — Truth or Dare is coming your way</Text>
+            <Text style={styles.waitingHint}>Get ready, Truth or Dare is coming your way</Text>
           </View>
         )}
 
@@ -361,7 +361,7 @@ export default function TruthDareScreen() {
             {/* ── TRUTH: partner answers ── */}
             {session.card.type === 'truth' && !isMyTurn && (
               <>
-                <Text style={styles.answerPrompt}>Your truth — answer honestly:</Text>
+                <Text style={styles.answerPrompt}>Your truth, answer honestly:</Text>
 
                 {/* Write / Record tabs */}
                 <View style={styles.modeTabs}>
@@ -456,7 +456,7 @@ export default function TruthDareScreen() {
             {/* ── DARE: picker confirms after partner does ── */}
             {session.card.type === 'dare' && isMyTurn && partnerConfirmedDare && !iConfirmedDare && (
               <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85}>
-                <Text style={styles.actionBtnText}>✓ {partnerName} completed it — confirm!</Text>
+                <Text style={styles.actionBtnText}>✓ {partnerName} completed it, confirm!</Text>
               </TouchableOpacity>
             )}
 
@@ -498,7 +498,7 @@ export default function TruthDareScreen() {
         {/* Score */}
         {(myScore > 0 || partnerScore > 0) && (
           <View style={styles.scoreRow}>
-            <Text style={styles.scoreText}>You {myScore} — {partnerName} {partnerScore}</Text>
+            <Text style={styles.scoreText}>You {myScore}, {partnerName} {partnerScore}</Text>
           </View>
         )}
       </ScrollView>
@@ -578,7 +578,7 @@ function DoneCard({
       )}
 
       <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={onDone} activeOpacity={0.85}>
-        <Text style={styles.actionBtnText}>Done — {isMyTurn ? partnerName + "'s" : 'your'} turn →</Text>
+        <Text style={styles.actionBtnText}>Done, {isMyTurn ? partnerName + "'s" : 'your'} turn →</Text>
       </TouchableOpacity>
     </View>
   );

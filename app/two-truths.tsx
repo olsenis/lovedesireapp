@@ -113,7 +113,7 @@ export default function TwoTruthsScreen() {
         {phase === 'writing' && (
           <>
             <View style={styles.turnBadge}>
-              <Text style={styles.turnText}>Player {writer} — write your statements</Text>
+              <Text style={styles.turnText}>Player {writer}, write your statements</Text>
             </View>
             <Text style={styles.hint}>Write 2 things that are TRUE and 1 that is FALSE. Then tap the lie.</Text>
 
@@ -144,7 +144,7 @@ export default function TwoTruthsScreen() {
               disabled={statements.some(s => !s.trim()) || lie === null}
               activeOpacity={0.85}
             >
-              <Text style={styles.startBtnText}>Player {guessing} — guess the lie →</Text>
+              <Text style={styles.startBtnText}>Player {guessing}, guess the lie →</Text>
             </TouchableOpacity>
           </>
         )}
@@ -153,7 +153,7 @@ export default function TwoTruthsScreen() {
         {phase === 'guessing' && (
           <>
             <View style={styles.turnBadge}>
-              <Text style={styles.turnText}>Player {guessing} — which is the lie?</Text>
+              <Text style={styles.turnText}>Player {guessing}, which is the lie?</Text>
             </View>
             <Text style={styles.hint}>Tap the statement you think is false.</Text>
 
@@ -185,7 +185,7 @@ export default function TwoTruthsScreen() {
             </View>
 
             <TouchableOpacity style={styles.startBtn} onPress={handleNext} activeOpacity={0.85}>
-              <Text style={styles.startBtnText}>Switch — Player {guessing} goes next →</Text>
+              <Text style={styles.startBtnText}>Switch, Player {guessing} goes next →</Text>
             </TouchableOpacity>
           </>
         )}
@@ -194,8 +194,8 @@ export default function TwoTruthsScreen() {
       <HelpModal
         visible={help.visible}
         title="Two Truths One Lie"
-        description="Player A writes 3 statements — 2 true, 1 false. Player B guesses the lie. Wrong guess means a dare!"
-        tips={["Write your statements privately — don't let your partner see","Tap 'Lie?' to mark which of your 3 statements is the lie","Player B guesses — wrong guess = dare for the guesser","Right guess = the writer has to do the dare"]}
+        description="Player A writes 3 statements, 2 true, 1 false. Player B guesses the lie. Wrong guess means a dare!"
+        tips={["Write your statements privately, don't let your partner see","Tap 'Lie?' to mark which of your 3 statements is the lie","Player B guesses, wrong guess = dare for the guesser","Right guess = the writer has to do the dare"]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />

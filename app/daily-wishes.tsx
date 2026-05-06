@@ -184,7 +184,7 @@ export default function DailyWishesScreen() {
                   ) : (
                     <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToList(globalIndex)} activeOpacity={0.8}>
                       <Text style={styles.addBtnText}>
-                        {theyAdded ? `${partner?.name ?? 'Partner'} wants to add — tap to confirm` : '+ Add to Together List'}
+                        {theyAdded ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -251,7 +251,7 @@ export default function DailyWishesScreen() {
                       ) : (
                         <TouchableOpacity style={styles.addBtn} onPress={() => { handleAddToList(gi); }} activeOpacity={0.8}>
                           <Text style={styles.addBtnText}>
-                            {theyAdded ? `${partner?.name ?? 'Partner'} wants to add — tap to confirm` : '+ Add to Together List'}
+                            {theyAdded ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -267,7 +267,7 @@ export default function DailyWishesScreen() {
       <HelpModal
         visible={help.visible}
         title="Daily Picks"
-        description="Every day you and your partner get 5 new picks per category to vote on — privately."
+        description="Every day you and your partner get 5 new picks per category to vote on, privately."
         tips={[
           "Tap ✓ Yes or ✗ Not for me on each pick",
           "Your partner never sees your individual votes",

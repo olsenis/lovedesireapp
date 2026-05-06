@@ -5,12 +5,12 @@ import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
 const TOGETHER = [
-  { emoji: '✅', title: 'Together List',       subtitle: 'Shared to-do list — daily life, dates, intimacy & goals', route: '/todo',      bg: '#F1F8E9' },
+  { emoji: '✅', title: 'Together List',       subtitle: 'Shared to-do list, daily life, dates, intimacy & goals', route: '/todo',      bg: '#F1F8E9' },
 ];
 
 const INTIMACY = [
   { emoji: '🧬', title: 'Erotic Blueprint',    subtitle: 'Discover your intimacy type & partner compatibility', route: '/blueprint', bg: '#F3E5F5' },
-  { emoji: '🫁', title: 'Sensate Focus',       subtitle: 'Guided touch sessions — rekindling through presence',  route: '/sensate',   bg: '#E8F5E9' },
+  { emoji: '🫁', title: 'Sensate Focus',       subtitle: 'Guided touch sessions, rekindling through presence',  route: '/sensate',   bg: '#E8F5E9' },
 ];
 
 const CONNECTION = [

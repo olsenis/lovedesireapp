@@ -34,7 +34,7 @@ export default function PairingScreen() {
       setInviteCode(profile.inviteCode);
       return;
     }
-    if (profile?.coupleId) return; // paired but code not in profile — skip
+    if (profile?.coupleId) return; // paired but code not in profile, skip
     const generate = async () => {
       setLoadingCreate(true);
       try {

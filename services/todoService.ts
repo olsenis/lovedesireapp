@@ -23,7 +23,7 @@ export interface Todo {
 }
 
 export function subscribeTodos(coupleId: string, onChange: (todos: Todo[]) => void): Unsubscribe {
-  // Real-time listener — call the returned unsubscribe fn to stop listening
+  // Real-time listener, call the returned unsubscribe fn to stop listening
   const q = query(
     collection(db, 'couples', coupleId, 'todos'),
     orderBy('createdAt', 'desc')

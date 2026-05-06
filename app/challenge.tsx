@@ -47,7 +47,7 @@ export default function ChallengeScreen() {
     if (starting) return;
     // Show desire modal before coupleId check so warning always appears
     if (program === 'desire') { setPendingProgram(program); setDesireModal(true); return; }
-    if (!coupleId) { setStartError('Account not ready yet — try again shortly.'); return; }
+    if (!coupleId) { setStartError('Account not ready yet, try again shortly.'); return; }
     setStartError('');
     doStart(program);
   };
@@ -58,14 +58,14 @@ export default function ChallengeScreen() {
     try {
       await startChallenge(coupleId!, program);
     } catch (e: any) {
-      setStartError(e?.code === 'permission-denied' ? 'Permission denied — check Firebase rules.' : `Error: ${e?.message ?? String(e)}`);
+      setStartError(e?.code === 'permission-denied' ? 'Permission denied, check Firebase rules.' : `Error: ${e?.message ?? String(e)}`);
       setStarting(false);
     }
   };
 
   const confirmDesire = () => {
     setDesireModal(false);
-    if (!coupleId) { setStartError('Account not ready yet — try again shortly.'); setPendingProgram(null); return; }
+    if (!coupleId) { setStartError('Account not ready yet, try again shortly.'); setPendingProgram(null); return; }
     if (pendingProgram) doStart(pendingProgram);
     setPendingProgram(null);
   };
@@ -96,7 +96,7 @@ export default function ChallengeScreen() {
     if (!coupleId || !user || !state) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await markDayComplete(coupleId, user.uid, state.currentDay, state);
-    notifyPartner(coupleId, user.uid, 'Challenge update ✓', `${profile?.name ?? 'Your partner'} marked day ${state.currentDay} done — your turn`).catch(() => {});
+    notifyPartner(coupleId, user.uid, 'Challenge update ✓', `${profile?.name ?? 'Your partner'} marked day ${state.currentDay} done, your turn`).catch(() => {});
   };
 
   const handleVeto = async () => {
@@ -132,7 +132,7 @@ export default function ChallengeScreen() {
         <ScrollView contentContainerStyle={styles.pickerContent}>
           {!coupleId && <Text style={styles.debugText}>⏳ Setting up account… wait a moment then try again.</Text>}
           {startError ? <View style={styles.errorBox}><Text style={styles.errorText}>{startError}</Text></View> : null}
-          <Text style={styles.pickerIntro}>A daily practice for 30 days. Each task builds on the last — choose your intensity.</Text>
+          <Text style={styles.pickerIntro}>A daily practice for 30 days. Each task builds on the last, choose your intensity.</Text>
           {PROGRAMS.map((p) => {
             const cfg = CHALLENGE_PROGRAM_CONFIG[p];
             return (
@@ -156,12 +156,12 @@ export default function ChallengeScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modal}>
               <Text style={styles.modalEmoji}>💋</Text>
-              <Text style={styles.modalTitle}>Desire — 18+ only</Text>
+              <Text style={styles.modalTitle}>Desire, 18+ only</Text>
               <Text style={styles.modalSubtitle}>This program contains explicit sexual content. Make sure you're both comfortable before starting.</Text>
               <Text style={styles.rulesTitle}>Rules</Text>
               {[
                 'Each partner can modify or replace 2 days before the challenge starts. No edits after.',
-                'Each partner gets 2 VETO days — use them to skip a day and just have regular sex.',
+                'Each partner gets 2 VETO days, use them to skip a day and just have regular sex.',
                 'If a day is missed, the challenge extends by one day (max 40 days total).',
                 "If a partner has no edits or vetoes left, they can borrow their partner's veto. That partner picks the replacement.",
                 'Periods, illness, or travel can be treated as a pause.',
@@ -172,7 +172,7 @@ export default function ChallengeScreen() {
                 </View>
               ))}
               <TouchableOpacity style={styles.confirmBtn} onPress={confirmDesire} activeOpacity={0.85}>
-                <Text style={styles.confirmBtnText}>I'm in — let's go 💋</Text>
+                <Text style={styles.confirmBtnText}>I'm in, let's go 💋</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setDesireModal(false)} style={styles.cancelLink}>
                 <Text style={styles.cancelLinkText}>Not now</Text>
@@ -190,7 +190,7 @@ export default function ChallengeScreen() {
   const myEditsLeft = MAX_EDITS - myEditsUsed;
   const myVetoesLeft = MAX_VETOES - (state.vetoesUsed?.[uid] ?? 0);
 
-  // ─── Setup phase — review & edit days ───────────────────────────────────────
+  // ─── Setup phase, review & edit days ───────────────────────────────────────
   if (state.phase === 'setup') {
     return (
       <View style={styles.screen}>
@@ -310,10 +310,10 @@ export default function ChallengeScreen() {
 
             {bothMarked ? (
               <View style={styles.completedRow}>
-                <Text style={styles.completedText}>✓ Both done — great work today</Text>
+                <Text style={styles.completedText}>✓ Both done, great work today</Text>
               </View>
             ) : myMarked ? (
-              <Text style={styles.waitingText}>You've marked this done — waiting for your partner ✓</Text>
+              <Text style={styles.waitingText}>You've marked this done, waiting for your partner ✓</Text>
             ) : (
               <View style={styles.actionRow}>
                 <TouchableOpacity style={[styles.markBtn, { backgroundColor: cfg.textColor, flex: 1 }]} onPress={handleMark} activeOpacity={0.85}>
@@ -351,12 +351,12 @@ export default function ChallengeScreen() {
       <HelpModal
         visible={help.visible}
         title="30-Day Challenge"
-        description="A daily practice for 30 days. Choose your intensity — Reconnect, Spark, Fire, or Desire."
+        description="A daily practice for 30 days. Choose your intensity, Reconnect, Spark, Fire, or Desire."
         tips={[
           'Setup phase: each partner can swap 2 days before starting',
           'Both must mark a day done for it to count',
           'Use a Veto (2 each) to skip a day and just have sex instead',
-          'Desire program is 18+ — a content warning appears before starting',
+          'Desire program is 18+, a content warning appears before starting',
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

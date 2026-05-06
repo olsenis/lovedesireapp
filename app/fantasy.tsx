@@ -84,7 +84,7 @@ export default function FantasyScreen() {
       </View>
 
       <View style={styles.infoBanner}>
-        <Text style={styles.infoText}>✨ Vote privately — only mutual matches are revealed to both of you</Text>
+        <Text style={styles.infoText}>✨ Vote privately, only mutual matches are revealed to both of you</Text>
       </View>
 
       <View style={styles.tabRow}>
@@ -105,8 +105,8 @@ export default function FantasyScreen() {
                 <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
                 <Text style={styles.emptyText}>
                   {loadingPresets
-                    ? 'Adding 60 scenarios — this takes a moment'
-                    : 'Tap to load 60 fantasy scenarios — or add your own. Only mutual interests are ever revealed.'}
+                    ? 'Adding 60 scenarios, this takes a moment'
+                    : 'Tap to load 60 fantasy scenarios, or add your own. Only mutual interests are ever revealed.'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -125,7 +125,7 @@ export default function FantasyScreen() {
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyEmoji}>💫</Text>
                 <Text style={styles.emptyTitle}>No matches yet</Text>
-                <Text style={styles.emptyText}>When you both say Yes to something, it appears here — and only then</Text>
+                <Text style={styles.emptyText}>When you both say Yes to something, it appears here, and only then</Text>
               </View>
             ) : (
               matched.map((item) => {
@@ -187,7 +187,7 @@ export default function FantasyScreen() {
       <HelpModal
         visible={help.visible}
         title="Fantasy Match"
-        description="Explore fantasies privately. Like Wishlist but for intimate scenarios — completely double-blind. Only mutual Yes matches are shown."
+        description="Explore fantasies privately. Like Wishlist but for intimate scenarios, completely double-blind. Only mutual Yes matches are shown."
         tips={[
           'Rate each scenario privately',
           'Partner never sees your individual choices',

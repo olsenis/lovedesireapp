@@ -26,7 +26,7 @@ export function useAuth(): AuthState {
     return unsubscribeAuth;
   }, []);
 
-  // Real-time profile listener — updates when coupleId or name changes
+  // Real-time profile listener, updates when coupleId or name changes
   useEffect(() => {
     if (!user) return;
     const unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (snap) => {
