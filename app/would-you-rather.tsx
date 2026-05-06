@@ -8,6 +8,7 @@ import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR } from '../services/wyrService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYRLevel } from '../constants/content';
+import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -49,6 +50,10 @@ export default function WouldYouRatherScreen() {
     if (!coupleId || !session || myAnswer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await answerWYR(coupleId, uid, answer, session);
+    const partnerHasAnswered = partnerId && !!session.answers[partnerId];
+    if (!partnerHasAnswered) {
+      notifyPartner(coupleId, uid, 'Would You Rather 🤔', `${profile?.name ?? 'Your partner'} answered, your turn!`);
+    }
   };
 
   const handleNext = async () => {

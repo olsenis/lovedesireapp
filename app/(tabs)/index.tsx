@@ -12,6 +12,7 @@ import { subscribeNotes, LoveNote } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
+import { subscribeWYR, WYRSession } from '../../services/wyrService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -56,6 +57,7 @@ export default function HomeScreen() {
   const [fwItems, setFwItems] = useState<FantasyWishesItem[]>([]);
   const [dailyQDoc, setDailyQDoc] = useState<DailyQuestionDoc | null>(null);
   const [dailyWishDoc, setDailyWishDoc] = useState<DailyWishDoc | null>(null);
+  const [wyrSession, setWyrSession] = useState<WYRSession | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -80,7 +82,8 @@ export default function HomeScreen() {
     const u3 = subscribeFantasyWishes(coupleId, setFwItems);
     const u4 = subscribeDailyQuestions(coupleId, setDailyQDoc);
     const u5 = subscribeDailyWishes(coupleId, setDailyWishDoc);
-    return () => { u1(); u2(); u3(); u4(); u5(); };
+    const u6 = subscribeWYR(coupleId, setWyrSession);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
   }, [coupleId]);
 
   const handleMoodPick = async (emoji: MoodEmoji) => {
@@ -190,6 +193,21 @@ export default function HomeScreen() {
         subtitle: `${partner?.name ?? 'Partner'} is exploring, vote to find your matches`,
         route: '/fantasy-wishes',
         bg: '#F3E5F5',
+      });
+    }
+  }
+
+  // Would You Rather: partner answered but I haven't
+  if (wyrSession && partnerId) {
+    const partnerAnswered = !!wyrSession.answers[partnerId];
+    const iAnswered = !!wyrSession.answers[uid];
+    if (partnerAnswered && !iAnswered) {
+      nudges.push({
+        emoji: '🤔',
+        title: 'Would You Rather',
+        subtitle: `${partner?.name ?? 'Partner'} picked, now it's your turn`,
+        route: '/would-you-rather',
+        bg: '#FFF9C4',
       });
     }
   }
