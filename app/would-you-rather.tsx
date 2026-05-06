@@ -100,7 +100,7 @@ export default function WouldYouRatherScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleReset} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Would You Rather</Text>
         <View style={styles.scoreWrap}>
           <Text style={[styles.score, { color: cfg.textColor }]}>{session.score.match}/{session.score.total}</Text>
