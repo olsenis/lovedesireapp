@@ -8,6 +8,7 @@ export interface TruthDareCard {
   type: 'truth' | 'dare';
   text: string;
   answer?: string;
+  audioURL?: string;        // Firebase Storage URL for voice answer
   answeredBy?: string;
   dareConfirmed?: string[]; // uids who confirmed dare was done
 }
@@ -47,9 +48,10 @@ export async function playCard(coupleId: string, card: TruthDareCard): Promise<v
   });
 }
 
-export async function submitTruthAnswer(coupleId: string, uid: string, answer: string): Promise<void> {
+export async function submitTruthAnswer(coupleId: string, uid: string, answer: string, audioURL?: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
     'card.answer': answer,
+    'card.audioURL': audioURL ?? null,
     'card.answeredBy': uid,
     phase: 'done',
   });

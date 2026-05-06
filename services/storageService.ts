@@ -17,3 +17,11 @@ export async function uploadMemoryPhoto(coupleId: string, uid: string, uri: stri
   await uploadBytes(storageRef, blob);
   return await getDownloadURL(storageRef);
 }
+
+export async function uploadTruthDareAudio(coupleId: string, uid: string, round: number, uri: string): Promise<string> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const storageRef = ref(storage, `couples/${coupleId}/truthDare/${round}_${uid}.m4a`);
+  await uploadBytes(storageRef, blob);
+  return await getDownloadURL(storageRef);
+}

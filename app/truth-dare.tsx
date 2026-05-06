@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
@@ -12,6 +13,7 @@ import {
   playCard, nextTurn, resetTruthDare, submitTruthAnswer,
   confirmDare, skipCard,
 } from '../services/truthDareService';
+import { uploadTruthDareAudio } from '../services/storageService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -27,7 +29,22 @@ export default function TruthDareScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<TruthDareSession | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Local card drawn before sending
+  const [drawnCard, setDrawnCard] = useState<{ type: 'truth' | 'dare'; text: string } | null>(null);
+
+  // Truth text answer
   const [answerText, setAnswerText] = useState('');
+
+  // Audio recording state
+  const [answerMode, setAnswerMode] = useState<'write' | 'record'>('write');
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingUri, setRecordingUri] = useState<string | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+
   const help = useHelp('truth-dare');
 
   const coupleId = profile?.coupleId;
@@ -37,38 +54,121 @@ export default function TruthDareScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    const unsub = subscribeTruthDare(coupleId, (s) => { setSession(s); setLoading(false); });
-    return unsub;
+    return subscribeTruthDare(coupleId, (s) => { setSession(s); setLoading(false); });
   }, [coupleId]);
 
-  const isMyTurn = session?.turnUid === uid; // I am the PICKER this round
-  const cfg = DARE_LEVEL_CONFIG[session?.level ?? 'flirty'];
+  // Clean up sound on unmount
+  useEffect(() => {
+    return () => {
+      soundRef.current?.unloadAsync();
+    };
+  }, []);
 
+  const isMyTurn = session?.turnUid === uid;
+  const cfg = DARE_LEVEL_CONFIG[session?.level ?? 'flirty'];
   const myScore = session?.scores[uid] ?? 0;
   const partnerScore = session?.scores[partnerId ?? ''] ?? 0;
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
+
   const handleStart = async (level: DareLevel) => {
     if (!coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setDrawnCard(null);
     await startTruthDare(coupleId, uid, level);
   };
 
-  const handleChoose = async (type: 'truth' | 'dare') => {
-    if (!coupleId || !session) return;
+  // Draw card locally — no Firestore write
+  const handleChoose = (type: 'truth' | 'dare') => {
+    if (!session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const pool = type === 'truth'
       ? TRUTHS.filter(t => t.level === session.level)
       : DARES.filter(d => d.level === session.level);
     if (pool.length === 0) return;
-    await playCard(coupleId, { type, text: pickRandom(pool).text });
+    setDrawnCard({ type, text: pickRandom(pool).text });
   };
 
-  const handleSubmitAnswer = async () => {
+  // Redraw locally
+  const handleRedraw = () => {
+    if (!session || !drawnCard) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const pool = drawnCard.type === 'truth'
+      ? TRUTHS.filter(t => t.level === session.level)
+      : DARES.filter(d => d.level === session.level);
+    if (pool.length === 0) return;
+    setDrawnCard({ type: drawnCard.type, text: pickRandom(pool).text });
+  };
+
+  // Commit drawn card to Firestore
+  const handleSendCard = async () => {
+    if (!coupleId || !drawnCard) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await playCard(coupleId, { type: drawnCard.type, text: drawnCard.text });
+    setDrawnCard(null);
+  };
+
+  // Text answer
+  const handleSubmitTextAnswer = async () => {
     if (!coupleId || !answerText.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await submitTruthAnswer(coupleId, uid, answerText.trim());
     setAnswerText('');
+  };
+
+  // Audio recording
+  const handleStartRecording = async () => {
+    try {
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      recordingRef.current = recording;
+      setIsRecording(true);
+      setRecordingUri(null);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) {
+      console.warn('Recording failed', e);
+    }
+  };
+
+  const handleStopRecording = async () => {
+    if (!recordingRef.current) return;
+    await recordingRef.current.stopAndUnloadAsync();
+    const uri = recordingRef.current.getURI();
+    recordingRef.current = null;
+    setIsRecording(false);
+    setRecordingUri(uri ?? null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handlePlayback = async () => {
+    if (!recordingUri) return;
+    if (isPlaying) {
+      await soundRef.current?.stopAsync();
+      setIsPlaying(false);
+      return;
+    }
+    const { sound } = await Audio.Sound.createAsync({ uri: recordingUri });
+    soundRef.current = sound;
+    setIsPlaying(true);
+    await sound.playAsync();
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) setIsPlaying(false);
+    });
+  };
+
+  const handleSubmitAudioAnswer = async () => {
+    if (!coupleId || !session || !recordingUri) return;
+    setIsUploading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const audioURL = await uploadTruthDareAudio(coupleId, uid, session.round, recordingUri);
+      await submitTruthAnswer(coupleId, uid, '', audioURL);
+      setRecordingUri(null);
+      setAnswerMode('write');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleConfirmDare = async () => {
@@ -81,6 +181,8 @@ export default function TruthDareScreen() {
     if (!coupleId || !session || !partnerId) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setAnswerText('');
+    setRecordingUri(null);
+    setAnswerMode('write');
     await nextTurn(coupleId, session, uid, partnerId);
   };
 
@@ -88,16 +190,19 @@ export default function TruthDareScreen() {
     if (!coupleId || !session || !partnerId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setAnswerText('');
+    setRecordingUri(null);
     await skipCard(coupleId, session, uid, partnerId);
   };
 
   const handleReset = async () => {
     if (!coupleId) return;
+    setDrawnCard(null);
     setAnswerText('');
+    setRecordingUri(null);
     await resetTruthDare(coupleId);
   };
 
-  // ── Game picker (no active game) ─────────────────────────────────────────────
+  // ── Lobby (no active game) ────────────────────────────────────────────────────
   if (!loading && (!session || session.round === 0)) {
     return (
       <View style={styles.screen}>
@@ -110,6 +215,7 @@ export default function TruthDareScreen() {
           <Text style={styles.pickerIntro}>
             A real 2-phone game. You challenge your partner — they answer or do the dare on their phone.
           </Text>
+          <Text style={styles.pickerSectionLabel}>New Game — choose level</Text>
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             return (
@@ -129,8 +235,8 @@ export default function TruthDareScreen() {
           title="Truth or Dare"
           description="Pick Truth or Dare for your partner — they see it on their phone and must respond."
           tips={[
-            "Your turn = you challenge your partner",
-            "Pick Truth → partner types their answer",
+            "Your turn = you draw a card and send it to your partner",
+            "Pick Truth → partner types or records their answer",
             "Pick Dare → partner confirms they did it, then you confirm",
             "Back saves the game — return anytime",
           ]}
@@ -143,12 +249,11 @@ export default function TruthDareScreen() {
 
   if (!session) return null;
 
-  // ── Derived Dare confirmation state ──────────────────────────────────────────
   const dareConfirmed = session.card?.dareConfirmed ?? [];
   const partnerConfirmedDare = !!partnerId && dareConfirmed.includes(partnerId);
   const iConfirmedDare = dareConfirmed.includes(uid);
 
-  // ── Active game ──────────────────────────────────────────────────────────────
+  // ── Active game ───────────────────────────────────────────────────────────────
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -158,7 +263,7 @@ export default function TruthDareScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Level selector */}
+        {/* Level tab strip */}
         <View style={styles.levelSegment}>
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
@@ -167,7 +272,7 @@ export default function TruthDareScreen() {
               <TouchableOpacity
                 key={level}
                 style={[styles.levelTab, active && { backgroundColor: c.color }]}
-                onPress={async () => { if (coupleId) await startTruthDare(coupleId, uid, level); }}
+                onPress={async () => { if (coupleId) { setDrawnCard(null); await startTruthDare(coupleId, uid, level); } }}
                 activeOpacity={0.8}
               >
                 <Text style={styles.levelTabEmoji}>{c.emoji}</Text>
@@ -177,7 +282,7 @@ export default function TruthDareScreen() {
           })}
         </View>
 
-        {/* Round + turn badge */}
+        {/* Turn badge */}
         <View style={[styles.turnBadge, { backgroundColor: cfg.color }]}>
           <Text style={[styles.turnText, { color: cfg.textColor }]}>
             Round {session.round} · {isMyTurn ? `Your turn — challenge ${partnerName}:` : `${partnerName}'s turn`}
@@ -187,7 +292,7 @@ export default function TruthDareScreen() {
         {/* ═══════════════════════════════════════════════════════════
             PHASE: PICKING
         ═══════════════════════════════════════════════════════════ */}
-        {session.phase === 'picking' && isMyTurn && (
+        {session.phase === 'picking' && isMyTurn && !drawnCard && (
           <View style={styles.choiceRow}>
             <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85}>
               <Text style={styles.choiceBtnEmoji}>🤔</Text>
@@ -198,6 +303,28 @@ export default function TruthDareScreen() {
               <Text style={styles.choiceBtnEmoji}>{cfg.emoji}</Text>
               <Text style={[styles.choiceBtnLabel, { color: cfg.textColor }]}>Dare</Text>
               <Text style={styles.choiceBtnSub}>{partnerName} does a challenge</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Local card preview — before send */}
+        {session.phase === 'picking' && isMyTurn && drawnCard && (
+          <View style={[styles.cardView, { borderLeftColor: drawnCard.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+            <View style={styles.cardTypeRow}>
+              <Text style={styles.cardTypeEmoji}>{drawnCard.type === 'truth' ? '🤔' : cfg.emoji}</Text>
+              <Text style={[styles.cardTypeBadge, { color: drawnCard.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+                {drawnCard.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+              </Text>
+            </View>
+            <Text style={styles.cardText}>{drawnCard.text}</Text>
+            <Text style={styles.previewHint}>
+              {drawnCard.type === 'truth' ? `${partnerName} will answer this question` : `${partnerName} will do this dare`}
+            </Text>
+            <TouchableOpacity style={styles.sendBtn} onPress={handleSendCard} activeOpacity={0.85}>
+              <Text style={styles.sendBtnText}>Send to {partnerName} →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleRedraw} style={styles.skipBtn}>
+              <Text style={styles.skipText}>Skip — get a different one →</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -215,7 +342,6 @@ export default function TruthDareScreen() {
         ═══════════════════════════════════════════════════════════ */}
         {session.phase === 'answering' && session.card && (
           <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
-            {/* Card header */}
             <View style={styles.cardTypeRow}>
               <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
               <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
@@ -227,7 +353,7 @@ export default function TruthDareScreen() {
             {/* ── TRUTH: picker waits ── */}
             {session.card.type === 'truth' && isMyTurn && (
               <View style={styles.sentBanner}>
-                <Text style={styles.sentText}>✅ Sent to {partnerName}! She's answering…</Text>
+                <Text style={styles.sentText}>✅ Sent to {partnerName}! They're answering…</Text>
               </View>
             )}
 
@@ -235,30 +361,90 @@ export default function TruthDareScreen() {
             {session.card.type === 'truth' && !isMyTurn && (
               <>
                 <Text style={styles.answerPrompt}>Your truth — answer honestly:</Text>
-                <TextInput
-                  style={styles.answerInput}
-                  placeholder="Type your answer here..."
-                  placeholderTextColor={Colors.muted}
-                  value={answerText}
-                  onChangeText={setAnswerText}
-                  multiline
-                  autoFocus
-                />
-                <TouchableOpacity
-                  style={[styles.sendBtn, !answerText.trim() && { opacity: 0.4 }]}
-                  onPress={handleSubmitAnswer}
-                  disabled={!answerText.trim()}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.sendBtnText}>Send my answer →</Text>
-                </TouchableOpacity>
+
+                {/* Write / Record tabs */}
+                <View style={styles.modeTabs}>
+                  <TouchableOpacity
+                    style={[styles.modeTab, answerMode === 'write' && styles.modeTabActive]}
+                    onPress={() => setAnswerMode('write')}
+                  >
+                    <Text style={[styles.modeTabText, answerMode === 'write' && styles.modeTabTextActive]}>✏️ Write</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modeTab, answerMode === 'record' && styles.modeTabActive]}
+                    onPress={() => setAnswerMode('record')}
+                  >
+                    <Text style={[styles.modeTabText, answerMode === 'record' && styles.modeTabTextActive]}>🎤 Record</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {answerMode === 'write' && (
+                  <>
+                    <TextInput
+                      style={styles.answerInput}
+                      placeholder="Type your answer here..."
+                      placeholderTextColor={Colors.muted}
+                      value={answerText}
+                      onChangeText={setAnswerText}
+                      multiline
+                      autoFocus
+                    />
+                    <TouchableOpacity
+                      style={[styles.actionBtn, styles.truthActionBtn, !answerText.trim() && { opacity: 0.4 }]}
+                      onPress={handleSubmitTextAnswer}
+                      disabled={!answerText.trim()}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.actionBtnText}>Send my answer →</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {answerMode === 'record' && (
+                  <View style={styles.recordArea}>
+                    {!isRecording && !recordingUri && (
+                      <TouchableOpacity style={styles.micBtn} onPress={handleStartRecording} activeOpacity={0.85}>
+                        <Text style={styles.micEmoji}>🎙️</Text>
+                        <Text style={styles.micLabel}>Tap to record</Text>
+                      </TouchableOpacity>
+                    )}
+                    {isRecording && (
+                      <TouchableOpacity style={[styles.micBtn, styles.micBtnRecording]} onPress={handleStopRecording} activeOpacity={0.85}>
+                        <Text style={styles.micEmoji}>⏹️</Text>
+                        <Text style={styles.micLabel}>Recording… tap to stop</Text>
+                      </TouchableOpacity>
+                    )}
+                    {recordingUri && !isRecording && (
+                      <>
+                        <TouchableOpacity style={styles.playbackBtn} onPress={handlePlayback} activeOpacity={0.85}>
+                          <Text style={styles.playbackBtnText}>{isPlaying ? '⏸ Playing…' : '▶ Play recording'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, styles.truthActionBtn, isUploading && { opacity: 0.6 }]}
+                          onPress={handleSubmitAudioAnswer}
+                          disabled={isUploading}
+                          activeOpacity={0.85}
+                        >
+                          {isUploading
+                            ? <ActivityIndicator color={Colors.white} />
+                            : <Text style={styles.actionBtnText}>Send my answer →</Text>
+                          }
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setRecordingUri(null)} style={styles.skipBtn}>
+                          <Text style={styles.skipText}>Re-record →</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                )}
+
                 <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip this one →</Text>
                 </TouchableOpacity>
               </>
             )}
 
-            {/* ── DARE: picker watches (partner hasn't confirmed yet) ── */}
+            {/* ── DARE: picker watches ── */}
             {session.card.type === 'dare' && isMyTurn && !partnerConfirmedDare && (
               <View style={styles.greyBanner}>
                 <Text style={styles.greyBannerText}>✅ Dare sent to {partnerName}!</Text>
@@ -268,16 +454,16 @@ export default function TruthDareScreen() {
 
             {/* ── DARE: picker confirms after partner does ── */}
             {session.card.type === 'dare' && isMyTurn && partnerConfirmedDare && !iConfirmedDare && (
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirmDare} activeOpacity={0.85}>
-                <Text style={styles.confirmBtnText}>✓ {partnerName} did it — confirm!</Text>
+              <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85}>
+                <Text style={styles.actionBtnText}>✓ {partnerName} completed it — confirm!</Text>
               </TouchableOpacity>
             )}
 
             {/* ── DARE: partner does it ── */}
             {session.card.type === 'dare' && !isMyTurn && !iConfirmedDare && (
               <>
-                <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirmDare} activeOpacity={0.85}>
-                  <Text style={styles.confirmBtnText}>✓ I did it!</Text>
+                <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85}>
+                  <Text style={styles.actionBtnText}>✓ Dare completed</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip this one →</Text>
@@ -285,7 +471,7 @@ export default function TruthDareScreen() {
               </>
             )}
 
-            {/* ── DARE: partner confirmed, waiting for picker ── */}
+            {/* ── DARE: partner confirmed, waiting ── */}
             {session.card.type === 'dare' && !isMyTurn && iConfirmedDare && (
               <View style={styles.sentBanner}>
                 <Text style={styles.sentText}>✓ Done! Waiting for {partnerName} to confirm…</Text>
@@ -298,36 +484,14 @@ export default function TruthDareScreen() {
             PHASE: DONE
         ═══════════════════════════════════════════════════════════ */}
         {session.phase === 'done' && session.card && (
-          <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
-            <View style={styles.cardTypeRow}>
-              <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
-              <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
-                {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
-              </Text>
-            </View>
-            <Text style={styles.cardText}>{session.card.text}</Text>
-
-            {/* Truth: show answer */}
-            {session.card.type === 'truth' && session.card.answer && (
-              <View style={styles.answerReveal}>
-                <Text style={styles.answerRevealLabel}>
-                  {session.card.answeredBy === uid ? 'Your answer:' : `${partnerName}'s answer:`}
-                </Text>
-                <Text style={styles.answerRevealText}>{session.card.answer}</Text>
-              </View>
-            )}
-
-            {/* Dare: show confirmation */}
-            {session.card.type === 'dare' && (
-              <View style={styles.dareConfirmedBanner}>
-                <Text style={styles.dareConfirmedText}>✓ Both confirmed!</Text>
-              </View>
-            )}
-
-            <TouchableOpacity style={styles.doneBtn} onPress={handleDone} activeOpacity={0.85}>
-              <Text style={styles.doneBtnText}>Done — {isMyTurn ? partnerName : 'your'} turn →</Text>
-            </TouchableOpacity>
-          </View>
+          <DoneCard
+            session={session}
+            uid={uid}
+            partnerName={partnerName}
+            cfg={cfg}
+            onDone={handleDone}
+            isMyTurn={isMyTurn}
+          />
         )}
 
         {/* Score */}
@@ -337,6 +501,84 @@ export default function TruthDareScreen() {
           </View>
         )}
       </ScrollView>
+    </View>
+  );
+}
+
+// ── Done card extracted to keep audio lifecycle isolated ──────────────────────
+function DoneCard({
+  session, uid, partnerName, cfg, onDone, isMyTurn,
+}: {
+  session: TruthDareSession;
+  uid: string;
+  partnerName: string;
+  cfg: ReturnType<typeof Object.values>[0] & { emoji: string; label: string; color: string; textColor: string };
+  onDone: () => void;
+  isMyTurn: boolean;
+}) {
+  const card = session.card!;
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    return () => { soundRef.current?.unloadAsync(); };
+  }, []);
+
+  const handlePlay = async () => {
+    if (!card.audioURL) return;
+    if (isPlaying) {
+      await soundRef.current?.stopAsync();
+      setIsPlaying(false);
+      return;
+    }
+    const { sound } = await Audio.Sound.createAsync({ uri: card.audioURL });
+    soundRef.current = sound;
+    setIsPlaying(true);
+    await sound.playAsync();
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) setIsPlaying(false);
+    });
+  };
+
+  return (
+    <View style={[styles.cardView, { borderLeftColor: card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+      <View style={styles.cardTypeRow}>
+        <Text style={styles.cardTypeEmoji}>{card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
+        <Text style={[styles.cardTypeBadge, { color: card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+          {card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+        </Text>
+      </View>
+      <Text style={styles.cardText}>{card.text}</Text>
+
+      {card.type === 'truth' && card.audioURL && (
+        <View style={styles.answerReveal}>
+          <Text style={styles.answerRevealLabel}>
+            {card.answeredBy === uid ? 'Your answer:' : `${partnerName}'s answer:`}
+          </Text>
+          <TouchableOpacity style={styles.playbackBtn} onPress={handlePlay} activeOpacity={0.85}>
+            <Text style={styles.playbackBtnText}>{isPlaying ? '⏸ Playing…' : '▶ Play voice answer'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {card.type === 'truth' && card.answer && !card.audioURL && (
+        <View style={styles.answerReveal}>
+          <Text style={styles.answerRevealLabel}>
+            {card.answeredBy === uid ? 'Your answer:' : `${partnerName}'s answer:`}
+          </Text>
+          <Text style={styles.answerRevealText}>{card.answer}</Text>
+        </View>
+      )}
+
+      {card.type === 'dare' && (
+        <View style={styles.dareConfirmedBanner}>
+          <Text style={styles.dareConfirmedText}>✓ Both confirmed!</Text>
+        </View>
+      )}
+
+      <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={onDone} activeOpacity={0.85}>
+        <Text style={styles.actionBtnText}>Done — {isMyTurn ? partnerName + "'s" : 'your'} turn →</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -352,6 +594,7 @@ const styles = StyleSheet.create({
 
   picker: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.md },
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
+  pickerSectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.sm },
   levelCard: { borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, ...Shadow.sm },
   levelEmoji: { fontSize: 36 },
   levelInfo: { flex: 1 },
@@ -386,34 +629,50 @@ const styles = StyleSheet.create({
   cardTypeEmoji: { fontSize: 22 },
   cardTypeBadge: { fontFamily: Fonts.bodyBold, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8 },
   cardText: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, lineHeight: 30 },
+  previewHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
   sentBanner: { backgroundColor: '#E8F5E9', borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', gap: 4 },
-  sentText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.success },
+  sentText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#2E7D32' },
 
   greyBanner: { backgroundColor: Colors.cream, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
   greyBannerText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
   greyBannerHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
   answerPrompt: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
-  answerInput: { backgroundColor: Colors.cream, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, minHeight: 80, borderWidth: 1, borderColor: Colors.border },
-  sendBtn: { backgroundColor: '#1565C0', paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
-  sendBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
 
-  confirmBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
-  confirmBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  modeTabs: { flexDirection: 'row', backgroundColor: Colors.cream, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  modeTab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+  modeTabActive: { backgroundColor: '#1565C0' },
+  modeTabText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  modeTabTextActive: { color: Colors.white },
+
+  answerInput: { backgroundColor: Colors.cream, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, minHeight: 80, borderWidth: 1, borderColor: Colors.border },
+
+  recordArea: { gap: Spacing.md, alignItems: 'center' },
+  micBtn: { backgroundColor: Colors.blush, borderRadius: Radius.full, paddingVertical: Spacing.lg, paddingHorizontal: Spacing.xl, alignItems: 'center', gap: Spacing.sm },
+  micBtnRecording: { backgroundColor: '#FFEBEE' },
+  micEmoji: { fontSize: 40 },
+  micLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  playbackBtn: { backgroundColor: Colors.cream, borderRadius: Radius.full, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderWidth: 1, borderColor: Colors.border },
+  playbackBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+
+  actionBtn: { paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  truthActionBtn: { backgroundColor: '#1565C0' },
+  dareActionBtn: { backgroundColor: Colors.burgundy },
+  actionBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+
+  sendBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  sendBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   skipBtn: { alignItems: 'center', paddingVertical: Spacing.xs },
   skipText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
-  answerReveal: { backgroundColor: '#E3F2FD', borderRadius: Radius.lg, padding: Spacing.md, gap: 4 },
+  answerReveal: { backgroundColor: '#E3F2FD', borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm },
   answerRevealLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: '#1565C0', textTransform: 'uppercase', letterSpacing: 0.8 },
   answerRevealText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
 
   dareConfirmedBanner: { backgroundColor: '#E8F5E9', borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center' },
-  dareConfirmedText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.success },
-
-  doneBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.sm },
-  doneBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  dareConfirmedText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#2E7D32' },
 
   scoreRow: { alignItems: 'center', paddingVertical: Spacing.sm },
   scoreText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
