@@ -75,18 +75,23 @@ export default function RootLayout() {
   }, [loading, user, profile?.coupleId]);
 
   // Request notification permissions and register push token
+  // Silently skipped in Expo Go (SDK 53+) and web — only works in production/dev builds
   useEffect(() => {
     if (loading || !user) return;
-    if (Platform.OS === 'web') return; // push not supported on web
+    if (Platform.OS === 'web') return;
     (async () => {
-      const { status: existing } = await Notifications.getPermissionsAsync();
-      const { status } = existing === 'granted'
-        ? { status: existing }
-        : await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') return;
-      const token = (await Notifications.getExpoPushTokenAsync()).data;
-      if (token && token !== profile?.pushToken) {
-        createUserProfile(user.uid, { pushToken: token } as any);
+      try {
+        const { status: existing } = await Notifications.getPermissionsAsync();
+        const { status } = existing === 'granted'
+          ? { status: existing }
+          : await Notifications.requestPermissionsAsync();
+        if (status !== 'granted') return;
+        const token = (await Notifications.getExpoPushTokenAsync()).data;
+        if (token && token !== profile?.pushToken) {
+          createUserProfile(user.uid, { pushToken: token } as any);
+        }
+      } catch {
+        // Push notifications unavailable (Expo Go, simulator, or missing projectId)
       }
     })();
   }, [loading, user]);
