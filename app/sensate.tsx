@@ -2,8 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { SensateProgress, subscribeSensateProgress, completeStage } from '../services/sensateService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -86,17 +89,32 @@ const STAGES: Stage[] = [
 ];
 
 export default function SensateScreen() {
+  const { user, profile } = useAuth();
+  const { couple } = useCouple(user?.uid, profile?.coupleId);
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
   const [running, setRunning] = useState(false);
+  const [marked, setMarked] = useState(false);
+  const [progress, setProgress] = useState<SensateProgress>({
+    stage1: { count: 0, lastDate: '' },
+    stage2: { count: 0, lastDate: '' },
+    stage3: { count: 0, lastDate: '' },
+  });
   const help = useHelp('sensate');
   const [elapsed, setElapsed] = useState(0);
   const [promptIndex, setPromptIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const promptAnim = useRef(new Animated.Value(1)).current;
 
+  const coupleId = profile?.coupleId;
+
+  useEffect(() => {
+    if (!coupleId) return;
+    return subscribeSensateProgress(coupleId, setProgress);
+  }, [coupleId]);
+
   const totalSeconds = (activeStage?.durationMinutes ?? 0) * 60;
   const remaining = Math.max(totalSeconds - elapsed, 0);
-  const progress = totalSeconds > 0 ? Math.min(elapsed / totalSeconds, 1) : 0;
+  const timerProgress = totalSeconds > 0 ? Math.min(elapsed / totalSeconds, 1) : 0;
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
 
@@ -129,7 +147,15 @@ export default function SensateScreen() {
     setElapsed(0);
     setPromptIndex(0);
     setRunning(false);
+    setMarked(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleMarkComplete = async () => {
+    if (!coupleId || !activeStage) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await completeStage(coupleId, activeStage.id as 1 | 2 | 3, progress);
+    setMarked(true);
   };
 
   const toggleTimer = () => {
@@ -161,29 +187,40 @@ export default function SensateScreen() {
           <Text style={styles.intro}>
             A research-backed approach to rekindling physical intimacy. Three stages, each building presence, not performance.
           </Text>
-          {STAGES.map((stage) => (
-            <TouchableOpacity
-              key={stage.id}
-              style={[styles.stageCard, { backgroundColor: stage.color, borderColor: stage.color }]}
-              onPress={() => startStage(stage)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.stageTop}>
-                <View style={[styles.stageNumWrap, { borderColor: stage.textColor }]}>
-                  <Text style={[styles.stageNum, { color: stage.textColor }]}>{stage.id}</Text>
+          {STAGES.map((stage) => {
+            const key = `stage${stage.id}` as 'stage1' | 'stage2' | 'stage3';
+            const count = progress[key].count;
+            return (
+              <TouchableOpacity
+                key={stage.id}
+                style={[styles.stageCard, { backgroundColor: stage.color, borderColor: stage.color }]}
+                onPress={() => startStage(stage)}
+                activeOpacity={0.85}
+              >
+                <View style={styles.stageTop}>
+                  <View style={[styles.stageNumWrap, { borderColor: stage.textColor }]}>
+                    <Text style={[styles.stageNum, { color: stage.textColor }]}>{stage.id}</Text>
+                  </View>
+                  <View style={styles.stageInfo}>
+                    <Text style={[styles.stageTitle, { color: stage.textColor }]}>{stage.title}</Text>
+                    <Text style={styles.stageSub}>{stage.subtitle}</Text>
+                  </View>
+                  <View style={styles.stageRight}>
+                    {stage.durationMinutes > 0 && (
+                      <Text style={[styles.stageDur, { color: stage.textColor }]}>{stage.durationMinutes} min</Text>
+                    )}
+                    {count > 0 && (
+                      <View style={[styles.countBadge, { backgroundColor: stage.textColor }]}>
+                        <Text style={styles.countBadgeText}>✓ {count}×</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                <View style={styles.stageInfo}>
-                  <Text style={[styles.stageTitle, { color: stage.textColor }]}>{stage.title}</Text>
-                  <Text style={styles.stageSub}>{stage.subtitle}</Text>
-                </View>
-                {stage.durationMinutes > 0 && (
-                  <Text style={[styles.stageDur, { color: stage.textColor }]}>{stage.durationMinutes} min</Text>
-                )}
-              </View>
-              <Text style={styles.stageInst}>{stage.instruction}</Text>
-              <Text style={[styles.stageStart, { color: stage.textColor }]}>Begin stage {stage.id} →</Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={styles.stageInst}>{stage.instruction}</Text>
+                <Text style={[styles.stageStart, { color: stage.textColor }]}>Begin stage {stage.id} →</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
     );
@@ -250,6 +287,23 @@ export default function SensateScreen() {
             No timer, this stage has no end. Stay as long as you want.
           </Text>
         )}
+
+        {/* Mark complete */}
+        {(done || activeStage.durationMinutes === 0) && (
+          marked ? (
+            <View style={[styles.markedBanner, { backgroundColor: activeStage.textColor }]}>
+              <Text style={styles.markedText}>✓ Session saved</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.markBtn, { backgroundColor: activeStage.textColor }]}
+              onPress={handleMarkComplete}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.markBtnText}>✓ Mark session complete</Text>
+            </TouchableOpacity>
+          )
+        )}
       </ScrollView>
 
       <HelpModal
@@ -288,9 +342,12 @@ const styles = StyleSheet.create({
   stageNumWrap: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   stageNum: { fontFamily: Fonts.heading, fontSize: 20, lineHeight: 24 },
   stageInfo: { flex: 1 },
+  stageRight: { alignItems: 'flex-end', gap: 4 },
   stageTitle: { fontFamily: Fonts.heading, fontSize: 22 },
   stageSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   stageDur: { fontFamily: Fonts.bodyBold, fontSize: 14 },
+  countBadge: { borderRadius: Radius.full, paddingVertical: 3, paddingHorizontal: 8 },
+  countBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white },
   stageInst: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22 },
   stageStart: { fontFamily: Fonts.bodyBold, fontSize: 14, alignSelf: 'flex-end' },
 
@@ -323,4 +380,9 @@ const styles = StyleSheet.create({
   instructionText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22, textAlign: 'center' },
 
   flowNote: { fontFamily: Fonts.bodyItalic, fontSize: 14, textAlign: 'center' },
+
+  markBtn: { width: '100%', paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  markBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+  markedBanner: { width: '100%', paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  markedText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
 });
