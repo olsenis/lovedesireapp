@@ -16,7 +16,6 @@ import {
   Lato_700Bold,
 } from '@expo-google-fonts/lato';
 import { useAuth } from '../hooks/useAuth';
-import { createCouple } from '../services/coupleService';
 import { createUserProfile } from '../services/authService';
 import { Colors } from '../constants/colors';
 
@@ -60,19 +59,6 @@ export default function RootLayout() {
     }
   }, [user, loading]);
 
-  // Ensure every authenticated user has a couple doc + coupleId in their profile
-  useEffect(() => {
-    if (loading || !user) return;
-    if (profile?.coupleId) return;
-    createCouple(user.uid).then((couple) => {
-      createUserProfile(user.uid, {
-        name: profile?.name ?? '',
-        photoURL: profile?.photoURL,
-        coupleId: couple.id,
-        inviteCode: couple.inviteCode,
-      });
-    }).catch((e) => console.error('createCouple failed:', e));
-  }, [loading, user, profile?.coupleId]);
 
   // Request notification permissions and register push token
   // Silently skipped in Expo Go (SDK 53+) and web — only works in production/dev builds
