@@ -65,7 +65,7 @@ export default function TogetherScreen() {
       </View>
 
       {/* Category filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={styles.filterRow}>
+      <View style={styles.filterRow}>
         <TouchableOpacity
           style={[styles.filterBtn, filter === 'all' && styles.filterActive]}
           onPress={() => setFilter('all')}
@@ -82,7 +82,7 @@ export default function TogetherScreen() {
             <Text style={[styles.filterText, filter === cat.key && styles.filterTextActive]}>{cat.label}</Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
       <ScrollView contentContainerStyle={styles.list}>
         {incomplete.map((todo) => {
@@ -195,8 +195,7 @@ const styles = StyleSheet.create({
   addBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.xs, paddingHorizontal: Spacing.md, borderRadius: Radius.full },
   addBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream },
 
-  filterScroll: { maxHeight: 52 },
-  filterRow: { paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingBottom: Spacing.sm },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingVertical: Spacing.sm },
   filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: Spacing.xs, paddingHorizontal: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
   filterActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   filterEmoji: { fontSize: 14 },
