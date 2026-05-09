@@ -43,7 +43,7 @@ export default function ActivityCardsScreen() {
 
   const handleCardTap = (index: number) => {
     if (!session || !isMyTurn) return;
-    if (session.revealed.includes(index)) return;
+    if ((session.revealed ?? []).includes(index)) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setRevealIndex(index);
   };
@@ -66,8 +66,9 @@ export default function ActivityCardsScreen() {
 
   if (loading || !session) return null;
 
-  const revealedSet = new Set(session.revealed);
-  const remaining = 25 - session.revealed.length;
+  const revealed = session.revealed ?? [];
+  const revealedSet = new Set(revealed);
+  const remaining = 25 - revealed.length;
   const currentMonthName = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' });
 
   return (
@@ -93,13 +94,13 @@ export default function ActivityCardsScreen() {
         </View>
 
         {/* Progress */}
-        <Text style={styles.progressText}>{session.revealed.length} of 25 flipped · {remaining} remaining</Text>
+        <Text style={styles.progressText}>{revealed.length} of 25 flipped · {remaining} remaining</Text>
 
         {/* 5×5 Card grid */}
         <View style={styles.grid}>
           {session.squares.map((activity, index) => {
             const isRevealed = revealedSet.has(index);
-            const revealedByMe = session.revealedBy[index] === uid;
+            const revealedByMe = (session.revealedBy ?? {})[index] === uid;
             const canTap = isMyTurn && !isRevealed;
 
             return (

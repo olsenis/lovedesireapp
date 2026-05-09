@@ -1,4 +1,5 @@
 import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, Unsubscribe } from 'firebase/firestore';
+// Note: arrayRemove and deleteField kept for legacy compat if imported elsewhere
 import { db } from './firebase';
 import { BINGO_ACTIVITIES } from '../constants/content';
 
@@ -40,7 +41,22 @@ export function subscribeActivityCards(
   const ref = doc(db, 'couples', coupleId, 'bingo', month);
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
-      onChange(snap.data() as ActivityCardsSession);
+      const data = snap.data() as any;
+      // Migrate old format (checked/checkedBy/winner → revealed/revealedBy/turnUid)
+      if (data.revealed === undefined && data.checked !== undefined) {
+        const migrated: ActivityCardsSession = {
+          month: data.month ?? month,
+          squares: data.squares ?? [],
+          revealed: data.checked ?? [],
+          revealedBy: data.checkedBy ?? {},
+          turnUid: starterUid,
+          resetCount: data.resetCount ?? 0,
+        };
+        await updateDoc(ref, { revealed: migrated.revealed, revealedBy: migrated.revealedBy, turnUid: migrated.turnUid });
+        onChange(migrated);
+      } else {
+        onChange(data as ActivityCardsSession);
+      }
     } else {
       const squares = generateCard(month + coupleId + '0');
       const newSession: ActivityCardsSession = {
@@ -50,6 +66,9 @@ export function subscribeActivityCards(
       await setDoc(ref, newSession);
       onChange(newSession);
     }
+  }, (error) => {
+    console.error('ActivityCards subscription error:', error);
+    onChange(null);
   });
 }
 
