@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -21,13 +21,96 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function pickUnique<T>(arr: T[], n: number): T[] {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
+
+const STATEMENT_POOL: string[] = [
+  // Experiences
+  "Has been to more than 10 countries",
+  "Has never broken a bone",
+  "Has a tattoo",
+  "Has met a celebrity in person",
+  "Has been on TV or radio",
+  "Has gone skydiving or bungee jumping",
+  "Has skinny dipped",
+  "Has crashed a party",
+  "Has won a competition or award",
+  "Has been in a car accident",
+  "Has slept outside under the stars",
+  "Has ridden a horse",
+  "Has been to a music festival",
+  "Has eaten something really unusual",
+  "Has pulled an all-nighter for fun, not work",
+  "Has been on a blind date",
+  "Has lived in another country",
+  "Has been in a fist fight",
+  "Has seen the Northern Lights",
+  "Has gone camping alone",
+  // Skills & abilities
+  "Can play a musical instrument",
+  "Can speak more than 2 languages",
+  "Can cook a full dinner from scratch",
+  "Can do a cartwheel",
+  "Can juggle",
+  "Can solve a Rubik's cube",
+  "Can drive a manual car",
+  "Can swim more than 1km without stopping",
+  "Can do a handstand",
+  "Can whistle with fingers",
+  // Personality & preferences
+  "Is afraid of heights",
+  "Prefers mornings to evenings",
+  "Has cried at a movie in the last year",
+  "Believes in ghosts",
+  "Has an irrational fear of something specific",
+  "Sleeps with a fan on every night",
+  "Talks to plants or pets like people",
+  "Has a recurring dream",
+  "Keeps a journal or diary",
+  "Always makes their bed in the morning",
+  // Past & history
+  "Has had a nickname that stuck for years",
+  "Skipped school or work just to stay home",
+  "Has been fired from a job",
+  "Was voted something in school (best dressed, funniest, etc.)",
+  "Had an imaginary friend as a child",
+  "Was in a band or music group",
+  "Has written a poem for someone",
+  "Had a pen pal",
+  "Once got lost in a city alone",
+  "Has done karaoke in public",
+  // Fun / random
+  "Can name all the countries in Europe",
+  "Has eaten at a Michelin-star restaurant",
+  "Has read more than 50 books in a year",
+  "Has gone a full week without their phone",
+  "Owns more than 20 plants",
+  "Has been vegetarian or vegan at some point",
+  "Has run a half marathon or longer",
+  "Has done stand-up comedy",
+  "Has been to a silent disco",
+  "Has tried meditating regularly",
+  "Has sold something they made",
+  "Once had a job they never told anyone about",
+  "Can name every winner of a major competition from the last decade",
+  "Has donated blood more than once",
+  "Has a collection of something unusual",
+];
+
 export default function TwoTruthsScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<TwoTruthsSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [statements, setStatements] = useState(['', '', '']);
+  const [generated, setGenerated] = useState<string[]>([]);
   const [lie, setLie] = useState<number | null>(null);
+
+  const generateStatements = useCallback(() => {
+    setGenerated(pickUnique(STATEMENT_POOL, 3));
+    setLie(null);
+  }, []);
   const help = useHelp('two-truths');
 
   const coupleId = profile?.coupleId;
@@ -38,8 +121,22 @@ export default function TwoTruthsScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    return subscribeTwoTruths(coupleId, (s) => { setSession(s); setLoading(false); });
+    return subscribeTwoTruths(coupleId, (s) => {
+      setSession(s);
+      setLoading(false);
+    });
   }, [coupleId]);
+
+  // Auto-generate statements when writing phase starts for the writer
+  useEffect(() => {
+    if (session?.phase === 'writing' && session.writerUid === uid && generated.length === 0) {
+      generateStatements();
+    }
+    if (session?.phase !== 'writing') {
+      setGenerated([]);
+      setLie(null);
+    }
+  }, [session?.phase, session?.writerUid, uid]);
 
   const isWriter = session?.writerUid === uid;
   const cfg = DARE_LEVEL_CONFIG[session?.dareLevel ?? 'flirty'];
@@ -51,11 +148,9 @@ export default function TwoTruthsScreen() {
   };
 
   const handleSubmitStatements = async () => {
-    if (!coupleId || statements.some(s => !s.trim()) || lie === null) return;
+    if (!coupleId || generated.length < 3 || lie === null) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await submitStatements(coupleId, statements, lie);
-    setStatements(['', '', '']);
-    setLie(null);
+    await submitStatements(coupleId, generated, lie);
   };
 
   const handleGuess = async (index: number) => {
@@ -74,7 +169,7 @@ export default function TwoTruthsScreen() {
 
   const handleReset = async () => {
     if (!coupleId) return;
-    setStatements(['', '', '']);
+    setGenerated([]);
     setLie(null);
     await resetTwoTruths(coupleId);
   };
@@ -92,8 +187,8 @@ export default function TwoTruthsScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.picker}>
           <Text style={styles.pickerIntro}>
-            Write 2 truths and 1 lie. Your partner guesses which is the lie.{'\n'}
-            Wrong guess = dare. Right guess = you do the dare.
+            The app gives you 3 statements. Pick the one that is NOT true about you.{'\n'}
+            Your partner guesses which is the lie. Wrong guess = dare.
           </Text>
           <Text style={styles.pickerLabel}>Choose dare level</Text>
           {LEVELS.map(level => {
@@ -160,31 +255,37 @@ export default function TwoTruthsScreen() {
         {/* ── WRITING PHASE ── */}
         {session.phase === 'writing' && isWriter && (
           <>
-            <Text style={styles.hint}>Write 2 things that are TRUE and 1 that is FALSE. Mark the lie.</Text>
-            {[0, 1, 2].map(i => (
-              <View key={i} style={styles.statementRow}>
-                <TextInput
-                  style={[styles.input, lie === i && styles.inputLie]}
-                  placeholder={`Statement ${i + 1}`}
-                  placeholderTextColor={Colors.muted}
-                  value={statements[i]}
-                  onChangeText={t => { const s = [...statements]; s[i] = t; setStatements(s); }}
-                  multiline
-                />
-                <TouchableOpacity
-                  style={[styles.lieBtn, lie === i && styles.lieBtnActive]}
-                  onPress={() => setLie(lie === i ? null : i)}
-                >
-                  <Text style={[styles.lieBtnText, lie === i && styles.lieBtnTextActive]}>
-                    {lie === i ? '🤥 LIE' : 'Lie?'}
+            <Text style={styles.hint}>
+              Tap the statement that is NOT true about you. That becomes the lie.
+            </Text>
+            {generated.map((s, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[styles.statementCard, lie === i && styles.statementCardLie]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLie(lie === i ? null : i); }}
+                activeOpacity={0.85}
+              >
+                <View style={styles.statementCardLeft}>
+                  <Text style={[styles.statementCardText, lie === i && styles.statementCardTextLie]}>{s}</Text>
+                </View>
+                <View style={[styles.statementCardBadge, lie === i && styles.statementCardBadgeLie]}>
+                  <Text style={[styles.statementCardBadgeText, lie === i && styles.statementCardBadgeTextLie]}>
+                    {lie === i ? '🤥 LIE' : 'True'}
                   </Text>
-                </TouchableOpacity>
-              </View>
+                </View>
+              </TouchableOpacity>
             ))}
             <TouchableOpacity
-              style={[styles.actionBtn, (statements.some(s => !s.trim()) || lie === null) && { opacity: 0.4 }]}
+              style={styles.refreshBtn}
+              onPress={generateStatements}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.refreshBtnText}>↻ Get different statements</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, lie === null && { opacity: 0.4 }]}
               onPress={handleSubmitStatements}
-              disabled={statements.some(s => !s.trim()) || lie === null}
+              disabled={lie === null}
               activeOpacity={0.85}
             >
               <Text style={styles.actionBtnText}>Send to {partnerName} →</Text>
@@ -251,12 +352,12 @@ export default function TwoTruthsScreen() {
       <HelpModal
         visible={help.visible}
         title="Two Truths One Lie"
-        description="Write 2 truths and 1 lie. Your partner guesses which is the lie on their own phone."
+        description="The app gives you 3 statements about yourself. Pick the one that's NOT true — that's the lie. Your partner guesses which one."
         tips={[
-          "Write privately, your partner can't see until you submit",
-          "Mark which statement is the lie before sending",
-          "Wrong guess = guesser does the dare",
-          "Right guess = writer does the dare",
+          "The app generates 3 statements, you just tap the one that's not true",
+          "Tap '↻ Get different statements' if none fit well",
+          "Your partner sees all 3 and tries to spot the lie",
+          "Wrong guess = guesser does the dare, right guess = you do the dare",
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
@@ -295,13 +396,17 @@ const styles = StyleSheet.create({
 
   hint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
 
-  statementRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-start' },
-  input: { flex: 1, backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border, minHeight: 56 },
-  inputLie: { borderColor: Colors.error, backgroundColor: '#FFF3F3' },
-  lieBtn: { paddingVertical: 12, paddingHorizontal: 12, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white, alignItems: 'center', minWidth: 64, marginTop: 2 },
-  lieBtnActive: { backgroundColor: Colors.error, borderColor: Colors.error },
-  lieBtnText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted },
-  lieBtnTextActive: { color: Colors.white },
+  statementCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, borderWidth: 2, borderColor: Colors.border, ...Shadow.sm },
+  statementCardLie: { borderColor: Colors.error, backgroundColor: '#FFF3F3' },
+  statementCardLeft: { flex: 1 },
+  statementCardText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
+  statementCardTextLie: { color: Colors.error },
+  statementCardBadge: { paddingVertical: 6, paddingHorizontal: Spacing.sm, borderRadius: Radius.full, backgroundColor: Colors.cream, borderWidth: 1, borderColor: Colors.border },
+  statementCardBadgeLie: { backgroundColor: Colors.error, borderColor: Colors.error },
+  statementCardBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted },
+  statementCardBadgeTextLie: { color: Colors.white },
+  refreshBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
+  refreshBtnText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
   waitingCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border },
   waitingEmoji: { fontSize: 40 },
