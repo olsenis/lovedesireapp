@@ -13,6 +13,7 @@ import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../serv
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
 import { subscribeWYR, WYRSession } from '../../services/wyrService';
+import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -58,6 +59,7 @@ export default function HomeScreen() {
   const [dailyQDoc, setDailyQDoc] = useState<DailyQuestionDoc | null>(null);
   const [dailyWishDoc, setDailyWishDoc] = useState<DailyWishDoc | null>(null);
   const [wyrSession, setWyrSession] = useState<WYRSession | null>(null);
+  const [intimacyEntries, setIntimacyEntries] = useState<IntimacyEntry[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -83,7 +85,8 @@ export default function HomeScreen() {
     const u4 = subscribeDailyQuestions(coupleId, setDailyQDoc);
     const u5 = subscribeDailyWishes(coupleId, setDailyWishDoc);
     const u6 = subscribeWYR(coupleId, setWyrSession);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
+    const u7 = subscribeIntimacyLog(coupleId, setIntimacyEntries);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
   }, [coupleId]);
 
   const handleMoodPick = async (emoji: MoodEmoji) => {
@@ -208,6 +211,21 @@ export default function HomeScreen() {
         subtitle: `${partner?.name ?? 'Partner'} picked, now it's your turn`,
         route: '/would-you-rather',
         bg: '#FFF9C4',
+      });
+    }
+  }
+
+  // Intimacy Log: last entry > 7 days ago
+  if (intimacyEntries.length > 0) {
+    const last = intimacyEntries[0].createdAt;
+    const daysSince = Math.floor((Date.now() - last) / 86400000);
+    if (daysSince >= 7) {
+      nudges.push({
+        emoji: '🔥',
+        title: 'Intimacy Log',
+        subtitle: `It's been ${daysSince} days, log your last intimate moment`,
+        route: '/intimacy-tracker',
+        bg: '#FFF0F3',
       });
     }
   }
