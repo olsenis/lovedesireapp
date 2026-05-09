@@ -7,6 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import {
   IntimacyEntry, IntimacyLocation, IntimacyType, IntimacyMood,
   subscribeIntimacyLog, addIntimacyEntry, deleteIntimacyEntry, getIntimacyStats,
+  LOCATION_LABELS as LOC_LABELS,
 } from '../services/intimacyService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
@@ -15,14 +16,9 @@ import { Spacing, Radius, Shadow } from '../constants/spacing';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const LOCATIONS: { key: IntimacyLocation; label: string; emoji: string }[] = [
-  { key: 'home_bedroom', label: 'Bedroom',    emoji: '🛏️' },
-  { key: 'home_other',   label: 'Home',       emoji: '🏠' },
-  { key: 'travel',       label: 'Travelling', emoji: '✈️' },
-  { key: 'car',          label: 'Car',        emoji: '🚗' },
-  { key: 'outdoors',     label: 'Outdoors',   emoji: '🌿' },
-  { key: 'other',        label: 'Other',      emoji: '📍' },
-];
+const LOCATIONS = (Object.entries(LOC_LABELS) as [IntimacyLocation, { emoji: string; label: string }][]).map(
+  ([key, { emoji, label }]) => ({ key, emoji, label })
+);
 
 const TYPES: { key: IntimacyType; label: string }[] = [
   { key: 'intercourse',   label: 'Intercourse' },
@@ -42,9 +38,8 @@ const MOODS: { key: IntimacyMood; emoji: string; label: string }[] = [
   { key: 'disconnected', emoji: '💔', label: 'Off' },
 ];
 
-const LOCATION_LABELS: Record<IntimacyLocation, string> = {
-  home_bedroom: 'Bedroom', home_other: 'Home', travel: 'Travelling',
-  car: 'Car', outdoors: 'Outdoors', other: 'Other',
+const STAR_LABELS: Record<number, string> = {
+  1: 'Could have been better', 2: 'It was okay', 3: 'Pretty good', 4: 'Really good', 5: 'Incredible',
 };
 const TYPE_LABELS: Record<IntimacyType, string> = {
   intercourse: 'Intercourse', oral: 'Oral', manual: 'Manual',
@@ -208,7 +203,7 @@ export default function IntimacyTrackerScreen() {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Where</Text>
-                  <Text style={styles.detailValue}>{LOCATIONS.find(l => l.key === selectedEntry.location)?.emoji} {LOCATION_LABELS[selectedEntry.location]}</Text>
+                  <Text style={styles.detailValue}>{LOC_LABELS[selectedEntry.location].emoji} {LOC_LABELS[selectedEntry.location].label}</Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>What</Text>
@@ -261,6 +256,7 @@ export default function IntimacyTrackerScreen() {
       <DetailSheet
         visible={showSheet}
         onClose={() => setShowSheet(false)}
+        partnerName={partnerName}
         onSave={async (data) => {
           if (!coupleId) throw new Error('No coupleId');
           await addIntimacyEntry(coupleId, uid, data);
@@ -359,13 +355,39 @@ function StatsView({ stats, entries }: { stats: ReturnType<typeof getIntimacySta
         ))}
       </View>
 
+      {/* Orgasm rates */}
+      <Text style={styles.sectionLabel}>Orgasms</Text>
+      <View style={styles.statRow}>
+        <View style={[styles.statCard, { flex: 1, backgroundColor: Colors.blush }]}>
+          <Text style={styles.statCardNum}>{stats.orgasmStats.myRate}%</Text>
+          <Text style={styles.statCardLabel}>My orgasm rate</Text>
+        </View>
+        <View style={[styles.statCard, { flex: 1, backgroundColor: Colors.blush }]}>
+          <Text style={styles.statCardNum}>{stats.orgasmStats.partnerRate}%</Text>
+          <Text style={styles.statCardLabel}>Partner's rate</Text>
+        </View>
+      </View>
+
+      {/* Average rating */}
+      {stats.avgRating !== null && (
+        <View style={styles.statCard}>
+          <Text style={styles.statCardLabel}>Average rating</Text>
+          <View style={styles.starsRow}>
+            {[1,2,3,4,5].map(s => (
+              <Text key={s} style={[styles.star, { fontSize: 24 }]}>{s <= Math.round(stats.avgRating!) ? '★' : '☆'}</Text>
+            ))}
+          </View>
+          <Text style={styles.statCardNum}>{stats.avgRating} / 5</Text>
+        </View>
+      )}
+
       {/* Common */}
       <View style={styles.statRow}>
         {stats.mostCommonLocation && (
           <View style={[styles.statCard, { flex: 1 }]}>
-            <Text style={styles.statCardNum}>{LOCATIONS.find(l => l.key === stats.mostCommonLocation)?.emoji}</Text>
+            <Text style={styles.statCardNum}>{LOC_LABELS[stats.mostCommonLocation].emoji}</Text>
             <Text style={styles.statCardLabel}>Favourite spot</Text>
-            <Text style={styles.statCardSub}>{LOCATION_LABELS[stats.mostCommonLocation]}</Text>
+            <Text style={styles.statCardSub}>{LOC_LABELS[stats.mostCommonLocation].label}</Text>
           </View>
         )}
         {stats.mostCommonType && (
@@ -383,11 +405,12 @@ function StatsView({ stats, entries }: { stats: ReturnType<typeof getIntimacySta
 
 // ── Detail sheet ──────────────────────────────────────────────────────────────
 function DetailSheet({
-  visible, onClose, onSave,
+  visible, onClose, onSave, partnerName,
 }: {
   visible: boolean;
   onClose: () => void;
   onSave: (data: Omit<IntimacyEntry, 'id' | 'createdAt' | 'loggedBy'>) => Promise<void>;
+  partnerName: string;
 }) {
   const [initiatedBy, setInitiatedBy] = useState<'me' | 'partner' | 'both' | null>(null);
   const [location, setLocation] = useState<IntimacyLocation | null>(null);
@@ -396,11 +419,18 @@ function DetailSheet({
   const [positions, setPositions] = useState<string[]>([]);
   const [mood, setMood] = useState<IntimacyMood | null>(null);
   const [note, setNote] = useState('');
+  const [rating, setRating] = useState<number>(0);
+  const [myOrgasm, setMyOrgasm] = useState<'yes' | 'no' | null>(null);
+  const [myOrgasmCount, setMyOrgasmCount] = useState(1);
+  const [partnerOrgasm, setPartnerOrgasm] = useState<'yes' | 'no' | null>(null);
+  const [partnerOrgasmCount, setPartnerOrgasmCount] = useState(1);
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
     setInitiatedBy(null); setLocation(null); setTypes([]); setDuration('');
-    setPositions([]); setMood(null); setNote(''); setSaving(false);
+    setPositions([]); setMood(null); setNote(''); setRating(0);
+    setMyOrgasm(null); setMyOrgasmCount(1); setPartnerOrgasm(null); setPartnerOrgasmCount(1);
+    setSaving(false);
   };
 
   const canSave = initiatedBy !== null && location !== null && types.length > 0 && mood !== null;
@@ -417,6 +447,11 @@ function DetailSheet({
         duration: duration ? parseInt(duration) : undefined,
         mood: mood!,
         note: note.trim() || undefined,
+        rating: rating > 0 ? rating as 1|2|3|4|5 : undefined,
+        orgasm: (myOrgasm !== null || partnerOrgasm !== null) ? {
+          me: { had: myOrgasm === 'yes', count: myOrgasm === 'yes' ? myOrgasmCount : 0 },
+          partner: { had: partnerOrgasm === 'yes', count: partnerOrgasm === 'yes' ? partnerOrgasmCount : 0 },
+        } : undefined,
       });
       reset();
     } catch (e) {
@@ -443,6 +478,17 @@ function DetailSheet({
 
           <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
             <Text style={styles.sheetTitle}>Log an intimate moment</Text>
+
+            {/* Star rating */}
+            <Text style={styles.sheetSection}>Overall rating <Text style={styles.optional}>optional</Text></Text>
+            <View style={styles.starsRow}>
+              {[1,2,3,4,5].map(s => (
+                <TouchableOpacity key={s} onPress={() => setRating(rating === s ? 0 : s)} activeOpacity={0.8}>
+                  <Text style={styles.star}>{s <= rating ? '★' : '☆'}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {rating > 0 && <Text style={styles.starLabel}>{STAR_LABELS[rating]}</Text>}
 
             {/* Who started it */}
             <Text style={styles.sheetSection}>Who started it?</Text>
@@ -519,6 +565,32 @@ function DetailSheet({
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Orgasm — optional */}
+            <Text style={styles.sheetSection}>Orgasms <Text style={styles.optional}>optional</Text></Text>
+            {[
+              { label: 'Me', had: myOrgasm, setHad: setMyOrgasm, count: myOrgasmCount, setCount: setMyOrgasmCount },
+              { label: partnerName, had: partnerOrgasm, setHad: setPartnerOrgasm, count: partnerOrgasmCount, setCount: setPartnerOrgasmCount },
+            ].map(row => (
+              <View key={row.label} style={styles.orgasmRow}>
+                <Text style={styles.orgasmLabel}>{row.label}</Text>
+                <View style={styles.chipRow}>
+                  <Chip label="Yes" selected={row.had === 'yes'} onPress={() => row.setHad(row.had === 'yes' ? null : 'yes')} />
+                  <Chip label="No" selected={row.had === 'no'} onPress={() => row.setHad(row.had === 'no' ? null : 'no')} />
+                </View>
+                {row.had === 'yes' && (
+                  <View style={styles.countRow}>
+                    <TouchableOpacity onPress={() => row.setCount(Math.max(1, row.count - 1))} style={styles.countBtn}>
+                      <Text style={styles.countBtnText}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.countNum}>{row.count}</Text>
+                    <TouchableOpacity onPress={() => row.setCount(Math.min(9, row.count + 1))} style={styles.countBtn}>
+                      <Text style={styles.countBtnText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
 
             {/* Note — optional */}
             <Text style={styles.sheetSection}>Note <Text style={styles.optional}>optional</Text></Text>
@@ -681,4 +753,15 @@ const styles = StyleSheet.create({
   detailRow: { gap: Spacing.xs },
   detailLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
   detailValue: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text },
+
+  starsRow: { flexDirection: 'row', gap: 8, paddingVertical: Spacing.xs },
+  star: { fontSize: 36, color: Colors.burgundy },
+  starLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+
+  orgasmRow: { gap: Spacing.xs, paddingVertical: Spacing.xs },
+  orgasmLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  countRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  countBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.blush, alignItems: 'center', justifyContent: 'center' },
+  countBtnText: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, lineHeight: 26 },
+  countNum: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy, minWidth: 24, textAlign: 'center' },
 });
