@@ -605,6 +605,19 @@ function DetailSheet({
             />
             {note.length > 0 && <Text style={styles.charCount}>{note.length}/200</Text>}
 
+            {/* Missing fields hint */}
+            {!canSave && (
+              <Text style={styles.missingHint}>
+                Still needed:{' '}
+                {[
+                  !initiatedBy && 'who started it',
+                  !location && 'where',
+                  types.length === 0 && 'what',
+                  !mood && 'connection',
+                ].filter(Boolean).join(', ')}
+              </Text>
+            )}
+
             {/* Save */}
             <TouchableOpacity
               style={[styles.saveBtn, (!canSave || saving) && { opacity: 0.4 }]}
@@ -746,6 +759,7 @@ const styles = StyleSheet.create({
 
   noteInput: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border, minHeight: 72 },
   charCount: { fontFamily: Fonts.body, fontSize: 11, color: Colors.muted, textAlign: 'right' },
+  missingHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.error, textAlign: 'center' },
 
   saveBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.sm },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
