@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
@@ -63,6 +63,7 @@ export default function HomeScreen() {
   const [intimacyEntries, setIntimacyEntries] = useState<IntimacyEntry[]>([]);
   const [recentSparks, setRecentSparks] = useState<SparkEntry[]>([]);
   const [sparkSent, setSparkSent] = useState(false);
+  const [showSparkPicker, setShowSparkPicker] = useState(false);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
 
   const coupleId = profile?.coupleId;
@@ -278,6 +279,7 @@ export default function HomeScreen() {
   }
 
   return (
+    <View style={styles.screenWrap}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
 
       {/* Header */}
@@ -348,27 +350,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Send a Spark */}
-      {isConnected && (
-        <View style={styles.sparkSection}>
-          <Text style={styles.sparkLabel}>{sparkSent ? '✓ Spark sent!' : `Send ${partner?.name ?? 'a spark'} something`}</Text>
-          <View style={styles.sparkRow}>
-            {SPARK_OPTIONS.map(opt => (
-              <TouchableOpacity
-                key={opt.emoji}
-                style={styles.sparkPill}
-                onPress={() => handleSendSpark(opt.emoji, opt.message)}
-                disabled={sparkSent}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.sparkPillEmoji}>{opt.emoji}</Text>
-                <Text style={styles.sparkPillText}>{opt.message}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
-
       {/* Weekly mood summary */}
       {isConnected && (myTopMood || partnerTopMood) && (
         <TouchableOpacity style={styles.moodSummaryCard} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.85}>
@@ -427,6 +408,17 @@ export default function HomeScreen() {
         <Text style={styles.dailyWishArrow}>›</Text>
       </TouchableOpacity>
 
+      {/* Send a Spark */}
+      {isConnected && (
+        <TouchableOpacity
+          style={[styles.sparkBtn, sparkSent && styles.sparkBtnSent]}
+          onPress={() => !sparkSent && setShowSparkPicker(true)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.sparkBtnText}>{sparkSent ? '✓ Spark sent!' : `❤️  Send ${partner?.name ?? 'your partner'} a spark`}</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Waiting for you nudges */}
       {nudges.length > 0 && (
         <>
@@ -466,11 +458,37 @@ export default function HomeScreen() {
       </View>
 
     </ScrollView>
+
+    {/* Spark picker modal */}
+    <Modal visible={showSparkPicker} transparent animationType="slide" onRequestClose={() => setShowSparkPicker(false)}>
+      <View style={styles.sparkOverlay}>
+        <View style={styles.sparkSheet}>
+          <View style={styles.sparkSheetHandle} />
+          <Text style={styles.sparkSheetTitle}>Send {partner?.name ?? 'your partner'} a spark</Text>
+          {SPARK_OPTIONS.map(opt => (
+            <TouchableOpacity
+              key={opt.emoji}
+              style={styles.sparkOptionRow}
+              onPress={() => { setShowSparkPicker(false); handleSendSpark(opt.emoji, opt.message); }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.sparkOptionEmoji}>{opt.emoji}</Text>
+              <Text style={styles.sparkOptionText}>{opt.message}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.sparkCancelBtn} onPress={() => setShowSparkPicker(false)}>
+            <Text style={styles.sparkCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, backgroundColor: Colors.cream },
+  screenWrap: { flex: 1, backgroundColor: Colors.cream },
+  scroll: { flex: 1 },
   container: { paddingTop: 60, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
@@ -544,10 +562,17 @@ const styles = StyleSheet.create({
   moodSummaryText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
   moodSummaryArrow: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.muted },
 
-  sparkSection: { gap: Spacing.sm },
-  sparkLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
-  sparkRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  sparkPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
-  sparkPillEmoji: { fontSize: 16 },
-  sparkPillText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
+  sparkBtn: { backgroundColor: Colors.white, borderRadius: Radius.full, paddingVertical: Spacing.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
+  sparkBtnSent: { backgroundColor: '#E8F5E9', borderColor: Colors.success },
+  sparkBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+
+  sparkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sparkSheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
+  sparkSheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: Radius.full, alignSelf: 'center', marginBottom: Spacing.sm },
+  sparkSheetTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, marginBottom: Spacing.sm },
+  sparkOptionRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  sparkOptionEmoji: { fontSize: 28 },
+  sparkOptionText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  sparkCancelBtn: { alignItems: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs },
+  sparkCancelText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
 });
