@@ -38,9 +38,13 @@ export function useCouple(myUid: string | null | undefined, coupleId: string | n
 
       let partner: UserProfile | null = null;
       if (partnerUid) {
-        const partnerSnap = await getDoc(doc(db, 'users', partnerUid));
-        if (seq === thisSeq && partnerSnap.exists()) {
-          partner = partnerSnap.data() as UserProfile;
+        try {
+          const partnerSnap = await getDoc(doc(db, 'users', partnerUid));
+          if (seq === thisSeq && partnerSnap.exists()) {
+            partner = partnerSnap.data() as UserProfile;
+          }
+        } catch {
+          // Partner profile unreadable — still set couple state so isConnected works
         }
       }
 
