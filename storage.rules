@@ -1,12 +1,18 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Profile photos — only the user themselves can write, any authed user can read
+
+    // ── User profile photos ───────────────────────────────────────────────────
+    // Only the user can write their own photo; any authenticated user can read
+    // (needed so partner can see profile photo)
     match /users/{uid}/{allPaths=**} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
-    // Couple memories and shared photos — any authenticated user can read/write
+
+    // ── Couple shared storage ─────────────────────────────────────────────────
+    // Memories, Truth or Dare audio recordings
+    // Firestore rules protect which coupleId is valid — here we just require auth
     match /couples/{coupleId}/{allPaths=**} {
       allow read, write: if request.auth != null;
     }

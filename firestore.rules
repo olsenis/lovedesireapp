@@ -1,10 +1,52 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow all authenticated users to read/write (development mode)
-    // TODO: Tighten before production launch
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    // Returns true if the requesting user is a member of the given couple
+    function isMemberOfCouple(coupleId) {
+      let couple = get(/databases/$(database)/documents/couples/$(coupleId));
+      return couple != null && (
+        couple.data.partner1Uid == request.auth.uid ||
+        couple.data.partner2Uid == request.auth.uid
+      );
+    }
+
+    // ── Users ────────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      // Only the user themselves can read or write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Private subcollections (blueprint result, help state)
+      match /private/{doc} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // ── Couples ───────────────────────────────────────────────────────────────
+    match /couples/{coupleId} {
+      // Read: only couple members
+      allow read: if request.auth != null && isMemberOfCouple(coupleId);
+
+      // Create: user must be setting themselves as partner1Uid
+      allow create: if request.auth != null
+        && request.resource.data.partner1Uid == request.auth.uid;
+
+      // Update: existing member, OR user is joining as partner2Uid for the first time
+      allow update: if request.auth != null && (
+        isMemberOfCouple(coupleId) ||
+        (
+          resource.data.get('partner2Uid', null) == null &&
+          request.resource.data.partner2Uid == request.auth.uid
+        )
+      );
+
+      // ── All subcollections under a couple ──────────────────────────────────
+      // Todos, moods, memories, notes, wishlist, fantasy, fantasyWishes,
+      // reminders, dates, challenge, blueprints, wyr, bingo, truthDare,
+      // dailyWishes, dailyQuestions, streaks, sensate
+      match /{subcollection}/{document=**} {
+        allow read, write: if request.auth != null && isMemberOfCouple(coupleId);
+      }
     }
   }
 }
