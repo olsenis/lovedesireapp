@@ -28,9 +28,21 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-function getDaysTogether(couple: { createdAt: number; startDate?: number }): number {
+function getTogetherSince(couple: { createdAt: number; startDate?: number }): string {
   const from = couple.startDate ?? couple.createdAt;
-  return Math.floor((Date.now() - from) / (1000 * 60 * 60 * 24));
+  return new Date(from).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
+function getAnniversary(couple: { createdAt: number; startDate?: number }): { dateLabel: string; daysUntil: number; years: number } {
+  const from = couple.startDate ?? couple.createdAt;
+  const start = new Date(from);
+  const now = new Date();
+  const thisYear = new Date(now.getFullYear(), start.getMonth(), start.getDate());
+  const next = thisYear >= now ? thisYear : new Date(now.getFullYear() + 1, start.getMonth(), start.getDate());
+  const daysUntil = Math.ceil((next.getTime() - now.getTime()) / 86400000);
+  const years = next.getFullYear() - start.getFullYear();
+  const dateLabel = next.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return { dateLabel, daysUntil, years };
 }
 
 interface NudgeItem {
@@ -143,7 +155,8 @@ export default function HomeScreen() {
   };
 
   const isConnected = !!couple?.partner2Uid;
-  const days = couple ? getDaysTogether(couple) : 0;
+  const togetherSince = couple ? getTogetherSince(couple) : '';
+  const anniversary = couple ? getAnniversary(couple) : null;
 
   // Build nudge items
   const nudges: NudgeItem[] = [];
@@ -308,8 +321,18 @@ export default function HomeScreen() {
               </View>
             </View>
             <View style={styles.middleCol}>
-              <Text style={styles.daysNum}>{days}</Text>
-              <Text style={styles.daysLabel}>{'days\ntogether'}</Text>
+              <Text style={styles.sinceLabel}>together since</Text>
+              <Text style={styles.sinceDate}>{togetherSince}</Text>
+              {anniversary && (
+                <View style={styles.anniversaryPill}>
+                  <Text style={styles.anniversaryText}>
+                    {anniversary.daysUntil <= 1 ? '🎉 Today!' : `🎉 ${anniversary.dateLabel}`}
+                  </Text>
+                  <Text style={styles.anniversaryDays}>
+                    {anniversary.daysUntil <= 1 ? `${anniversary.years} years` : `in ${anniversary.daysUntil} days · ${anniversary.years} yrs`}
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={styles.avatarCol}>
               <View style={styles.avatarRing}>
@@ -505,9 +528,12 @@ const styles = StyleSheet.create({
   avatarNameLight: { fontFamily: Fonts.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
   moodPill: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 4 },
   moodPillEmoji: { fontSize: 18 },
-  middleCol: { alignItems: 'center', gap: 2 },
-  daysNum: { fontFamily: Fonts.heading, fontSize: 54, color: '#FFFFFF', lineHeight: 58 },
-  daysLabel: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: 18 },
+  middleCol: { alignItems: 'center', gap: 4 },
+  sinceLabel: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
+  sinceDate: { fontFamily: Fonts.heading, fontSize: 20, color: '#FFFFFF', textAlign: 'center', lineHeight: 24 },
+  anniversaryPill: { alignItems: 'center', gap: 1, marginTop: 2 },
+  anniversaryText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: 'rgba(255,255,255,0.9)', textAlign: 'center' },
+  anniversaryDays: { fontFamily: Fonts.bodyItalic, fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
 
   connectBanner: { backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.rose, gap: Spacing.sm },
   connectEmoji: { fontSize: 32 },
