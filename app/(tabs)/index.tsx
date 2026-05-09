@@ -215,10 +215,10 @@ export default function HomeScreen() {
     }
   }
 
-  // Smart intimacy nudge — only if feature is enabled
-  if (profile?.features?.intimacyLog && partnerId) {
-    const last = intimacyEntries[0]?.createdAt ?? null;
-    const daysSince = last ? Math.floor((Date.now() - last) / 86400000) : 99;
+  // Smart intimacy nudge — only if feature enabled AND entries exist AND > 7 days ago
+  if (profile?.features?.intimacyLog && partnerId && intimacyEntries.length > 0) {
+    const last = intimacyEntries[0].createdAt;
+    const daysSince = Math.floor((Date.now() - last) / 86400000);
     if (daysSince >= 7) {
       // Priority 1: mutual Fantasy Wish
       const fwMatch = fwItems.find(i => isFWMatch(i, uid, partnerId));
@@ -231,9 +231,7 @@ export default function HomeScreen() {
         ? `You both want to try something from your Fantasy Wishes — maybe tonight?`
         : sharedPick
         ? `You both picked something today — why not make it happen?`
-        : daysSince < 99
-        ? `It's been ${daysSince} days — some time together tonight?`
-        : `You haven't logged yet — start tracking your intimate moments`;
+        : `It's been ${daysSince} days — some time together tonight?`;
 
       nudges.push({
         emoji: '💝',
