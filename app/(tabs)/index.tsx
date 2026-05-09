@@ -291,6 +291,18 @@ export default function HomeScreen() {
     }
   }
 
+  // ── Onboarding nudges ────────────────────────────────────────────────────────
+
+  // 1. Name missing
+  const nameMissing = isConnected && (!profile?.name || profile.name.trim() === '');
+
+  // 2. Start date not set (couple exists but no startDate)
+  const startDateMissing = isConnected && couple && !couple.startDate;
+
+  // 3. New couple < 7 days — suggest first feature
+  const coupleAgeDays = couple ? Math.floor((Date.now() - couple.createdAt) / 86400000) : 99;
+  const isNewCouple = isConnected && coupleAgeDays < 7;
+
   return (
     <View style={styles.screenWrap}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -370,6 +382,42 @@ export default function HomeScreen() {
             <Text style={styles.sparkBannerMsg}>{incomingSpark.message}</Text>
           </View>
           <Text style={styles.sparkBannerClose}>✕</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Onboarding: missing name */}
+      {nameMissing && (
+        <TouchableOpacity style={styles.onboardCard} onPress={() => router.push('/profile' as any)} activeOpacity={0.85}>
+          <Text style={styles.onboardEmoji}>👤</Text>
+          <View style={styles.onboardText}>
+            <Text style={styles.onboardTitle}>Add your name</Text>
+            <Text style={styles.onboardSub}>So your partner knows it's you</Text>
+          </View>
+          <Text style={styles.onboardArrow}>›</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Onboarding: set start date */}
+      {startDateMissing && !nameMissing && (
+        <TouchableOpacity style={styles.onboardCard} onPress={() => router.push('/profile' as any)} activeOpacity={0.85}>
+          <Text style={styles.onboardEmoji}>📅</Text>
+          <View style={styles.onboardText}>
+            <Text style={styles.onboardTitle}>When did you get together?</Text>
+            <Text style={styles.onboardSub}>Set your start date in Profile</Text>
+          </View>
+          <Text style={styles.onboardArrow}>›</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Onboarding: new couple suggestion */}
+      {isNewCouple && !nameMissing && (
+        <TouchableOpacity style={[styles.onboardCard, { backgroundColor: '#E8F5E9' }]} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.85}>
+          <Text style={styles.onboardEmoji}>💬</Text>
+          <View style={styles.onboardText}>
+            <Text style={styles.onboardTitle}>Start here — Questions Game</Text>
+            <Text style={styles.onboardSub}>3 questions, both answer privately, then reveal</Text>
+          </View>
+          <Text style={styles.onboardArrow}>›</Text>
         </TouchableOpacity>
       )}
 
@@ -582,6 +630,13 @@ const styles = StyleSheet.create({
   sparkBannerTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
   sparkBannerMsg: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   sparkBannerClose: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted, padding: Spacing.xs },
+
+  onboardCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.rose, gap: Spacing.sm, ...Shadow.sm },
+  onboardEmoji: { fontSize: 28 },
+  onboardText: { flex: 1 },
+  onboardTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  onboardSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  onboardArrow: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy },
 
   moodSummaryCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm },
   moodSummaryRow: { flex: 1, gap: 2 },
