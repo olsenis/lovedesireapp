@@ -24,8 +24,11 @@ service cloud.firestore {
 
     // ── Couples ───────────────────────────────────────────────────────────────
     match /couples/{coupleId} {
-      // Read: only couple members
-      allow read: if request.auth != null && isMemberOfCouple(coupleId);
+      // Read: use resource.data directly (avoids circular get() call)
+      allow read: if request.auth != null && (
+        resource.data.partner1Uid == request.auth.uid ||
+        resource.data.partner2Uid == request.auth.uid
+      );
 
       // Create: user must be setting themselves as partner1Uid
       allow create: if request.auth != null
