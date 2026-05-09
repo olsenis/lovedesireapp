@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
-import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
+import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
 import { subscribeNotes, LoveNote } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
@@ -14,6 +14,7 @@ import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQ
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
 import { subscribeWYR, WYRSession } from '../../services/wyrService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
+import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -60,6 +61,9 @@ export default function HomeScreen() {
   const [dailyWishDoc, setDailyWishDoc] = useState<DailyWishDoc | null>(null);
   const [wyrSession, setWyrSession] = useState<WYRSession | null>(null);
   const [intimacyEntries, setIntimacyEntries] = useState<IntimacyEntry[]>([]);
+  const [recentSparks, setRecentSparks] = useState<SparkEntry[]>([]);
+  const [sparkSent, setSparkSent] = useState(false);
+  const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -86,8 +90,38 @@ export default function HomeScreen() {
     const u5 = subscribeDailyWishes(coupleId, setDailyWishDoc);
     const u6 = subscribeWYR(coupleId, setWyrSession);
     const u7 = subscribeIntimacyLog(coupleId, setIntimacyEntries);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
+    const u8 = subscribeRecentSparks(coupleId, setRecentSparks);
+    const u9 = subscribeMoodHistory(coupleId, setMoodHistory);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); };
   }, [coupleId]);
+
+  const handleSendSpark = async (emoji: string, message: string) => {
+    if (!coupleId || !partnerId) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setSparkSent(true);
+    await sendSpark(coupleId, uid, emoji, message);
+    notifyPartner(coupleId, uid, `${profile?.name ?? 'Your partner'} sent you a spark ✨`, `${emoji} ${message}`).catch(() => {});
+    setTimeout(() => setSparkSent(false), 3000);
+  };
+
+  // Incoming spark from partner (unseen, last 24h)
+  const incomingSpark = recentSparks.find(s =>
+    s.fromUid !== uid && !s.seen && (Date.now() - s.createdAt) < 86400000
+  ) ?? null;
+
+  // Weekly mood summary
+  const weekAgo = Date.now() - 7 * 86400000;
+  const myWeekMoods = moodHistory.filter(m => m.uid === uid && m.createdAt >= weekAgo);
+  const partnerWeekMoods = moodHistory.filter(m => m.uid !== uid && m.createdAt >= weekAgo);
+  function topMood(entries: MoodEntry[]): MoodEmoji | null {
+    if (!entries.length) return null;
+    const c: Partial<Record<string, number>> = {};
+    for (const e of entries) c[e.emoji] = (c[e.emoji] ?? 0) + 1;
+    const sorted = Object.entries(c).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
+    return (sorted[0]?.[0] ?? null) as MoodEmoji | null;
+  }
+  const myTopMood = topMood(myWeekMoods);
+  const partnerTopMood = topMood(partnerWeekMoods);
 
   const handleMoodPick = async (emoji: MoodEmoji) => {
     if (!user || !coupleId) return;
@@ -298,6 +332,54 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Incoming spark banner */}
+      {incomingSpark && (
+        <TouchableOpacity
+          style={styles.sparkBanner}
+          onPress={() => coupleId && markSparkSeen(coupleId, incomingSpark.id)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.sparkBannerEmoji}>{incomingSpark.emoji}</Text>
+          <View style={styles.sparkBannerText}>
+            <Text style={styles.sparkBannerTitle}>{partner?.name ?? 'Your partner'} sent you a spark</Text>
+            <Text style={styles.sparkBannerMsg}>{incomingSpark.message}</Text>
+          </View>
+          <Text style={styles.sparkBannerClose}>✕</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Send a Spark */}
+      {isConnected && (
+        <View style={styles.sparkSection}>
+          <Text style={styles.sparkLabel}>{sparkSent ? '✓ Spark sent!' : `Send ${partner?.name ?? 'a spark'} something`}</Text>
+          <View style={styles.sparkRow}>
+            {SPARK_OPTIONS.map(opt => (
+              <TouchableOpacity
+                key={opt.emoji}
+                style={styles.sparkPill}
+                onPress={() => handleSendSpark(opt.emoji, opt.message)}
+                disabled={sparkSent}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.sparkPillEmoji}>{opt.emoji}</Text>
+                <Text style={styles.sparkPillText}>{opt.message}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Weekly mood summary */}
+      {isConnected && (myTopMood || partnerTopMood) && (
+        <TouchableOpacity style={styles.moodSummaryCard} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.85}>
+          <View style={styles.moodSummaryRow}>
+            {myTopMood && <Text style={styles.moodSummaryText}>Your week: {myTopMood} {MOOD_LABELS[myTopMood]}</Text>}
+            {partnerTopMood && <Text style={styles.moodSummaryText}>{partner?.name ?? 'Partner'}'s: {partnerTopMood} {MOOD_LABELS[partnerTopMood]}</Text>}
+          </View>
+          <Text style={styles.moodSummaryArrow}>›</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Mood section */}
       <View style={styles.moodSection}>
         <View style={styles.sectionHeader}>
@@ -449,4 +531,23 @@ const styles = StyleSheet.create({
   quickCard: { flex: 1, borderRadius: Radius.lg, paddingVertical: Spacing.lg, paddingHorizontal: Spacing.md, alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
   quickEmoji: { fontSize: 34 },
   quickLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text, textAlign: 'center' },
+
+  sparkBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm },
+  sparkBannerEmoji: { fontSize: 28 },
+  sparkBannerText: { flex: 1 },
+  sparkBannerTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  sparkBannerMsg: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+  sparkBannerClose: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted, padding: Spacing.xs },
+
+  moodSummaryCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm },
+  moodSummaryRow: { flex: 1, gap: 2 },
+  moodSummaryText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
+  moodSummaryArrow: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.muted },
+
+  sparkSection: { gap: Spacing.sm },
+  sparkLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  sparkRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  sparkPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, paddingHorizontal: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
+  sparkPillEmoji: { fontSize: 16 },
+  sparkPillText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
 });

@@ -63,3 +63,15 @@ export function subscribeToMoods(coupleId: string, onChange: (moods: MoodEntry[]
     onChange(moods);
   });
 }
+
+// Subscribes to last 60 days of moods for both partners (for history view)
+export function subscribeMoodHistory(coupleId: string, onChange: (moods: MoodEntry[]) => void): Unsubscribe {
+  const q = query(collection(db, 'couples', coupleId, 'moods'), orderBy('createdAt', 'desc'), limit(120));
+  const cutoff = Date.now() - 60 * 86400000;
+  return onSnapshot(q, (snap) => {
+    const moods = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as MoodEntry))
+      .filter((m) => m.createdAt >= cutoff);
+    onChange(moods);
+  });
+}
