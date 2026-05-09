@@ -454,9 +454,10 @@ function DetailSheet({
         } : undefined,
       });
       reset();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Save failed:', e);
       setSaving(false);
+      Alert.alert('Could not save', e?.message ?? 'Something went wrong. Are you connected to the internet?');
     }
   };
 
