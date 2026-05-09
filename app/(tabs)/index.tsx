@@ -520,7 +520,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screenWrap: { flex: 1, backgroundColor: Colors.cream },
   scroll: { flex: 1 },
-  container: { paddingTop: 60, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
+  container: { paddingTop: 60, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
   greeting: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, letterSpacing: 0.3 },
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   partnerMoodEmoji: { fontSize: 16 },
   partnerMoodText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
-  dailyWishCard: { backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm, marginBottom: Spacing.md },
+  dailyWishCard: { backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm },
   dailyWishLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   dailyWishEmoji: { fontSize: 32 },
   dailyWishTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
@@ -592,19 +592,19 @@ const styles = StyleSheet.create({
   sparkBannerMsg: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   sparkBannerClose: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted, padding: Spacing.xs },
 
-  onboardCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.rose, gap: Spacing.sm, ...Shadow.sm },
+  onboardCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.rose, gap: Spacing.md, ...Shadow.sm },
   onboardEmoji: { fontSize: 28 },
   onboardText: { flex: 1 },
   onboardTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
   onboardSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
   onboardArrow: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy },
 
-  moodSummaryCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm },
+  moodSummaryCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadow.sm },
   moodSummaryRow: { flex: 1, gap: 2 },
   moodSummaryText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
   moodSummaryArrow: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.muted },
 
-  sparkBtn: { backgroundColor: Colors.white, borderRadius: Radius.full, paddingVertical: Spacing.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
+  sparkBtn: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
   sparkBtnSent: { backgroundColor: '#E8F5E9', borderColor: Colors.success },
   sparkBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
 
