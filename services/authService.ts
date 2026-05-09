@@ -48,6 +48,24 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 export async function disconnectFromCouple(uid: string): Promise<void> {
+  // Remove from couple document first
+  const userSnap = await getDoc(doc(db, 'users', uid));
+  if (userSnap.exists()) {
+    const profile = userSnap.data() as UserProfile;
+    if (profile.coupleId) {
+      const coupleRef = doc(db, 'couples', profile.coupleId);
+      const coupleSnap = await getDoc(coupleRef);
+      if (coupleSnap.exists()) {
+        const couple = coupleSnap.data() as { partner1Uid?: string; partner2Uid?: string };
+        if (couple.partner2Uid === uid) {
+          await updateDoc(coupleRef, { partner2Uid: deleteField() });
+        } else if (couple.partner1Uid === uid) {
+          await updateDoc(coupleRef, { partner1Uid: deleteField() });
+        }
+      }
+    }
+  }
+  // Remove coupleId from user profile
   await updateDoc(doc(db, 'users', uid), {
     coupleId: deleteField(),
     inviteCode: deleteField(),
