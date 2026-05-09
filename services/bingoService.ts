@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, deleteField, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { BINGO_ACTIVITIES } from '../constants/content';
 
@@ -78,6 +78,15 @@ export async function resetBingo(coupleId: string, session: BingoSession): Promi
     checkedBy: {},
     winner: null,
     resetCount: newReset,
+  });
+}
+
+export async function uncheckBingoSquare(coupleId: string, index: number): Promise<void> {
+  const month = monthKey();
+  await updateDoc(doc(db, 'couples', coupleId, 'bingo', month), {
+    checked: arrayRemove(index),
+    [`checkedBy.${index}`]: deleteField(),
+    winner: null,
   });
 }
 

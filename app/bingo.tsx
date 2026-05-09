@@ -6,7 +6,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { BingoSession, subscribeBingo, checkBingoSquare, resetBingo, hasBingo } from '../services/bingoService';
+import { BingoSession, subscribeBingo, checkBingoSquare, uncheckBingoSquare, resetBingo, hasBingo } from '../services/bingoService';
+import { notifyPartner } from '../services/notificationService';
 import { BINGO_REWARDS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -44,8 +45,16 @@ export default function BingoScreen() {
   const confirmCheck = async () => {
     if (!coupleId || !session || selectedSquare === null) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const activity = session.squares[selectedSquare];
     await checkBingoSquare(coupleId, uid, selectedSquare, session);
+    notifyPartner(coupleId, uid, 'Intimacy Bingo ✓', `${profile?.name ?? 'Your partner'} checked off "${activity}"`).catch(() => {});
     setSelectedSquare(null);
+  };
+
+  const handleUncheck = async (index: number) => {
+    if (!coupleId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await uncheckBingoSquare(coupleId, index);
   };
 
   const handleReset = async () => {
@@ -99,8 +108,8 @@ export default function BingoScreen() {
               <TouchableOpacity
                 key={index}
                 style={[styles.square, isChecked && styles.squareChecked]}
-                onPress={() => handleSquare(index)}
-                disabled={isChecked}
+                onPress={() => isChecked ? null : handleSquare(index)}
+                onLongPress={() => isChecked ? handleUncheck(index) : null}
                 activeOpacity={0.8}
               >
                 {isChecked ? (
@@ -116,7 +125,7 @@ export default function BingoScreen() {
           })}
         </View>
 
-        <Text style={styles.hint}>Tap a square after you've done it together to mark it off.</Text>
+        <Text style={styles.hint}>Tap to mark off. Hold to undo a checked square.</Text>
       </ScrollView>
 
       {/* Mark done modal */}
