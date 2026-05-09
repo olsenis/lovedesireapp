@@ -108,14 +108,22 @@ export default function BingoScreen() {
               <TouchableOpacity
                 key={index}
                 style={[styles.square, isChecked && styles.squareChecked]}
-                onPress={() => isChecked ? null : handleSquare(index)}
-                onLongPress={() => isChecked ? handleUncheck(index) : null}
+                onPress={() => { if (!isChecked) handleSquare(index); }}
                 activeOpacity={0.8}
               >
                 {isChecked ? (
                   <>
                     <Text style={styles.checkEmoji}>✓</Text>
                     <Text style={styles.checkedBy} numberOfLines={1}>{checkedByMe ? 'You' : (partner?.name ?? 'Partner')}</Text>
+                    {checkedByMe && (
+                      <TouchableOpacity
+                        style={styles.undoBtn}
+                        onPress={(e) => { e.stopPropagation?.(); handleUncheck(index); }}
+                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      >
+                        <Text style={styles.undoBtnText}>✕</Text>
+                      </TouchableOpacity>
+                    )}
                   </>
                 ) : (
                   <Text style={styles.squareText} numberOfLines={3}>{activity}</Text>
@@ -125,7 +133,7 @@ export default function BingoScreen() {
           })}
         </View>
 
-        <Text style={styles.hint}>Tap to mark off. Hold to undo a checked square.</Text>
+        <Text style={styles.hint}>Tap a square to mark it off. Tap ✕ to undo your own marks.</Text>
       </ScrollView>
 
       {/* Mark done modal */}
@@ -210,6 +218,8 @@ const styles = StyleSheet.create({
   squareText: { fontFamily: Fonts.body, fontSize: 9, color: Colors.text, textAlign: 'center', lineHeight: 13 },
   checkEmoji: { fontSize: 18, color: Colors.white },
   checkedBy: { fontFamily: Fonts.bodyBold, fontSize: 8, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  undoBtn: { position: 'absolute', top: 2, right: 2, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
+  undoBtnText: { fontSize: 9, color: 'rgba(255,255,255,0.6)', fontFamily: Fonts.bodyBold },
 
   hint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
 
