@@ -47,11 +47,21 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [helpOn, setHelpOn] = useState(true);
+  const [intimacyLogOn, setIntimacyLogOn] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     getHelpState(user.uid).then((s) => setHelpOn(s.enabled));
   }, [user]);
+
+  useEffect(() => {
+    setIntimacyLogOn(profile?.features?.intimacyLog ?? false);
+  }, [profile?.features?.intimacyLog]);
+
+  const toggleIntimacyLog = async (val: boolean) => {
+    setIntimacyLogOn(val);
+    if (user) await createUserProfile(user.uid, { features: { intimacyLog: val } } as any);
+  };
 
   const toggleHelp = async (val: boolean) => {
     setHelpOn(val);
@@ -331,6 +341,23 @@ export default function ProfileScreen() {
               </Text>
             </>
           )}
+        </View>
+
+        {/* Features */}
+        <Text style={styles.sectionLabel}>Features</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>Intimacy Log</Text>
+              <Text style={styles.rowHint}>Track intimate moments and get smart nudges based on your shared picks and wishes</Text>
+            </View>
+            <Switch
+              value={intimacyLogOn}
+              onValueChange={toggleIntimacyLog}
+              trackColor={{ false: Colors.border, true: Colors.rose }}
+              thumbColor={intimacyLogOn ? Colors.burgundy : Colors.muted}
+            />
+          </View>
         </View>
 
         {/* Help */}

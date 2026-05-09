@@ -215,15 +215,30 @@ export default function HomeScreen() {
     }
   }
 
-  // Intimacy Log: last entry > 7 days ago
-  if (intimacyEntries.length > 0) {
-    const last = intimacyEntries[0].createdAt;
-    const daysSince = Math.floor((Date.now() - last) / 86400000);
+  // Smart intimacy nudge — only if feature is enabled
+  if (profile?.features?.intimacyLog && partnerId) {
+    const last = intimacyEntries[0]?.createdAt ?? null;
+    const daysSince = last ? Math.floor((Date.now() - last) / 86400000) : 99;
     if (daysSince >= 7) {
+      // Priority 1: mutual Fantasy Wish
+      const fwMatch = fwItems.find(i => isFWMatch(i, uid, partnerId));
+      // Priority 2: shared Daily Pick today
+      const myVotes = (dailyWishDoc?.votes[uid] ?? {}) as Record<string, string>;
+      const partnerVotes = (dailyWishDoc?.votes[partnerId] ?? {}) as Record<string, string>;
+      const sharedPick = Object.keys(myVotes).find(k => myVotes[k] === 'yes' && partnerVotes[k] === 'yes') ?? null;
+
+      const subtitle = fwMatch
+        ? `You both want to try something from your Fantasy Wishes — maybe tonight?`
+        : sharedPick
+        ? `You both picked something today — why not make it happen?`
+        : daysSince < 99
+        ? `It's been ${daysSince} days — some time together tonight?`
+        : `You haven't logged yet — start tracking your intimate moments`;
+
       nudges.push({
-        emoji: '🔥',
-        title: 'Intimacy Log',
-        subtitle: `It's been ${daysSince} days, log your last intimate moment`,
+        emoji: '💝',
+        title: 'Intimate moment',
+        subtitle,
         route: '/intimacy-tracker',
         bg: '#FFF0F3',
       });

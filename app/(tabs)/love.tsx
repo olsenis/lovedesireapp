@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import { useAuth } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -51,6 +52,9 @@ function FeatureCard({
 
 export default function LoveScreen() {
   const { isSubscribed } = useSubscription();
+  const { profile } = useAuth();
+  const intimacyLogEnabled = profile?.features?.intimacyLog ?? false;
+  const intimacy = INTIMACY.filter(f => f.route !== '/intimacy-tracker' || intimacyLogEnabled);
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Love</Text>
@@ -60,7 +64,7 @@ export default function LoveScreen() {
       {TOGETHER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
       <Text style={styles.sectionLabel}>Intimacy</Text>
-      {INTIMACY.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      {intimacy.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
       <Text style={styles.sectionLabel}>Connection</Text>
       {CONNECTION.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}

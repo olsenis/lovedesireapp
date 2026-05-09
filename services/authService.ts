@@ -15,6 +15,9 @@ export interface UserProfile {
   inviteCode?: string;
   pushToken?: string;
   createdAt: number;
+  features?: {
+    intimacyLog?: boolean;
+  };
 }
 
 export async function register(email: string, password: string): Promise<User> {
