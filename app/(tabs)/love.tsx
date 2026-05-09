@@ -1,35 +1,41 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import { useSubscription } from '../../hooks/useSubscription';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
 const TOGETHER = [
-  { emoji: '✅', title: 'Together List',       subtitle: 'Shared to-do list, daily life, dates, intimacy & goals', route: '/todo',      bg: '#F1F8E9' },
+  { emoji: '✅', title: 'Together List',      subtitle: 'Shared to-do list, daily life, dates, intimacy & goals', route: '/todo',      bg: '#F1F8E9', paid: false },
 ];
 
 const INTIMACY = [
-  { emoji: '🧬', title: 'Erotic Blueprint',    subtitle: 'Discover your intimacy type & partner compatibility', route: '/blueprint', bg: '#F3E5F5' },
-  { emoji: '🫁', title: 'Sensate Focus',       subtitle: 'Guided touch sessions, rekindling through presence',  route: '/sensate',   bg: '#E8F5E9' },
+  { emoji: '🧬', title: 'Erotic Blueprint',  subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true },
+  { emoji: '🫁', title: 'Sensate Focus',     subtitle: 'Guided touch sessions, rekindling through presence',      route: '/sensate',   bg: '#E8F5E9', paid: true },
 ];
 
 const CONNECTION = [
-  { emoji: '💌', title: 'Love Notes',          subtitle: 'Timed secret messages that unlock at the right moment', route: '/notes',     bg: '#FCE4EC' },
-  { emoji: '📸', title: 'Memories',            subtitle: 'Your private shared photo album',                       route: '/memories',  bg: '#FFF9C4' },
-  { emoji: '⏳', title: 'Countdowns',          subtitle: 'Important dates & anniversaries',                       route: '/countdown', bg: '#E8F5E9' },
-  { emoji: '🔔', title: 'Flirt Reminders',     subtitle: 'Daily nudges to keep the spark alive',                  route: '/reminders', bg: '#F3E5F5' },
+  { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',  route: '/notes',     bg: '#FCE4EC', paid: false },
+  { emoji: '📸', title: 'Memories',          subtitle: 'Your private shared photo album',                        route: '/memories',  bg: '#FFF9C4', paid: false },
+  { emoji: '⏳', title: 'Countdowns',        subtitle: 'Important dates & anniversaries',                        route: '/countdown', bg: '#E8F5E9', paid: false },
+  { emoji: '🔔', title: 'Flirt Reminders',   subtitle: 'Daily nudges to keep the spark alive',                   route: '/reminders', bg: '#F3E5F5', paid: false },
 ];
 
 const INSIGHTS = [
-  { emoji: '💬', title: 'Love Language',       subtitle: 'Discover how you each feel most loved',                route: '/quiz',      bg: '#E3F2FD' },
-  { emoji: '🌡️', title: 'Relationship Pulse',  subtitle: 'Private check-in on how things are going',             route: '/hita',      bg: '#FFF3E0' },
+  { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',      bg: '#E3F2FD', paid: false },
+  { emoji: '🌡️', title: 'Relationship Pulse', subtitle: 'Private check-in on how things are going',              route: '/hita',      bg: '#FFF3E0', paid: false },
 ];
 
-function FeatureCard({ emoji, title, subtitle, route, bg }: { emoji: string; title: string; subtitle: string; route: string; bg: string }) {
+function FeatureCard({
+  emoji, title, subtitle, route, bg, paid, isSubscribed,
+}: {
+  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean;
+}) {
+  const locked = paid && !isSubscribed;
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: bg }]}
-      onPress={() => router.push(route as any)}
+      onPress={() => router.push(locked ? '/upgrade' : route as any)}
       activeOpacity={0.8}
     >
       <Text style={styles.cardEmoji}>{emoji}</Text>
@@ -37,28 +43,29 @@ function FeatureCard({ emoji, title, subtitle, route, bg }: { emoji: string; tit
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardSub}>{subtitle}</Text>
       </View>
-      <Text style={styles.arrow}>›</Text>
+      <Text style={styles.arrow}>{locked ? '🔒' : '›'}</Text>
     </TouchableOpacity>
   );
 }
 
 export default function LoveScreen() {
+  const { isSubscribed } = useSubscription();
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Love</Text>
       <Text style={styles.subtitle}>Connection, intimacy & insights</Text>
 
       <Text style={styles.sectionLabel}>Together</Text>
-      {TOGETHER.map((f) => <FeatureCard key={f.route} {...f} />)}
+      {TOGETHER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
       <Text style={styles.sectionLabel}>Intimacy</Text>
-      {INTIMACY.map((f) => <FeatureCard key={f.route} {...f} />)}
+      {INTIMACY.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
       <Text style={styles.sectionLabel}>Connection</Text>
-      {CONNECTION.map((f) => <FeatureCard key={f.route} {...f} />)}
+      {CONNECTION.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
       <Text style={styles.sectionLabel}>Insights</Text>
-      {INSIGHTS.map((f) => <FeatureCard key={f.route} {...f} />)}
+      {INSIGHTS.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
     </ScrollView>
   );
 }

@@ -11,6 +11,7 @@ import {
   submitAnswer, checkAndUpdateStreak, bothAnswered,
 } from '../services/dailyQuestionsService';
 import { notifyPartner } from '../services/notificationService';
+import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
@@ -23,6 +24,8 @@ export default function QuestionsGameScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const help = useHelp('questions');
+  const { isSubscribed } = useSubscription();
+  const PAID_CATEGORIES: QuestionCategory[] = ['spicy', 'fantasy'];
 
   const [category, setCategory] = useState<QuestionCategory>('romantic');
   const [dailyDoc, setDailyDoc] = useState<DailyQuestionDoc | null>(null);
@@ -93,11 +96,11 @@ export default function QuestionsGameScreen() {
             <TouchableOpacity
               key={cat}
               style={[styles.catBtn, active && { backgroundColor: c.color, borderColor: Colors.border }]}
-              onPress={() => setCategory(cat)}
+              onPress={() => { if (PAID_CATEGORIES.includes(cat) && !isSubscribed) { router.push('/upgrade' as any); return; } setCategory(cat); }}
               activeOpacity={0.8}
             >
               <Text style={styles.catEmoji}>{c.emoji}</Text>
-              <Text style={[styles.catLabel, active && { color: Colors.text, fontFamily: Fonts.bodyBold }]}>{c.label}</Text>
+              <Text style={[styles.catLabel, active && { color: Colors.text, fontFamily: Fonts.bodyBold }]}>{c.label}{PAID_CATEGORIES.includes(cat) && !isSubscribed ? ' 🔒' : ''}</Text>
             </TouchableOpacity>
           );
         })}

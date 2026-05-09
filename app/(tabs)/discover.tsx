@@ -1,29 +1,35 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
+import { useSubscription } from '../../hooks/useSubscription';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
 const GAMES = [
-  { emoji: '🎲', title: 'Dare Wheel',          subtitle: 'Spin for Sweet, Flirty or Spicy challenges',   route: '/dare',        bg: '#FCE4EC' },
-  { emoji: '💬', title: 'Questions Game',       subtitle: 'Fun, Deep, Romantic, Spicy, Therapy & Fantasy', route: '/questions-game', bg: '#E3F2FD' },
-  { emoji: '🃏', title: 'Truth or Dare',        subtitle: 'Turn-based game, your partner challenges you', route: '/truth-dare',  bg: '#F3E5F5' },
-  { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time, then reveal',   route: '/would-you-rather', bg: '#FFF9C4' },
-  { emoji: '🎯', title: 'Two Truths One Lie',   subtitle: 'Guess the lie, get it wrong and do a dare',   route: '/two-truths',  bg: '#E8F5E9' },
-  { emoji: '🟩', title: 'Intimacy Bingo',       subtitle: 'Monthly card, complete activities together',  route: '/bingo',       bg: '#FCE4EC' },
-  { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5' },
+  { emoji: '🎲', title: 'Dare Wheel',          subtitle: 'Spin for Sweet, Flirty or Spicy challenges',   route: '/dare',           bg: '#FCE4EC', paid: false },
+  { emoji: '💬', title: 'Questions Game',       subtitle: 'Fun, Deep, Romantic, Spicy, Therapy & Fantasy', route: '/questions-game', bg: '#E3F2FD', paid: false },
+  { emoji: '🃏', title: 'Truth or Dare',        subtitle: 'Turn-based game, your partner challenges you', route: '/truth-dare',     bg: '#F3E5F5', paid: false },
+  { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time, then reveal',   route: '/would-you-rather', bg: '#FFF9C4', paid: false },
+  { emoji: '🎯', title: 'Two Truths One Lie',   subtitle: 'Guess the lie, get it wrong and do a dare',   route: '/two-truths',     bg: '#E8F5E9', paid: false },
+  { emoji: '🟩', title: 'Intimacy Bingo',       subtitle: 'Monthly card, complete activities together',  route: '/bingo',          bg: '#FCE4EC', paid: false },
+  { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5', paid: true },
 ];
 
 const CHALLENGES = [
-  { emoji: '🗓️', title: '30-Day Challenge',    subtitle: 'Reconnect, Spark, or Fire, a daily practice',  route: '/challenge',  bg: '#FFF9C4' },
-  { emoji: '🎰', title: 'Date Night Roulette', subtitle: 'Let fate pick your perfect date idea',           route: '/roulette',   bg: '#E8F5E9' },
+  { emoji: '🗓️', title: '30-Day Challenge', subtitle: 'Reconnect, Spark, or Fire, a daily practice', route: '/challenge', bg: '#FFF9C4', paid: false },
+  { emoji: '🎰', title: 'Date Night Roulette', subtitle: 'Let fate pick your perfect date idea',      route: '/roulette',  bg: '#E8F5E9', paid: false },
 ];
 
-function FeatureCard({ emoji, title, subtitle, route, bg }: { emoji: string; title: string; subtitle: string; route: string; bg: string }) {
+function FeatureCard({
+  emoji, title, subtitle, route, bg, paid, isSubscribed,
+}: {
+  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean;
+}) {
+  const locked = paid && !isSubscribed;
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: bg }]}
-      onPress={() => router.push(route as any)}
+      onPress={() => router.push(locked ? '/upgrade' : route as any)}
       activeOpacity={0.8}
     >
       <Text style={styles.cardEmoji}>{emoji}</Text>
@@ -31,22 +37,23 @@ function FeatureCard({ emoji, title, subtitle, route, bg }: { emoji: string; tit
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardSub}>{subtitle}</Text>
       </View>
-      <Text style={styles.arrow}>›</Text>
+      <Text style={styles.arrow}>{locked ? '🔒' : '›'}</Text>
     </TouchableOpacity>
   );
 }
 
 export default function DiscoverScreen() {
+  const { isSubscribed } = useSubscription();
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Together</Text>
       <Text style={styles.subtitle}>Games & challenges for the two of you</Text>
 
       <Text style={styles.sectionLabel}>Games</Text>
-      {GAMES.map((f) => <FeatureCard key={f.route} {...f} />)}
+      {GAMES.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
       <Text style={styles.sectionLabel}>Challenges</Text>
-      {CHALLENGES.map((f) => <FeatureCard key={f.route} {...f} />)}
+      {CHALLENGES.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
     </ScrollView>
   );
 }

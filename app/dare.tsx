@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { DARES, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
 import { useHelp } from '../hooks/useHelp';
+import { useSubscription } from '../hooks/useSubscription';
 import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -17,6 +18,7 @@ export default function DareScreen() {
   const [spinning, setSpinning] = useState(false);
   const spinAnim = useRef(new Animated.Value(0)).current;
   const help = useHelp('dare');
+  const { isSubscribed } = useSubscription();
 
   const spin = () => {
     if (spinning) return;
@@ -67,11 +69,15 @@ export default function DareScreen() {
               <TouchableOpacity
                 key={level}
                 style={[styles.levelTab, active && { backgroundColor: c.color }]}
-                onPress={() => { setSelectedLevel(level); setCurrentDare(null); }}
+                onPress={() => {
+                  if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
+                  setSelectedLevel(level); setCurrentDare(null);
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <Text style={[styles.levelLabel, active && { color: c.textColor }]}>{c.label}</Text>
+                {level === 'spicy' && !isSubscribed && <Text style={styles.lockIcon}>🔒</Text>}
               </TouchableOpacity>
             );
           })}
@@ -166,6 +172,7 @@ const styles = StyleSheet.create({
   },
   levelEmoji: { fontSize: 18 },
   levelLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  lockIcon: { fontSize: 10 },
 
   wheelOuter: { marginBottom: Spacing.xl, alignItems: 'center', justifyContent: 'center' },
   wheelRing: {

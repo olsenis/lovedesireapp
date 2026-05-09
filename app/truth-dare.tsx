@@ -14,6 +14,7 @@ import {
   confirmDare, skipCard,
 } from '../services/truthDareService';
 import { uploadTruthDareAudio } from '../services/storageService';
+import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -46,6 +47,7 @@ export default function TruthDareScreen() {
   const [isUploading, setIsUploading] = useState(false);
 
   const help = useHelp('truth-dare');
+  const { isSubscribed } = useSubscription();
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -220,11 +222,11 @@ export default function TruthDareScreen() {
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             return (
-              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => handleStart(level)} activeOpacity={0.85}>
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85}>
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
-                  <Text style={styles.levelSub}>You go first · partner joins on their phone</Text>
+                  <Text style={styles.levelSub}>{level === 'spicy' && !isSubscribed ? '🔒 Premium' : 'You go first · partner joins on their phone'}</Text>
                 </View>
                 <Text style={[styles.levelArrow, { color: c.textColor }]}>›</Text>
               </TouchableOpacity>

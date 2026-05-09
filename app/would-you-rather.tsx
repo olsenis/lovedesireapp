@@ -9,6 +9,7 @@ import { HelpModal } from '../components/HelpModal';
 import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR } from '../services/wyrService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYRLevel } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
+import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -21,6 +22,7 @@ export default function WouldYouRatherScreen() {
   const [session, setSession] = useState<WYRSession | null>(null);
   const [loading, setLoading] = useState(true);
   const help = useHelp('would-you-rather');
+  const { isSubscribed } = useSubscription();
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -80,11 +82,11 @@ export default function WouldYouRatherScreen() {
           {LEVELS.map(level => {
             const cfg = WYR_LEVEL_CONFIG[level];
             return (
-              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: cfg.color }]} onPress={() => handleStart(level)} activeOpacity={0.85}>
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: cfg.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85}>
                 <Text style={styles.levelEmoji}>{cfg.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
-                  <Text style={styles.levelCount}>{WYR_QUESTIONS.filter(q => q.level === level).length} questions</Text>
+                  <Text style={styles.levelCount}>{level === 'spicy' && !isSubscribed ? '🔒 Premium' : `${WYR_QUESTIONS.filter(q => q.level === level).length} questions`}</Text>
                 </View>
                 <Text style={[styles.levelArrow, { color: cfg.textColor }]}>›</Text>
               </TouchableOpacity>
