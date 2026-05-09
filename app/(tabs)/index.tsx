@@ -323,9 +323,9 @@ export default function HomeScreen() {
                 <PartnerAvatar name={profile?.name ?? '?'} photoURL={profile?.photoURL} size={64} />
               </View>
               <Text style={styles.avatarNameLight}>{profile?.name}</Text>
-              <View style={styles.moodPill}>
-                <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '·'}</Text>
-              </View>
+              <TouchableOpacity style={styles.moodPill} onPress={() => setPicking(true)} activeOpacity={0.7}>
+                <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.middleCol}>
               <Text style={styles.sinceLabel}>together since</Text>
@@ -427,17 +427,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Mood section */}
+      {/* Mood section — only show when no mood set or changing */}
+      {(!myMood || picking) && (
       <View style={styles.moodSection}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>How are you feeling?</Text>
-          {myMood && !picking && (
-            <TouchableOpacity onPress={() => setPicking(true)}>
-              <Text style={styles.changeText}>Change</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        {!myMood || picking ? (
+        <Text style={styles.sectionTitle}>How are you feeling?</Text>
           <View style={styles.moodGrid}>
             {ALL_MOODS.map((emoji) => (
               <TouchableOpacity key={emoji} style={styles.moodBtn} onPress={() => handleMoodPick(emoji)} activeOpacity={0.7}>
@@ -446,23 +439,8 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        ) : (
-          <View style={styles.moodSelected}>
-            <View style={styles.moodSelectedRow}>
-              <Text style={styles.moodSelectedEmoji}>{myMood.emoji}</Text>
-              <Text style={styles.moodSelectedLabel}>{MOOD_LABELS[myMood.emoji as MoodEmoji]}</Text>
-            </View>
-            {partnerMood && (
-              <View style={styles.partnerMoodRow}>
-                <Text style={styles.partnerMoodEmoji}>{partnerMood.emoji}</Text>
-                <Text style={styles.partnerMoodText}>
-                  {partner?.name} feels {MOOD_LABELS[partnerMood.emoji as MoodEmoji].toLowerCase()}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
       </View>
+      )}
 
       {/* Daily Picks card */}
       <TouchableOpacity style={styles.dailyWishCard} onPress={() => router.push('/daily-wishes' as any)} activeOpacity={0.85}>
