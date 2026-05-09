@@ -53,10 +53,6 @@ interface NudgeItem {
   bg: string;
 }
 
-const QUICK_ACTIONS = [
-  { emoji: '🎲', label: 'Dare Wheel',       route: '/dare',      bg: '#FFF0F3' },
-  { emoji: '🗓️', label: '30-Day Challenge', route: '/challenge', bg: '#FFF9C4' },
-];
 
 export default function HomeScreen() {
   const { user, profile } = useAuth();
@@ -513,21 +509,6 @@ export default function HomeScreen() {
         </>
       )}
 
-      {/* Quick access */}
-      <Text style={[styles.nudgeLabel, { marginTop: nudges.length > 0 ? Spacing.md : 0 }]}>Jump in</Text>
-      <View style={styles.quickGrid}>
-        {QUICK_ACTIONS.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={[styles.quickCard, { backgroundColor: item.bg }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(item.route as any); }}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.quickEmoji}>{item.emoji}</Text>
-            <Text style={styles.quickLabel}>{item.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
     </ScrollView>
 
