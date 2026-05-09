@@ -1,15 +1,18 @@
-import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, deleteField, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { BINGO_ACTIVITIES } from '../constants/content';
 
-export interface BingoSession {
+export interface ActivityCardsSession {
   month: string;
   squares: string[];
-  checked: number[];
-  checkedBy: Record<number, string>;
-  winner?: string; // 'both' when bingo achieved
+  revealed: number[];
+  revealedBy: Record<number, string>;
+  turnUid: string;
   resetCount: number;
 }
+
+// Keep old name as alias for backwards compat
+export type BingoSession = ActivityCardsSession;
 
 function monthKey(): string {
   const d = new Date();
@@ -28,68 +31,60 @@ function generateCard(seed: string): string[] {
   return pool.slice(0, 25);
 }
 
-function checkBingo(checked: number[]): boolean {
-  const set = new Set(checked);
-  for (let r = 0; r < 5; r++) {
-    if ([0,1,2,3,4].every(c => set.has(r*5+c))) return true;
-  }
-  for (let c = 0; c < 5; c++) {
-    if ([0,1,2,3,4].every(r => set.has(r*5+c))) return true;
-  }
-  if ([0,6,12,18,24].every(i => set.has(i))) return true;
-  if ([4,8,12,16,20].every(i => set.has(i))) return true;
-  return false;
-}
-
-export function subscribeBingo(coupleId: string, onChange: (s: BingoSession | null) => void): Unsubscribe {
+export function subscribeActivityCards(
+  coupleId: string,
+  starterUid: string,
+  onChange: (s: ActivityCardsSession | null) => void
+): Unsubscribe {
   const month = monthKey();
   const ref = doc(db, 'couples', coupleId, 'bingo', month);
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
-      onChange(snap.data() as BingoSession);
+      onChange(snap.data() as ActivityCardsSession);
     } else {
       const squares = generateCard(month + coupleId + '0');
-      const newSession: BingoSession = { month, squares, checked: [], checkedBy: {}, resetCount: 0 };
+      const newSession: ActivityCardsSession = {
+        month, squares, revealed: [], revealedBy: {},
+        turnUid: starterUid, resetCount: 0,
+      };
       await setDoc(ref, newSession);
       onChange(newSession);
     }
   });
 }
 
-export async function checkBingoSquare(coupleId: string, uid: string, index: number, session: BingoSession): Promise<void> {
-  const month = monthKey();
-  const newChecked = [...new Set([...session.checked, index])];
-  const bingo = !session.winner && checkBingo(newChecked);
-  await updateDoc(doc(db, 'couples', coupleId, 'bingo', month), {
-    checked: arrayUnion(index),
-    [`checkedBy.${index}`]: uid,
-    ...(bingo ? { winner: 'both' } : {}),
+// Keep old name
+export const subscribeBingo = subscribeActivityCards;
+
+export async function flipCard(
+  coupleId: string,
+  uid: string,
+  index: number,
+  nextTurnUid: string
+): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
+    revealed: arrayUnion(index),
+    [`revealedBy.${index}`]: uid,
+    turnUid: nextTurnUid,
   });
 }
 
-export async function resetBingo(coupleId: string, session: BingoSession): Promise<void> {
+export async function resetActivityCards(
+  coupleId: string,
+  session: ActivityCardsSession,
+  starterUid: string
+): Promise<void> {
   const month = monthKey();
   const newReset = (session.resetCount ?? 0) + 1;
   const squares = generateCard(month + coupleId + String(newReset));
   await setDoc(doc(db, 'couples', coupleId, 'bingo', month), {
-    month,
-    squares,
-    checked: [],
-    checkedBy: {},
-    winner: null,
-    resetCount: newReset,
+    month, squares, revealed: [], revealedBy: {},
+    turnUid: starterUid, resetCount: newReset,
   });
 }
 
-export async function uncheckBingoSquare(coupleId: string, index: number): Promise<void> {
-  const month = monthKey();
-  await updateDoc(doc(db, 'couples', coupleId, 'bingo', month), {
-    checked: arrayRemove(index),
-    [`checkedBy.${index}`]: deleteField(),
-    winner: null,
-  });
-}
-
-export function hasBingo(checked: number[]): boolean {
-  return checkBingo(checked);
-}
+// Legacy exports (unused but kept to avoid import errors elsewhere)
+export const resetBingo = resetActivityCards;
+export const checkBingoSquare = async () => {};
+export const uncheckBingoSquare = async () => {};
+export const hasBingo = () => false;

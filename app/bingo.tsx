@@ -1,172 +1,175 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Animated } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { BingoSession, subscribeBingo, checkBingoSquare, uncheckBingoSquare, resetBingo, hasBingo } from '../services/bingoService';
+import { ActivityCardsSession, subscribeActivityCards, flipCard, resetActivityCards } from '../services/bingoService';
 import { notifyPartner } from '../services/notificationService';
-import { BINGO_REWARDS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-export default function BingoScreen() {
+export default function ActivityCardsScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
-  const [session, setSession] = useState<BingoSession | null>(null);
+  const [session, setSession] = useState<ActivityCardsSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
+  const [revealIndex, setRevealIndex] = useState<number | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
-  const [reward] = useState(() => pickRandom(BINGO_REWARDS));
+  const scaleAnim = useRef(new Animated.Value(0)).current;
   const help = useHelp('bingo');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
+  const partnerName = partner?.name ?? 'Partner';
+  const isMyTurn = session?.turnUid === uid;
 
   useEffect(() => {
     if (!coupleId) return;
-    return subscribeBingo(coupleId, (s) => { setSession(s); setLoading(false); });
-  }, [coupleId]);
+    return subscribeActivityCards(coupleId, uid, setSession);
+  }, [coupleId, uid]);
 
-  const handleSquare = async (index: number) => {
-    if (!coupleId || !session) return;
-    if (session.checked.includes(index)) return; // already checked
-    setSelectedSquare(index);
+  useEffect(() => {
+    // Subscribe after auth loads
+    setLoading(!session && true);
+    if (session !== null) setLoading(false);
+  }, [session]);
+
+  // Animate reveal modal
+  useEffect(() => {
+    if (revealIndex !== null) {
+      scaleAnim.setValue(0);
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 80, friction: 8 }).start();
+    }
+  }, [revealIndex]);
+
+  const handleCardTap = (index: number) => {
+    if (!session || !isMyTurn) return;
+    if (session.revealed.includes(index)) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setRevealIndex(index);
   };
 
-  const confirmCheck = async () => {
-    if (!coupleId || !session || selectedSquare === null) return;
+  const handleAccept = async () => {
+    if (!coupleId || !session || revealIndex === null || !partnerId) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const activity = session.squares[selectedSquare];
-    await checkBingoSquare(coupleId, uid, selectedSquare, session);
-    notifyPartner(coupleId, uid, 'Intimacy Bingo ✓', `${profile?.name ?? 'Your partner'} checked off "${activity}"`).catch(() => {});
-    setSelectedSquare(null);
-  };
-
-  const handleUncheck = async (index: number) => {
-    if (!coupleId) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await uncheckBingoSquare(coupleId, index);
+    const activity = session.squares[revealIndex];
+    await flipCard(coupleId, uid, revealIndex, partnerId);
+    notifyPartner(coupleId, uid, 'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${activity}" — your turn!`).catch(() => {});
+    setRevealIndex(null);
   };
 
   const handleReset = async () => {
     if (!coupleId || !session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await resetBingo(coupleId, session);
+    await resetActivityCards(coupleId, session, uid);
     setConfirmReset(false);
   };
 
   if (loading || !session) return null;
 
-  const checkedSet = new Set(session.checked);
+  const revealedSet = new Set(session.revealed);
+  const remaining = 25 - session.revealed.length;
   const currentMonthName = new Date().toLocaleString('en-GB', { month: 'long', year: 'numeric' });
 
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
-        <Text style={styles.title}>Intimacy Bingo</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+          <Text style={styles.backText}>‹ Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Activity Cards</Text>
         <TouchableOpacity onPress={() => setConfirmReset(true)} style={styles.resetBtn}>
           <Text style={styles.resetBtnText}>↺ New</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.intro}>Complete activities together and mark them off. Get 5 in a row to win together!</Text>
+        <Text style={styles.month}>{currentMonthName}</Text>
 
-        {session.winner === 'both' && (
-          <View style={styles.winnerBanner}>
-            <Text style={styles.winnerEmoji}>🎉</Text>
-            <Text style={styles.winnerTitle}>You both got Bingo!</Text>
-            <Text style={styles.winnerReward}>Reward: {reward}</Text>
-          </View>
-        )}
-
-        <View style={styles.progress}>
-          <Text style={styles.progressText}>{session.checked.length}/25 completed</Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${(session.checked.length / 25) * 100}%` }]} />
-          </View>
+        {/* Turn indicator */}
+        <View style={[styles.turnBadge, { backgroundColor: isMyTurn ? Colors.burgundy : Colors.blush }]}>
+          <Text style={[styles.turnText, { color: isMyTurn ? Colors.white : Colors.burgundy }]}>
+            {isMyTurn ? 'Your turn — pick any card' : `${partnerName}'s turn to pick`}
+          </Text>
         </View>
 
-        {/* 5×5 Grid */}
+        {/* Progress */}
+        <Text style={styles.progressText}>{session.revealed.length} of 25 flipped · {remaining} remaining</Text>
+
+        {/* 5×5 Card grid */}
         <View style={styles.grid}>
           {session.squares.map((activity, index) => {
-            const isChecked = checkedSet.has(index);
-            const checkedByMe = session.checkedBy[index] === uid;
-            const row = Math.floor(index / 5);
-            const col = index % 5;
+            const isRevealed = revealedSet.has(index);
+            const revealedByMe = session.revealedBy[index] === uid;
+            const canTap = isMyTurn && !isRevealed;
+
             return (
               <TouchableOpacity
                 key={index}
-                style={[styles.square, isChecked && styles.squareChecked]}
-                onPress={() => { if (!isChecked) handleSquare(index); }}
-                activeOpacity={0.8}
+                style={[
+                  styles.card,
+                  isRevealed && styles.cardRevealed,
+                  canTap && styles.cardCanTap,
+                ]}
+                onPress={() => handleCardTap(index)}
+                disabled={isRevealed || !isMyTurn}
+                activeOpacity={canTap ? 0.75 : 1}
               >
-                {isChecked ? (
+                {isRevealed ? (
                   <>
-                    <Text style={styles.checkEmoji}>✓</Text>
-                    <Text style={styles.checkedBy} numberOfLines={1}>{checkedByMe ? 'You' : (partner?.name ?? 'Partner')}</Text>
-                    {checkedByMe && (
-                      <TouchableOpacity
-                        style={styles.undoBtn}
-                        onPress={(e) => { e.stopPropagation?.(); handleUncheck(index); }}
-                        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                      >
-                        <Text style={styles.undoBtnText}>✕</Text>
-                      </TouchableOpacity>
-                    )}
+                    <Text style={styles.cardRevealedText} numberOfLines={3}>{activity}</Text>
+                    <Text style={styles.cardRevealedBy}>{revealedByMe ? 'You' : partnerName}</Text>
                   </>
                 ) : (
-                  <Text style={styles.squareText} numberOfLines={3}>{activity}</Text>
+                  <>
+                    <Text style={styles.cardBack}>✦</Text>
+                    {canTap && <Text style={styles.cardTapHint}>tap</Text>}
+                  </>
                 )}
               </TouchableOpacity>
             );
           })}
         </View>
 
-        <Text style={styles.hint}>Tap a square to mark it off. Tap ✕ to undo your own marks.</Text>
+        <Text style={styles.hint}>Take turns picking a card. Do the activity together.</Text>
       </ScrollView>
 
-      {/* Mark done modal */}
-      <Modal visible={selectedSquare !== null} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Mark as done?</Text>
-            <Text style={styles.modalText}>{selectedSquare !== null ? session.squares[selectedSquare] : ''}</Text>
-            <Text style={styles.modalHint}>Only mark this if you've both actually done it together.</Text>
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setSelectedSquare(null)}>
-                <Text style={styles.cancelText}>Not yet</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={confirmCheck}>
-                <Text style={styles.confirmText}>✓ Done it!</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      {/* Reveal modal */}
+      <Modal visible={revealIndex !== null} transparent animationType="fade" onRequestClose={() => setRevealIndex(null)}>
+        <View style={styles.revealOverlay}>
+          <Animated.View style={[styles.revealCard, { transform: [{ scale: scaleAnim }] }]}>
+            <Text style={styles.revealLabel}>Your challenge</Text>
+            <Text style={styles.revealActivity}>
+              {revealIndex !== null ? session.squares[revealIndex] : ''}
+            </Text>
+            <Text style={styles.revealHint}>Do this together, then it's {partnerName}'s turn</Text>
+            <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} activeOpacity={0.85}>
+              <Text style={styles.acceptBtnText}>✓ Accept this challenge</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelRevealBtn} onPress={() => setRevealIndex(null)}>
+              <Text style={styles.cancelRevealText}>Put it back</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       </Modal>
 
-      {/* Reset confirmation modal */}
+      {/* Reset confirmation */}
       <Modal visible={confirmReset} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>New card?</Text>
-            <Text style={styles.modalText}>This will clear the current card and deal a fresh one. Both partners will see the new card.</Text>
+            <Text style={styles.modalTitle}>New deck?</Text>
+            <Text style={styles.modalText}>This will shuffle a fresh set of 25 activity cards.</Text>
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setConfirmReset(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.confirmBtn} onPress={handleReset}>
-                <Text style={styles.confirmText}>↺ New card</Text>
+                <Text style={styles.confirmText}>↺ New deck</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -175,9 +178,14 @@ export default function BingoScreen() {
 
       <HelpModal
         visible={help.visible}
-        title="Intimacy Bingo"
-        description="A shared 5×5 bingo card with activities to try together. Work as a team to get 5 in a row!"
-        tips={["Tap a square after you've done the activity together","Both partners see the same card in real time","Get 5 in a row (horizontal, vertical, or diagonal) to win together","Tap '↺ New' in the header to get a fresh card any time"]}
+        title="Activity Cards"
+        description="25 face-down cards, each with an intimate activity. Take turns picking one — you never know what you'll get!"
+        tips={[
+          "Take turns picking a face-down card",
+          "Tap 'Accept this challenge' to flip it and pass the turn",
+          "Do the activity together whenever you're ready",
+          "Tap '↺ New' for a fresh deck any time",
+        ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />
@@ -187,50 +195,63 @@ export default function BingoScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.cream },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
   resetBtn: { width: 60, alignItems: 'flex-end' },
   resetBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
 
-  content: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xxl, paddingTop: Spacing.md, gap: Spacing.md },
-  intro: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 22, paddingHorizontal: Spacing.md },
+  content: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.xxl, paddingTop: Spacing.md, gap: Spacing.md, alignItems: 'center' },
+  month: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
-  winnerBanner: { backgroundColor: '#FFF9C4', borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: '#F57F17' },
-  winnerEmoji: { fontSize: 40 },
-  winnerTitle: { fontFamily: Fonts.heading, fontSize: 24, color: '#F57F17' },
-  winnerReward: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, textAlign: 'center' },
+  turnBadge: { paddingVertical: 12, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, alignItems: 'center' },
+  turnText: { fontFamily: Fonts.bodyBold, fontSize: 14 },
 
-  progress: { gap: 6 },
-  progressText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
-  progressBar: { height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: Colors.burgundy, borderRadius: 3 },
+  progressText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  square: {
-    width: '19%', aspectRatio: 1,
-    backgroundColor: Colors.white, borderRadius: Radius.sm,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 4, alignItems: 'center', justifyContent: 'center',
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, width: '100%' },
+
+  card: {
+    width: '18.4%', aspectRatio: 0.75,
+    backgroundColor: Colors.burgundy, borderRadius: Radius.sm,
+    alignItems: 'center', justifyContent: 'center', padding: 4,
+    ...Shadow.sm,
   },
-  squareChecked: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
-  squareText: { fontFamily: Fonts.body, fontSize: 9, color: Colors.text, textAlign: 'center', lineHeight: 13 },
-  checkEmoji: { fontSize: 18, color: Colors.white },
-  checkedBy: { fontFamily: Fonts.bodyBold, fontSize: 8, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
-  undoBtn: { position: 'absolute', top: 2, right: 2, width: 14, height: 14, alignItems: 'center', justifyContent: 'center' },
-  undoBtnText: { fontSize: 9, color: 'rgba(255,255,255,0.6)', fontFamily: Fonts.bodyBold },
+  cardCanTap: { backgroundColor: '#A01060', borderWidth: 1.5, borderColor: Colors.rose },
+  cardRevealed: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
+  cardBack: { fontSize: 20, color: 'rgba(255,255,255,0.4)' },
+  cardTapHint: { fontFamily: Fonts.bodyItalic, fontSize: 8, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  cardRevealedText: { fontFamily: Fonts.body, fontSize: 7, color: Colors.text, textAlign: 'center', lineHeight: 10 },
+  cardRevealedBy: { fontFamily: Fonts.bodyBold, fontSize: 6, color: Colors.muted, marginTop: 2 },
 
   hint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
+
+  revealOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
+  revealCard: {
+    backgroundColor: Colors.cream, borderRadius: Radius.xl, padding: Spacing.xl,
+    alignItems: 'center', gap: Spacing.md, width: '100%', ...Shadow.md,
+    borderWidth: 2, borderColor: Colors.rose,
+  },
+  revealLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  revealActivity: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy, textAlign: 'center', lineHeight: 32 },
+  revealHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+  acceptBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, width: '100%', alignItems: 'center' },
+  acceptBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+  cancelRevealBtn: { paddingVertical: Spacing.xs },
+  cancelRevealText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
   modalText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
-  modalHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   modalBtns: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   confirmBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
-  confirmText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  confirmText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
 });
