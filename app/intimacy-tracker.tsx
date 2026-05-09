@@ -32,10 +32,10 @@ const TYPES: { key: IntimacyType; label: string }[] = [
 const POSITIONS = ['Missionary', 'Doggy style', 'Cowgirl', 'Reverse cowgirl', 'Spooning', 'Standing', 'Other'];
 
 const MOODS: { key: IntimacyMood; emoji: string; label: string }[] = [
-  { key: 'amazing',      emoji: '🔥', label: 'Amazing' },
-  { key: 'good',         emoji: '😊', label: 'Good' },
-  { key: 'okay',         emoji: '😌', label: 'Okay' },
-  { key: 'disconnected', emoji: '💔', label: 'Off' },
+  { key: 'amazing',      emoji: '💕', label: 'Connected' },
+  { key: 'good',         emoji: '😊', label: 'Playful' },
+  { key: 'okay',         emoji: '😌', label: 'Relaxed' },
+  { key: 'disconnected', emoji: '💔', label: 'Disconnected' },
 ];
 
 const STAR_LABELS: Record<number, string> = {
@@ -551,7 +551,7 @@ function DetailSheet({
             </View>
 
             {/* Mood */}
-            <Text style={styles.sheetSection}>How was it?</Text>
+            <Text style={styles.sheetSection}>Connection?</Text>
             <View style={styles.moodRow}>
               {MOODS.map(m => (
                 <TouchableOpacity
