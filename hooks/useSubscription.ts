@@ -2,8 +2,8 @@ import { useAuth } from './useAuth';
 
 // Add admin emails here — these always get premium access for testing
 const ADMIN_EMAILS: string[] = [
-  // 'your@email.com',
-  // 'eva@email.com',
+  'olsenis@gmail.com',
+  'evadissigrunardottir@gmail.com',
 ];
 
 export interface SubscriptionState {
