@@ -310,8 +310,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>{getGreeting()},</Text>
-          <Text style={styles.name}>{profile?.name ?? '...'}</Text>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
         </View>
         <TouchableOpacity style={styles.signOutBtn} onPress={() => router.push('/profile' as any)}>
           <Text style={styles.signOut}>Profile</Text>
@@ -453,8 +452,10 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.moodSelected}>
-            <Text style={styles.moodSelectedEmoji}>{myMood.emoji}</Text>
-            <Text style={styles.moodSelectedLabel}>{MOOD_LABELS[myMood.emoji as MoodEmoji]}</Text>
+            <View style={styles.moodSelectedRow}>
+              <Text style={styles.moodSelectedEmoji}>{myMood.emoji}</Text>
+              <Text style={styles.moodSelectedLabel}>{MOOD_LABELS[myMood.emoji as MoodEmoji]}</Text>
+            </View>
             {partnerMood && (
               <View style={styles.partnerMoodRow}>
                 <Text style={styles.partnerMoodEmoji}>{partnerMood.emoji}</Text>
@@ -597,8 +598,9 @@ const styles = StyleSheet.create({
   moodBtn: { alignItems: 'center', width: '22%', paddingVertical: Spacing.sm, borderRadius: Radius.md, backgroundColor: Colors.cream, borderWidth: 1, borderColor: Colors.border },
   moodEmoji: { fontSize: 26 },
   moodLabel: { fontFamily: Fonts.body, fontSize: 9, color: Colors.muted, textAlign: 'center', marginTop: 2 },
-  moodSelected: { alignItems: 'center', paddingVertical: Spacing.md, gap: Spacing.sm },
-  moodSelectedEmoji: { fontSize: 56 },
+  moodSelected: { paddingVertical: Spacing.sm, gap: 6 },
+  moodSelectedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  moodSelectedEmoji: { fontSize: 28 },
   moodSelectedLabel: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.text },
   partnerMoodRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   partnerMoodEmoji: { fontSize: 16 },
