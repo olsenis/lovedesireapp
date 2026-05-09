@@ -30,14 +30,8 @@ export default function ActivityCardsScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    return subscribeActivityCards(coupleId, uid, setSession);
+    return subscribeActivityCards(coupleId, uid, (s) => { setSession(s); setLoading(false); });
   }, [coupleId, uid]);
-
-  useEffect(() => {
-    // Subscribe after auth loads
-    setLoading(!session && true);
-    if (session !== null) setLoading(false);
-  }, [session]);
 
   // Animate reveal modal
   useEffect(() => {
