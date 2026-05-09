@@ -3,6 +3,8 @@ import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, Unsubscribe } from 'fir
 import { db } from './firebase';
 import { BINGO_ACTIVITIES } from '../constants/content';
 
+export const MAX_PASSES = 2;
+
 export interface ActivityCardsSession {
   month: string;
   squares: string[];
@@ -10,6 +12,7 @@ export interface ActivityCardsSession {
   revealedBy: Record<number, string>;
   turnUid: string;
   resetCount: number;
+  passes: Record<string, number>; // uid -> passes used
 }
 
 // Keep old name as alias for backwards compat
@@ -51,8 +54,9 @@ export function subscribeActivityCards(
           revealedBy: data.checkedBy ?? {},
           turnUid: starterUid,
           resetCount: data.resetCount ?? 0,
+          passes: {},
         };
-        await updateDoc(ref, { revealed: migrated.revealed, revealedBy: migrated.revealedBy, turnUid: migrated.turnUid });
+        await updateDoc(ref, { revealed: migrated.revealed, revealedBy: migrated.revealedBy, turnUid: migrated.turnUid, passes: {} });
         onChange(migrated);
       } else {
         onChange(data as ActivityCardsSession);
@@ -61,7 +65,7 @@ export function subscribeActivityCards(
       const squares = generateCard(month + coupleId + '0');
       const newSession: ActivityCardsSession = {
         month, squares, revealed: [], revealedBy: {},
-        turnUid: starterUid, resetCount: 0,
+        turnUid: starterUid, resetCount: 0, passes: {},
       };
       await setDoc(ref, newSession);
       onChange(newSession);
@@ -74,6 +78,13 @@ export function subscribeActivityCards(
 
 // Keep old name
 export const subscribeBingo = subscribeActivityCards;
+
+export async function usePass(coupleId: string, uid: string, session: ActivityCardsSession): Promise<void> {
+  const current = session.passes?.[uid] ?? 0;
+  await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
+    [`passes.${uid}`]: current + 1,
+  });
+}
 
 export async function flipCard(
   coupleId: string,

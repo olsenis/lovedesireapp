@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { ActivityCardsSession, subscribeActivityCards, flipCard, resetActivityCards } from '../services/bingoService';
+import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, resetActivityCards } from '../services/bingoService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -57,6 +57,16 @@ export default function ActivityCardsScreen() {
     setRevealIndex(null);
   };
 
+  const handlePass = async () => {
+    if (!coupleId || !session) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await usePass(coupleId, uid, session);
+    setRevealIndex(null);
+  };
+
+  const passesUsed = session?.passes?.[uid] ?? 0;
+  const passesLeft = MAX_PASSES - passesUsed;
+
   const handleReset = async () => {
     if (!coupleId || !session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -93,8 +103,13 @@ export default function ActivityCardsScreen() {
           </Text>
         </View>
 
-        {/* Progress */}
+        {/* Progress + passes */}
         <Text style={styles.progressText}>{revealed.length} of 25 flipped · {remaining} remaining</Text>
+        {isMyTurn && (
+          <Text style={styles.passesText}>
+            {passesLeft > 0 ? `${passesLeft} pass${passesLeft !== 1 ? 'es' : ''} left` : 'No passes left — must accept next card'}
+          </Text>
+        )}
 
         {/* 5×5 Card grid */}
         <View style={styles.grid}>
@@ -146,9 +161,13 @@ export default function ActivityCardsScreen() {
             <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} activeOpacity={0.85}>
               <Text style={styles.acceptBtnText}>✓ Accept this challenge</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelRevealBtn} onPress={() => setRevealIndex(null)}>
-              <Text style={styles.cancelRevealText}>Put it back</Text>
-            </TouchableOpacity>
+            {passesLeft > 0 ? (
+              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handlePass}>
+                <Text style={styles.cancelRevealText}>Pass — put it back ({passesLeft} left)</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.noPassesText}>No passes left — you must accept</Text>
+            )}
           </Animated.View>
         </View>
       </Modal>
@@ -239,6 +258,8 @@ const styles = StyleSheet.create({
   acceptBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   cancelRevealBtn: { paddingVertical: Spacing.xs },
   cancelRevealText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+  noPassesText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.error, textAlign: 'center' },
+  passesText: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
