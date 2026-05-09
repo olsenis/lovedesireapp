@@ -179,6 +179,30 @@ All static game content lives here — import from this file, never hardcode in 
 
 **Content rules:** No em dashes (—) anywhere in UI strings — use commas instead. Dares must be physical actions (do something), not verbal (say/tell/describe). Spicy level = explicitly X-rated language.
 
+**Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Admin emails hardcoded for testing. Production will use RevenueCat. `isPremium: boolean` field on user Firestore doc also grants access.
+
+### Free tier (store-safe)
+- Truth or Dare: Sweet + Flirty only
+- Dare Wheel: Sweet + Flirty only
+- Questions Game: Fun, Deep, Romantic, Therapy only
+- Would You Rather: Playful + Romantic only
+- Daily Picks: Sweet + Flirty only
+- Two Truths One Lie, Intimacy Bingo, Date Night Roulette (full)
+- All connection features: Mood, Notes, Memories, Countdowns, Reminders (full)
+- Love Language Quiz, Relationship Pulse (full)
+- 30-Day Challenge: Reconnect + Spark programs only
+
+### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
+- Truth or Dare: Spicy level
+- Dare Wheel: Spicy level
+- Questions Game: Spicy + Fantasy categories
+- Would You Rather: Spicy level
+- Daily Picks: Spicy + Sexual categories
+- Fantasy Wishes (entire feature)
+- Erotic Blueprint (entire feature)
+- Sensate Focus (entire feature)
+- 30-Day Challenge: Fire + Desire programs
+
 ## App Store / Play Store deployment
 
 ```bash
