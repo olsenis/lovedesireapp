@@ -4,15 +4,19 @@ import { db } from './firebase';
 import { BINGO_ACTIVITIES } from '../constants/content';
 
 export const MAX_PASSES = 2;
+export const MAX_RECEIVER_PASSES = 1;
 
 export interface ActivityCardsSession {
   month: string;
   squares: string[];
   revealed: number[];
   revealedBy: Record<number, string>;
+  completed: number[];
+  pendingCard: number | null;
   turnUid: string;
   resetCount: number;
-  passes: Record<string, number>; // uid -> passes used
+  passes: Record<string, number>;
+  receiverPasses: Record<string, number>;
 }
 
 // Keep old name as alias for backwards compat
@@ -52,11 +56,14 @@ export function subscribeActivityCards(
           squares: data.squares ?? [],
           revealed: data.checked ?? [],
           revealedBy: data.checkedBy ?? {},
+          completed: [],
+          pendingCard: null,
           turnUid: starterUid,
           resetCount: data.resetCount ?? 0,
           passes: {},
+          receiverPasses: {},
         };
-        await updateDoc(ref, { revealed: migrated.revealed, revealedBy: migrated.revealedBy, turnUid: migrated.turnUid, passes: {} });
+        await updateDoc(ref, { revealed: migrated.revealed, revealedBy: migrated.revealedBy, turnUid: migrated.turnUid, passes: {}, receiverPasses: {}, completed: [], pendingCard: null });
         onChange(migrated);
       } else {
         onChange(data as ActivityCardsSession);
@@ -65,7 +72,7 @@ export function subscribeActivityCards(
       const squares = generateCard(month + coupleId + '0');
       const newSession: ActivityCardsSession = {
         month, squares, revealed: [], revealedBy: {},
-        turnUid: starterUid, resetCount: 0, passes: {},
+        turnUid: starterUid, resetCount: 0, passes: {}, receiverPasses: {}, completed: [], pendingCard: null,
       };
       await setDoc(ref, newSession);
       onChange(newSession);
@@ -95,7 +102,34 @@ export async function flipCard(
   await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
     revealed: arrayUnion(index),
     [`revealedBy.${index}`]: uid,
+    pendingCard: index,
     turnUid: nextTurnUid,
+  });
+}
+
+export async function markCardDone(
+  coupleId: string,
+  index: number,
+  nextTurnUid: string
+): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
+    completed: arrayUnion(index),
+    pendingCard: null,
+    turnUid: nextTurnUid,
+  });
+}
+
+export async function skipReceivedCard(
+  coupleId: string,
+  uid: string,
+  session: ActivityCardsSession,
+  nextTurnUid: string
+): Promise<void> {
+  const current = session.receiverPasses?.[uid] ?? 0;
+  await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
+    pendingCard: null,
+    turnUid: nextTurnUid,
+    [`receiverPasses.${uid}`]: current + 1,
   });
 }
 

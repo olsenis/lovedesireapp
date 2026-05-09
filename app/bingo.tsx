@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, resetActivityCards } from '../services/bingoService';
+import { ActivityCardsSession, MAX_PASSES, MAX_RECEIVER_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards } from '../services/bingoService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -66,6 +66,25 @@ export default function ActivityCardsScreen() {
 
   const passesUsed = session?.passes?.[uid] ?? 0;
   const passesLeft = MAX_PASSES - passesUsed;
+  const receiverPassesUsed = session?.receiverPasses?.[uid] ?? 0;
+  const receiverPassesLeft = MAX_RECEIVER_PASSES - receiverPassesUsed;
+  const completed = session?.completed ?? [];
+  const completedSet = new Set(completed);
+  const hasPendingCard = session?.pendingCard !== null && session?.pendingCard !== undefined;
+  const isReceiver = hasPendingCard && !isMyTurn;
+
+  const handleMarkDone = async () => {
+    if (!coupleId || !session || !partnerId) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await markCardDone(coupleId, session.pendingCard!, partnerId);
+    notifyPartner(coupleId, uid, 'Activity Cards ✓', `${profile?.name ?? 'Your partner'} marked the challenge as done — your turn!`).catch(() => {});
+  };
+
+  const handleSkipReceived = async () => {
+    if (!coupleId || !session || !partnerId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await skipReceivedCard(coupleId, uid, session, partnerId);
+  };
 
   const handleReset = async () => {
     if (!coupleId || !session) return;
@@ -97,9 +116,13 @@ export default function ActivityCardsScreen() {
         <Text style={styles.month}>{currentMonthName}</Text>
 
         {/* Turn indicator */}
-        <View style={[styles.turnBadge, { backgroundColor: isMyTurn ? Colors.burgundy : Colors.blush }]}>
-          <Text style={[styles.turnText, { color: isMyTurn ? Colors.white : Colors.burgundy }]}>
-            {isMyTurn ? 'Your turn — pick any card' : `${partnerName}'s turn to pick`}
+        <View style={[styles.turnBadge, { backgroundColor: isReceiver ? '#E8F5E9' : isMyTurn ? Colors.burgundy : Colors.blush }]}>
+          <Text style={[styles.turnText, { color: isReceiver ? '#2E7D32' : isMyTurn ? Colors.white : Colors.burgundy }]}>
+            {isReceiver
+              ? `${partnerName} sent you a challenge!`
+              : isMyTurn
+              ? 'Your turn — pick any card'
+              : `${partnerName}'s turn to pick`}
           </Text>
         </View>
 
@@ -114,26 +137,34 @@ export default function ActivityCardsScreen() {
         {/* 5×5 Card grid */}
         <View style={styles.grid}>
           {session.squares.map((activity, index) => {
+            const isDone = completedSet.has(index);
+            const isPending = session.pendingCard === index;
             const isRevealed = revealedSet.has(index);
-            const revealedByMe = (session.revealedBy ?? {})[index] === uid;
-            const canTap = isMyTurn && !isRevealed;
+            const canTap = isMyTurn && !isRevealed && !isReceiver;
 
             return (
               <TouchableOpacity
                 key={index}
                 style={[
                   styles.card,
-                  isRevealed && styles.cardRevealed,
+                  isRevealed && !isDone && styles.cardPending,
+                  isDone && styles.cardDone,
+                  isPending && styles.cardPendingHighlight,
                   canTap && styles.cardCanTap,
                 ]}
                 onPress={() => handleCardTap(index)}
-                disabled={isRevealed || !isMyTurn}
+                disabled={!canTap}
                 activeOpacity={canTap ? 0.75 : 1}
               >
-                {isRevealed ? (
+                {isDone ? (
+                  <>
+                    <Text style={styles.cardDoneEmoji}>✓</Text>
+                    <Text style={styles.cardDoneText} numberOfLines={2}>{activity}</Text>
+                  </>
+                ) : isRevealed ? (
                   <>
                     <Text style={styles.cardRevealedText} numberOfLines={3}>{activity}</Text>
-                    <Text style={styles.cardRevealedBy}>{revealedByMe ? 'You' : partnerName}</Text>
+                    {isPending && <Text style={styles.cardPendingLabel}>!</Text>}
                   </>
                 ) : (
                   <>
@@ -146,8 +177,30 @@ export default function ActivityCardsScreen() {
           })}
         </View>
 
-        <Text style={styles.hint}>Take turns picking a card. Do the activity together.</Text>
+        <Text style={styles.hint}>🟣 Pick · 🟡 Pending · 🟢 Done</Text>
       </ScrollView>
+
+      {/* Receiver modal — shown when partner sent a card */}
+      <Modal visible={isReceiver} transparent animationType="fade">
+        <View style={styles.revealOverlay}>
+          <Animated.View style={styles.revealCard}>
+            <Text style={styles.revealLabel}>{partnerName} sent you a challenge</Text>
+            <Text style={styles.revealActivity}>
+              {hasPendingCard ? session.squares[session.pendingCard!] : ''}
+            </Text>
+            <TouchableOpacity style={styles.acceptBtn} onPress={handleMarkDone} activeOpacity={0.85}>
+              <Text style={styles.acceptBtnText}>✓ We did it!</Text>
+            </TouchableOpacity>
+            {receiverPassesLeft > 0 ? (
+              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived}>
+                <Text style={styles.cancelRevealText}>Skip — not for us ({receiverPassesLeft} left)</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.noPassesText}>No skips left — must complete this one</Text>
+            )}
+          </Animated.View>
+        </View>
+      </Modal>
 
       {/* Reveal modal */}
       <Modal visible={revealIndex !== null} transparent animationType="fade" onRequestClose={() => setRevealIndex(null)}>
@@ -237,7 +290,12 @@ const styles = StyleSheet.create({
     ...Shadow.sm,
   },
   cardCanTap: { backgroundColor: '#A01060', borderWidth: 1.5, borderColor: Colors.rose },
-  cardRevealed: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
+  cardPending: { backgroundColor: '#FFF9C4', borderWidth: 1, borderColor: '#F9A825' },
+  cardPendingHighlight: { borderWidth: 2, borderColor: Colors.burgundy },
+  cardDone: { backgroundColor: '#E8F5E9', borderWidth: 1, borderColor: '#4CAF50' },
+  cardDoneEmoji: { fontSize: 14, color: '#2E7D32' },
+  cardDoneText: { fontFamily: Fonts.body, fontSize: 6, color: '#2E7D32', textAlign: 'center', lineHeight: 9 },
+  cardPendingLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.burgundy },
   cardBack: { fontSize: 20, color: 'rgba(255,255,255,0.4)' },
   cardTapHint: { fontFamily: Fonts.bodyItalic, fontSize: 8, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   cardRevealedText: { fontFamily: Fonts.body, fontSize: 7, color: Colors.text, textAlign: 'center', lineHeight: 10 },
