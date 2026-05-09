@@ -82,6 +82,7 @@ export default function IntimacyTrackerScreen() {
   const [entries, setEntries] = useState<IntimacyEntry[]>([]);
   const [tab, setTab] = useState<'log' | 'stats'>('log');
   const [showSheet, setShowSheet] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<IntimacyEntry | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -161,6 +162,7 @@ export default function IntimacyTrackerScreen() {
                 <TouchableOpacity
                   key={entry.id}
                   style={styles.entryRow}
+                  onPress={() => setSelectedEntry(entry)}
                   onLongPress={() => handleDelete(entry)}
                   activeOpacity={0.85}
                 >
@@ -184,6 +186,76 @@ export default function IntimacyTrackerScreen() {
       ) : (
         <StatsView stats={stats} entries={entries} />
       )}
+
+      {/* Entry detail view */}
+      <Modal visible={!!selectedEntry} transparent animationType="slide" onRequestClose={() => setSelectedEntry(null)}>
+        <View style={styles.sheetOverlay}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <TouchableOpacity style={styles.sheetClose} onPress={() => setSelectedEntry(null)}>
+              <Text style={styles.sheetCloseText}>✕</Text>
+            </TouchableOpacity>
+            {selectedEntry && (
+              <ScrollView contentContainerStyle={styles.sheetContent}>
+                <Text style={styles.sheetTitle}>{fmtDate(selectedEntry.createdAt)}</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Mood</Text>
+                  <Text style={styles.detailValue}>{MOOD_EMOJI[selectedEntry.mood]} {MOODS.find(m => m.key === selectedEntry.mood)?.label}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Who started it</Text>
+                  <Text style={styles.detailValue}>{selectedEntry.initiatedBy === 'me' ? 'You' : selectedEntry.initiatedBy === 'partner' ? partnerName : 'Both of you'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Where</Text>
+                  <Text style={styles.detailValue}>{LOCATIONS.find(l => l.key === selectedEntry.location)?.emoji} {LOCATION_LABELS[selectedEntry.location]}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>What</Text>
+                  <View style={styles.chipRow}>
+                    {selectedEntry.types.map(t => (
+                      <View key={t} style={styles.chipSelected}>
+                        <Text style={styles.chipTextSelected}>{TYPE_LABELS[t]}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                {selectedEntry.positions.length > 0 && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Positions</Text>
+                    <View style={styles.chipRow}>
+                      {selectedEntry.positions.map(p => (
+                        <View key={p} style={styles.chipSelected}>
+                          <Text style={styles.chipTextSelected}>{p}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+                {selectedEntry.duration !== undefined && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Duration</Text>
+                    <Text style={styles.detailValue}>{selectedEntry.duration} minutes</Text>
+                  </View>
+                )}
+                {selectedEntry.note && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Note</Text>
+                    <Text style={styles.detailValue}>{selectedEntry.note}</Text>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={[styles.saveBtn, { backgroundColor: Colors.error, marginTop: Spacing.md }]}
+                  onPress={() => { setSelectedEntry(null); handleDelete(selectedEntry); }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.saveBtnText}>Delete entry</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Detail sheet */}
       <DetailSheet
@@ -600,4 +672,8 @@ const styles = StyleSheet.create({
 
   saveBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center', marginTop: Spacing.sm },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+
+  detailRow: { gap: Spacing.xs },
+  detailLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  detailValue: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text },
 });
