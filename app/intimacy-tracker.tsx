@@ -262,10 +262,10 @@ export default function IntimacyTrackerScreen() {
         visible={showSheet}
         onClose={() => setShowSheet(false)}
         onSave={async (data) => {
-          if (!coupleId) return;
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          if (!coupleId) throw new Error('No coupleId');
           await addIntimacyEntry(coupleId, uid, data);
-          notifyPartner(coupleId, uid, 'Intimacy Log 💝', `${profile?.name ?? 'Your partner'} logged an intimate moment`);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          notifyPartner(coupleId, uid, 'Intimacy Log 💝', `${profile?.name ?? 'Your partner'} logged an intimate moment`).catch(() => {});
           setShowSheet(false);
         }}
       />
@@ -408,16 +408,21 @@ function DetailSheet({
   const handleSave = async () => {
     if (!canSave || saving) return;
     setSaving(true);
-    await onSave({
-      initiatedBy: initiatedBy!,
-      location: location!,
-      types,
-      positions,
-      duration: duration ? parseInt(duration) : undefined,
-      mood: mood!,
-      note: note.trim() || undefined,
-    });
-    reset();
+    try {
+      await onSave({
+        initiatedBy: initiatedBy!,
+        location: location!,
+        types,
+        positions,
+        duration: duration ? parseInt(duration) : undefined,
+        mood: mood!,
+        note: note.trim() || undefined,
+      });
+      reset();
+    } catch (e) {
+      console.error('Save failed:', e);
+      setSaving(false);
+    }
   };
 
   const toggleType = (t: IntimacyType) =>
