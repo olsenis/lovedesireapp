@@ -3,10 +3,10 @@ import { db } from './firebase';
 
 export type IntimacyLocation =
   | 'bedroom' | 'living_room' | 'bathroom_shower' | 'kitchen' | 'other_home'
-  | 'hotel' | 'vacation_rental' | 'car' | 'outdoors_nature' | 'beach'
-  | 'at_friends' | 'work' | 'public_semi' | 'other';
+  | 'hotel' | 'vacation_rental' | 'car' | 'outdoors_nature'
+  | 'work' | 'public_semi' | 'other';
 
-export type IntimacyType = 'intercourse' | 'oral' | 'manual' | 'toys' | 'foreplay_only' | 'other';
+export type IntimacyType = 'intercourse' | 'oral' | 'hands' | 'toys' | 'foreplay_only' | 'other';
 export type IntimacyMood = 'amazing' | 'good' | 'okay' | 'disconnected';
 
 export const LOCATION_LABELS: Record<IntimacyLocation, { emoji: string; label: string }> = {
@@ -19,8 +19,6 @@ export const LOCATION_LABELS: Record<IntimacyLocation, { emoji: string; label: s
   vacation_rental:  { emoji: '🏡', label: 'Rental' },
   car:              { emoji: '🚗', label: 'Car' },
   outdoors_nature:  { emoji: '🌿', label: 'Nature' },
-  beach:            { emoji: '🏖️', label: 'Beach' },
-  at_friends:       { emoji: '👫', label: "Friends'" },
   work:             { emoji: '💼', label: 'Work' },
   public_semi:      { emoji: '🌃', label: 'Semi-public' },
   other:            { emoji: '📍', label: 'Other' },

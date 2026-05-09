@@ -23,7 +23,7 @@ const LOCATIONS = (Object.entries(LOC_LABELS) as [IntimacyLocation, { emoji: str
 const TYPES: { key: IntimacyType; label: string }[] = [
   { key: 'intercourse',   label: 'Intercourse' },
   { key: 'oral',          label: 'Oral' },
-  { key: 'manual',        label: 'Manual' },
+  { key: 'hands',         label: 'Hands' },
   { key: 'toys',          label: 'Toys' },
   { key: 'foreplay_only', label: 'Foreplay only' },
   { key: 'other',         label: 'Other' },
@@ -42,7 +42,7 @@ const STAR_LABELS: Record<number, string> = {
   1: 'Could have been better', 2: 'It was okay', 3: 'Pretty good', 4: 'Really good', 5: 'Incredible',
 };
 const TYPE_LABELS: Record<IntimacyType, string> = {
-  intercourse: 'Intercourse', oral: 'Oral', manual: 'Manual',
+  intercourse: 'Intercourse', oral: 'Oral', hands: 'Hands',
   toys: 'Toys', foreplay_only: 'Foreplay', other: 'Other',
 };
 const MOOD_EMOJI: Record<IntimacyMood, string> = {
