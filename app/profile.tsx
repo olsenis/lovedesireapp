@@ -404,6 +404,11 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Legal */}
+        <TouchableOpacity style={styles.legalLink} onPress={() => router.push('/privacy-policy' as any)} activeOpacity={0.7}>
+          <Text style={styles.legalLinkText}>Privacy Policy</Text>
+        </TouchableOpacity>
+
         {/* Sign out */}
         <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
           <Text style={styles.signOutText}>Sign out</Text>
@@ -625,7 +630,9 @@ const styles = StyleSheet.create({
   notifOff: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
   notifHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, paddingHorizontal: Spacing.lg, paddingBottom: 14, lineHeight: 20 },
 
-  signOutBtn: { marginTop: Spacing.lg, paddingVertical: Spacing.md, borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy, alignItems: 'center' },
+  legalLink: { alignItems: 'center', paddingVertical: Spacing.sm },
+  legalLinkText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, textDecorationLine: 'underline' },
+  signOutBtn: { marginTop: Spacing.sm, paddingVertical: Spacing.md, borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy, alignItems: 'center' },
   signOutText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   deleteAccountBtn: { paddingVertical: Spacing.sm, alignItems: 'center' },
   deleteAccountText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
