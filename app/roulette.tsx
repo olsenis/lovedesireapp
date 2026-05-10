@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { DATE_IDEAS, DateIdea } from '../constants/content';
 import { useAuth } from '../hooks/useAuth';
 import { addTodo } from '../services/todoService';
+import { DateRatings, subscribeDateRatings, rateDate, getKey } from '../services/dateRatingService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
@@ -14,14 +15,44 @@ import { Spacing, Radius } from '../constants/spacing';
 const TYPE_COLORS = { home: '#FFF9C4', out: '#E8F5E9', adventure: '#E3F2FD' };
 const TYPE_LABELS = { home: 'At Home 🏠', out: 'Going Out ✨', adventure: 'Adventure 🌟' };
 
+function Stars({ rating, onRate }: { rating: number; onRate?: (r: number) => void }) {
+  return (
+    <View style={starStyles.row}>
+      {[1, 2, 3, 4, 5].map(s => (
+        <TouchableOpacity key={s} onPress={() => onRate?.(s)} disabled={!onRate} activeOpacity={0.7}>
+          <Text style={[starStyles.star, s <= rating && starStyles.starFilled]}>★</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+const starStyles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 2 },
+  star: { fontSize: 22, color: Colors.border },
+  starFilled: { color: '#F9A825' },
+});
+
 export default function RouletteScreen() {
   const { user, profile } = useAuth();
   const [result, setResult] = useState<DateIdea | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [ratings, setRatings] = useState<DateRatings>({});
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [filter, setFilter] = useState<'all' | 'home' | 'out' | 'adventure'>('all');
   const help = useHelp('date-night');
+
+  useEffect(() => {
+    if (!profile?.coupleId) return;
+    return subscribeDateRatings(profile.coupleId, setRatings);
+  }, [profile?.coupleId]);
+
+  const handleRate = async (title: string, r: number) => {
+    if (!profile?.coupleId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await rateDate(profile.coupleId, title, r);
+  };
 
   const handleSave = async () => {
     if (!result || !profile?.coupleId || !user) return;
@@ -110,6 +141,12 @@ export default function RouletteScreen() {
                 <Text style={styles.reroll}>Try again ↻</Text>
               </TouchableOpacity>
             </View>
+            <View style={styles.rateRow}>
+              <Text style={styles.rateLabel}>
+                {ratings[getKey(result.title)] ? 'Your rating' : 'Rate this date'}
+              </Text>
+              <Stars rating={ratings[getKey(result.title)] ?? 0} onRate={(r) => handleRate(result.title, r)} />
+            </View>
             <TouchableOpacity
               style={[styles.saveBtn, saved && styles.saveBtnDone]}
               onPress={handleSave}
@@ -123,17 +160,21 @@ export default function RouletteScreen() {
 
         {/* All options list */}
         <Text style={styles.listTitle}>All date ideas</Text>
-        {(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter)).map((idea) => (
-          <View key={idea.title} style={styles.ideaRow}>
-            <View style={[styles.ideaIconWrap, { backgroundColor: TYPE_COLORS[idea.type] }]}>
-              <Text style={styles.ideaEmoji}>{idea.emoji}</Text>
+        {(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter)).map((idea) => {
+          const r = ratings[getKey(idea.title)] ?? 0;
+          return (
+            <View key={idea.title} style={[styles.ideaRow, r > 0 && styles.ideaRowRated]}>
+              <View style={[styles.ideaIconWrap, { backgroundColor: TYPE_COLORS[idea.type] }]}>
+                <Text style={styles.ideaEmoji}>{idea.emoji}</Text>
+              </View>
+              <View style={styles.ideaText}>
+                <Text style={styles.ideaTitle}>{idea.title}</Text>
+                <Text style={styles.ideaDesc}>{idea.description}</Text>
+                <Stars rating={r} onRate={(s) => handleRate(idea.title, s)} />
+              </View>
             </View>
-            <View style={styles.ideaText}>
-              <Text style={styles.ideaTitle}>{idea.title}</Text>
-              <Text style={styles.ideaDesc}>{idea.description}</Text>
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
 
       <HelpModal
@@ -231,11 +272,14 @@ const styles = StyleSheet.create({
   resultFooter: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: Spacing.sm },
   resultType: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted },
   reroll: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  rateRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, width: '100%', marginTop: Spacing.xs },
+  rateLabel: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
   saveBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, width: '100%', alignItems: 'center', marginTop: Spacing.sm },
   saveBtnDone: { backgroundColor: Colors.success },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.white },
 
   listTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, alignSelf: 'flex-start', marginBottom: Spacing.md },
+  ideaRowRated: { borderColor: '#F9A825' },
   ideaRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
