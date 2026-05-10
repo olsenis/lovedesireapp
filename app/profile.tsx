@@ -62,11 +62,8 @@ export default function ProfileScreen() {
 
   const handleSaveBirthday = async () => {
     if (!user || !birthdayStr.trim()) return;
-    // Validate DD.MM format
     const parts = birthdayStr.trim().split('.');
-    if (parts.length !== 2 || isNaN(Number(parts[0])) || isNaN(Number(parts[1]))) {
-      return;
-    }
+    if (parts.length !== 3 || parts.some(p => isNaN(Number(p)))) return;
     await createUserProfile(user.uid, { birthday: birthdayStr.trim() } as any);
     setBirthdayModal(false);
   };
@@ -280,7 +277,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.row} onPress={() => { setBirthdayStr(profile?.birthday ?? ''); setBirthdayModal(true); }}>
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>Your birthday</Text>
-              <Text style={styles.rowHint}>{profile?.birthday ? `${profile.birthday} — visible to partner` : 'Tap to add (DD.MM)'}</Text>
+              <Text style={styles.rowHint}>{profile?.birthday ? `${profile.birthday} — visible to partner` : 'Tap to add (DD.MM.YYYY)'}</Text>
             </View>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
@@ -557,12 +554,12 @@ export default function ProfileScreen() {
             <Text style={styles.modalHint}>Enter day and month (DD.MM). Your partner will see a countdown to your birthday.</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="DD.MM — e.g. 25.12"
+              placeholder="DD.MM.YYYY — e.g. 25.12.1990"
               placeholderTextColor={Colors.muted}
               value={birthdayStr}
               onChangeText={setBirthdayStr}
               keyboardType="numbers-and-punctuation"
-              maxLength={5}
+              maxLength={10}
               autoFocus
             />
             <View style={styles.modalBtns}>

@@ -44,11 +44,17 @@ function getAutoDates(partnerName: string, partnerBirthday?: string): AutoDate[]
   ];
   if (partnerBirthday) {
     const parts = partnerBirthday.split('.');
-    if (parts.length === 2) {
+    if (parts.length >= 2) {
       const day = parseInt(parts[0]);
       const month = parseInt(parts[1]);
+      const year = parts.length === 3 ? parseInt(parts[2]) : null;
       if (!isNaN(day) && !isNaN(month)) {
-        dates.push({ label: `${partnerName}'s birthday`, emoji: '🎂', date: getNextOccurrence(month, day) });
+        const nextDate = getNextOccurrence(month, day);
+        const turningAge = year ? new Date(nextDate).getFullYear() - year : null;
+        const label = turningAge
+          ? `${partnerName} turns ${turningAge} 🎂`
+          : `${partnerName}'s birthday`;
+        dates.push({ label, emoji: '🎂', date: nextDate });
       }
     }
   }
