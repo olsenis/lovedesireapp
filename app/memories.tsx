@@ -20,6 +20,7 @@ export default function MemoriesScreen() {
   const [photoURI, setPhotoURI] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [viewing, setViewing] = useState<Memory | null>(null);
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -101,7 +102,9 @@ export default function MemoriesScreen() {
 
         {memories.map((m) => (
           <View key={m.id} style={styles.card}>
-            <Image source={{ uri: m.photoURL }} style={styles.photo} contentFit="cover" />
+            <TouchableOpacity onPress={() => setViewing(m)} activeOpacity={0.9}>
+              <Image source={{ uri: m.photoURL }} style={styles.photo} contentFit="cover" />
+            </TouchableOpacity>
             <View style={styles.cardFooter}>
               <View style={styles.cardFooterRow}>
                 {m.caption ? (
@@ -167,6 +170,26 @@ export default function MemoriesScreen() {
         </View>
       </Modal>
 
+      {/* Full-screen view */}
+      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
+        <View style={styles.fullScreen}>
+          <TouchableOpacity style={styles.fullScreenClose} onPress={() => setViewing(null)}>
+            <Text style={styles.fullScreenCloseText}>✕</Text>
+          </TouchableOpacity>
+          {viewing && (
+            <>
+              <Image source={{ uri: viewing.photoURL }} style={styles.fullScreenImage} contentFit="contain" />
+              <View style={styles.fullScreenFooter}>
+                {viewing.caption ? <Text style={styles.fullScreenCaption}>{viewing.caption}</Text> : null}
+                <Text style={styles.fullScreenDate}>
+                  {new Date(viewing.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
+      </Modal>
+
       <HelpModal
         visible={help.visible}
         title="Memories"
@@ -228,6 +251,14 @@ const styles = StyleSheet.create({
   cardFooterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   deleteBtn: { padding: 2 },
   deleteTxt: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+
+  fullScreen: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center' },
+  fullScreenClose: { position: 'absolute', top: 56, right: Spacing.lg, zIndex: 10, padding: Spacing.sm },
+  fullScreenCloseText: { color: Colors.white, fontSize: 22, fontFamily: Fonts.body },
+  fullScreenImage: { width: '100%', height: '75%' },
+  fullScreenFooter: { padding: Spacing.lg, gap: 4 },
+  fullScreenCaption: { fontFamily: Fonts.bodyItalic, fontSize: 16, color: Colors.white, textAlign: 'center' },
+  fullScreenDate: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
