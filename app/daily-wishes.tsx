@@ -57,7 +57,11 @@ export default function DailyWishesScreen() {
     await markAddToList(coupleId, uid, globalIndex);
     // Only add todo if partner already pressed (we're second → add once)
     if (partnerAlreadyPressed) {
-      await addTodo(coupleId, dailyDoc.items[globalIndex].text, 'fantasy', uid);
+      const item = dailyDoc.items[globalIndex];
+      const cat = item.category === 'sweet' ? 'dates'
+        : item.category === 'sexual' ? 'fantasy'
+        : 'intimacy';
+      await addTodo(coupleId, item.text, cat, uid, 'daily-picks');
     }
   };
 

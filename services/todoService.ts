@@ -13,6 +13,8 @@ import { db } from './firebase';
 
 export type TodoCategory = 'daily' | 'dates' | 'intimacy' | 'goals' | 'fantasy';
 
+export type TodoSource = 'manual' | 'daily-picks' | 'fantasy-wishes' | 'roulette';
+
 export interface Todo {
   id: string;
   text: string;
@@ -20,6 +22,7 @@ export interface Todo {
   completed: boolean;
   createdBy: string;
   createdAt: number;
+  source?: TodoSource;
 }
 
 export function subscribeTodos(coupleId: string, onChange: (todos: Todo[]) => void): Unsubscribe {
@@ -38,15 +41,16 @@ export async function addTodo(
   coupleId: string,
   text: string,
   category: TodoCategory,
-  createdBy: string
+  createdBy: string,
+  source: TodoSource = 'manual'
 ): Promise<void> {
-  // TODO: add todo to Firestore subcollection
   await addDoc(collection(db, 'couples', coupleId, 'todos'), {
     text,
     category,
     completed: false,
     createdBy,
     createdAt: Date.now(),
+    source,
   });
 }
 

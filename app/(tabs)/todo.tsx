@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal 
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { Todo, TodoCategory, subscribeTodos, addTodo, toggleTodo, deleteTodo } from '../../services/todoService';
+import { useCouple } from '../../hooks/useCouple';
 import { useHelp } from '../../hooks/useHelp';
 import { HelpModal } from '../../components/HelpModal';
 import { Colors } from '../../constants/colors';
@@ -19,6 +20,7 @@ const CATEGORIES: { key: TodoCategory; label: string; emoji: string; color: stri
 
 export default function TogetherScreen() {
   const { user, profile } = useAuth();
+  const { partner } = useCouple(user?.uid, profile?.coupleId);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<TodoCategory | 'all'>('all');
   const [showAdd, setShowAdd] = useState(false);
@@ -27,6 +29,7 @@ export default function TogetherScreen() {
   const [newCat, setNewCat] = useState<TodoCategory>('daily');
 
   const coupleId = profile?.coupleId;
+  const uid = user?.uid ?? '';
 
   useEffect(() => {
     if (!coupleId) return;
@@ -88,7 +91,7 @@ export default function TogetherScreen() {
         {incomplete.map((todo) => {
           const cat = CATEGORIES.find((c) => c.key === todo.category) ?? CATEGORIES[0];
           return (
-            <TodoRow key={todo.id} todo={todo} cat={cat} onToggle={handleToggle} onDelete={handleDelete} />
+            <TodoRow key={todo.id} todo={todo} cat={cat} uid={uid} partnerName={partner?.name ?? 'Partner'} onToggle={handleToggle} onDelete={handleDelete} />
           );
         })}
 
@@ -98,7 +101,7 @@ export default function TogetherScreen() {
             {complete.map((todo) => {
               const cat = CATEGORIES.find((c) => c.key === todo.category) ?? CATEGORIES[0];
               return (
-                <TodoRow key={todo.id} todo={todo} cat={cat} onToggle={handleToggle} onDelete={handleDelete} />
+                <TodoRow key={todo.id} todo={todo} cat={cat} uid={uid} partnerName={partner?.name ?? 'Partner'} onToggle={handleToggle} onDelete={handleDelete} />
               );
             })}
           </>
@@ -166,12 +169,23 @@ export default function TogetherScreen() {
   );
 }
 
-function TodoRow({ todo, cat, onToggle, onDelete }: {
+const SOURCE_LABELS: Record<string, string> = {
+  'daily-picks': 'Daily Picks',
+  'fantasy-wishes': 'Fantasy Wishes',
+  'roulette': 'Date Night',
+};
+
+function TodoRow({ todo, cat, uid, partnerName, onToggle, onDelete }: {
   todo: Todo;
   cat: { emoji: string; color: string };
+  uid: string;
+  partnerName: string;
   onToggle: (t: Todo) => void;
   onDelete: (id: string) => void;
 }) {
+  const addedByMe = todo.createdBy === uid;
+  const sourceLabel = todo.source && todo.source !== 'manual' ? SOURCE_LABELS[todo.source] : null;
+
   return (
     <View style={[styles.todoRow, todo.completed && styles.todoRowDone]}>
       <TouchableOpacity style={[styles.check, todo.completed && styles.checkDone]} onPress={() => onToggle(todo)}>
@@ -180,7 +194,13 @@ function TodoRow({ todo, cat, onToggle, onDelete }: {
       <View style={[styles.catDot, { backgroundColor: cat.color }]}>
         <Text style={styles.catDotEmoji}>{cat.emoji}</Text>
       </View>
-      <Text style={[styles.todoText, todo.completed && styles.todoTextDone]} numberOfLines={2}>{todo.text}</Text>
+      <View style={styles.todoContent}>
+        <Text style={[styles.todoText, todo.completed && styles.todoTextDone]} numberOfLines={2}>{todo.text}</Text>
+        <View style={styles.todoMeta}>
+          <Text style={styles.todoAdded}>{addedByMe ? 'You' : partnerName}</Text>
+          {sourceLabel && <Text style={styles.todoSource}>· from {sourceLabel}</Text>}
+        </View>
+      </View>
       <TouchableOpacity onPress={() => onDelete(todo.id)} style={styles.delBtn}>
         <Text style={styles.delText}>✕</Text>
       </TouchableOpacity>
@@ -207,12 +227,16 @@ const styles = StyleSheet.create({
 
   todoRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
   todoRowDone: { opacity: 0.55 },
+  todoContent: { flex: 1, gap: 2 },
+  todoMeta: { flexDirection: 'row', gap: 4 },
+  todoAdded: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted },
+  todoSource: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted },
   check: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: Colors.rose, alignItems: 'center', justifyContent: 'center' },
   checkDone: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   checkMark: { color: Colors.cream, fontSize: 14, fontFamily: Fonts.bodyBold },
   catDot: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   catDotEmoji: { fontSize: 14 },
-  todoText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: Colors.text },
+  todoText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text },
   todoTextDone: { textDecorationLine: 'line-through', color: Colors.muted },
   delBtn: { padding: Spacing.xs },
   delText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },

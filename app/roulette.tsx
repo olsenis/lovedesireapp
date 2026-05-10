@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, ScrollView 
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { DATE_IDEAS, DateIdea } from '../constants/content';
+import { useAuth } from '../hooks/useAuth';
+import { addTodo } from '../services/todoService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
@@ -13,16 +15,26 @@ const TYPE_COLORS = { home: '#FFF9C4', out: '#E8F5E9', adventure: '#E3F2FD' };
 const TYPE_LABELS = { home: 'At Home 🏠', out: 'Going Out ✨', adventure: 'Adventure 🌟' };
 
 export default function RouletteScreen() {
+  const { user, profile } = useAuth();
   const [result, setResult] = useState<DateIdea | null>(null);
   const [spinning, setSpinning] = useState(false);
+  const [saved, setSaved] = useState(false);
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [filter, setFilter] = useState<'all' | 'home' | 'out' | 'adventure'>('all');
   const help = useHelp('date-night');
+
+  const handleSave = async () => {
+    if (!result || !profile?.coupleId || !user) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await addTodo(profile.coupleId, result.title, 'dates', user.uid, 'roulette');
+    setSaved(true);
+  };
 
   const spin = () => {
     if (spinning) return;
     setSpinning(true);
     setResult(null);
+    setSaved(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
     spinAnim.setValue(0);
@@ -98,6 +110,14 @@ export default function RouletteScreen() {
                 <Text style={styles.reroll}>Try again ↻</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity
+              style={[styles.saveBtn, saved && styles.saveBtnDone]}
+              onPress={handleSave}
+              disabled={saved}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.saveBtnText}>{saved ? '✓ Saved to Together List' : '💾 Save for later'}</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -211,6 +231,9 @@ const styles = StyleSheet.create({
   resultFooter: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: Spacing.sm },
   resultType: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted },
   reroll: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  saveBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, width: '100%', alignItems: 'center', marginTop: Spacing.sm },
+  saveBtnDone: { backgroundColor: Colors.success },
+  saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.white },
 
   listTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, alignSelf: 'flex-start', marginBottom: Spacing.md },
   ideaRow: {

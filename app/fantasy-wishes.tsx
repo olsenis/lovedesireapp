@@ -98,7 +98,7 @@ export default function FantasyWishesScreen() {
     await markFWAddToList(coupleId, uid, item.id);
     // Only add todo if partner already pressed (we're second → add once)
     if (partnerAlreadyPressed) {
-      await addTodo(coupleId, item.text, 'fantasy', uid);
+      await addTodo(coupleId, item.text, 'fantasy', uid, 'fantasy-wishes');
     }
   };
 
