@@ -48,8 +48,7 @@ app/                         Full-screen sub-screens
   fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, 5 at a time
   truth-dare.tsx             Truth or Dare — real 2-phone multiplayer (picking/answering/done), audio answers
   would-you-rather.tsx       Would You Rather — simultaneous answer reveal, 3 levels, session persists
-  two-truths.tsx             Two Truths One Lie — guessing game with dares, local state
-  bingo.tsx                  Intimacy Bingo — 5x5 monthly card, collaborative win, reset button
+  bingo.tsx                  Activity Cards — 25 face-down cards, turn-based reveal, 3 states (pending/done), passes system
   challenge.tsx              30-Day Challenge — Reconnect/Spark/Fire/Desire + edit/veto system
   blueprint.tsx              Erotic Blueprint Quiz — 5 types, couple compatibility
   profile.tsx                Profile & Settings — name, photo, password, notifications, relationship date
@@ -87,7 +86,7 @@ couples/{coupleId}/dates/{id}        ImportantDate — label, date, emoji, creat
 couples/{coupleId}/challenge/active  ChallengeState — program, phase, currentDay, completedDays[], completedBy, customTasks, editsUsed, vetoesUsed
 couples/{coupleId}/blueprints/{uid}  BlueprintResult — type, scores, completedAt (readable by both)
 couples/{coupleId}/wyr/active        WYRSession — level, questionIndex, answers{uid:a|b}, revealed, score
-couples/{coupleId}/bingo/{month}     BingoSession — squares[], checked[], checkedBy{}, winner('both'|null), resetCount
+couples/{coupleId}/bingo/{month}     ActivityCardsSession — squares[], revealed[], revealedBy{}, completed[], pendingCard, turnUid, passes{}, receiverPasses{}, resetCount
 couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(picking|answering|done), card{type,text,answer,audioURL,answeredBy,dareConfirmed[]}, scores, round, skipsUsed
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
@@ -118,7 +117,7 @@ couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
 | `dailyWishService.ts` | `subscribeDailyWishes`, `voteDailyWish`, `markAddToList`, `bothWantToAdd` |
 | `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `subscribeStreak`, `submitAnswer`, `checkAndUpdateStreak`, `bothAnswered`, `markDiscussed`, `bothDiscussed` |
 | `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR` |
-| `bingoService.ts` | `subscribeBingo`, `checkBingoSquare`, `resetBingo`, `hasBingo` |
+| `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 
 ### Hooks
@@ -159,7 +158,7 @@ All static game content lives here — import from this file, never hardcode in 
 
 **Questions Game reveal:** Both partners answer privately (text input). Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side. Daily streak (`couples/{coupleId}/streaks/questions`) increments when both answer on the same day. Streak shown as 🔥 N in header.
 
-**Intimacy Bingo:** Collaborative — `winner: 'both'` set when any bingo line is completed. Reset button generates a new card using `resetCount` as extra seed component, ensuring each reset gives a different card. Card is deterministic per month+coupleId+resetCount.
+**Activity Cards:** 25 face-down cards, turn-based. Picker has 2 passes to swap before accepting. Receiver gets the card and can mark "We did it!" or skip (1 pass). Cards have 3 states: face-down, pending (accepted not done), completed (green). `pendingCard` field tracks which card is waiting for receiver. Paid feature.
 
 **Double-blind voting (Wishlist, Fantasy, Fantasy Wishes):** `votes: { [uid]: 'yes'|'maybe'|'no' }`. Only mutual `yes` surfaces in Matches. Never expose individual votes.
 
@@ -187,7 +186,7 @@ All static game content lives here — import from this file, never hardcode in 
 - Questions Game: Fun, Deep, Romantic, Therapy only
 - Would You Rather: Playful + Romantic only
 - Daily Picks: Sweet + Flirty only
-- Two Truths One Lie, Intimacy Bingo, Date Night Roulette (full)
+- Date Night Roulette (full)
 - All connection features: Mood, Notes, Memories, Countdowns, Reminders (full)
 - Love Language Quiz, Relationship Pulse (full)
 - 30-Day Challenge: Reconnect + Spark programs only
