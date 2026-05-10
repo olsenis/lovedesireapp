@@ -321,7 +321,7 @@ export interface DateIdea {
 export const DATE_IDEAS: DateIdea[] = [
   // Home
   { title: "Cook Together", description: "Pick a new recipe you've never made and cook it together from scratch.", emoji: "🍳", type: 'home' },
-  { title: "Blanket Fort Cinema", description: "Build a fort, make popcorn, and pick a movie each without telling the other until it starts.", emoji: "🎬", type: 'home' },
+  { title: "Blanket Fort Cinema", description: "Build a fort, make popcorn, and settle in for a movie night at home.", emoji: "🎬", type: 'home' },
   { title: "Spa Night", description: "Take turns giving face masks, massages, and foot soaks. Full luxury at home.", emoji: "🧖", type: 'home' },
   { title: "Paint Night", description: "Get paints and canvases, put on music, and paint each other's portrait.", emoji: "🎨", type: 'home' },
   { title: "Board Game Marathon", description: "Pick 3 board games, loser of each round does a small dare.", emoji: "🎲", type: 'home' },
