@@ -191,6 +191,9 @@ export default function ActivityCardsScreen() {
             <TouchableOpacity style={styles.acceptBtn} onPress={handleMarkDone} activeOpacity={0.85}>
               <Text style={styles.acceptBtnText}>✓ We did it!</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.captureBtn} onPress={() => { handleMarkDone(); router.push('/memories' as any); }} activeOpacity={0.85}>
+              <Text style={styles.captureBtnText}>📸 We did it — capture this moment</Text>
+            </TouchableOpacity>
             {receiverPassesLeft > 0 ? (
               <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived}>
                 <Text style={styles.cancelRevealText}>Skip — not for us ({receiverPassesLeft} left)</Text>
@@ -314,6 +317,8 @@ const styles = StyleSheet.create({
   revealHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
   acceptBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, width: '100%', alignItems: 'center' },
   acceptBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+  captureBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
+  captureBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
   cancelRevealBtn: { paddingVertical: Spacing.xs },
   cancelRevealText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   noPassesText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.error, textAlign: 'center' },

@@ -15,6 +15,7 @@ import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishServ
 import { subscribeWYR, WYRSession } from '../../services/wyrService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
+import { Memory, subscribeMemories } from '../../services/memoryService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -73,6 +74,7 @@ export default function HomeScreen() {
   const [sparkSent, setSparkSent] = useState(false);
   const [showSparkPicker, setShowSparkPicker] = useState(false);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
+  const [memories, setMemories] = useState<Memory[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -101,7 +103,8 @@ export default function HomeScreen() {
     const u7 = subscribeIntimacyLog(coupleId, setIntimacyEntries);
     const u8 = subscribeRecentSparks(coupleId, setRecentSparks);
     const u9 = subscribeMoodHistory(coupleId, setMoodHistory);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); };
+    const u10 = subscribeMemories(coupleId, setMemories);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); };
   }, [coupleId]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -287,6 +290,16 @@ export default function HomeScreen() {
     }
   }
 
+  // ── On this day ───────────────────────────────────────────────────────────────
+  const todayMD = `${new Date().getMonth()}-${new Date().getDate()}`;
+  const onThisDay = memories.find(m => {
+    const d = new Date(m.createdAt);
+    const isToday = `${d.getMonth()}-${d.getDate()}` === todayMD;
+    const isPast = d.getFullYear() < new Date().getFullYear();
+    return isToday && isPast;
+  }) ?? null;
+  const onThisDayYears = onThisDay ? new Date().getFullYear() - new Date(onThisDay.createdAt).getFullYear() : 0;
+
   // ── Onboarding nudges ────────────────────────────────────────────────────────
 
   // 1. Name missing
@@ -377,6 +390,18 @@ export default function HomeScreen() {
             <Text style={styles.sparkBannerMsg}>{incomingSpark.message}</Text>
           </View>
           <Text style={styles.sparkBannerClose}>✕</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* On this day */}
+      {onThisDay && (
+        <TouchableOpacity style={styles.onThisDayCard} onPress={() => router.push('/memories' as any)} activeOpacity={0.85}>
+          <Text style={styles.onThisDayEmoji}>📸</Text>
+          <View style={styles.onThisDayText}>
+            <Text style={styles.onThisDayTitle}>On this day, {onThisDayYears} {onThisDayYears === 1 ? 'year' : 'years'} ago</Text>
+            <Text style={styles.onThisDaySub} numberOfLines={1}>{onThisDay.caption || 'A memory from your past'}</Text>
+          </View>
+          <Text style={styles.onboardArrow}>›</Text>
         </TouchableOpacity>
       )}
 
@@ -591,6 +616,12 @@ const styles = StyleSheet.create({
   sparkBannerTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
   sparkBannerMsg: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   sparkBannerClose: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted, padding: Spacing.xs },
+
+  onThisDayCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF9C4', borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: '#F9A825', gap: Spacing.md, ...Shadow.sm },
+  onThisDayEmoji: { fontSize: 28 },
+  onThisDayText: { flex: 1 },
+  onThisDayTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#E65100' },
+  onThisDaySub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
 
   onboardCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.rose, gap: Spacing.md, ...Shadow.sm },
   onboardEmoji: { fontSize: 28 },
