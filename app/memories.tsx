@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
 import { Memory, subscribeMemories, addMemory, deleteMemory } from '../services/memoryService';
+import { uploadMemoryPhoto } from '../services/storageService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
@@ -18,6 +19,7 @@ export default function MemoriesScreen() {
   const help = useHelp('memories');
   const [photoURI, setPhotoURI] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -35,8 +37,16 @@ export default function MemoriesScreen() {
 
   const handleSave = async () => {
     if (!photoURI || !profile?.coupleId || !user) return;
-    await addMemory(profile.coupleId, photoURI, caption.trim(), user.uid);
-    setPhotoURI(null); setCaption(''); setShowAdd(false);
+    setUploading(true);
+    try {
+      const downloadURL = await uploadMemoryPhoto(profile.coupleId, user.uid, photoURI);
+      await addMemory(profile.coupleId, downloadURL, caption.trim(), user.uid);
+      setPhotoURI(null); setCaption(''); setShowAdd(false);
+    } catch (e) {
+      Alert.alert('Upload failed', 'Could not save the photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -124,8 +134,8 @@ export default function MemoriesScreen() {
               <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAdd(false); setPhotoURI(null); setCaption(''); }}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, !photoURI && styles.saveDisabled]} onPress={handleSave} disabled={!photoURI}>
-                <Text style={styles.saveBtnText}>Save 📸</Text>
+              <TouchableOpacity style={[styles.saveBtn, (!photoURI || uploading) && styles.saveDisabled]} onPress={handleSave} disabled={!photoURI || uploading}>
+                <Text style={styles.saveBtnText}>{uploading ? 'Uploading…' : 'Save 📸'}</Text>
               </TouchableOpacity>
             </View>
           </View>
