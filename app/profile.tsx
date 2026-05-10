@@ -48,6 +48,8 @@ export default function ProfileScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [helpOn, setHelpOn] = useState(true);
   const [intimacyLogOn, setIntimacyLogOn] = useState(false);
+  const [birthdayStr, setBirthdayStr] = useState('');
+  const [birthdayModal, setBirthdayModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -57,6 +59,17 @@ export default function ProfileScreen() {
   useEffect(() => {
     setIntimacyLogOn(profile?.features?.intimacyLog ?? false);
   }, [profile?.features?.intimacyLog]);
+
+  const handleSaveBirthday = async () => {
+    if (!user || !birthdayStr.trim()) return;
+    // Validate DD.MM format
+    const parts = birthdayStr.trim().split('.');
+    if (parts.length !== 2 || isNaN(Number(parts[0])) || isNaN(Number(parts[1]))) {
+      return;
+    }
+    await createUserProfile(user.uid, { birthday: birthdayStr.trim() } as any);
+    setBirthdayModal(false);
+  };
 
   const toggleIntimacyLog = async (val: boolean) => {
     setIntimacyLogOn(val);
@@ -263,6 +276,14 @@ export default function ProfileScreen() {
             <Text style={styles.rowLabel}>Email</Text>
             <Text style={styles.rowValue}>{user?.email ?? '—'}</Text>
           </View>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.row} onPress={() => { setBirthdayStr(profile?.birthday ?? ''); setBirthdayModal(true); }}>
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>Your birthday</Text>
+              <Text style={styles.rowHint}>{profile?.birthday ? `${profile.birthday} — visible to partner` : 'Tap to add (DD.MM)'}</Text>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity style={styles.row} onPress={() => { setPwError(''); setPwSuccess(false); setPasswordModal(true); }}>
             <Text style={styles.rowLabel}>Change password</Text>
@@ -521,6 +542,34 @@ export default function ProfileScreen() {
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveStartDate}>
+                <Text style={styles.saveBtnText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Birthday modal */}
+      <Modal visible={birthdayModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Your birthday</Text>
+            <Text style={styles.modalHint}>Enter day and month (DD.MM). Your partner will see a countdown to your birthday.</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="DD.MM — e.g. 25.12"
+              placeholderTextColor={Colors.muted}
+              value={birthdayStr}
+              onChangeText={setBirthdayStr}
+              keyboardType="numbers-and-punctuation"
+              maxLength={5}
+              autoFocus
+            />
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setBirthdayModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveBirthday}>
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>

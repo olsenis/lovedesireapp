@@ -15,6 +15,7 @@ export interface UserProfile {
   inviteCode?: string;
   pushToken?: string;
   createdAt: number;
+  birthday?: string; // DD.MM format, no year
   features?: {
     intimacyLog?: boolean;
   };

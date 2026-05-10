@@ -2,7 +2,58 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
 import { ImportantDate, subscribeDates, addImportantDate, deleteImportantDate, getDaysUntil } from '../services/importantDateService';
+
+function getNextOccurrence(month: number, day: number): number {
+  const now = new Date();
+  let d = new Date(now.getFullYear(), month - 1, day);
+  if (d <= now) d = new Date(now.getFullYear() + 1, month - 1, day);
+  return d.getTime();
+}
+
+function getNthWeekday(year: number, month: number, weekday: number, nth: number): number {
+  const d = new Date(year, month - 1, 1);
+  let count = 0;
+  while (d.getMonth() === month - 1) {
+    if (d.getDay() === weekday) { count++; if (count === nth) break; }
+    d.setDate(d.getDate() + 1);
+  }
+  const now = new Date();
+  if (d <= now) {
+    const next = new Date(year + 1, month - 1, 1);
+    while (next.getMonth() === month - 1) {
+      if (next.getDay() === weekday) { count++; if (count === nth) break; }
+      next.setDate(next.getDate() + 1);
+    }
+    return next.getTime();
+  }
+  return d.getTime();
+}
+
+interface AutoDate { label: string; emoji: string; date: number; }
+
+function getAutoDates(partnerName: string, partnerBirthday?: string): AutoDate[] {
+  const now = new Date();
+  const year = now.getFullYear();
+  const dates: AutoDate[] = [
+    { label: 'Valentínusardagur', emoji: '💝', date: getNextOccurrence(2, 14) },
+    { label: 'Konudagurinn', emoji: '👩', date: getNthWeekday(year, 2, 0, 3) },
+    { label: 'Bóndadagurinn', emoji: '👨', date: getNthWeekday(year, 1, 1, 3) },
+    { label: 'Mæðradagurinn', emoji: '👩‍👧', date: getNthWeekday(year, 5, 0, 2) },
+  ];
+  if (partnerBirthday) {
+    const parts = partnerBirthday.split('.');
+    if (parts.length === 2) {
+      const day = parseInt(parts[0]);
+      const month = parseInt(parts[1]);
+      if (!isNaN(day) && !isNaN(month)) {
+        dates.push({ label: `${partnerName}'s birthday`, emoji: '🎂', date: getNextOccurrence(month, day) });
+      }
+    }
+  }
+  return dates;
+}
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -13,7 +64,9 @@ const EMOJIS = ['❤️', '💍', '🎂', '✈️', '🎉', '🌹', '⭐', '🏠
 
 export default function CountdownScreen() {
   const { user, profile } = useAuth();
+  const { partner } = useCouple(user?.uid, profile?.coupleId);
   const [dates, setDates] = useState<ImportantDate[]>([]);
+  const autoDates = getAutoDates(partner?.name ?? 'Partner', partner?.birthday);
   const [showAdd, setShowAdd] = useState(false);
   const [label, setLabel] = useState('');
   const [dateStr, setDateStr] = useState('');
@@ -35,7 +88,10 @@ export default function CountdownScreen() {
     setLabel(''); setDateStr(''); setShowAdd(false);
   };
 
-  const sorted = [...dates].sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date));
+  const allDates = [
+    ...autoDates.map(d => ({ id: `auto-${d.label}`, label: d.label, emoji: d.emoji, date: d.date, createdBy: '', createdAt: 0, auto: true })),
+    ...dates.map(d => ({ ...d, auto: false })),
+  ].sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date));
 
   return (
     <View style={styles.screen}>
@@ -50,11 +106,11 @@ export default function CountdownScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
-        {sorted.map((d) => {
+        {allDates.map((d) => {
           const daysLeft = getDaysUntil(d.date);
           const isToday = daysLeft === 0;
           return (
-            <View key={d.id} style={[styles.card, isToday && styles.cardToday]}>
+            <View key={d.id} style={[styles.card, isToday && styles.cardToday, d.auto && styles.cardAuto]}>
               <View style={[styles.cardEmojiWrap, isToday && styles.cardEmojiWrapToday]}>
                 <Text style={styles.cardEmoji}>{d.emoji}</Text>
               </View>
@@ -74,13 +130,13 @@ export default function CountdownScreen() {
                   </>
                 )}
               </View>
-              <TouchableOpacity
+              {!d.auto && <TouchableOpacity
                 onPress={() => profile?.coupleId && deleteImportantDate(profile.coupleId, d.id)}
                 style={styles.deleteBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={styles.deleteTxt}>✕</Text>
-              </TouchableOpacity>
+              </TouchableOpacity>}
             </View>
           );
         })}
@@ -172,6 +228,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   cardToday: { backgroundColor: Colors.blush, borderColor: Colors.rose },
+  cardAuto: { borderStyle: 'dashed' },
   cardEmojiWrap: { width: 52, height: 52, borderRadius: Radius.md, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardEmojiWrapToday: { backgroundColor: 'rgba(244,167,185,0.3)' },
   cardEmoji: { fontSize: 28 },
