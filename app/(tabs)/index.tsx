@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'rea
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
+import { useSubscription } from '../../hooks/useSubscription';
 import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
@@ -58,6 +59,9 @@ interface NudgeItem {
 export default function HomeScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed } = useSubscription();
+  const ADULT_MOODS: MoodEmoji[] = ['😈', '🥵'];
+  const visibleMoods = ALL_MOODS.filter(m => isSubscribed || !ADULT_MOODS.includes(m));
 
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
@@ -457,10 +461,16 @@ export default function HomeScreen() {
       <View style={styles.moodSection}>
         <Text style={styles.sectionTitle}>How are you feeling?</Text>
           <View style={styles.moodGrid}>
-            {ALL_MOODS.map((emoji) => (
+            {visibleMoods.map((emoji) => (
               <TouchableOpacity key={emoji} style={styles.moodBtn} onPress={() => handleMoodPick(emoji)} activeOpacity={0.7}>
                 <Text style={styles.moodEmoji}>{emoji}</Text>
                 <Text style={styles.moodLabel}>{MOOD_LABELS[emoji]}</Text>
+              </TouchableOpacity>
+            ))}
+            {!isSubscribed && ADULT_MOODS.map((emoji) => (
+              <TouchableOpacity key={emoji} style={[styles.moodBtn, { opacity: 0.4 }]} onPress={() => router.push('/upgrade' as any)} activeOpacity={0.7}>
+                <Text style={styles.moodEmoji}>{emoji}</Text>
+                <Text style={styles.moodLabel}>🔒</Text>
               </TouchableOpacity>
             ))}
           </View>
