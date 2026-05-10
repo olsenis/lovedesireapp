@@ -35,6 +35,19 @@ export default function MemoriesScreen() {
     if (!result.canceled) setPhotoURI(result.assets[0].uri);
   };
 
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Camera access needed', 'Please allow camera access in Settings.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.8,
+    });
+    if (!result.canceled) setPhotoURI(result.assets[0].uri);
+  };
+
   const handleSave = async () => {
     if (!photoURI || !profile?.coupleId || !user) return;
     setUploading(true);
@@ -117,16 +130,22 @@ export default function MemoriesScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Add a Memory</Text>
 
-            <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto}>
-              {photoURI ? (
+            {photoURI ? (
+              <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto}>
                 <Image source={{ uri: photoURI }} style={styles.photoPreview} contentFit="cover" />
-              ) : (
-                <View style={styles.photoPlaceholder}>
-                  <Text style={styles.photoIcon}>📷</Text>
-                  <Text style={styles.photoHint}>Tap to choose photo</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.photoButtons}>
+                <TouchableOpacity style={styles.photoOptionBtn} onPress={takePhoto}>
+                  <Text style={styles.photoOptionEmoji}>📷</Text>
+                  <Text style={styles.photoOptionText}>Camera</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.photoOptionBtn} onPress={pickPhoto}>
+                  <Text style={styles.photoOptionEmoji}>🖼️</Text>
+                  <Text style={styles.photoOptionText}>Gallery</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             <TextInput
               style={styles.captionInput}
@@ -215,9 +234,10 @@ const styles = StyleSheet.create({
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
   photoPicker: { borderRadius: Radius.lg, overflow: 'hidden', height: 200 },
   photoPreview: { width: '100%', height: '100%' },
-  photoPlaceholder: { flex: 1, backgroundColor: Colors.blush, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, borderRadius: Radius.lg },
-  photoIcon: { fontSize: 40 },
-  photoHint: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted },
+  photoButtons: { flexDirection: 'row', gap: Spacing.md, height: 120 },
+  photoOptionBtn: { flex: 1, backgroundColor: Colors.blush, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
+  photoOptionEmoji: { fontSize: 36 },
+  photoOptionText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
   captionInput: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border },
   modalBtns: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
