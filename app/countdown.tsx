@@ -13,22 +13,18 @@ function getNextOccurrence(month: number, day: number): number {
 }
 
 function getNthWeekday(year: number, month: number, weekday: number, nth: number): number {
-  const d = new Date(year, month - 1, 1);
-  let count = 0;
-  while (d.getMonth() === month - 1) {
-    if (d.getDay() === weekday) { count++; if (count === nth) break; }
-    d.setDate(d.getDate() + 1);
-  }
-  const now = new Date();
-  if (d <= now) {
-    const next = new Date(year + 1, month - 1, 1);
-    while (next.getMonth() === month - 1) {
-      if (next.getDay() === weekday) { count++; if (count === nth) break; }
-      next.setDate(next.getDate() + 1);
+  function findNth(y: number): Date {
+    const d = new Date(y, month - 1, 1);
+    let count = 0;
+    while (d.getMonth() === month - 1) {
+      if (d.getDay() === weekday) { count++; if (count === nth) return new Date(d); }
+      d.setDate(d.getDate() + 1);
     }
-    return next.getTime();
+    return d;
   }
-  return d.getTime();
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const thisYear = findNth(year);
+  return (thisYear >= now ? thisYear : findNth(year + 1)).getTime();
 }
 
 interface AutoDate { label: string; emoji: string; date: number; }
