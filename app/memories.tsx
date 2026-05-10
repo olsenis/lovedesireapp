@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
-import { Memory, subscribeMemories, addMemory, deleteMemory } from '../services/memoryService';
+import { Memory, subscribeMemories, addMemory, updateMemory, reactToMemory, deleteMemory } from '../services/memoryService';
 import { uploadMemoryPhoto } from '../services/storageService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
@@ -19,8 +19,13 @@ export default function MemoriesScreen() {
   const help = useHelp('memories');
   const [photoURI, setPhotoURI] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
+  const [memoryDate, setMemoryDate] = useState('');
   const [uploading, setUploading] = useState(false);
   const [viewing, setViewing] = useState<Memory | null>(null);
+  const [editingCaption, setEditingCaption] = useState(false);
+  const [editCaption, setEditCaption] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const uid = user?.uid ?? '';
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -54,12 +59,31 @@ export default function MemoriesScreen() {
     setUploading(true);
     try {
       const downloadURL = await uploadMemoryPhoto(profile.coupleId, user.uid, photoURI);
-      await addMemory(profile.coupleId, downloadURL, caption.trim(), user.uid);
-      setPhotoURI(null); setCaption(''); setShowAdd(false);
+      await addMemory(profile.coupleId, downloadURL, caption.trim(), user.uid, memoryDate.trim() || undefined);
+      setPhotoURI(null); setCaption(''); setMemoryDate(''); setShowAdd(false);
     } catch (e) {
       Alert.alert('Upload failed', 'Could not save the photo. Please try again.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!profile?.coupleId || !viewing) return;
+    await updateMemory(profile.coupleId, viewing.id, {
+      caption: editCaption,
+      memoryDate: editDate || undefined,
+    });
+    setViewing({ ...viewing, caption: editCaption, memoryDate: editDate || undefined });
+    setEditingCaption(false);
+  };
+
+  const handleReact = async () => {
+    if (!profile?.coupleId || !viewing) return;
+    const hasReacted = viewing.reactions?.[uid] === '❤️';
+    if (!hasReacted) {
+      await reactToMemory(profile.coupleId, viewing.id, uid, '❤️');
+      setViewing({ ...viewing, reactions: { ...(viewing.reactions ?? {}), [uid]: '❤️' } });
     }
   };
 
@@ -118,11 +142,9 @@ export default function MemoriesScreen() {
                   <Text style={styles.deleteTxt}>✕</Text>
                 </TouchableOpacity>
               </View>
-              {m.caption ? (
-                <Text style={styles.dateText}>
-                  {new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </Text>
-              ) : null}
+              <Text style={styles.dateText}>
+                {m.memoryDate ?? new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </Text>
             </View>
           </View>
         ))}
@@ -157,6 +179,13 @@ export default function MemoriesScreen() {
               value={caption}
               onChangeText={setCaption}
             />
+            <TextInput
+              style={styles.captionInput}
+              placeholder="When was this? e.g. Summer 2023 (optional)"
+              placeholderTextColor={Colors.muted}
+              value={memoryDate}
+              onChangeText={setMemoryDate}
+            />
 
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAdd(false); setPhotoURI(null); setCaption(''); }}>
@@ -171,19 +200,46 @@ export default function MemoriesScreen() {
       </Modal>
 
       {/* Full-screen view */}
-      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
+      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => { setViewing(null); setEditingCaption(false); }}>
         <View style={styles.fullScreen}>
-          <TouchableOpacity style={styles.fullScreenClose} onPress={() => setViewing(null)}>
+          <TouchableOpacity style={styles.fullScreenClose} onPress={() => { setViewing(null); setEditingCaption(false); }}>
             <Text style={styles.fullScreenCloseText}>✕</Text>
           </TouchableOpacity>
           {viewing && (
             <>
               <Image source={{ uri: viewing.photoURL }} style={styles.fullScreenImage} contentFit="contain" />
               <View style={styles.fullScreenFooter}>
-                {viewing.caption ? <Text style={styles.fullScreenCaption}>{viewing.caption}</Text> : null}
-                <Text style={styles.fullScreenDate}>
-                  {new Date(viewing.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </Text>
+                {editingCaption ? (
+                  <>
+                    <TextInput style={styles.fullScreenEditInput} value={editCaption} onChangeText={setEditCaption} placeholder="Caption..." placeholderTextColor="rgba(255,255,255,0.4)" multiline autoFocus />
+                    <TextInput style={styles.fullScreenEditInput} value={editDate} onChangeText={setEditDate} placeholder="When was this?" placeholderTextColor="rgba(255,255,255,0.4)" />
+                    <View style={styles.fullScreenEditBtns}>
+                      <TouchableOpacity onPress={() => setEditingCaption(false)} style={styles.fullScreenCancelBtn}>
+                        <Text style={styles.fullScreenCancelText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={handleSaveEdit} style={styles.fullScreenSaveBtn}>
+                        <Text style={styles.fullScreenSaveText}>Save</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    {viewing.caption ? <Text style={styles.fullScreenCaption}>{viewing.caption}</Text> : null}
+                    <Text style={styles.fullScreenDate}>
+                      {viewing.memoryDate ?? new Date(viewing.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </Text>
+                    <View style={styles.fullScreenActions}>
+                      <TouchableOpacity onPress={handleReact} style={styles.fullScreenActionBtn}>
+                        <Text style={styles.fullScreenActionText}>
+                          {viewing.reactions?.[uid] ? '❤️' : '🤍'} {Object.keys(viewing.reactions ?? {}).length || ''}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => { setEditCaption(viewing.caption); setEditDate(viewing.memoryDate ?? ''); setEditingCaption(true); }} style={styles.fullScreenActionBtn}>
+                        <Text style={styles.fullScreenActionText}>✏️ Edit</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
               </View>
             </>
           )}
@@ -259,6 +315,15 @@ const styles = StyleSheet.create({
   fullScreenFooter: { padding: Spacing.lg, gap: 4 },
   fullScreenCaption: { fontFamily: Fonts.bodyItalic, fontSize: 16, color: Colors.white, textAlign: 'center' },
   fullScreenDate: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' },
+  fullScreenActions: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.lg, marginTop: Spacing.sm },
+  fullScreenActionBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.1)' },
+  fullScreenActionText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.white },
+  fullScreenEditInput: { fontFamily: Fonts.body, fontSize: 15, color: Colors.white, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.3)', paddingVertical: Spacing.sm, textAlign: 'center' },
+  fullScreenEditBtns: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
+  fullScreenCancelBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
+  fullScreenCancelText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: 'rgba(255,255,255,0.6)' },
+  fullScreenSaveBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
+  fullScreenSaveText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.white },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },

@@ -1,4 +1,4 @@
-import { collection, addDoc, deleteDoc, doc, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface Memory {
@@ -7,6 +7,8 @@ export interface Memory {
   caption: string;
   createdBy: string;
   createdAt: number;
+  memoryDate?: string;           // human-readable: "Summer 2023", "10 May 2019"
+  reactions?: Record<string, string>; // uid -> emoji
 }
 
 export function subscribeMemories(coupleId: string, onChange: (memories: Memory[]) => void): Unsubscribe {
@@ -20,13 +22,34 @@ export async function addMemory(
   coupleId: string,
   photoURL: string,
   caption: string,
-  createdBy: string
+  createdBy: string,
+  memoryDate?: string
 ): Promise<void> {
   await addDoc(collection(db, 'couples', coupleId, 'memories'), {
     photoURL,
     caption,
     createdBy,
     createdAt: Date.now(),
+    ...(memoryDate ? { memoryDate } : {}),
+  });
+}
+
+export async function updateMemory(
+  coupleId: string,
+  id: string,
+  updates: { caption?: string; memoryDate?: string }
+): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'memories', id), updates);
+}
+
+export async function reactToMemory(
+  coupleId: string,
+  id: string,
+  uid: string,
+  emoji: string
+): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'memories', id), {
+    [`reactions.${uid}`]: emoji,
   });
 }
 
