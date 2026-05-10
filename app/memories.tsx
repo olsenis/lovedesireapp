@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -50,10 +50,16 @@ export default function MemoriesScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('Delete memory', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => profile?.coupleId && deleteMemory(profile.coupleId, id) },
-    ]);
+    if (Platform.OS === 'web') {
+      if (window.confirm('Delete this memory?')) {
+        profile?.coupleId && deleteMemory(profile.coupleId, id);
+      }
+    } else {
+      Alert.alert('Delete memory', 'Are you sure?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => profile?.coupleId && deleteMemory(profile.coupleId, id) },
+      ]);
+    }
   };
 
   return (
