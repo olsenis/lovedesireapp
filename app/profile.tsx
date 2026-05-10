@@ -551,7 +551,7 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Your birthday</Text>
-            <Text style={styles.modalHint}>Enter day and month (DD.MM). Your partner will see a countdown to your birthday.</Text>
+            <Text style={styles.modalHint}>Enter your full birthday (DD.MM.YYYY). Your partner will see a countdown and your age.</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="DD.MM.YYYY — e.g. 25.12.1990"
