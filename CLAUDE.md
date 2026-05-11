@@ -130,9 +130,9 @@ couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
 
 All static game content lives here — import from this file, never hardcode in screens:
 
-- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 120 questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy (20 each)
+- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 264 questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy (44 each). Target 400+. See `memory/question_writer_prompt.md` for quality standards.
 - `DARES` + `DARE_LEVEL_CONFIG` — ~145 dares across Sweet (~45)/Flirty (~46)/Spicy (~50). Clear level separation: Sweet=cute/romantic, Flirty=sensual kissing/touch, Spicy=explicitly sexual/X-rated
-- `TRUTHS` — 74 truths across Sweet(25)/Flirty(24)/Spicy(25). Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual
+- `TRUTHS` — 74 truths across Sweet(25)/Flirty(24)/Spicy(25). Target 200+. Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual
 - `DATE_IDEAS` — 48 date ideas (home/out/adventure, 16 each)
 - `PRESET_WISHES` — 60 wishlist presets (Romantic/Adventure/Intimate/Spicy, 15 each)
 - `QUIZ_QUESTIONS` + `LOVE_LANGUAGE_LABELS` — 10 A/B love language questions
