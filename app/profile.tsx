@@ -405,9 +405,15 @@ export default function ProfileScreen() {
         </View>
 
         {/* Legal */}
-        <TouchableOpacity style={styles.legalLink} onPress={() => router.push('/privacy-policy' as any)} activeOpacity={0.7}>
-          <Text style={styles.legalLinkText}>Privacy Policy</Text>
-        </TouchableOpacity>
+        <View style={styles.legalRow}>
+          <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)} activeOpacity={0.7}>
+            <Text style={styles.legalLinkText}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalSep}>·</Text>
+          <TouchableOpacity onPress={() => router.push('/terms-of-service' as any)} activeOpacity={0.7}>
+            <Text style={styles.legalLinkText}>Terms of Service</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Sign out */}
         <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
@@ -630,8 +636,9 @@ const styles = StyleSheet.create({
   notifOff: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
   notifHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, paddingHorizontal: Spacing.lg, paddingBottom: 14, lineHeight: 20 },
 
-  legalLink: { alignItems: 'center', paddingVertical: Spacing.sm },
+  legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.sm },
   legalLinkText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, textDecorationLine: 'underline' },
+  legalSep: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
   signOutBtn: { marginTop: Spacing.sm, paddingVertical: Spacing.md, borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy, alignItems: 'center' },
   signOutText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   deleteAccountBtn: { paddingVertical: Spacing.sm, alignItems: 'center' },

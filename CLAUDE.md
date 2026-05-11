@@ -201,6 +201,8 @@ All static game content lives here — import from this file, never hardcode in 
 - Erotic Blueprint (entire feature)
 - Sensate Focus (entire feature)
 - 30-Day Challenge: Fire + Desire programs
+- Activity Cards (entire feature)
+- Kinky + Horny moods (shown greyed with lock for free users)
 
 ## App Store / Play Store deployment
 
@@ -211,10 +213,18 @@ npx eas build --platform android
 
 Bundle ID: `com.desire.app`. EAS profiles: `development`, `preview`, `production`.
 
+## Legal documents
+- `app/privacy-policy.tsx` — full Privacy Policy (GDPR compliant, 11 sections)
+- `app/terms-of-service.tsx` — Terms of Service (12 sections, Icelandic law)
+- Both accessible from Profile → links at bottom
+- **For store submission:** both need to be hosted at a public URL
+
 ## Outstanding before production
 
-- Firestore security rules — test mode. Restrict to couple members before launch.
-- Push notifications — complete infrastructure. Only works on real devices.
-- Photo upload (memories) — uses Firebase Storage but no size limits enforced.
+- Push notifications — only works on real devices, needs EAS build
+- Photo upload (memories) — no size limits enforced
+- RevenueCat subscription — payment provider not yet integrated
+- Age gate — 17+ confirmation on first launch not yet implemented
+- Host Privacy Policy + Terms of Service at public URL for store submission
 - Blueprint privacy — `users/{uid}/private/blueprint` needs security rules.
 - Challenge `completedBy` — no transaction, could race under concurrent writes.
