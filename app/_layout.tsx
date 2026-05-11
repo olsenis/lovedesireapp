@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,7 +17,10 @@ import {
 } from '@expo-google-fonts/lato';
 import { useAuth } from '../hooks/useAuth';
 import { createUserProfile } from '../services/authService';
+import { getConsent, confirmConsent } from '../services/consentService';
 import { Colors } from '../constants/colors';
+import { Fonts } from '../constants/fonts';
+import { Spacing, Radius } from '../constants/spacing';
 
 // Show notifications even when app is in foreground
 Notifications.setNotificationHandler({
@@ -43,6 +46,7 @@ export default function RootLayout() {
   });
 
   const { user, profile, loading } = useAuth();
+  const [showConsent, setShowConsent] = useState(false);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -53,11 +57,30 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading) return;
     if (user) {
-      router.replace('/(tabs)');
+      // Check if user has confirmed 18+ consent
+      getConsent(user.uid).then((consent) => {
+        if (!consent?.confirmed) {
+          setShowConsent(true);
+        } else {
+          router.replace('/(tabs)');
+        }
+      });
     } else {
       router.replace('/(auth)/login');
     }
   }, [user, loading]);
+
+  const handleConfirmConsent = async () => {
+    if (!user) return;
+    await confirmConsent(user.uid);
+    setShowConsent(false);
+    router.replace('/(tabs)');
+  };
+
+  const handleDeclineConsent = async () => {
+    // Log out if user declines
+    router.replace('/(auth)/login');
+  };
 
 
   // Request notification permissions and register push token
@@ -84,6 +107,32 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
+  if (showConsent) {
+    return (
+      <View style={consentStyles.screen}>
+        <View style={consentStyles.card}>
+          <Text style={consentStyles.emoji}>💝</Text>
+          <Text style={consentStyles.title}>Welcome to Desire</Text>
+          <Text style={consentStyles.body}>
+            Desire is a couples intimacy app for adults. It contains content of a sexual and intimate nature, including explicit material in the premium tier.
+          </Text>
+          <Text style={consentStyles.body}>
+            By continuing, you confirm that you are at least 18 years old and agree to our Terms of Service and Privacy Policy.
+          </Text>
+          <Text style={consentStyles.body}>
+            You can turn off explicit content at any time in Settings.
+          </Text>
+          <TouchableOpacity style={consentStyles.confirmBtn} onPress={handleConfirmConsent} activeOpacity={0.85}>
+            <Text style={consentStyles.confirmBtnText}>I confirm I am 18+ — Continue →</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={consentStyles.declineBtn} onPress={handleDeclineConsent} activeOpacity={0.8}>
+            <Text style={consentStyles.declineBtnText}>I am under 18 — Exit</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <>
       <StatusBar style="dark" backgroundColor={Colors.cream} />
@@ -91,3 +140,15 @@ export default function RootLayout() {
     </>
   );
 }
+
+const consentStyles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
+  card: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.lg, width: '100%', maxWidth: 420, borderWidth: 1, borderColor: Colors.border },
+  emoji: { fontSize: 48, textAlign: 'center' },
+  title: { fontFamily: Fonts.heading, fontSize: 30, color: Colors.burgundy, textAlign: 'center' },
+  body: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22, textAlign: 'center' },
+  confirmBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  confirmBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+  declineBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
+  declineBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+});

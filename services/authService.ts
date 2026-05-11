@@ -18,6 +18,7 @@ export interface UserProfile {
   birthday?: string; // DD.MM format, no year
   features?: {
     intimacyLog?: boolean;
+    explicitContent?: boolean; // paid users can disable explicit content
   };
 }
 

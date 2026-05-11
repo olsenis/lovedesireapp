@@ -48,6 +48,7 @@ export default function ProfileScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [helpOn, setHelpOn] = useState(true);
   const [intimacyLogOn, setIntimacyLogOn] = useState(false);
+  const [explicitOn, setExplicitOn] = useState(true);
   const [birthdayStr, setBirthdayStr] = useState('');
   const [birthdayModal, setBirthdayModal] = useState(false);
 
@@ -58,7 +59,13 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     setIntimacyLogOn(profile?.features?.intimacyLog ?? false);
-  }, [profile?.features?.intimacyLog]);
+    setExplicitOn(profile?.features?.explicitContent ?? true);
+  }, [profile?.features?.intimacyLog, profile?.features?.explicitContent]);
+
+  const toggleExplicit = async (val: boolean) => {
+    setExplicitOn(val);
+    if (user) await createUserProfile(user.uid, { features: { explicitContent: val } } as any);
+  };
 
   const handleSaveBirthday = async () => {
     if (!user || !birthdayStr.trim()) return;
@@ -374,6 +381,19 @@ export default function ProfileScreen() {
               onValueChange={toggleIntimacyLog}
               trackColor={{ false: Colors.border, true: Colors.rose }}
               thumbColor={intimacyLogOn ? Colors.burgundy : Colors.muted}
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>Explicit content</Text>
+              <Text style={styles.rowHint}>Show spicy and sexual content. Turn off to keep things sweet and flirty only.</Text>
+            </View>
+            <Switch
+              value={explicitOn}
+              onValueChange={toggleExplicit}
+              trackColor={{ false: Colors.border, true: Colors.rose }}
+              thumbColor={explicitOn ? Colors.burgundy : Colors.muted}
             />
           </View>
         </View>
