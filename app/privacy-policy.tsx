@@ -31,7 +31,7 @@ export default function PrivacyPolicyScreen() {
         </Text>
 
         <Section title="1. Who we are">
-          {`Desire is an independent app. By using Desire, you agree to this Privacy Policy. This app is intended for users aged 17 and older. If you are under 17, please do not use this app.`}
+          {`Desire is an independent app. By using Desire, you agree to this Privacy Policy. This app is intended for users aged 18 and older. If you are under 18, please do not use this app.`}
         </Section>
 
         <Section title="2. Data we collect">
@@ -63,7 +63,7 @@ export default function PrivacyPolicyScreen() {
         </Section>
 
         <Section title="9. Children's privacy">
-          {`Desire is not intended for users under the age of 17. We do not knowingly collect data from anyone under 17. If you believe a minor has created an account, please contact us and we will delete the account promptly.`}
+          {`Desire is not intended for users under the age of 18. We do not knowingly collect data from anyone under 18. If you believe a minor has created an account, please contact us and we will delete the account promptly.`}
         </Section>
 
         <Section title="10. Changes to this policy">

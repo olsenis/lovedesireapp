@@ -31,7 +31,7 @@ export default function TermsOfServiceScreen() {
         </Text>
 
         <Section title="1. Eligibility">
-          {`You must be at least 17 years old to use Desire. By using the app, you confirm that you are 17 or older. Desire contains content of a sexual and intimate nature. If you are under 17, you are not permitted to use this app.\n\nDesire is designed for use between two consenting adults in a romantic relationship. You may not use the app for any other purpose.`}
+          {`You must be at least 18 years old to use Desire. By using the app, you confirm that you are 18 or older. Desire contains content of a sexual and intimate nature. If you are under 18, you are not permitted to use this app.\n\nDesire is designed for use between two consenting adults in a romantic relationship. You may not use the app for any other purpose.`}
         </Section>
 
         <Section title="2. Your account">
