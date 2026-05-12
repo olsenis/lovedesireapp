@@ -26,6 +26,15 @@ export async function uploadTruthDareAudio(coupleId: string, uid: string, round:
   return await getDownloadURL(storageRef);
 }
 
+export async function uploadMomentPhoto(coupleId: string, uid: string, uri: string): Promise<string> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const date = new Date().toISOString().slice(0, 10);
+  const storageRef = ref(storage, `couples/${coupleId}/moments/${date}_${uid}.jpg`);
+  await uploadBytes(storageRef, blob);
+  return await getDownloadURL(storageRef);
+}
+
 export async function uploadFlashMedia(
   coupleId: string,
   uid: string,

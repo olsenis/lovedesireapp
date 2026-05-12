@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { subscribeNotes, createNote, openNote, LoveNote } from '../services/noteService';
+import { Colors as C } from '../constants/colors';
 import { notifyPartner } from '../services/notificationService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
@@ -12,11 +13,8 @@ import { Spacing, Radius } from '../constants/spacing';
 
 const OCCASIONS = [
   { label: "Right now", offset: 0 },
-  { label: "Tonight at 8pm", offset: -1 },
-  { label: "Tomorrow morning", offset: -1 },
   { label: "This weekend", offset: -1 },
-  { label: "In 1 week", offset: 7 * 24 * 60 * 60 * 1000 },
-  { label: "When you're sad", offset: 0 },
+  { label: "When you're sad", offset: 0, condition: 'sad' as const },
 ];
 
 function getOccasionTime(label: string): number {
@@ -68,8 +66,12 @@ export default function NotesScreen() {
 
   const handleCreate = async () => {
     if (!message.trim() || !profile?.coupleId || !user) return;
-    await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion));
-    notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌', 'A message is waiting for you').catch(() => {});
+    const occ = OCCASIONS.find(o => o.label === occasion);
+    const openCondition = occ?.condition;
+    await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition);
+    notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌',
+      openCondition === 'sad' ? 'A note will be waiting when you need it' : 'A message is waiting for you'
+    ).catch(() => {});
     setMessage('');
     setShowCreate(false);
   };
@@ -177,13 +179,23 @@ export default function NotesScreen() {
               {OCCASIONS.map((o) => (
                 <TouchableOpacity
                   key={o.label}
-                  style={[styles.occasionBtn, occasion === o.label && styles.occasionActive]}
+                  style={[
+                    styles.occasionBtn,
+                    occasion === o.label && styles.occasionActive,
+                    o.condition === 'sad' && styles.occasionSad,
+                    o.condition === 'sad' && occasion === o.label && styles.occasionSadActive,
+                  ]}
                   onPress={() => setOccasion(o.label)}
                 >
-                  <Text style={[styles.occasionText, occasion === o.label && styles.occasionTextActive]}>{o.label}</Text>
+                  <Text style={[styles.occasionText, occasion === o.label && styles.occasionTextActive]}>
+                    {o.condition === 'sad' ? '💙 ' : ''}{o.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
+            {occasion === "When you're sad" && (
+              <Text style={styles.sadHint}>This note will unlock when your partner logs a sad mood</Text>
+            )}
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -277,8 +289,11 @@ const styles = StyleSheet.create({
   occasionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   occasionBtn: { paddingVertical: 8, paddingHorizontal: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
   occasionActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
+  occasionSad: { borderColor: '#90CAF9', backgroundColor: '#E3F2FD' },
+  occasionSadActive: { backgroundColor: '#1565C0', borderColor: '#1565C0' },
   occasionText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
   occasionTextActive: { color: Colors.cream, fontFamily: Fonts.bodyBold },
+  sadHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: '#1565C0', marginTop: 4 },
   modalBtns: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },

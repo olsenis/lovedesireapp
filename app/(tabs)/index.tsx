@@ -9,7 +9,7 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
-import { subscribeNotes, LoveNote } from '../../services/noteService';
+import { subscribeNotes, LoveNote, unlockSadNotes } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
@@ -17,6 +17,7 @@ import { subscribeWYR, WYRSession } from '../../services/wyrService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
 import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
+import { MomentEntry, subscribeMoments } from '../../services/momentService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
@@ -81,6 +82,7 @@ export default function HomeScreen() {
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
+  const [moments, setMoments] = useState<MomentEntry[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -111,7 +113,8 @@ export default function HomeScreen() {
     const u9 = subscribeMoodHistory(coupleId, setMoodHistory);
     const u10 = subscribeMemories(coupleId, setMemories);
     const u11 = subscribeFlashes(coupleId, setFlashes);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); u11(); };
+    const u12 = subscribeMoments(coupleId, setMoments);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); u11(); u12(); };
   }, [coupleId]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -150,6 +153,7 @@ export default function HomeScreen() {
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
       setPicking(false);
       notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
+      if (emoji === '😢') unlockSadNotes(coupleId, user.uid).catch(() => {});
     } catch (e) {
       console.error('setMood failed:', e);
     }
@@ -295,6 +299,21 @@ export default function HomeScreen() {
         bg: '#FFF0F3',
       });
     }
+  }
+
+  // Moments: partner captured today's photo but user hasn't
+  const today = new Date().toISOString().slice(0, 10);
+  const todayMoment = moments.find(m => m.date === today);
+  const partnerCapturedToday = todayMoment && partnerId && !!todayMoment.photos?.[partnerId];
+  const iCapturedToday = todayMoment && !!todayMoment.photos?.[uid];
+  if (partnerCapturedToday && !iCapturedToday) {
+    nudges.push({
+      emoji: '📸',
+      title: `${partner?.name ?? 'Partner'} captured today's moment`,
+      subtitle: 'Take yours to reveal both photos',
+      route: '/memories',
+      bg: Colors.blush,
+    });
   }
 
   // Flashes: unviewed incoming flash from partner

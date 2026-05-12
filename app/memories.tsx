@@ -1,344 +1,278 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
-import { Memory, subscribeMemories, addMemory, updateMemory, reactToMemory, deleteMemory } from '../services/memoryService';
-import { uploadMemoryPhoto } from '../services/storageService';
-import { useHelp } from '../hooks/useHelp';
-import { HelpModal } from '../components/HelpModal';
+import { useCouple } from '../hooks/useCouple';
+import { MomentEntry, MomentStreak, subscribeMoments, submitMomentPhoto, subscribeMomentStreak } from '../services/momentService';
+import { uploadMomentPhoto } from '../services/storageService';
+import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
-import { Spacing, Radius } from '../constants/spacing';
+import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-export default function MemoriesScreen() {
+export default function MomentsScreen() {
   const { user, profile } = useAuth();
-  const [memories, setMemories] = useState<Memory[]>([]);
-  const [showAdd, setShowAdd] = useState(false);
-  const help = useHelp('memories');
-  const [photoURI, setPhotoURI] = useState<string | null>(null);
-  const [caption, setCaption] = useState('');
-  const [memoryDate, setMemoryDate] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [viewing, setViewing] = useState<Memory | null>(null);
-  const [editingCaption, setEditingCaption] = useState(false);
-  const [editCaption, setEditCaption] = useState('');
-  const [editDate, setEditDate] = useState('');
+  const { partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
   const uid = user?.uid ?? '';
+  const coupleId = profile?.coupleId ?? '';
+  const partnerUid = partner?.uid ?? '';
+
+  const [moments, setMoments] = useState<MomentEntry[]>([]);
+  const [streak, setStreak] = useState<MomentStreak>({ count: 0, lastDate: '' });
+  const [uploading, setUploading] = useState(false);
+  const [viewingMoment, setViewingMoment] = useState<MomentEntry | null>(null);
+
+  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    if (!profile?.coupleId) return;
-    return subscribeMemories(profile.coupleId, setMemories);
-  }, [profile?.coupleId]);
+    if (!coupleId) return;
+    const u1 = subscribeMoments(coupleId, setMoments);
+    const u2 = subscribeMomentStreak(coupleId, setStreak);
+    return () => { u1(); u2(); };
+  }, [coupleId]);
 
-  const pickPhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-    if (!result.canceled) setPhotoURI(result.assets[0].uri);
-  };
+  const todayMoment = moments.find(m => m.date === today);
+  const iHavePhoto = !!todayMoment?.photos?.[uid];
+  const partnerHasPhoto = !!todayMoment?.photos?.[partnerUid];
+  const bothHavePhoto = iHavePhoto && partnerHasPhoto;
+  const pastMoments = moments.filter(m => m.date !== today);
 
-  const takePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (permission.status !== 'granted') {
+  const openCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (perm.status !== 'granted') {
       Alert.alert('Camera access needed', 'Please allow camera access in Settings.');
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.8,
+      mediaTypes: ['images'],
+      quality: 0.85,
     });
-    if (!result.canceled) setPhotoURI(result.assets[0].uri);
-  };
-
-  const handleSave = async () => {
-    if (!photoURI || !profile?.coupleId || !user) return;
-    setUploading(true);
-    try {
-      const downloadURL = await uploadMemoryPhoto(profile.coupleId, user.uid, photoURI);
-      await addMemory(profile.coupleId, downloadURL, caption.trim(), user.uid, memoryDate.trim() || undefined);
-      setPhotoURI(null); setCaption(''); setMemoryDate(''); setShowAdd(false);
-    } catch (e) {
-      Alert.alert('Upload failed', 'Could not save the photo. Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSaveEdit = async () => {
-    if (!profile?.coupleId || !viewing) return;
-    await updateMemory(profile.coupleId, viewing.id, {
-      caption: editCaption,
-      memoryDate: editDate || undefined,
-    });
-    setViewing({ ...viewing, caption: editCaption, memoryDate: editDate || undefined });
-    setEditingCaption(false);
-  };
-
-  const handleReact = async () => {
-    if (!profile?.coupleId || !viewing) return;
-    const hasReacted = viewing.reactions?.[uid] === '❤️';
-    if (!hasReacted) {
-      await reactToMemory(profile.coupleId, viewing.id, uid, '❤️');
-      setViewing({ ...viewing, reactions: { ...(viewing.reactions ?? {}), [uid]: '❤️' } });
-    }
-  };
-
-  const handleDelete = (id: string) => {
-    if (Platform.OS === 'web') {
-      if (window.confirm('Delete this memory?')) {
-        profile?.coupleId && deleteMemory(profile.coupleId, id);
+    if (!result.canceled) {
+      setUploading(true);
+      try {
+        const url = await uploadMomentPhoto(coupleId, uid, result.assets[0].uri);
+        await submitMomentPhoto(coupleId, uid, url, partnerUid);
+        notifyPartner(
+          coupleId, uid,
+          `${profile?.name ?? 'Partner'} captured today's moment 📸`,
+          'Take yours to reveal both photos'
+        ).catch(() => {});
+      } catch {
+        Alert.alert('Upload failed', 'Please try again.');
+      } finally {
+        setUploading(false);
       }
-    } else {
-      Alert.alert('Delete memory', 'Are you sure?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => profile?.coupleId && deleteMemory(profile.coupleId, id) },
-      ]);
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   return (
-    <View style={styles.screen}>
+    <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Memories</Text>
-        <TouchableOpacity onPress={() => setShowAdd(true)}>
-          <Text style={styles.addBtn}>+ Add</Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>Moments</Text>
+        <View style={styles.streakPill}>
+          <Text style={styles.streakText}>🔥 {streak.count}</Text>
+        </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.grid}>
-        {memories.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>📸</Text>
-            <Text style={styles.emptyTitle}>No memories yet</Text>
-            <Text style={styles.emptyText}>Add photos from your favourite moments together</Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowAdd(true)}>
-              <Text style={styles.emptyBtnText}>Add first memory</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* Today's moment */}
+        <Text style={styles.sectionLabel}>Today</Text>
+
+        {!iHavePhoto ? (
+          // Neither or only partner has submitted
+          <View style={styles.promptCard}>
+            <Text style={styles.promptEmoji}>📸</Text>
+            <Text style={styles.promptTitle}>Capture today's moment</Text>
+            <Text style={styles.promptSub}>
+              {partnerHasPhoto
+                ? `${partner?.name ?? 'Partner'} already captured theirs — take yours to reveal both`
+                : 'Both of you take a photo — reveal together'}
+            </Text>
+            <TouchableOpacity style={styles.cameraBtn} onPress={openCamera} disabled={uploading} activeOpacity={0.85}>
+              {uploading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.cameraBtnText}>📷  Take photo</Text>}
             </TouchableOpacity>
           </View>
+        ) : !bothHavePhoto ? (
+          // I submitted, waiting for partner
+          <View style={styles.waitingCard}>
+            <View style={styles.waitingPhotoWrap}>
+              <Image source={{ uri: todayMoment?.photos?.[uid]?.photoURL }} style={styles.myPhotoSmall} contentFit="cover" />
+            </View>
+            <View style={styles.waitingRight}>
+              <Text style={styles.waitingTitle}>Waiting for {partner?.name ?? 'your partner'}...</Text>
+              <Text style={styles.waitingSub}>Your photo is ready. Both photos reveal when they take theirs.</Text>
+            </View>
+          </View>
+        ) : (
+          // Both submitted — reveal side by side
+          <TouchableOpacity style={styles.revealCard} onPress={() => setViewingMoment(todayMoment!)} activeOpacity={0.9}>
+            <Image
+              source={{ uri: todayMoment?.photos?.[uid]?.photoURL }}
+              style={styles.revealPhoto}
+              contentFit="cover"
+            />
+            <View style={styles.revealDivider} />
+            <Image
+              source={{ uri: todayMoment?.photos?.[partnerUid]?.photoURL }}
+              style={styles.revealPhoto}
+              contentFit="cover"
+            />
+            <View style={styles.revealOverlay}>
+              <Text style={styles.revealLabel}>{profile?.name ?? 'You'}</Text>
+              <Text style={styles.revealLabel}>{partner?.name ?? 'Partner'}</Text>
+            </View>
+          </TouchableOpacity>
         )}
 
-        {memories.map((m) => (
-          <View key={m.id} style={styles.card}>
-            <TouchableOpacity onPress={() => setViewing(m)} activeOpacity={0.9}>
-              <Image source={{ uri: m.photoURL }} style={styles.photo} contentFit="cover" />
-            </TouchableOpacity>
-            <View style={styles.cardFooter}>
-              <View style={styles.cardFooterRow}>
-                {m.caption ? (
-                  <Text style={[styles.captionText, { flex: 1 }]}>{m.caption}</Text>
-                ) : (
-                  <Text style={[styles.dateText, { flex: 1 }]}>
-                    {new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </Text>
-                )}
-                <TouchableOpacity onPress={() => handleDelete(m.id)} style={styles.deleteBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={styles.deleteTxt}>✕</Text>
+        {/* Past moments */}
+        {pastMoments.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>Past moments</Text>
+            <View style={styles.grid}>
+              {pastMoments.map(moment => (
+                <TouchableOpacity
+                  key={moment.date}
+                  style={styles.gridCell}
+                  onPress={() => setViewingMoment(moment)}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.gridPair}>
+                    {moment.photos?.[uid]
+                      ? <Image source={{ uri: moment.photos[uid].photoURL }} style={styles.gridPhoto} contentFit="cover" />
+                      : <View style={[styles.gridPhoto, styles.gridPhotoMissing]} />}
+                    {moment.photos?.[partnerUid]
+                      ? <Image source={{ uri: moment.photos[partnerUid].photoURL }} style={styles.gridPhoto} contentFit="cover" />
+                      : <View style={[styles.gridPhoto, styles.gridPhotoMissing]} />}
+                  </View>
+                  <Text style={styles.gridDate}>{formatDate(moment.date)}</Text>
                 </TouchableOpacity>
-              </View>
-              <Text style={styles.dateText}>
-                {m.memoryDate ?? new Date(m.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </Text>
+              ))}
             </View>
-          </View>
-        ))}
+          </>
+        )}
+
+        {pastMoments.length === 0 && bothHavePhoto && (
+          <Text style={styles.emptyPast}>Your past moments will appear here</Text>
+        )}
       </ScrollView>
 
-      <Modal visible={showAdd} transparent animationType="slide">
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add a Memory</Text>
-
-            {photoURI ? (
-              <TouchableOpacity style={styles.photoPicker} onPress={pickPhoto}>
-                <Image source={{ uri: photoURI }} style={styles.photoPreview} contentFit="cover" />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.photoButtons}>
-                <TouchableOpacity style={styles.photoOptionBtn} onPress={takePhoto}>
-                  <Text style={styles.photoOptionEmoji}>📷</Text>
-                  <Text style={styles.photoOptionText}>Camera</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.photoOptionBtn} onPress={pickPhoto}>
-                  <Text style={styles.photoOptionEmoji}>🖼️</Text>
-                  <Text style={styles.photoOptionText}>Gallery</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <TextInput
-              style={styles.captionInput}
-              placeholder="Add a caption... (optional)"
-              placeholderTextColor={Colors.muted}
-              value={caption}
-              onChangeText={setCaption}
-            />
-            <TextInput
-              style={styles.captionInput}
-              placeholder="When was this? e.g. Summer 2023 (optional)"
-              placeholderTextColor={Colors.muted}
-              value={memoryDate}
-              onChangeText={setMemoryDate}
-            />
-
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowAdd(false); setPhotoURI(null); setCaption(''); }}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, (!photoURI || uploading) && styles.saveDisabled]} onPress={handleSave} disabled={!photoURI || uploading}>
-                <Text style={styles.saveBtnText}>{uploading ? 'Uploading…' : 'Save 📸'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Full-screen view */}
-      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => { setViewing(null); setEditingCaption(false); }}>
-        <View style={styles.fullScreen}>
-          <TouchableOpacity style={styles.fullScreenClose} onPress={() => { setViewing(null); setEditingCaption(false); }}>
-            <Text style={styles.fullScreenCloseText}>✕</Text>
+      {/* Full-screen viewer */}
+      <Modal visible={!!viewingMoment} animationType="fade" presentationStyle="fullScreen">
+        <View style={styles.viewer}>
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingMoment(null)}>
+            <Text style={styles.viewerCloseText}>✕</Text>
           </TouchableOpacity>
-          {viewing && (
+          {viewingMoment && (
             <>
-              <Image source={{ uri: viewing.photoURL }} style={styles.fullScreenImage} contentFit="contain" />
-              <View style={styles.fullScreenFooter}>
-                {editingCaption ? (
-                  <>
-                    <TextInput style={styles.fullScreenEditInput} value={editCaption} onChangeText={setEditCaption} placeholder="Caption..." placeholderTextColor="rgba(255,255,255,0.4)" multiline autoFocus />
-                    <TextInput style={styles.fullScreenEditInput} value={editDate} onChangeText={setEditDate} placeholder="When was this?" placeholderTextColor="rgba(255,255,255,0.4)" />
-                    <View style={styles.fullScreenEditBtns}>
-                      <TouchableOpacity onPress={() => setEditingCaption(false)} style={styles.fullScreenCancelBtn}>
-                        <Text style={styles.fullScreenCancelText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={handleSaveEdit} style={styles.fullScreenSaveBtn}>
-                        <Text style={styles.fullScreenSaveText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    {viewing.caption ? <Text style={styles.fullScreenCaption}>{viewing.caption}</Text> : null}
-                    <Text style={styles.fullScreenDate}>
-                      {viewing.memoryDate ?? new Date(viewing.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </Text>
-                    <View style={styles.fullScreenActions}>
-                      <TouchableOpacity onPress={handleReact} style={styles.fullScreenActionBtn}>
-                        <Text style={styles.fullScreenActionText}>
-                          {viewing.reactions?.[uid] ? '❤️' : '🤍'} {Object.keys(viewing.reactions ?? {}).length || ''}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { setEditCaption(viewing.caption); setEditDate(viewing.memoryDate ?? ''); setEditingCaption(true); }} style={styles.fullScreenActionBtn}>
-                        <Text style={styles.fullScreenActionText}>✏️ Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
+              <View style={styles.viewerPair}>
+                {viewingMoment.photos?.[uid]
+                  ? <Image source={{ uri: viewingMoment.photos[uid].photoURL }} style={styles.viewerPhoto} contentFit="cover" />
+                  : <View style={[styles.viewerPhoto, styles.viewerPhotoMissing]}><Text style={styles.viewerMissingText}>No photo</Text></View>}
+                {viewingMoment.photos?.[partnerUid]
+                  ? <Image source={{ uri: viewingMoment.photos[partnerUid].photoURL }} style={styles.viewerPhoto} contentFit="cover" />
+                  : <View style={[styles.viewerPhoto, styles.viewerPhotoMissing]}><Text style={styles.viewerMissingText}>No photo</Text></View>}
               </View>
+              <View style={styles.viewerLabels}>
+                <Text style={styles.viewerLabel}>{profile?.name ?? 'You'}</Text>
+                <Text style={styles.viewerLabel}>{partner?.name ?? 'Partner'}</Text>
+              </View>
+              <Text style={styles.viewerDate}>{formatDate(viewingMoment.date)}</Text>
             </>
           )}
         </View>
       </Modal>
-
-      <HelpModal
-        visible={help.visible}
-        title="Memories"
-        description="A private shared photo album, only the two of you can see it."
-        tips={[
-          'Tap + Add to add a photo with an optional caption',
-          'Tap ✕ to delete a memory',
-          'Photos are private, not visible to anyone else',
-        ]}
-        onDismiss={help.dismiss}
-        onDismissAll={help.dismissAll}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.cream },
+  container: { flex: 1, backgroundColor: Colors.cream },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 56,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: 56, paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  back: { width: 60 },
+  backBtn: { padding: 4, minWidth: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
-  title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
-  addBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  title: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy },
+  streakPill: { backgroundColor: Colors.blush, borderRadius: Radius.full, paddingHorizontal: Spacing.sm, paddingVertical: 4, minWidth: 60, alignItems: 'center' },
+  streakText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
 
-  grid: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md, paddingTop: Spacing.md },
+  content: { padding: Spacing.md, paddingBottom: 40 },
+  sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, marginBottom: Spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  empty: { alignItems: 'center', paddingTop: Spacing.xxl, gap: Spacing.md },
-  emptyEmoji: { fontSize: 56 },
-  emptyTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.text },
-  emptyText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center' },
-  emptyBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full },
-  emptyBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
-
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: Radius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: Colors.burgundy,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+  // Prompt card — no photos yet
+  promptCard: {
+    backgroundColor: '#fff', borderRadius: Radius.lg, padding: Spacing.xl,
+    alignItems: 'center', borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
   },
-  photo: { width: '100%', height: 280 },
-  cardFooter: { padding: Spacing.md, gap: 4 },
-  captionText: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text },
-  dateText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
-  cardFooterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  deleteBtn: { padding: 2 },
-  deleteTxt: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+  promptEmoji: { fontSize: 48 },
+  promptTitle: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.burgundy },
+  promptSub: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted, textAlign: 'center', paddingHorizontal: Spacing.md },
+  cameraBtn: {
+    backgroundColor: Colors.burgundy, borderRadius: Radius.full,
+    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, marginTop: Spacing.sm,
+  },
+  cameraBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: '#fff' },
 
-  fullScreen: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center' },
-  fullScreenClose: { position: 'absolute', top: 56, right: Spacing.lg, zIndex: 10, padding: Spacing.sm },
-  fullScreenCloseText: { color: Colors.white, fontSize: 22, fontFamily: Fonts.body },
-  fullScreenImage: { width: '100%', height: '75%' },
-  fullScreenFooter: { padding: Spacing.lg, gap: 4 },
-  fullScreenCaption: { fontFamily: Fonts.bodyItalic, fontSize: 16, color: Colors.white, textAlign: 'center' },
-  fullScreenDate: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' },
-  fullScreenActions: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.lg, marginTop: Spacing.sm },
-  fullScreenActionBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.1)' },
-  fullScreenActionText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.white },
-  fullScreenEditInput: { fontFamily: Fonts.body, fontSize: 15, color: Colors.white, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.3)', paddingVertical: Spacing.sm, textAlign: 'center' },
-  fullScreenEditBtns: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
-  fullScreenCancelBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
-  fullScreenCancelText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: 'rgba(255,255,255,0.6)' },
-  fullScreenSaveBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
-  fullScreenSaveText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.white },
+  // Waiting card
+  waitingCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    backgroundColor: '#fff', borderRadius: Radius.lg, overflow: 'hidden',
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  waitingPhotoWrap: { width: 100, height: 100 },
+  myPhotoSmall: { width: 100, height: 100 },
+  waitingRight: { flex: 1, padding: Spacing.sm },
+  waitingTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy, marginBottom: 4 },
+  waitingSub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
-  modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
-  photoPicker: { borderRadius: Radius.lg, overflow: 'hidden', height: 200 },
-  photoPreview: { width: '100%', height: '100%' },
-  photoButtons: { flexDirection: 'row', gap: Spacing.md, height: 120 },
-  photoOptionBtn: { flex: 1, backgroundColor: Colors.blush, borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
-  photoOptionEmoji: { fontSize: 36 },
-  photoOptionText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
-  captionInput: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border },
-  modalBtns: { flexDirection: 'row', gap: Spacing.md },
-  cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
-  cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
-  saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
-  saveDisabled: { opacity: 0.4 },
-  saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  // Reveal card — both submitted
+  revealCard: {
+    flexDirection: 'row', borderRadius: Radius.lg, overflow: 'hidden',
+    height: 220, position: 'relative', ...Shadow.md,
+  },
+  revealPhoto: { flex: 1, height: 220 },
+  revealDivider: { width: 2, backgroundColor: Colors.cream },
+  revealOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'space-around',
+    backgroundColor: 'rgba(0,0,0,0.35)', paddingVertical: 8,
+  },
+  revealLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: '#fff' },
+
+  // Past grid
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  gridCell: { width: '47%' },
+  gridPair: { flexDirection: 'row', borderRadius: Radius.sm, overflow: 'hidden', height: 90 },
+  gridPhoto: { flex: 1, height: 90 },
+  gridPhotoMissing: { backgroundColor: '#e8e0e4' },
+  gridDate: { fontFamily: Fonts.body, fontSize: 11, color: Colors.muted, marginTop: 3, textAlign: 'center' },
+  emptyPast: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.lg },
+
+  // Viewer
+  viewer: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  viewerClose: { position: 'absolute', top: 56, right: 20, zIndex: 10, padding: 8 },
+  viewerCloseText: { fontSize: 22, color: '#fff' },
+  viewerPair: { flexDirection: 'row', width: '100%', height: 360 },
+  viewerPhoto: { flex: 1, height: 360 },
+  viewerPhotoMissing: { backgroundColor: '#222', alignItems: 'center', justifyContent: 'center' },
+  viewerMissingText: { color: '#666', fontFamily: Fonts.body, fontSize: 13 },
+  viewerLabels: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', paddingVertical: Spacing.sm },
+  viewerLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#fff' },
+  viewerDate: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
 });
