@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
@@ -18,8 +18,6 @@ export default function FlashesScreen() {
   const { partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
-  const { send } = useLocalSearchParams<{ send?: string }>();
-
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [sending, setSending] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
@@ -34,10 +32,6 @@ export default function FlashesScreen() {
     return subscribeFlashes(coupleId, setFlashes);
   }, [coupleId]);
 
-  // Auto-open camera when navigated with ?send=1
-  useEffect(() => {
-    if (send === '1') openCamera();
-  }, [send]);
 
   // Refresh countdowns every minute
   useEffect(() => {
@@ -58,7 +52,7 @@ export default function FlashesScreen() {
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: 'All' as any,
+      mediaTypes: ['images', 'videos'],
       quality: 0.85,
       videoMaxDuration: 30,
     });
@@ -70,10 +64,9 @@ export default function FlashesScreen() {
     }
   };
 
-  // Open library as secondary option
   const openLibrary = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'All' as any,
+      mediaTypes: ['images', 'videos'],
       quality: 0.85,
       videoMaxDuration: 30,
     });
