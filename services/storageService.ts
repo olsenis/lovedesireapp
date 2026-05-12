@@ -25,3 +25,18 @@ export async function uploadTruthDareAudio(coupleId: string, uid: string, round:
   await uploadBytes(storageRef, blob);
   return await getDownloadURL(storageRef);
 }
+
+export async function uploadFlashMedia(
+  coupleId: string,
+  uid: string,
+  uri: string,
+  type: 'photo' | 'video'
+): Promise<string> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const ext = type === 'video' ? 'mp4' : 'jpg';
+  const filename = `${Date.now()}_${uid}.${ext}`;
+  const storageRef = ref(storage, `couples/${coupleId}/flashes/${filename}`);
+  await uploadBytes(storageRef, blob);
+  return await getDownloadURL(storageRef);
+}

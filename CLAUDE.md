@@ -130,19 +130,25 @@ couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
 
 All static game content lives here — import from this file, never hardcode in screens:
 
-- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 264 questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy (44 each). Target 400+. See `memory/question_writer_prompt.md` for quality standards.
-- `DARES` + `DARE_LEVEL_CONFIG` — ~145 dares across Sweet (~45)/Flirty (~46)/Spicy (~50). Clear level separation: Sweet=cute/romantic, Flirty=sensual kissing/touch, Spicy=explicitly sexual/X-rated
-- `TRUTHS` — 74 truths across Sweet(25)/Flirty(24)/Spicy(25). Target 200+. Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual
+- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 403 questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy. Target 500+. See `memory/question_writer_prompt.md` for quality standards.
+- `DARES` + `DARE_LEVEL_CONFIG` — ~141 dares across Sweet (~45)/Flirty (~46)/Spicy (~50). Clear level separation: Sweet=cute/romantic, Flirty=sensual kissing/touch, Spicy=explicitly sexual/X-rated. Target 200+. See `memory/explicit_content_prompt.md`.
+- `TRUTHS` — 74 truths across Sweet(25)/Flirty(24)/Spicy(25). Target 200+. Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual. See `memory/explicit_content_prompt.md`.
 - `DATE_IDEAS` — 48 date ideas (home/out/adventure, 16 each)
 - `PRESET_WISHES` — 60 wishlist presets (Romantic/Adventure/Intimate/Spicy, 15 each)
 - `QUIZ_QUESTIONS` + `LOVE_LANGUAGE_LABELS` — 10 A/B love language questions
 - `BLUEPRINT_QUESTIONS` + `BLUEPRINT_TYPE_CONFIG` + `BLUEPRINT_COMPATIBILITY` — 15 A/B questions, 5 types, 25-pair compatibility guidance
 - `FANTASY_PRESETS` + `FANTASY_CATEGORY_CONFIG` — 60 fantasy presets (Roleplay/Sensual/Bold/Adventurous)
-- `FANTASY_WISHES_PRESETS` — 290+ explicit sexual scenarios for Fantasy Wishes
+- `FANTASY_WISHES_PRESETS` — 294 scenario items for Fantasy Wishes (Sensual/Roleplay/Explicit/BDSM). Target 400+. See `memory/fantasy_wishes_prompt.md`.
 - `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 4 programs x 30 tasks
 - `WYR_QUESTIONS` + `WYR_LEVEL_CONFIG` — 90 Would You Rather questions (Playful/Romantic/Spicy)
 - `BINGO_ACTIVITIES` + `BINGO_REWARDS` — 55 activities + 10 rewards for Intimacy Bingo
-- `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 240+ items for Daily Picks (Sweet/Flirty/Spicy/Sexual)
+- `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 239 items for Daily Picks (Sweet/Flirty/Spicy/Sexual). Target 300+. See `memory/explicit_content_prompt.md` for Spicy/Sexual.
+
+### Content generation prompts (`memory/`)
+Three prompts for expanding content — always use the right one for the category:
+- `memory/question_writer_prompt.md` — **PG / free tier**: Questions Fun/Deep/Romantic/Therapy, Truths Sweet/Flirty, Dares Sweet/Flirty, Daily Picks Sweet/Flirty
+- `memory/explicit_content_prompt.md` — **X-rated / paid tier**: Questions Spicy/Fantasy, Truths Spicy, Dares Spicy, Daily Picks Spicy/Sexual
+- `memory/fantasy_wishes_prompt.md` — **Fantasy Wishes only**: noun/gerund scenario phrases (NOT commands or questions), 4 categories: Sensual/Roleplay/Explicit/BDSM
 
 ### Design system (`/constants`)
 

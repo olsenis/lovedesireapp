@@ -16,6 +16,7 @@ import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishServ
 import { subscribeWYR, WYRSession } from '../../services/wyrService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
+import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
@@ -79,6 +80,7 @@ export default function HomeScreen() {
   const [showSparkPicker, setShowSparkPicker] = useState(false);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [flashes, setFlashes] = useState<FlashEntry[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -108,7 +110,8 @@ export default function HomeScreen() {
     const u8 = subscribeRecentSparks(coupleId, setRecentSparks);
     const u9 = subscribeMoodHistory(coupleId, setMoodHistory);
     const u10 = subscribeMemories(coupleId, setMemories);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); };
+    const u11 = subscribeFlashes(coupleId, setFlashes);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); u11(); };
   }, [coupleId]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -292,6 +295,18 @@ export default function HomeScreen() {
         bg: '#FFF0F3',
       });
     }
+  }
+
+  // Flashes: unviewed incoming flash from partner
+  const incomingFlash = flashes.find(f => f.fromUid !== uid && !f.viewed) ?? null;
+  if (incomingFlash) {
+    nudges.unshift({
+      emoji: '📸',
+      title: `${partner?.name ?? 'Partner'} sent you a flash`,
+      subtitle: `Disappears in ${formatCountdown(incomingFlash.expiresAt)} · tap to view`,
+      route: '/flashes',
+      bg: Colors.blush,
+    });
   }
 
   // ── On this day ───────────────────────────────────────────────────────────────
@@ -500,6 +515,17 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Flash button */}
+      {isConnected && (
+        <TouchableOpacity
+          style={styles.flashBtn}
+          onPress={() => router.push('/flashes' as any)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.flashBtnText}>📸  Send a Flash · disappears in 24h</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Waiting for you nudges */}
       {nudges.length > 0 && (
         <>
@@ -648,6 +674,8 @@ const styles = StyleSheet.create({
   sparkBtn: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
   sparkBtnSent: { backgroundColor: '#E8F5E9', borderColor: Colors.success },
   sparkBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  flashBtn: { backgroundColor: '#FFF0F3', borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F4A7B9', ...Shadow.sm, marginTop: Spacing.sm },
+  flashBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
 
   sparkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sparkSheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
