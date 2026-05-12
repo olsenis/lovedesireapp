@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Alert, Platform, ActionSheetIOS, ActivityIndicator } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image';
-import { Video, ResizeMode } from 'expo-av';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
@@ -19,8 +16,7 @@ import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishServ
 import { subscribeWYR, WYRSession } from '../../services/wyrService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
-import { FlashEntry, subscribeFlashes, sendFlash, formatCountdown } from '../../services/flashService';
-import { uploadFlashMedia } from '../../services/storageService';
+import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
@@ -85,12 +81,6 @@ export default function HomeScreen() {
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
-  const [flashUri, setFlashUri] = useState<string | null>(null);
-  const [flashType, setFlashType] = useState<'photo' | 'video'>('photo');
-  const [flashCaption, setFlashCaption] = useState('');
-  const [flashSending, setFlashSending] = useState(false);
-  const [flashSent, setFlashSent] = useState(false);
-  const [showFlashPicker, setShowFlashPicker] = useState(false);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -168,52 +158,6 @@ export default function HomeScreen() {
   const handleLogout = async () => {
     await logout();
     router.replace('/(auth)/login');
-  };
-
-  const pickFlashMedia = async (source: 'camera' | 'library', type: 'photo' | 'video') => {
-    if (source === 'camera') {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (perm.status !== 'granted') {
-        Alert.alert('Camera access needed', 'Please allow camera access in Settings.');
-        return;
-      }
-    }
-    const opts: ImagePicker.ImagePickerOptions = {
-      mediaTypes: type === 'video' ? ['videos'] : ['images'],
-      allowsEditing: type === 'photo',
-      quality: 0.85,
-      videoMaxDuration: 30,
-    };
-    const result = source === 'camera'
-      ? await ImagePicker.launchCameraAsync(opts)
-      : await ImagePicker.launchImageLibraryAsync(opts);
-    if (!result.canceled) {
-      setFlashUri(result.assets[0].uri);
-      setFlashType(type);
-    }
-  };
-
-  const openFlashPicker = () => setShowFlashPicker(true);
-
-  const handleSendFlash = async () => {
-    if (!flashUri || !coupleId || !uid) return;
-    setFlashSending(true);
-    try {
-      const url = await uploadFlashMedia(coupleId, uid, flashUri, flashType);
-      await sendFlash(coupleId, uid, url, flashType, flashCaption.trim() || undefined);
-      notifyPartner(coupleId, uid,
-        `${profile?.name ?? 'Partner'} sent you a flash 📸`,
-        flashCaption.trim() || 'Tap to view before it disappears'
-      ).catch(() => {});
-      setFlashUri(null);
-      setFlashCaption('');
-      setFlashSent(true);
-      setTimeout(() => setFlashSent(false), 3000);
-    } catch {
-      Alert.alert('Upload failed', 'Please try again.');
-    } finally {
-      setFlashSending(false);
-    }
   };
 
   const isConnected = !!couple?.partner2Uid;
@@ -571,16 +515,14 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Flash button — opens camera directly */}
+      {/* Flash button */}
       {isConnected && (
         <TouchableOpacity
-          style={[styles.flashBtn, flashSent && styles.flashBtnSent]}
-          onPress={() => !flashSent && openFlashPicker()}
+          style={styles.flashBtn}
+          onPress={() => router.push('/flashes?send=1' as any)}
           activeOpacity={0.85}
         >
-          <Text style={styles.flashBtnText}>
-            {flashSent ? '✓ Flash sent!' : '📸  Send a Flash · disappears in 24h'}
-          </Text>
+          <Text style={styles.flashBtnText}>📸  Send a Flash · disappears in 24h</Text>
         </TouchableOpacity>
       )}
 
@@ -633,66 +575,6 @@ export default function HomeScreen() {
       </View>
     </Modal>
 
-    {/* Flash picker modal */}
-    <Modal visible={showFlashPicker} transparent animationType="slide" onRequestClose={() => setShowFlashPicker(false)}>
-      <View style={styles.sparkOverlay}>
-        <View style={styles.sparkSheet}>
-          <View style={styles.sparkSheetHandle} />
-          <Text style={styles.sparkSheetTitle}>Send a Flash</Text>
-          {([
-            { label: '📷  Take a photo', source: 'camera' as const, type: 'photo' as const },
-            { label: '🎥  Record a video', source: 'camera' as const, type: 'video' as const },
-            { label: '🖼️  Photo from library', source: 'library' as const, type: 'photo' as const },
-            { label: '📁  Video from library', source: 'library' as const, type: 'video' as const },
-          ]).map(opt => (
-            <TouchableOpacity
-              key={opt.label}
-              style={styles.sparkOptionRow}
-              onPress={() => { setShowFlashPicker(false); pickFlashMedia(opt.source, opt.type); }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.sparkOptionText}>{opt.label}</Text>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity style={styles.sparkCancelBtn} onPress={() => setShowFlashPicker(false)}>
-            <Text style={styles.sparkCancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-
-    {/* Flash compose modal */}
-    <Modal visible={!!flashUri} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setFlashUri(null); setFlashCaption(''); }}>
-      <View style={styles.flashCompose}>
-        <View style={styles.flashComposeHeader}>
-          <TouchableOpacity onPress={() => { setFlashUri(null); setFlashCaption(''); }}>
-            <Text style={styles.flashCancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.flashComposeTitle}>Send Flash</Text>
-          <TouchableOpacity onPress={handleSendFlash} disabled={flashSending}>
-            {flashSending
-              ? <ActivityIndicator color={Colors.burgundy} />
-              : <Text style={styles.flashSendText}>Send</Text>}
-          </TouchableOpacity>
-        </View>
-        {flashUri && (
-          flashType === 'photo'
-            ? <Image source={{ uri: flashUri }} style={styles.flashPreview} contentFit="cover" />
-            : <Video source={{ uri: flashUri }} style={styles.flashPreview} resizeMode={ResizeMode.COVER} shouldPlay isLooping isMuted />
-        )}
-        <View style={styles.flashCaptionRow}>
-          <TextInput
-            style={styles.flashCaptionInput}
-            placeholder="Add a caption... (optional)"
-            placeholderTextColor={Colors.muted}
-            value={flashCaption}
-            onChangeText={t => setFlashCaption(t.slice(0, 60))}
-          />
-          <Text style={styles.flashCharCount}>{flashCaption.length}/60</Text>
-        </View>
-        <Text style={styles.flashNote}>Disappears after 24 hours</Text>
-      </View>
-    </Modal>
     </View>
   );
 }
@@ -805,17 +687,5 @@ const styles = StyleSheet.create({
   sparkCancelText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
 
   flashBtn: { backgroundColor: '#FFF0F3', borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F4A7B9', ...Shadow.sm, marginTop: Spacing.sm },
-  flashBtnSent: { backgroundColor: '#E8F5E9', borderColor: '#81C784' },
   flashBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
-
-  flashCompose: { flex: 1, backgroundColor: Colors.cream },
-  flashComposeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  flashCancelText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted },
-  flashComposeTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
-  flashSendText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.burgundy },
-  flashPreview: { width: '100%', height: 360, backgroundColor: '#000' },
-  flashCaptionRow: { flexDirection: 'row', alignItems: 'center', margin: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: 8 },
-  flashCaptionInput: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: '#333' },
-  flashCharCount: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginLeft: 8 },
-  flashNote: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', paddingHorizontal: Spacing.lg },
 });

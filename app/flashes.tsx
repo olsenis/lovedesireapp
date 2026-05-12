@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform, ActivityIndicator, ActionSheetIOS } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
@@ -18,6 +18,7 @@ export default function FlashesScreen() {
   const { partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
+  const { send } = useLocalSearchParams<{ send?: string }>();
 
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [sending, setSending] = useState(false);
@@ -32,6 +33,11 @@ export default function FlashesScreen() {
     if (!coupleId) return;
     return subscribeFlashes(coupleId, setFlashes);
   }, [coupleId]);
+
+  // Auto-open picker when navigated with ?send=1
+  useEffect(() => {
+    if (send === '1') showMediaPicker();
+  }, [send]);
 
   // Update countdowns every minute
   useEffect(() => {
