@@ -59,7 +59,7 @@ interface NudgeItem {
 
 export default function HomeScreen() {
   const { user, profile } = useAuth();
-  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner, loading: coupleLoading } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
   const ADULT_MOODS: MoodEmoji[] = ['😈', '🥵'];
   const visibleMoods = ALL_MOODS.filter(m => isSubscribed || !ADULT_MOODS.includes(m));
@@ -331,6 +331,15 @@ export default function HomeScreen() {
   const coupleAgeDays = couple ? Math.floor((Date.now() - couple.createdAt) / 86400000) : 99;
   const isNewCouple = isConnected && coupleAgeDays < 7;
 
+  if (coupleLoading || !profile) {
+    return (
+      <View style={styles.loadingScreen}>
+        <Text style={styles.loadingLogo}>Desire</Text>
+        <Text style={styles.loadingHeart}>♥</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.screenWrap}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
@@ -580,6 +589,9 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: { flex: 1, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  loadingLogo: { fontFamily: Fonts.heading, fontSize: 42, color: Colors.burgundy, letterSpacing: 2 },
+  loadingHeart: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.rose },
   screenWrap: { flex: 1, backgroundColor: Colors.cream },
   scroll: { flex: 1 },
   container: { paddingTop: 60, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
