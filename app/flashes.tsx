@@ -28,6 +28,7 @@ export default function FlashesScreen() {
   const [caption, setCaption] = useState('');
   const [viewingFlash, setViewingFlash] = useState<FlashEntry | null>(null);
   const [tick, setTick] = useState(0);
+  const [showPickerSheet, setShowPickerSheet] = useState(false);
 
   useEffect(() => {
     if (!coupleId) return;
@@ -80,27 +81,7 @@ export default function FlashesScreen() {
     }
   };
 
-  const showMediaPicker = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Cancel', 'Take photo', 'Record video', 'Photo from library', 'Video from library'], cancelButtonIndex: 0 },
-        (i) => {
-          if (i === 1) pickMedia('camera', 'photo');
-          else if (i === 2) pickMedia('camera', 'video');
-          else if (i === 3) pickMedia('library', 'photo');
-          else if (i === 4) pickMedia('library', 'video');
-        }
-      );
-    } else {
-      Alert.alert('Send a Flash', 'Choose media', [
-        { text: 'Take photo', onPress: () => pickMedia('camera', 'photo') },
-        { text: 'Record video', onPress: () => pickMedia('camera', 'video') },
-        { text: 'Photo from library', onPress: () => pickMedia('library', 'photo') },
-        { text: 'Video from library', onPress: () => pickMedia('library', 'video') },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
-  };
+  const showMediaPicker = () => setShowPickerSheet(true);
 
   const handleSend = async () => {
     if (!selectedUri || !coupleId || !uid) return;
@@ -243,6 +224,34 @@ export default function FlashesScreen() {
         </View>
       </Modal>
 
+      {/* Picker sheet */}
+      <Modal visible={showPickerSheet} transparent animationType="slide" onRequestClose={() => setShowPickerSheet(false)}>
+        <View style={styles.sheetOverlay}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Send a Flash</Text>
+            {([
+              { label: '📷  Take a photo', source: 'camera' as const, type: 'photo' as const },
+              { label: '🎥  Record a video', source: 'camera' as const, type: 'video' as const },
+              { label: '🖼️  Photo from library', source: 'library' as const, type: 'photo' as const },
+              { label: '📁  Video from library', source: 'library' as const, type: 'video' as const },
+            ]).map(opt => (
+              <TouchableOpacity
+                key={opt.label}
+                style={styles.sheetOption}
+                onPress={() => { setShowPickerSheet(false); pickMedia(opt.source, opt.type); }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.sheetOptionText}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.sheetCancel} onPress={() => setShowPickerSheet(false)}>
+              <Text style={styles.sheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Full-screen viewer */}
       <Modal visible={!!viewingFlash} animationType="fade" presentationStyle="fullScreen">
         <View style={styles.viewerContainer}>
@@ -364,4 +373,13 @@ const styles = StyleSheet.create({
   viewerFooter: { position: 'absolute', bottom: 60, left: 0, right: 0, alignItems: 'center', padding: Spacing.md },
   viewerCaption: { fontFamily: Fonts.body, fontSize: 16, color: '#fff', marginBottom: 8, textAlign: 'center' },
   viewerCountdown: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.7)' },
+
+  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
+  sheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: Radius.full, alignSelf: 'center', marginBottom: Spacing.sm },
+  sheetTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, marginBottom: Spacing.sm },
+  sheetOption: { backgroundColor: '#fff', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  sheetOptionText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  sheetCancel: { alignItems: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs },
+  sheetCancelText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
 });
