@@ -90,6 +90,7 @@ export default function HomeScreen() {
   const [flashCaption, setFlashCaption] = useState('');
   const [flashSending, setFlashSending] = useState(false);
   const [flashSent, setFlashSent] = useState(false);
+  const [showFlashPicker, setShowFlashPicker] = useState(false);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -192,27 +193,7 @@ export default function HomeScreen() {
     }
   };
 
-  const openFlashPicker = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options: ['Cancel', 'Take photo', 'Record video', 'Photo from library', 'Video from library'], cancelButtonIndex: 0 },
-        (i) => {
-          if (i === 1) pickFlashMedia('camera', 'photo');
-          else if (i === 2) pickFlashMedia('camera', 'video');
-          else if (i === 3) pickFlashMedia('library', 'photo');
-          else if (i === 4) pickFlashMedia('library', 'video');
-        }
-      );
-    } else {
-      Alert.alert('Send a Flash', 'Choose media', [
-        { text: 'Take photo', onPress: () => pickFlashMedia('camera', 'photo') },
-        { text: 'Record video', onPress: () => pickFlashMedia('camera', 'video') },
-        { text: 'Photo from library', onPress: () => pickFlashMedia('library', 'photo') },
-        { text: 'Video from library', onPress: () => pickFlashMedia('library', 'video') },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    }
-  };
+  const openFlashPicker = () => setShowFlashPicker(true);
 
   const handleSendFlash = async () => {
     if (!flashUri || !coupleId || !uid) return;
@@ -646,6 +627,34 @@ export default function HomeScreen() {
             </TouchableOpacity>
           ))}
           <TouchableOpacity style={styles.sparkCancelBtn} onPress={() => setShowSparkPicker(false)}>
+            <Text style={styles.sparkCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+
+    {/* Flash picker modal */}
+    <Modal visible={showFlashPicker} transparent animationType="slide" onRequestClose={() => setShowFlashPicker(false)}>
+      <View style={styles.sparkOverlay}>
+        <View style={styles.sparkSheet}>
+          <View style={styles.sparkSheetHandle} />
+          <Text style={styles.sparkSheetTitle}>Send a Flash</Text>
+          {([
+            { label: '📷  Take a photo', source: 'camera' as const, type: 'photo' as const },
+            { label: '🎥  Record a video', source: 'camera' as const, type: 'video' as const },
+            { label: '🖼️  Photo from library', source: 'library' as const, type: 'photo' as const },
+            { label: '📁  Video from library', source: 'library' as const, type: 'video' as const },
+          ]).map(opt => (
+            <TouchableOpacity
+              key={opt.label}
+              style={styles.sparkOptionRow}
+              onPress={() => { setShowFlashPicker(false); pickFlashMedia(opt.source, opt.type); }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.sparkOptionText}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.sparkCancelBtn} onPress={() => setShowFlashPicker(false)}>
             <Text style={styles.sparkCancelText}>Cancel</Text>
           </TouchableOpacity>
         </View>
