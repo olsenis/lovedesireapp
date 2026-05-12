@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Platform
+
+**This is a mobile-only app (iOS + Android).** It is NOT a web app. Vercel deployment exists only for quick visual preview during development — it is not a target platform. All features must be designed and tested for native mobile via Expo Go or EAS build.
+
+Consequences:
+- Use `expo-image-picker` with `launchCameraAsync` / `launchImageLibraryAsync` — native camera always available
+- Do NOT use `Alert.alert` with button callbacks for critical flows — use custom Modals instead (Alert callbacks are unreliable on web but that's OK since web is not a target)
+- `ActionSheetIOS` is fine for iOS-specific flows
+- Push notifications require EAS build (not Expo Go)
+- All UI/UX decisions should be for mobile screen sizes
+
 ## Language
 
 All app UI text, strings, labels, and comments must be in **English**. The developer communicates in Icelandic but the app itself is entirely in English.
@@ -10,7 +21,7 @@ All app UI text, strings, labels, and comments must be in **English**. The devel
 
 ```bash
 npm start          # Start Expo dev server (scan QR with Expo Go)
-npm run web        # Run in browser (fastest way to preview during development)
+npm run web        # Run in browser (quick visual preview only — not a target platform)
 npm run android    # Start on Android emulator
 npm run ios        # Start on iOS simulator (macOS only)
 npx tsc --noEmit   # TypeScript type check

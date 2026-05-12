@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform, ActivityIndicator, ActionSheetIOS } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -11,7 +11,7 @@ import { uploadFlashMedia } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
-import { Spacing, Radius } from '../constants/spacing';
+import { Spacing, Radius, Shadow } from '../constants/spacing';
 
 export default function FlashesScreen() {
   const { user, profile } = useAuth();
@@ -28,60 +28,62 @@ export default function FlashesScreen() {
   const [caption, setCaption] = useState('');
   const [viewingFlash, setViewingFlash] = useState<FlashEntry | null>(null);
   const [tick, setTick] = useState(0);
-  const [showPickerSheet, setShowPickerSheet] = useState(false);
 
   useEffect(() => {
     if (!coupleId) return;
     return subscribeFlashes(coupleId, setFlashes);
   }, [coupleId]);
 
-  // Auto-open picker when navigated with ?send=1
+  // Auto-open camera when navigated with ?send=1
   useEffect(() => {
-    if (send === '1') showMediaPicker();
+    if (send === '1') openCamera();
   }, [send]);
 
-  // Update countdowns every minute
+  // Refresh countdowns every minute
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(interval);
   }, []);
 
   const incoming = flashes.filter(f => f.fromUid !== uid);
+  const unviewed = incoming.filter(f => !f.viewed);
+  const viewed = incoming.filter(f => f.viewed);
   const sent = flashes.filter(f => f.fromUid === uid);
-  const unviewedCount = incoming.filter(f => !f.viewed).length;
 
-  const openFlash = async (flash: FlashEntry) => {
-    setViewingFlash(flash);
-    if (!flash.viewed && flash.fromUid !== uid) {
-      await markFlashViewed(coupleId, flash.id).catch(() => {});
+  // Open camera directly — Snapchat style
+  const openCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (perm.status !== 'granted') {
+      Alert.alert('Camera access needed', 'Please allow camera access in Settings.');
+      return;
     }
-  };
-
-  const pickMedia = async (source: 'camera' | 'library', type: 'photo' | 'video') => {
-    if (source === 'camera') {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (perm.status !== 'granted') {
-        Alert.alert('Camera access needed', 'Please allow camera access in Settings.');
-        return;
-      }
-    }
-    const opts: ImagePicker.ImagePickerOptions = {
-      mediaTypes: type === 'video' ? ['videos'] : ['images'],
-      allowsEditing: type === 'photo',
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: 'All' as any,
       quality: 0.85,
       videoMaxDuration: 30,
-    };
-    const result = source === 'camera'
-      ? await ImagePicker.launchCameraAsync(opts)
-      : await ImagePicker.launchImageLibraryAsync(opts);
+    });
     if (!result.canceled) {
-      setSelectedUri(result.assets[0].uri);
-      setSelectedType(type);
+      const asset = result.assets[0];
+      setSelectedUri(asset.uri);
+      setSelectedType(asset.type === 'video' ? 'video' : 'photo');
       setShowCompose(true);
     }
   };
 
-  const showMediaPicker = () => setShowPickerSheet(true);
+  // Open library as secondary option
+  const openLibrary = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: 'All' as any,
+      quality: 0.85,
+      videoMaxDuration: 30,
+    });
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setSelectedUri(asset.uri);
+      setSelectedType(asset.type === 'video' ? 'video' : 'photo');
+      setShowCompose(true);
+    }
+  };
 
   const handleSend = async () => {
     if (!selectedUri || !coupleId || !uid) return;
@@ -97,10 +99,17 @@ export default function FlashesScreen() {
       setShowCompose(false);
       setSelectedUri(null);
       setCaption('');
-    } catch (e) {
+    } catch {
       Alert.alert('Upload failed', 'Please try again.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const openFlash = async (flash: FlashEntry) => {
+    setViewingFlash(flash);
+    if (!flash.viewed) {
+      await markFlashViewed(coupleId, flash.id).catch(() => {});
     }
   };
 
@@ -112,72 +121,91 @@ export default function FlashesScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Flashes</Text>
-        <TouchableOpacity onPress={showMediaPicker} style={styles.sendBtn}>
-          <Text style={styles.sendBtnText}>+ Send</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={openLibrary} style={styles.libraryBtn}>
+            <Text style={styles.libraryBtnText}>Library</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Incoming */}
-        <Text style={styles.sectionLabel}>
-          {partner?.name ? `From ${partner.name}` : 'Incoming'}
-          {unviewedCount > 0 && <Text style={styles.badge}> · {unviewedCount} new</Text>}
-        </Text>
 
-        {incoming.length === 0 ? (
+        {/* Unviewed incoming — prominent "tap to view" cards */}
+        {unviewed.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel}>
+              From {partner?.name ?? 'Partner'} · {unviewed.length} new
+            </Text>
+            {unviewed.map(flash => (
+              <TouchableOpacity
+                key={flash.id}
+                style={styles.tapToViewCard}
+                onPress={() => openFlash(flash)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.tapToViewEmoji}>📸</Text>
+                <View style={styles.tapToViewText}>
+                  <Text style={styles.tapToViewTitle}>Tap to view</Text>
+                  <Text style={styles.tapToViewSub}>Disappears after opening · {formatCountdown(flash.expiresAt)} left</Text>
+                </View>
+                <Text style={styles.tapToViewArrow}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
+        {/* No incoming */}
+        {incoming.length === 0 && (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyEmoji}>📸</Text>
-            <Text style={styles.emptyText}>No flashes yet</Text>
-            <Text style={styles.emptySubtext}>Send one and it'll disappear in 24 hours</Text>
+            <Text style={styles.emptyText}>No flashes from {partner?.name ?? 'your partner'} yet</Text>
+            <Text style={styles.emptySubtext}>Send one first — it disappears after 24 hours</Text>
           </View>
-        ) : (
-          incoming.map(flash => (
-            <TouchableOpacity
-              key={flash.id}
-              style={[styles.flashCard, flash.viewed && styles.flashCardViewed]}
-              onPress={() => openFlash(flash)}
-            >
-              <View style={styles.flashThumb}>
-                {flash.mediaType === 'photo' ? (
-                  <Image source={{ uri: flash.mediaURL }} style={styles.thumbMedia} contentFit="cover" />
-                ) : (
-                  <View style={styles.videoThumb}>
-                    <Text style={styles.videoIcon}>▶</Text>
-                  </View>
-                )}
-                {!flash.viewed && <View style={styles.newDot} />}
-              </View>
-              <View style={styles.flashInfo}>
-                {flash.caption ? <Text style={styles.flashCaption} numberOfLines={2}>{flash.caption}</Text> : null}
-                <Text style={styles.countdown}>⏱ {formatCountdown(flash.expiresAt)}</Text>
-                {flash.viewed && <Text style={styles.seenLabel}>Seen</Text>}
-              </View>
-              <Text style={styles.arrow}>›</Text>
-            </TouchableOpacity>
-          ))
+        )}
+
+        {/* Viewed incoming — dimmed */}
+        {viewed.length > 0 && (
+          <>
+            <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Already opened</Text>
+            {viewed.map(flash => (
+              <TouchableOpacity
+                key={flash.id}
+                style={styles.viewedCard}
+                onPress={() => openFlash(flash)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.viewedEmoji}>📷</Text>
+                <Text style={styles.viewedText}>Opened · {formatCountdown(flash.expiresAt)} left</Text>
+              </TouchableOpacity>
+            ))}
+          </>
         )}
 
         {/* Sent */}
         {sent.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>Sent by you</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sentRow}>
+            <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Sent by you</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {sent.map(flash => (
                 <TouchableOpacity key={flash.id} style={styles.sentThumb} onPress={() => setViewingFlash(flash)}>
-                  {flash.mediaType === 'photo' ? (
-                    <Image source={{ uri: flash.mediaURL }} style={styles.sentMedia} contentFit="cover" />
-                  ) : (
-                    <View style={[styles.sentMedia, styles.videoThumbSmall]}>
-                      <Text style={styles.videoIconSmall}>▶</Text>
-                    </View>
-                  )}
+                  {flash.mediaType === 'photo'
+                    ? <Image source={{ uri: flash.mediaURL }} style={styles.sentMedia} contentFit="cover" />
+                    : <View style={[styles.sentMedia, styles.sentVideoThumb]}><Text style={styles.sentVideoIcon}>▶</Text></View>
+                  }
                   <Text style={styles.sentCountdown}>{formatCountdown(flash.expiresAt)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </>
         )}
+
       </ScrollView>
+
+      {/* Camera FAB */}
+      <TouchableOpacity style={styles.cameraFab} onPress={openCamera} activeOpacity={0.85}>
+        <Text style={styles.cameraFabIcon}>📷</Text>
+        <Text style={styles.cameraFabText}>Camera</Text>
+      </TouchableOpacity>
 
       {/* Compose modal */}
       <Modal visible={showCompose} animationType="slide" presentationStyle="pageSheet">
@@ -186,27 +214,18 @@ export default function FlashesScreen() {
             <TouchableOpacity onPress={() => { setShowCompose(false); setSelectedUri(null); setCaption(''); }}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.composeTitle}>New Flash</Text>
-            <TouchableOpacity onPress={handleSend} disabled={sending || !selectedUri}>
+            <Text style={styles.composeTitle}>Send Flash</Text>
+            <TouchableOpacity onPress={handleSend} disabled={sending}>
               {sending
                 ? <ActivityIndicator color={Colors.burgundy} />
-                : <Text style={[styles.sendText, (!selectedUri) && styles.sendTextDisabled]}>Send</Text>}
+                : <Text style={styles.sendText}>Send</Text>}
             </TouchableOpacity>
           </View>
 
           {selectedUri && (
-            selectedType === 'photo' ? (
-              <Image source={{ uri: selectedUri }} style={styles.previewMedia} contentFit="cover" />
-            ) : (
-              <Video
-                source={{ uri: selectedUri }}
-                style={styles.previewMedia}
-                resizeMode={ResizeMode.COVER}
-                shouldPlay
-                isLooping
-                isMuted
-              />
-            )
+            selectedType === 'photo'
+              ? <Image source={{ uri: selectedUri }} style={styles.previewMedia} contentFit="cover" />
+              : <Video source={{ uri: selectedUri }} style={styles.previewMedia} resizeMode={ResizeMode.COVER} shouldPlay isLooping isMuted />
           )}
 
           <View style={styles.captionRow}>
@@ -220,35 +239,7 @@ export default function FlashesScreen() {
             />
             <Text style={styles.charCount}>{caption.length}/60</Text>
           </View>
-          <Text style={styles.disappearsNote}>Disappears after 24 hours · Screenshots are not detectable</Text>
-        </View>
-      </Modal>
-
-      {/* Picker sheet */}
-      <Modal visible={showPickerSheet} transparent animationType="slide" onRequestClose={() => setShowPickerSheet(false)}>
-        <View style={styles.sheetOverlay}>
-          <View style={styles.sheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Send a Flash</Text>
-            {([
-              { label: '📷  Take a photo', source: 'camera' as const, type: 'photo' as const },
-              { label: '🎥  Record a video', source: 'camera' as const, type: 'video' as const },
-              { label: '🖼️  Photo from library', source: 'library' as const, type: 'photo' as const },
-              { label: '📁  Video from library', source: 'library' as const, type: 'video' as const },
-            ]).map(opt => (
-              <TouchableOpacity
-                key={opt.label}
-                style={styles.sheetOption}
-                onPress={() => { setShowPickerSheet(false); pickMedia(opt.source, opt.type); }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.sheetOptionText}>{opt.label}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.sheetCancel} onPress={() => setShowPickerSheet(false)}>
-              <Text style={styles.sheetCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.disappearsNote}>Disappears after 24 hours</Text>
         </View>
       </Modal>
 
@@ -288,6 +279,7 @@ export default function FlashesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.cream },
+
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 56, paddingHorizontal: Spacing.md, paddingBottom: Spacing.sm,
@@ -296,51 +288,63 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4, minWidth: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy },
-  sendBtn: {
-    backgroundColor: Colors.burgundy, borderRadius: Radius.full,
-    paddingHorizontal: Spacing.md, paddingVertical: 6, minWidth: 60, alignItems: 'center',
+  headerRight: { minWidth: 60, alignItems: 'flex-end' },
+  libraryBtn: { padding: 4 },
+  libraryBtnText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+
+  content: { padding: Spacing.md, paddingBottom: 120 },
+  sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, marginBottom: Spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // Unviewed — prominent tap to view
+  tapToViewCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.burgundy, borderRadius: Radius.md,
+    padding: Spacing.md, marginBottom: Spacing.sm, gap: Spacing.sm,
+    ...Shadow.md,
   },
-  sendBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#fff' },
+  tapToViewEmoji: { fontSize: 32 },
+  tapToViewText: { flex: 1 },
+  tapToViewTitle: { fontFamily: Fonts.bodyBold, fontSize: 16, color: '#fff' },
+  tapToViewSub: { fontFamily: Fonts.body, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  tapToViewArrow: { fontSize: 22, color: '#fff' },
 
-  content: { padding: Spacing.md, paddingBottom: 40 },
-  sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted, marginBottom: Spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
-  badge: { color: Colors.burgundy },
-
+  // Empty
   emptyCard: {
     alignItems: 'center', paddingVertical: Spacing.xl,
     backgroundColor: '#fff', borderRadius: Radius.md,
     borderWidth: 1, borderColor: Colors.border,
   },
   emptyEmoji: { fontSize: 40, marginBottom: Spacing.sm },
-  emptyText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.burgundy, marginBottom: 4 },
+  emptyText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy, marginBottom: 4, textAlign: 'center', paddingHorizontal: Spacing.md },
   emptySubtext: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, textAlign: 'center', paddingHorizontal: Spacing.lg },
 
-  flashCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
-    borderRadius: Radius.md, marginBottom: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
+  // Viewed — dimmed
+  viewedCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: '#fff', borderRadius: Radius.md,
+    padding: Spacing.sm, marginBottom: Spacing.xs, opacity: 0.5,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  flashCardViewed: { opacity: 0.6 },
-  flashThumb: { width: 80, height: 80, position: 'relative' },
-  thumbMedia: { width: 80, height: 80 },
-  videoThumb: { width: 80, height: 80, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' },
-  videoIcon: { fontSize: 28, color: '#fff' },
-  newDot: {
-    position: 'absolute', top: 6, right: 6,
-    width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.burgundy,
-  },
-  flashInfo: { flex: 1, padding: Spacing.sm },
-  flashCaption: { fontFamily: Fonts.body, fontSize: 14, color: '#333', marginBottom: 4 },
-  countdown: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
-  seenLabel: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, marginTop: 2 },
-  arrow: { fontSize: 20, color: Colors.muted, paddingRight: Spacing.sm },
+  viewedEmoji: { fontSize: 20 },
+  viewedText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
 
-  sentRow: { marginTop: 4 },
+  // Sent thumbnails
   sentThumb: { marginRight: Spacing.sm, alignItems: 'center' },
-  sentMedia: { width: 72, height: 72, borderRadius: Radius.sm, backgroundColor: '#ddd' },
-  videoThumbSmall: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#1a1a1a' },
-  videoIconSmall: { fontSize: 20, color: '#fff' },
-  sentCountdown: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, marginTop: 2, textAlign: 'center' },
+  sentMedia: { width: 80, height: 80, borderRadius: Radius.sm, backgroundColor: '#ddd' },
+  sentVideoThumb: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#1a1a1a' },
+  sentVideoIcon: { fontSize: 24, color: '#fff' },
+  sentCountdown: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, marginTop: 2 },
+
+  // Camera FAB
+  cameraFab: {
+    position: 'absolute', bottom: 40, alignSelf: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: Colors.burgundy, borderRadius: Radius.full,
+    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
+    ...Shadow.md,
+  },
+  cameraFabIcon: { fontSize: 20 },
+  cameraFabText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: '#fff' },
 
   // Compose
   composeContainer: { flex: 1, backgroundColor: Colors.cream },
@@ -352,18 +356,14 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted },
   composeTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
   sendText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.burgundy },
-  sendTextDisabled: { opacity: 0.3 },
-  previewMedia: { width: '100%', height: 340, backgroundColor: '#000' },
+  previewMedia: { width: '100%', height: 380, backgroundColor: '#000' },
   captionRow: {
     flexDirection: 'row', alignItems: 'center',
     margin: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: 8,
   },
   captionInput: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: '#333' },
   charCount: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginLeft: 8 },
-  disappearsNote: {
-    fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted,
-    textAlign: 'center', paddingHorizontal: Spacing.lg, marginTop: Spacing.sm,
-  },
+  disappearsNote: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
 
   // Viewer
   viewerContainer: { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
@@ -373,13 +373,4 @@ const styles = StyleSheet.create({
   viewerFooter: { position: 'absolute', bottom: 60, left: 0, right: 0, alignItems: 'center', padding: Spacing.md },
   viewerCaption: { fontFamily: Fonts.body, fontSize: 16, color: '#fff', marginBottom: 8, textAlign: 'center' },
   viewerCountdown: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.7)' },
-
-  sheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
-  sheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: Radius.full, alignSelf: 'center', marginBottom: Spacing.sm },
-  sheetTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, marginBottom: Spacing.sm },
-  sheetOption: { backgroundColor: '#fff', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
-  sheetOptionText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
-  sheetCancel: { alignItems: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs },
-  sheetCancelText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
 });
