@@ -173,19 +173,17 @@ export default function NotesScreen() {
               autoFocus
             />
             <Text style={styles.modalLabel}>When can it be opened?</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 50 }}>
-              <View style={styles.occasionRow}>
-                {OCCASIONS.map((o) => (
-                  <TouchableOpacity
-                    key={o.label}
-                    style={[styles.occasionBtn, occasion === o.label && styles.occasionActive]}
-                    onPress={() => setOccasion(o.label)}
-                  >
-                    <Text style={[styles.occasionText, occasion === o.label && styles.occasionTextActive]}>{o.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <View style={styles.occasionRow}>
+              {OCCASIONS.map((o) => (
+                <TouchableOpacity
+                  key={o.label}
+                  style={[styles.occasionBtn, occasion === o.label && styles.occasionActive]}
+                  onPress={() => setOccasion(o.label)}
+                >
+                  <Text style={[styles.occasionText, occasion === o.label && styles.occasionTextActive]}>{o.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -276,7 +274,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
   textarea: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, minHeight: 120, borderWidth: 1, borderColor: Colors.border },
   modalLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
-  occasionRow: { flexDirection: 'row', gap: Spacing.sm },
+  occasionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   occasionBtn: { paddingVertical: 8, paddingHorizontal: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
   occasionActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   occasionText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
