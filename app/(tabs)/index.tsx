@@ -554,7 +554,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/flashes?send=1' as any)}
           activeOpacity={0.85}
         >
-          <Text style={styles.flashBtnText}>📸  Send a Flash · disappears in 24h</Text>
+          <Text style={styles.flashBtnText}>📸  Send a Flash</Text>
         </TouchableOpacity>
       )}
 
