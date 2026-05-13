@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, onSnapshot, query, collection, orderBy, limit, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, getDoc, onSnapshot, query, collection, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface MomentPhoto {
@@ -49,10 +49,10 @@ export async function submitMomentPhoto(
 ): Promise<void> {
   const today = todayKey();
   const ref = doc(db, 'couples', coupleId, 'moments', today);
-  await setDoc(ref, {
-    [`photos.${uid}`]: { photoURL, createdAt: Date.now() },
-    createdAt: Date.now(),
-  }, { merge: true });
+  // Create document if it doesn't exist, then update nested photos field
+  await setDoc(ref, { createdAt: Date.now(), photos: {} }, { merge: true });
+  // updateDoc treats dot notation as nested path — sets photos[uid] correctly
+  await updateDoc(ref, { [`photos.${uid}`]: { photoURL, createdAt: Date.now() } });
 
   // Check if both partners have submitted and update streak
   const snap = await getDoc(ref);
