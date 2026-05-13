@@ -301,16 +301,20 @@ export default function HomeScreen() {
     }
   }
 
-  // Moments: partner captured today's photo but user hasn't
+  // Moments: show daily prompt if user hasn't captured today yet
   const today = new Date().toISOString().slice(0, 10);
   const todayMoment = moments.find(m => m.date === today);
-  const partnerCapturedToday = todayMoment && partnerId && !!todayMoment.photos?.[partnerId];
-  const iCapturedToday = todayMoment && !!todayMoment.photos?.[uid];
-  if (partnerCapturedToday && !iCapturedToday) {
+  const partnerCapturedToday = !!(todayMoment && partnerId && todayMoment.photos?.[partnerId]);
+  const iCapturedToday = !!(todayMoment && todayMoment.photos?.[uid]);
+  if (!iCapturedToday) {
     nudges.push({
       emoji: '📸',
-      title: `${partner?.name ?? 'Partner'} captured today's moment`,
-      subtitle: 'Take yours to reveal both photos',
+      title: partnerCapturedToday
+        ? `${partner?.name ?? 'Partner'} captured today's moment`
+        : "Capture today's moment",
+      subtitle: partnerCapturedToday
+        ? 'Take yours to reveal both photos'
+        : 'Both of you take a photo — reveal together',
       route: '/memories',
       bg: Colors.blush,
     });
