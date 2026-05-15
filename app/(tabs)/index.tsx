@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -7,7 +7,7 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
-import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
+import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
 import { subscribeNotes, LoveNote, unlockSadNotes } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
@@ -78,7 +78,6 @@ export default function HomeScreen() {
   const [recentSparks, setRecentSparks] = useState<SparkEntry[]>([]);
   const [sparkSent, setSparkSent] = useState(false);
   const [showSparkPicker, setShowSparkPicker] = useState(false);
-  const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [moments, setMoments] = useState<MomentEntry[]>([]);
@@ -109,11 +108,10 @@ export default function HomeScreen() {
     const u6 = subscribeWYR(coupleId, setWyrSession);
     const u7 = subscribeIntimacyLog(coupleId, setIntimacyEntries);
     const u8 = subscribeRecentSparks(coupleId, setRecentSparks);
-    const u9 = subscribeMoodHistory(coupleId, setMoodHistory);
     const u10 = subscribeMemories(coupleId, setMemories);
     const u11 = subscribeFlashes(coupleId, setFlashes);
     const u12 = subscribeMoments(coupleId, setMoments);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u9(); u10(); u11(); u12(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); };
   }, [coupleId]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -126,23 +124,11 @@ export default function HomeScreen() {
   };
 
   // Incoming spark from partner (unseen, last 24h)
-  const incomingSpark = recentSparks.find(s =>
-    s.fromUid !== uid && !s.seen && (Date.now() - s.createdAt) < 86400000
-  ) ?? null;
+  const incomingSpark = useMemo(
+    () => recentSparks.find(s => s.fromUid !== uid && !s.seen && (Date.now() - s.createdAt) < 86400000) ?? null,
+    [recentSparks, uid]
+  );
 
-  // Weekly mood summary
-  const weekAgo = Date.now() - 7 * 86400000;
-  const myWeekMoods = moodHistory.filter(m => m.uid === uid && m.createdAt >= weekAgo);
-  const partnerWeekMoods = moodHistory.filter(m => m.uid !== uid && m.createdAt >= weekAgo);
-  function topMood(entries: MoodEntry[]): MoodEmoji | null {
-    if (!entries.length) return null;
-    const c: Partial<Record<string, number>> = {};
-    for (const e of entries) c[e.emoji] = (c[e.emoji] ?? 0) + 1;
-    const sorted = Object.entries(c).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0));
-    return (sorted[0]?.[0] ?? null) as MoodEmoji | null;
-  }
-  const myTopMood = topMood(myWeekMoods);
-  const partnerTopMood = topMood(partnerWeekMoods);
 
   const handleMoodPick = async (emoji: MoodEmoji) => {
     if (!user || !coupleId) return;
@@ -163,20 +149,21 @@ export default function HomeScreen() {
   };
 
   const isConnected = !!couple?.partner2Uid;
-  const togetherSince = couple ? getTogetherSince(couple) : '';
-  const anniversary = couple ? getAnniversary(couple) : null;
+  const togetherSince = useMemo(() => (couple ? getTogetherSince(couple) : ''), [couple]);
+  const anniversary = useMemo(() => (couple ? getAnniversary(couple) : null), [couple]);
 
-  // Build nudge items
-  const nudges: NudgeItem[] = [];
+  // Build nudge items (memoized — only rebuilds when one of the sources actually changes)
+  const nudges = useMemo<NudgeItem[]>(() => {
+    const list: NudgeItem[] = [];
 
-  // Challenge: partner marked today but user hasn't
-  if (challengeState?.phase === 'active' && partnerId) {
+    // Challenge: partner marked today but user hasn't
+    if (challengeState?.phase === 'active' && partnerId) {
     const day = challengeState.currentDay;
     const iMarked = (challengeState.completedBy[day] ?? []).some(id => id === uid);
     const partnerMarked = (challengeState.completedBy[day] ?? []).some(id => id === partnerId || id.startsWith('veto:'));
     if (partnerMarked && !iMarked) {
       const cfg = challengeState.program ? CHALLENGE_PROGRAM_CONFIG[challengeState.program] : null;
-      nudges.push({
+      list.push({
         emoji: cfg?.emoji ?? '🗓️',
         title: `Challenge day ${day}`,
         subtitle: `${partner?.name ?? 'Partner'} marked it done, your turn ✓`,
@@ -189,7 +176,7 @@ export default function HomeScreen() {
   // Love Notes: unread notes ready to open
   const readyNotes = notes.filter(n => n.fromUid !== uid && Date.now() >= n.openAt && !n.opened);
   if (readyNotes.length > 0) {
-    nudges.push({
+    list.push({
       emoji: '💌',
       title: `Love note${readyNotes.length > 1 ? 's' : ''} waiting`,
       subtitle: `${readyNotes.length > 1 ? `${readyNotes.length} messages` : 'A message'} from ${partner?.name ?? 'your partner'} is ready`,
@@ -201,7 +188,7 @@ export default function HomeScreen() {
   // Fantasy Wishes: any mutual matches
   const fwMatches = fwItems.filter(i => partnerId && isFWMatch(i, uid, partnerId));
   if (fwMatches.length > 0) {
-    nudges.push({
+    list.push({
       emoji: '✨',
       title: `${fwMatches.length} ${fwMatches.length === 1 ? 'match' : 'matches'}`,
       subtitle: 'You both want the same thing, tap to see',
@@ -216,7 +203,7 @@ export default function HomeScreen() {
     const myD = dailyQDoc.discussed[uid] ?? [];
     const waiting = partnerD.filter(i => !myD.includes(i));
     if (waiting.length > 0) {
-      nudges.push({
+      list.push({
         emoji: '💬',
         title: 'Questions waiting',
         subtitle: `${partner?.name ?? 'Partner'} discussed ${waiting.length} question${waiting.length > 1 ? 's' : ''} today`,
@@ -231,7 +218,7 @@ export default function HomeScreen() {
     const partnerVoteCount = Object.keys(dailyWishDoc.votes[partnerId] ?? {}).length;
     const myVoteCount = Object.keys(dailyWishDoc.votes[uid] ?? {}).length;
     if (partnerVoteCount > 0 && myVoteCount < 20) {
-      nudges.push({
+      list.push({
         emoji: '🌹',
         title: "Daily Picks",
         subtitle: `${partner?.name ?? 'Partner'} has voted on today's picks, your turn`,
@@ -246,7 +233,7 @@ export default function HomeScreen() {
     const partnerVoted = fwItems.filter(i => !!i.votes[partnerId]).length;
     const myVoted = fwItems.filter(i => !!i.votes[uid]).length;
     if (partnerVoted > myVoted) {
-      nudges.push({
+      list.push({
         emoji: '✨',
         title: 'Fantasy Wishes',
         subtitle: `${partner?.name ?? 'Partner'} is exploring, vote to find your matches`,
@@ -261,7 +248,7 @@ export default function HomeScreen() {
     const partnerAnswered = !!wyrSession.answers[partnerId];
     const iAnswered = !!wyrSession.answers[uid];
     if (partnerAnswered && !iAnswered) {
-      nudges.push({
+      list.push({
         emoji: '🤔',
         title: 'Would You Rather',
         subtitle: `${partner?.name ?? 'Partner'} picked, now it's your turn`,
@@ -289,7 +276,7 @@ export default function HomeScreen() {
         ? `You both picked something today — why not make it happen?`
         : `It's been ${daysSince} days — some time together tonight?`;
 
-      nudges.push({
+      list.push({
         emoji: '💝',
         title: 'Intimate moment',
         subtitle,
@@ -305,7 +292,7 @@ export default function HomeScreen() {
   const partnerCapturedToday = !!(todayMoment && partnerId && todayMoment.photos?.[partnerId]);
   const iCapturedToday = !!(todayMoment && todayMoment.photos?.[uid]);
   if (!iCapturedToday) {
-    nudges.push({
+    list.push({
       emoji: '📸',
       title: partnerCapturedToday
         ? `${partner?.name ?? 'Partner'} captured today's moment`
@@ -321,7 +308,7 @@ export default function HomeScreen() {
   // Flashes: unviewed incoming flash from partner
   const incomingFlash = flashes.find(f => f.fromUid !== uid && !f.viewed) ?? null;
   if (incomingFlash) {
-    nudges.unshift({
+    list.unshift({
       emoji: '📸',
       title: `${partner?.name ?? 'Partner'} sent you a tease`,
       subtitle: `Disappears in ${formatCountdown(incomingFlash.expiresAt)} · tap to view`,
@@ -330,15 +317,20 @@ export default function HomeScreen() {
     });
   }
 
+    return list;
+  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes]);
+
   // ── On this day ───────────────────────────────────────────────────────────────
-  const todayMD = `${new Date().getMonth()}-${new Date().getDate()}`;
-  const onThisDay = memories.find(m => {
-    const d = new Date(m.createdAt);
-    const isToday = `${d.getMonth()}-${d.getDate()}` === todayMD;
-    const isPast = d.getFullYear() < new Date().getFullYear();
-    return isToday && isPast;
-  }) ?? null;
-  const onThisDayYears = onThisDay ? new Date().getFullYear() - new Date(onThisDay.createdAt).getFullYear() : 0;
+  const { onThisDay, onThisDayYears } = useMemo(() => {
+    const now = new Date();
+    const todayMD = `${now.getMonth()}-${now.getDate()}`;
+    const found = memories.find(m => {
+      const d = new Date(m.createdAt);
+      return `${d.getMonth()}-${d.getDate()}` === todayMD && d.getFullYear() < now.getFullYear();
+    }) ?? null;
+    const years = found ? now.getFullYear() - new Date(found.createdAt).getFullYear() : 0;
+    return { onThisDay: found, onThisDayYears: years };
+  }, [memories]);
 
   // ── Onboarding nudges ────────────────────────────────────────────────────────
 
