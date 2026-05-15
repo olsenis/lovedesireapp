@@ -503,11 +503,13 @@ export default function HomeScreen() {
         <View style={styles.sectionLine} />
       </View>
 
-      <TouchableOpacity style={styles.primaryCta} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.9}>
-        <Text style={styles.primaryCtaOrnament}>✦ ✶ ✦</Text>
-        <Text style={styles.primaryCtaTitle}>Three questions tonight</Text>
-        <Text style={styles.primaryCtaBody}>Answer privately. Then reveal what you both said.</Text>
-        <Text style={styles.primaryCtaBegin}>Begin →</Text>
+      <TouchableOpacity style={styles.ritualRow} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.85}>
+        <Text style={styles.ritualOrnament}>♥</Text>
+        <View style={styles.ritualText}>
+          <Text style={styles.ritualTitle}>Three questions tonight</Text>
+          <Text style={styles.ritualSub}>Answer privately, then reveal</Text>
+        </View>
+        <Text style={styles.ritualArrow}>›</Text>
       </TouchableOpacity>
 
       {/* ─── QUICK ─── */}
@@ -671,11 +673,12 @@ const styles = StyleSheet.create({
   sectionLine: { flex: 1, height: 1, backgroundColor: Colors.border },
   sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, letterSpacing: 2.5, textTransform: 'uppercase' },
 
-  primaryCta: { backgroundColor: Colors.burgundy, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', ...Shadow.md },
-  primaryCtaOrnament: { color: 'rgba(244,167,185,0.7)', fontSize: 12, letterSpacing: 8, marginBottom: Spacing.sm, textAlign: 'center' },
-  primaryCtaTitle: { fontFamily: Fonts.headingItalic, fontSize: 26, color: '#fff', textAlign: 'center', marginBottom: Spacing.xs, lineHeight: 30 },
-  primaryCtaBody: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,248,240,0.75)', textAlign: 'center', lineHeight: 20, marginBottom: Spacing.md },
-  primaryCtaBegin: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.rose, letterSpacing: 3, textTransform: 'uppercase' },
+  ritualRow: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
+  ritualOrnament: { fontSize: 22, color: Colors.burgundy, width: 32, textAlign: 'center' },
+  ritualText: { flex: 1 },
+  ritualTitle: { fontFamily: Fonts.headingItalic, fontSize: 20, color: Colors.burgundy },
+  ritualSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 1 },
+  ritualArrow: { fontFamily: Fonts.body, fontSize: 18, color: Colors.muted },
 
   quickCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
   quickItem: { alignItems: 'center', gap: 4, paddingHorizontal: Spacing.md, paddingVertical: 4 },
