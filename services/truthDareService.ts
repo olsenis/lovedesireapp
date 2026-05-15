@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DareLevel } from '../constants/content';
 
@@ -57,14 +57,21 @@ export async function submitTruthAnswer(coupleId: string, uid: string, answer: s
   });
 }
 
-export async function confirmDare(coupleId: string, uid: string, session: TruthDareSession): Promise<void> {
-  const current = session.card?.dareConfirmed ?? [];
-  if (current.includes(uid)) return;
-  const updated = [...current, uid];
-  const bothConfirmed = updated.length >= 2;
-  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
-    'card.dareConfirmed': updated,
-    ...(bothConfirmed ? { phase: 'done' } : {}),
+export async function confirmDare(coupleId: string, uid: string, _session: TruthDareSession): Promise<void> {
+  // Transaction prevents lost confirmations when both partners tap "Confirm" near-simultaneously.
+  const ref = doc(db, 'couples', coupleId, 'truthDare', 'active');
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const current = snap.data() as TruthDareSession;
+    const confirmed = current.card?.dareConfirmed ?? [];
+    if (confirmed.includes(uid)) return;
+    const updated = [...confirmed, uid];
+    const bothConfirmed = updated.length >= 2;
+    tx.update(ref, {
+      'card.dareConfirmed': updated,
+      ...(bothConfirmed ? { phase: 'done' } : {}),
+    });
   });
 }
 

@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, doc, onSnapshot, orderBy, query, where, getDocs, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, onSnapshot, orderBy, query, limit, where, getDocs, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface LoveNote {
@@ -12,7 +12,8 @@ export interface LoveNote {
 }
 
 export function subscribeNotes(coupleId: string, onChange: (notes: LoveNote[]) => void): Unsubscribe {
-  const q = query(collection(db, 'couples', coupleId, 'notes'), orderBy('createdAt', 'desc'));
+  // Cap at 50 most recent — old notes are rarely revisited
+  const q = query(collection(db, 'couples', coupleId, 'notes'), orderBy('createdAt', 'desc'), limit(50));
   return onSnapshot(q, (snap) => {
     onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as LoveNote)));
   });

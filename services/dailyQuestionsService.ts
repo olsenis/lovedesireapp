@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, getDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, getDoc, onSnapshot, arrayUnion, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 
@@ -115,12 +115,11 @@ export async function markDiscussed(
   coupleId: string,
   uid: string,
   globalIndex: number,
-  current: DailyQuestionDoc
+  _current: DailyQuestionDoc
 ): Promise<void> {
-  const already = current.discussed[uid] ?? [];
-  if (already.includes(globalIndex)) return;
+  // arrayUnion is atomic — no race even if called twice in quick succession.
   await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
-    [`discussed.${uid}`]: [...already, globalIndex],
+    [`discussed.${uid}`]: arrayUnion(globalIndex),
   });
 }
 

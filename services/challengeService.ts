@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { ChallengeProgram } from '../constants/content';
 
@@ -59,23 +59,31 @@ export async function editTask(
   });
 }
 
-export async function markDayComplete(coupleId: string, uid: string, day: number, state: ChallengeState): Promise<void> {
-  const already = state.completedBy[day] ?? [];
-  if (already.includes(uid)) return;
+export async function markDayComplete(coupleId: string, uid: string, day: number, _state: ChallengeState): Promise<void> {
+  // Transaction prevents lost writes when both partners mark the same day simultaneously.
+  // _state arg kept for backwards compatibility with callers but is no longer trusted.
+  const ref = doc(db, 'couples', coupleId, 'challenge', 'active');
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const current = snap.data() as ChallengeState;
+    const already = current.completedBy[day] ?? [];
+    if (already.includes(uid)) return;
 
-  const updatedBy = { ...state.completedBy, [day]: [...already, uid] };
-  const bothDone = updatedBy[day].length >= 2;
-  const newCompleted = bothDone && !state.completedDays.includes(day)
-    ? [...state.completedDays, day]
-    : state.completedDays;
-  const nextDay = bothDone && state.currentDay === day
-    ? Math.min(day + 1, 30)
-    : state.currentDay;
+    const updatedBy = { ...current.completedBy, [day]: [...already, uid] };
+    const bothDone = updatedBy[day].length >= 2;
+    const newCompleted = bothDone && !current.completedDays.includes(day)
+      ? [...current.completedDays, day]
+      : current.completedDays;
+    const nextDay = bothDone && current.currentDay === day
+      ? Math.min(day + 1, 30)
+      : current.currentDay;
 
-  await updateDoc(doc(db, 'couples', coupleId, 'challenge', 'active'), {
-    completedBy: updatedBy,
-    completedDays: newCompleted,
-    currentDay: nextDay,
+    tx.update(ref, {
+      completedBy: updatedBy,
+      completedDays: newCompleted,
+      currentDay: nextDay,
+    });
   });
 }
 

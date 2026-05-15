@@ -1,4 +1,4 @@
-import { collection, addDoc, deleteDoc, doc, onSnapshot, orderBy, query, updateDoc, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, orderBy, query, limit, updateDoc, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface Memory {
@@ -12,7 +12,8 @@ export interface Memory {
 }
 
 export function subscribeMemories(coupleId: string, onChange: (memories: Memory[]) => void): Unsubscribe {
-  const q = query(collection(db, 'couples', coupleId, 'memories'), orderBy('createdAt', 'desc'));
+  // Cap at 100 most recent — home screen "On this day" only needs recent entries
+  const q = query(collection(db, 'couples', coupleId, 'memories'), orderBy('createdAt', 'desc'), limit(100));
   return onSnapshot(q, (snap) => {
     onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Memory)));
   });
