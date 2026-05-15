@@ -8,8 +8,11 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as Crypto from 'expo-crypto';
-import { db } from './firebase';
+import app, { db } from './firebase';
+
+const functions = getFunctions(app);
 
 export interface Couple {
   id: string;
@@ -51,30 +54,24 @@ export async function createCouple(ownerUid: string): Promise<Couple> {
 }
 
 export async function joinCouple(inviteCode: string, joinerUid: string): Promise<Couple | null> {
-  const normalized = inviteCode.trim().toUpperCase();
-  const q = query(collection(db, 'couples'), where('inviteCode', '==', normalized));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-
-  const coupleDoc = snap.docs[0];
-  const couple = coupleDoc.data() as Couple;
-
-  // Check expiry
-  if (couple.inviteExpiresAt && couple.inviteExpiresAt < Date.now() && !couple.partner2Uid) {
+  // Use rate-limited Cloud Function — prevents brute force attacks
+  const fn = httpsCallable<{ inviteCode: string }, { joined: boolean; coupleId?: string; reason?: string }>(
+    functions,
+    'rateLimitedJoin'
+  );
+  try {
+    const result = await fn({ inviteCode });
+    if (!result.data.joined || !result.data.coupleId) return null;
+    // Fetch the joined couple
+    const snap = await getDoc(doc(db, 'couples', result.data.coupleId));
+    if (!snap.exists()) return null;
+    return snap.data() as Couple;
+  } catch (e: any) {
+    if (e?.code === 'functions/resource-exhausted') {
+      throw new Error('Too many attempts. Please wait a moment and try again.');
+    }
     return null;
   }
-  // Block if someone else is already in the slot (but allow re-joining own couple)
-  if (couple.partner2Uid && couple.partner2Uid !== joinerUid) return null;
-  // Can't join a couple you created as partner1
-  if (couple.partner1Uid === joinerUid) return null;
-
-  // Clear invite code after successful join to prevent re-use
-  await updateDoc(coupleDoc.ref, {
-    partner2Uid: joinerUid,
-    inviteCode: '',
-    inviteExpiresAt: 0,
-  });
-  return { ...couple, partner2Uid: joinerUid };
 }
 
 // Generate a fresh invite code (for re-pairing scenarios)
