@@ -122,7 +122,7 @@ export default function HomeScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSparkSent(true);
     await sendSpark(coupleId, uid, emoji, message);
-    notifyPartner(coupleId, uid, `${profile?.name ?? 'Your partner'} sent you a spark ✨`, `${emoji} ${message}`).catch(() => {});
+    notifyPartner(coupleId, uid, `${profile?.name ?? 'Your partner'} sent you love ❤️`, `${emoji} ${message}`).catch(() => {});
     setTimeout(() => setSparkSent(false), 3000);
   };
 
@@ -437,7 +437,7 @@ export default function HomeScreen() {
         >
           <Text style={styles.sparkBannerEmoji}>{incomingSpark.emoji}</Text>
           <View style={styles.sparkBannerText}>
-            <Text style={styles.sparkBannerTitle}>{partner?.name ?? 'Your partner'} sent you a spark</Text>
+            <Text style={styles.sparkBannerTitle}>{partner?.name ?? 'Your partner'} sent you love</Text>
             <Text style={styles.sparkBannerMsg}>{incomingSpark.message}</Text>
           </View>
           <Text style={styles.sparkBannerClose}>✕</Text>
@@ -543,7 +543,7 @@ export default function HomeScreen() {
           onPress={() => !sparkSent && setShowSparkPicker(true)}
           activeOpacity={0.85}
         >
-          <Text style={styles.sparkBtnText}>{sparkSent ? '✓ Spark sent!' : `❤️  Send ${partner?.name ?? 'your partner'} a spark`}</Text>
+          <Text style={styles.sparkBtnText}>{sparkSent ? '✓ Love sent!' : `❤️  Send ${partner?.name ?? 'your partner'} love`}</Text>
         </TouchableOpacity>
       )}
 
@@ -588,7 +588,7 @@ export default function HomeScreen() {
       <View style={styles.sparkOverlay}>
         <View style={styles.sparkSheet}>
           <View style={styles.sparkSheetHandle} />
-          <Text style={styles.sparkSheetTitle}>Send {partner?.name ?? 'your partner'} a spark</Text>
+          <Text style={styles.sparkSheetTitle}>Send {partner?.name ?? 'your partner'} love</Text>
           {SPARK_OPTIONS.map(opt => (
             <TouchableOpacity
               key={opt.emoji}
