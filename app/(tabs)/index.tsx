@@ -348,10 +348,6 @@ export default function HomeScreen() {
   // 2. Start date not set (couple exists but no startDate)
   const startDateMissing = isConnected && couple && !couple.startDate;
 
-  // 3. New couple < 7 days — suggest first feature
-  const coupleAgeDays = couple ? Math.floor((Date.now() - couple.createdAt) / 86400000) : 99;
-  const isNewCouple = isConnected && coupleAgeDays < 7;
-
   if (coupleLoading || !profile) {
     return (
       <View style={styles.loadingScreen}>
@@ -474,18 +470,6 @@ export default function HomeScreen() {
           <View style={styles.onboardText}>
             <Text style={styles.onboardTitle}>When did you get together?</Text>
             <Text style={styles.onboardSub}>Set your start date in Profile</Text>
-          </View>
-          <Text style={styles.onboardArrow}>›</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Onboarding: new couple suggestion */}
-      {isNewCouple && !nameMissing && (
-        <TouchableOpacity style={[styles.onboardCard, { backgroundColor: '#E8F5E9' }]} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.85}>
-          <Text style={styles.onboardEmoji}>💬</Text>
-          <View style={styles.onboardText}>
-            <Text style={styles.onboardTitle}>Start here — Questions Game</Text>
-            <Text style={styles.onboardSub}>3 questions, both answer privately, then reveal</Text>
           </View>
           <Text style={styles.onboardArrow}>›</Text>
         </TouchableOpacity>
