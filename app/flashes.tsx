@@ -101,7 +101,7 @@ export default function FlashesScreen() {
       await sendFlash(coupleId, uid, url, selectedType, caption.trim() || undefined);
       notifyPartner(
         coupleId, uid,
-        `${profile?.name ?? 'Partner'} sent you a flash 📸`,
+        `${profile?.name ?? 'Partner'} sent you a tease 📸`,
         caption.trim() || 'Tap to view before it disappears'
       ).catch(() => {});
       setShowCompose(false);
@@ -135,7 +135,7 @@ export default function FlashesScreen() {
           <Text style={styles.headerBtnText}>‹</Text>
         </TouchableOpacity>
         <View style={styles.titleWrap}>
-          <Text style={styles.title}>Flashes</Text>
+          <Text style={styles.title}>Teases</Text>
           <Text style={styles.titleSub}>only between you two · 24h</Text>
         </View>
         <TouchableOpacity onPress={openLibrary} style={styles.headerBtn}>
@@ -236,7 +236,7 @@ export default function FlashesScreen() {
         </TouchableOpacity>
         <TouchableOpacity style={styles.cameraFab} onPress={() => openCamera()} activeOpacity={0.9}>
           <Text style={styles.cameraFabIcon}>📷</Text>
-          <Text style={styles.cameraFabText}>Send {partner?.name ?? 'Partner'} a flash</Text>
+          <Text style={styles.cameraFabText}>Send {partner?.name ?? 'Partner'} a tease</Text>
         </TouchableOpacity>
       </View>
 
@@ -247,7 +247,7 @@ export default function FlashesScreen() {
             <TouchableOpacity onPress={() => { setShowCompose(false); setSelectedUri(null); setCaption(''); }}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.composeTitle}>Send Flash</Text>
+            <Text style={styles.composeTitle}>Send Tease</Text>
             <TouchableOpacity onPress={handleSend} disabled={sending}>
               {sending
                 ? <ActivityIndicator color={Colors.burgundy} />

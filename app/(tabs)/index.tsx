@@ -325,7 +325,7 @@ export default function HomeScreen() {
   if (incomingFlash) {
     nudges.unshift({
       emoji: '📸',
-      title: `${partner?.name ?? 'Partner'} sent you a flash`,
+      title: `${partner?.name ?? 'Partner'} sent you a tease`,
       subtitle: `Disappears in ${formatCountdown(incomingFlash.expiresAt)} · tap to view`,
       route: '/flashes',
       bg: Colors.blush,
@@ -554,7 +554,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/flashes?send=1' as any)}
           activeOpacity={0.85}
         >
-          <Text style={styles.flashBtnText}>📸  Send a Flash</Text>
+          <Text style={styles.flashBtnText}>📸  Send a Tease</Text>
         </TouchableOpacity>
       )}
 
