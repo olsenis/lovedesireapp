@@ -369,6 +369,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.headerDate}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
         <TouchableOpacity style={styles.signOutBtn} onPress={() => router.push('/profile' as any)}>
           <Text style={styles.signOut}>Profile</Text>
@@ -511,39 +512,111 @@ export default function HomeScreen() {
       </View>
       )}
 
-      {/* Daily Picks card */}
-      <TouchableOpacity style={styles.dailyWishCard} onPress={() => router.push('/daily-wishes' as any)} activeOpacity={0.85}>
-        <View style={styles.dailyWishLeft}>
-          <Text style={styles.dailyWishEmoji}>🌹</Text>
-          <View>
-            <Text style={styles.dailyWishTitle}>Daily Picks</Text>
-            <Text style={styles.dailyWishSub}>5 new picks today · vote privately</Text>
-          </View>
-        </View>
-        <Text style={styles.dailyWishArrow}>›</Text>
+      {/* ─── TONIGHT'S RITUAL ─── */}
+      <View style={styles.sectionDivider}>
+        <View style={styles.sectionLine} />
+        <Text style={styles.sectionLabel}>Tonight's Ritual</Text>
+        <View style={styles.sectionLine} />
+      </View>
+
+      <TouchableOpacity style={styles.primaryCta} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.9}>
+        <Text style={styles.primaryCtaOrnament}>✦ ✶ ✦</Text>
+        <Text style={styles.primaryCtaTitle}>Three questions tonight</Text>
+        <Text style={styles.primaryCtaBody}>Answer privately. Then reveal what you both said.</Text>
+        <Text style={styles.primaryCtaBegin}>Begin →</Text>
       </TouchableOpacity>
 
-      {/* Send a Spark */}
+      {/* ─── QUICK ─── */}
       {isConnected && (
-        <TouchableOpacity
-          style={[styles.sparkBtn, sparkSent && styles.sparkBtnSent]}
-          onPress={() => !sparkSent && setShowSparkPicker(true)}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.sparkBtnText}>{sparkSent ? '✓ Love sent!' : `❤️  Send ${partner?.name ?? 'your partner'} love`}</Text>
-        </TouchableOpacity>
+        <>
+          <View style={styles.sectionDivider}>
+            <View style={styles.sectionLine} />
+            <Text style={styles.sectionLabel}>Quick</Text>
+            <View style={styles.sectionLine} />
+          </View>
+
+          <View style={styles.quickCard}>
+            <TouchableOpacity
+              style={styles.quickItem}
+              onPress={() => !sparkSent && setShowSparkPicker(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quickIcon}>{sparkSent ? '✓' : '❤️'}</Text>
+              <Text style={styles.quickLabel}>{sparkSent ? 'Sent' : 'Love'}</Text>
+            </TouchableOpacity>
+            <View style={styles.quickDivider} />
+            <TouchableOpacity
+              style={styles.quickItem}
+              onPress={() => router.push('/flashes?send=1' as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quickIcon}>📸</Text>
+              <Text style={styles.quickLabel}>Tease</Text>
+            </TouchableOpacity>
+            <View style={styles.quickDivider} />
+            <TouchableOpacity
+              style={styles.quickItem}
+              onPress={() => router.push('/notes' as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quickIcon}>💌</Text>
+              <Text style={styles.quickLabel}>Note</Text>
+            </TouchableOpacity>
+          </View>
+        </>
       )}
 
-      {/* Flash button */}
-      {isConnected && (
-        <TouchableOpacity
-          style={styles.flashBtn}
-          onPress={() => router.push('/flashes?send=1' as any)}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.flashBtnText}>📸  Send a Tease</Text>
-        </TouchableOpacity>
-      )}
+      {/* ─── GAMES & RITUALS ─── */}
+      <View style={styles.sectionDivider}>
+        <View style={styles.sectionLine} />
+        <Text style={styles.sectionLabel}>Games & Rituals</Text>
+        <View style={styles.sectionLine} />
+      </View>
+
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/daily-wishes' as any)} activeOpacity={0.85}>
+        <Text style={styles.gameEmoji}>🌹</Text>
+        <View style={styles.gameText}>
+          <Text style={styles.gameTitle}>Daily Picks</Text>
+          <Text style={styles.gameSub}>5 new picks today · vote privately</Text>
+        </View>
+        <Text style={styles.gameArrow}>›</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/roulette' as any)} activeOpacity={0.85}>
+        <Text style={styles.gameEmoji}>🎲</Text>
+        <View style={styles.gameText}>
+          <Text style={styles.gameTitle}>Date Roulette</Text>
+          <Text style={styles.gameSub}>Spin for tonight's date</Text>
+        </View>
+        <Text style={styles.gameArrow}>›</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/would-you-rather' as any)} activeOpacity={0.85}>
+        <Text style={styles.gameEmoji}>🤔</Text>
+        <View style={styles.gameText}>
+          <Text style={styles.gameTitle}>Would You Rather</Text>
+          <Text style={styles.gameSub}>3 levels · take turns</Text>
+        </View>
+        <Text style={styles.gameArrow}>›</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/truth-dare' as any)} activeOpacity={0.85}>
+        <Text style={styles.gameEmoji}>🎯</Text>
+        <View style={styles.gameText}>
+          <Text style={styles.gameTitle}>Truth or Dare</Text>
+          <Text style={styles.gameSub}>2-phone multiplayer</Text>
+        </View>
+        <Text style={styles.gameArrow}>›</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/fantasy-wishes' as any)} activeOpacity={0.85}>
+        <Text style={styles.gameEmoji}>✨</Text>
+        <View style={styles.gameText}>
+          <Text style={styles.gameTitle}>Fantasy Wishes</Text>
+          <Text style={styles.gameSub}>Double-blind voting {!isSubscribed && '· 🔒'}</Text>
+        </View>
+        <Text style={styles.gameArrow}>›</Text>
+      </TouchableOpacity>
 
       {/* Waiting for you nudges */}
       {nudges.length > 0 && (
@@ -607,7 +680,31 @@ const styles = StyleSheet.create({
   container: { paddingTop: 60, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
-  greeting: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, letterSpacing: 0.3 },
+  greeting: { fontFamily: Fonts.headingItalic, fontSize: 24, color: Colors.burgundy, letterSpacing: 0.3 },
+  headerDate: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 },
+
+  sectionDivider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: Spacing.lg, marginBottom: Spacing.md },
+  sectionLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, letterSpacing: 2.5, textTransform: 'uppercase' },
+
+  primaryCta: { backgroundColor: Colors.burgundy, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', ...Shadow.md },
+  primaryCtaOrnament: { color: 'rgba(244,167,185,0.7)', fontSize: 12, letterSpacing: 8, marginBottom: Spacing.sm, textAlign: 'center' },
+  primaryCtaTitle: { fontFamily: Fonts.headingItalic, fontSize: 26, color: '#fff', textAlign: 'center', marginBottom: Spacing.xs, lineHeight: 30 },
+  primaryCtaBody: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,248,240,0.75)', textAlign: 'center', lineHeight: 20, marginBottom: Spacing.md },
+  primaryCtaBegin: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.rose, letterSpacing: 3, textTransform: 'uppercase' },
+
+  quickCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
+  quickItem: { alignItems: 'center', gap: 4, paddingHorizontal: Spacing.md, paddingVertical: 4 },
+  quickIcon: { fontSize: 22 },
+  quickLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.burgundy, letterSpacing: 1.2, textTransform: 'uppercase' },
+  quickDivider: { width: 1, height: 28, backgroundColor: Colors.border },
+
+  gameRow: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.sm, ...Shadow.sm },
+  gameEmoji: { fontSize: 24, width: 32 },
+  gameText: { flex: 1 },
+  gameTitle: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.burgundy, fontWeight: '500' },
+  gameSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 1 },
+  gameArrow: { fontFamily: Fonts.body, fontSize: 18, color: Colors.muted },
   name: { fontFamily: Fonts.heading, fontSize: 34, color: Colors.burgundy, lineHeight: 38, marginTop: 2 },
   signOutBtn: { paddingTop: 6 },
   signOut: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
@@ -664,10 +761,6 @@ const styles = StyleSheet.create({
   nudgeSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, marginTop: 2 },
   nudgeArrow: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.muted },
 
-  quickGrid: { flexDirection: 'row', gap: Spacing.md },
-  quickCard: { flex: 1, borderRadius: Radius.lg, paddingVertical: Spacing.lg, paddingHorizontal: Spacing.md, alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
-  quickEmoji: { fontSize: 34 },
-  quickLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text, textAlign: 'center' },
 
   sparkBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm },
   sparkBannerEmoji: { fontSize: 28 },
