@@ -67,7 +67,6 @@ export default function HomeScreen() {
 
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
-  const [picking, setPicking] = useState(false);
 
   const [challengeState, setChallengeState] = useState<ChallengeState | null>(null);
   const [notes, setNotes] = useState<LoveNote[]>([]);
@@ -151,7 +150,6 @@ export default function HomeScreen() {
     try {
       await setMood(coupleId, user.uid, emoji);
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
-      setPicking(false);
       notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
       if (emoji === '😢') unlockSadNotes(coupleId, user.uid).catch(() => {});
     } catch (e) {
@@ -387,7 +385,7 @@ export default function HomeScreen() {
                 <PartnerAvatar name={profile?.name ?? '?'} photoURL={profile?.photoURL} size={64} />
               </View>
               <Text style={styles.avatarNameLight}>{profile?.name}</Text>
-              <TouchableOpacity style={styles.moodPill} onPress={() => setPicking(true)} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7}>
                 <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
               </TouchableOpacity>
             </View>
@@ -492,19 +490,8 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Weekly mood summary */}
-      {isConnected && (myTopMood || partnerTopMood) && (
-        <TouchableOpacity style={styles.moodSummaryCard} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.85}>
-          <View style={styles.moodSummaryRow}>
-            {myTopMood && <Text style={styles.moodSummaryText}>Your week: {myTopMood} {MOOD_LABELS[myTopMood]}</Text>}
-            {partnerTopMood && <Text style={styles.moodSummaryText}>{partner?.name ?? 'Partner'}'s: {partnerTopMood} {MOOD_LABELS[partnerTopMood]}</Text>}
-          </View>
-          <Text style={styles.moodSummaryArrow}>›</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Mood section — only show when no mood set or changing */}
-      {(!myMood || picking) && (
+      {/* Mood section — only show when no mood set today */}
+      {!myMood && (
       <View style={styles.moodSection}>
         <Text style={styles.sectionTitle}>How are you feeling?</Text>
           <View style={styles.moodGrid}>

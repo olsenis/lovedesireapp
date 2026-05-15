@@ -3,7 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { MoodEntry, MoodEmoji, MOOD_LABELS, subscribeMoodHistory } from '../services/moodService';
+import * as Haptics from 'expo-haptics';
+import { useSubscription } from '../hooks/useSubscription';
+import { notifyPartner } from '../services/notificationService';
+import { MoodEntry, MoodEmoji, MOOD_LABELS, ALL_MOODS, subscribeMoodHistory, setMood, getTodaysMood, subscribeToMoods } from '../services/moodService';
+import { unlockSadNotes } from '../services/noteService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -40,16 +44,41 @@ function streak(myMoods: MoodEntry[]): number {
 export default function MoodHistoryScreen() {
   const { user, profile } = useAuth();
   const { partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed } = useSubscription();
   const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [tab, setTab] = useState<'mine' | 'together'>('mine');
+  const [myMood, setMyMood] = useState<MoodEntry | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
+  const ADULT_MOODS: MoodEmoji[] = ['😈', '🥵'];
+  const visibleMoods = ALL_MOODS.filter(m => isSubscribed || !ADULT_MOODS.includes(m));
 
   useEffect(() => {
     if (!coupleId) return;
     return subscribeMoodHistory(coupleId, setMoods);
   }, [coupleId]);
+
+  useEffect(() => {
+    if (!coupleId || !user) return;
+    getTodaysMood(coupleId, user.uid).then(setMyMood);
+    return subscribeToMoods(coupleId, (allMoods) => {
+      setMyMood(allMoods.find(m => m.uid === user.uid) ?? null);
+    });
+  }, [coupleId, user?.uid]);
+
+  const handleMoodPick = async (emoji: MoodEmoji) => {
+    if (!user || !coupleId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await setMood(coupleId, user.uid, emoji);
+      setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
+      notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
+      if (emoji === '😢') unlockSadNotes(coupleId, user.uid).catch(() => {});
+    } catch (e) {
+      console.error('setMood failed:', e);
+    }
+  };
 
   const myMoods = moods.filter(m => m.uid === uid);
   const partnerMoods = moods.filter(m => m.uid !== uid);
@@ -103,6 +132,26 @@ export default function MoodHistoryScreen() {
 
       {tab === 'mine' ? (
         <ScrollView contentContainerStyle={styles.content}>
+          {/* How are you feeling — today */}
+          <View style={styles.todayCard}>
+            <Text style={styles.todayLabel}>
+              {myMood ? "Change today's mood" : "How are you feeling today?"}
+            </Text>
+            <View style={styles.moodGrid}>
+              {visibleMoods.map(emoji => (
+                <TouchableOpacity
+                  key={emoji}
+                  style={[styles.moodBtn, myMood?.emoji === emoji && styles.moodBtnActive]}
+                  onPress={() => handleMoodPick(emoji)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.moodEmoji}>{emoji}</Text>
+                  <Text style={styles.moodLabel}>{MOOD_LABELS[emoji]}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           {/* Stats row */}
           <View style={styles.statsRow}>
             {myTop && (
@@ -202,6 +251,14 @@ const styles = StyleSheet.create({
 
   content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.md, gap: Spacing.lg },
   sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+
+  todayCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md },
+  todayLabel: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.burgundy },
+  moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'space-between' },
+  moodBtn: { width: '23%', backgroundColor: '#FFF8F0', borderRadius: Radius.lg, paddingVertical: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
+  moodBtnActive: { backgroundColor: Colors.blush, borderColor: Colors.rose },
+  moodEmoji: { fontSize: 28 },
+  moodLabel: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, marginTop: 2, textAlign: 'center' },
 
   statsRow: { flexDirection: 'row', gap: Spacing.md },
   statCard: { flex: 1, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
