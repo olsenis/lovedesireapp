@@ -13,15 +13,6 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-const FLASH_IDEAS = [
-  { emoji: '🌅', label: 'Good morning' },
-  { emoji: '☕', label: 'Coffee break' },
-  { emoji: '🍽️', label: 'What I\'m eating' },
-  { emoji: '😎', label: 'Where I am' },
-  { emoji: '💭', label: 'Thinking of you' },
-  { emoji: '🌙', label: 'Goodnight' },
-];
-
 export default function FlashesScreen() {
   const { user, profile } = useAuth();
   const { partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
@@ -53,7 +44,7 @@ export default function FlashesScreen() {
   const sent = flashes.filter(f => f.fromUid === uid);
   const sentToday = sent.filter(f => Date.now() - f.createdAt < 86400000).length;
 
-  const openCamera = async (initialCaption?: string) => {
+  const openCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (perm.status !== 'granted') {
       Alert.alert('Camera access needed', 'Please allow camera access in Settings.');
@@ -66,7 +57,6 @@ export default function FlashesScreen() {
     if (!result.canceled) {
       setSelectedUri(result.assets[0].uri);
       setSelectedType('photo');
-      if (initialCaption) setCaption(initialCaption);
       setShowCompose(true);
     }
   };
@@ -199,26 +189,6 @@ export default function FlashesScreen() {
               </View>
             )}
           </View>
-        )}
-
-        {/* Inspiration chips */}
-        {incoming.length === 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>or try a quick one</Text>
-            <View style={styles.chipGrid}>
-              {FLASH_IDEAS.map(idea => (
-                <TouchableOpacity
-                  key={idea.label}
-                  style={styles.chip}
-                  onPress={() => openCamera(idea.label)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.chipEmoji}>{idea.emoji}</Text>
-                  <Text style={styles.chipLabel}>{idea.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </>
         )}
 
         {/* Viewed — dimmed */}
@@ -415,17 +385,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 6,
   },
   heroBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy },
-
-  // Chips
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#fff', borderRadius: 99,
-    paddingVertical: 10, paddingHorizontal: 14,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  chipEmoji: { fontSize: 16 },
-  chipLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.burgundy },
 
   // Viewed
   viewedCard: {
