@@ -1,7 +1,12 @@
+import { Platform } from 'react-native';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, Auth } from 'firebase/auth';
+// getReactNativePersistence is a runtime export but not in TS types yet — import via require
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { getReactNativePersistence } = require('firebase/auth') as { getReactNativePersistence: (storage: any) => any };
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAXervwr8BoK-5tB0EN0bUWoduLz3x0iw4",
@@ -15,7 +20,21 @@ const firebaseConfig = {
 // Prevent re-initializing on hot reload
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+// On native (iOS/Android) use AsyncStorage so users stay logged in across app launches.
+// On web, default persistence (IndexedDB/localStorage) works out of the box.
+let _auth: Auth;
+if (Platform.OS === 'web') {
+  _auth = getAuth(app);
+} else {
+  try {
+    _auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
+  } catch {
+    // Already initialized (e.g. fast refresh) — fall back to getAuth
+    _auth = getAuth(app);
+  }
+}
+
+export const auth = _auth;
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export default app;

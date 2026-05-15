@@ -78,7 +78,17 @@ export default function RootLayout() {
   };
 
   const handleDeclineConsent = async () => {
-    // Log out if user declines
+    // Delete the auth user so they cannot bypass consent by signing back in.
+    // Re-registration requires fresh deliberate consent each time.
+    try {
+      const { deleteUser, signOut } = await import('firebase/auth');
+      const { auth } = await import('../services/firebase');
+      if (auth.currentUser) {
+        try { await deleteUser(auth.currentUser); } catch { await signOut(auth); }
+      }
+    } catch {
+      // Fall through to redirect even if delete fails
+    }
     router.replace('/(auth)/login');
   };
 

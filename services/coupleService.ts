@@ -8,6 +8,7 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
+import * as Crypto from 'expo-crypto';
 import { db } from './firebase';
 
 export interface Couple {
@@ -15,45 +16,75 @@ export interface Couple {
   partner1Uid: string;
   partner2Uid?: string;
   inviteCode: string;
+  inviteExpiresAt?: number; // expires 7 days after creation
   createdAt: number;
   startDate?: number; // actual relationship start date (set by couple)
 }
 
+// Exclude visually ambiguous characters (0/O, 1/I/L) for easier sharing verbally
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 8;
+const INVITE_TTL_MS = 7 * 86400000; // 7 days
+
 export function generateInviteCode(): string {
-  // 6-character alphanumeric code (uppercase)
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  const bytes = Crypto.getRandomBytes(CODE_LENGTH);
+  let code = '';
+  for (let i = 0; i < CODE_LENGTH; i++) {
+    code += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
+  }
+  return code;
 }
 
 export async function createCouple(ownerUid: string): Promise<Couple> {
-  // TODO: generate invite code, create couple document, update user profile
   const inviteCode = generateInviteCode();
+  const now = Date.now();
   const coupleRef = doc(collection(db, 'couples'));
   const couple: Couple = {
     id: coupleRef.id,
     partner1Uid: ownerUid,
     inviteCode,
-    createdAt: Date.now(),
+    inviteExpiresAt: now + INVITE_TTL_MS,
+    createdAt: now,
   };
   await setDoc(coupleRef, couple);
   return couple;
 }
 
 export async function joinCouple(inviteCode: string, joinerUid: string): Promise<Couple | null> {
-  // TODO: find couple by invite code, link second partner, update both user profiles
-  const q = query(collection(db, 'couples'), where('inviteCode', '==', inviteCode));
+  const normalized = inviteCode.trim().toUpperCase();
+  const q = query(collection(db, 'couples'), where('inviteCode', '==', normalized));
   const snap = await getDocs(q);
   if (snap.empty) return null;
 
   const coupleDoc = snap.docs[0];
   const couple = coupleDoc.data() as Couple;
 
+  // Check expiry
+  if (couple.inviteExpiresAt && couple.inviteExpiresAt < Date.now() && !couple.partner2Uid) {
+    return null;
+  }
   // Block if someone else is already in the slot (but allow re-joining own couple)
   if (couple.partner2Uid && couple.partner2Uid !== joinerUid) return null;
   // Can't join a couple you created as partner1
   if (couple.partner1Uid === joinerUid) return null;
 
-  await updateDoc(coupleDoc.ref, { partner2Uid: joinerUid });
+  // Clear invite code after successful join to prevent re-use
+  await updateDoc(coupleDoc.ref, {
+    partner2Uid: joinerUid,
+    inviteCode: '',
+    inviteExpiresAt: 0,
+  });
   return { ...couple, partner2Uid: joinerUid };
+}
+
+// Generate a fresh invite code (for re-pairing scenarios)
+export async function regenerateInviteCode(coupleId: string): Promise<string> {
+  const code = generateInviteCode();
+  await updateDoc(doc(db, 'couples', coupleId), {
+    inviteCode: code,
+    inviteExpiresAt: Date.now() + INVITE_TTL_MS,
+  });
+  return code;
 }
 
 export async function setCoupleStartDate(coupleId: string, startDate: number): Promise<void> {

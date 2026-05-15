@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Link, router } from 'expo-router';
-import { login } from '../../services/authService';
+import { login, resetPassword } from '../../services/authService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius } from '../../constants/spacing';
@@ -21,6 +21,25 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resetMsg, setResetMsg] = useState('');
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError('Enter your email above first.');
+      return;
+    }
+    setError('');
+    setResetMsg('');
+    try {
+      await resetPassword(email);
+      setResetMsg('Password reset email sent. Check your inbox.');
+    } catch (e: any) {
+      const code = e?.code ?? '';
+      if (code === 'auth/user-not-found') setError('No account with that email.');
+      else if (code === 'auth/invalid-email') setError('Please enter a valid email.');
+      else setError('Could not send reset email. Try again.');
+    }
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -81,6 +100,7 @@ export default function LoginScreen() {
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+          {resetMsg ? <Text style={styles.resetMsg}>{resetMsg}</Text> : null}
 
           <Button
             label="Sign In"
@@ -88,6 +108,10 @@ export default function LoginScreen() {
             loading={loading}
             style={styles.button}
           />
+
+          <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn}>
+            <Text style={styles.forgotText}>Forgot your password?</Text>
+          </TouchableOpacity>
         </View>
 
         <Link href="/(auth)/register" asChild>
@@ -153,6 +177,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.error,
     textAlign: 'center',
+  },
+  resetMsg: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.burgundy,
+    textAlign: 'center',
+  },
+  forgotBtn: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  forgotText: {
+    fontFamily: Fonts.bodyItalic,
+    fontSize: 13,
+    color: Colors.muted,
   },
   link: {
     fontFamily: Fonts.body,

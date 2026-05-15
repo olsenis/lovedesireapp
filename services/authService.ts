@@ -2,6 +2,8 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   User,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
@@ -30,18 +32,28 @@ export async function register(email: string, password: string): Promise<User> {
     name: '',
     createdAt: Date.now(),
   });
+  // Send email verification (fire and forget — don't block signup if email fails)
+  sendEmailVerification(credential.user).catch(() => {});
   return credential.user;
 }
 
 export async function login(email: string, password: string): Promise<User> {
-  // TODO: implement login
   const credential = await signInWithEmailAndPassword(auth, email, password);
   return credential.user;
 }
 
 export async function logout(): Promise<void> {
-  // TODO: implement logout + clear secure store
   await signOut(auth);
+}
+
+export async function resetPassword(email: string): Promise<void> {
+  await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+}
+
+export async function resendVerification(): Promise<void> {
+  if (auth.currentUser) {
+    await sendEmailVerification(auth.currentUser);
+  }
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
