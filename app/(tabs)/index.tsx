@@ -313,7 +313,7 @@ export default function HomeScreen() {
       subtitle: partnerCapturedToday
         ? 'Take yours to reveal both photos'
         : 'Both of you take a photo — reveal together',
-      route: '/memories',
+      route: '/moments',
       bg: Colors.blush,
     });
   }
@@ -441,7 +441,7 @@ export default function HomeScreen() {
 
       {/* On this day */}
       {onThisDay && (
-        <TouchableOpacity style={styles.onThisDayCard} onPress={() => router.push('/memories' as any)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.onThisDayCard} onPress={() => router.push('/moments' as any)} activeOpacity={0.85}>
           <Text style={styles.onThisDayEmoji}>📸</Text>
           <View style={styles.onThisDayText}>
             <Text style={styles.onThisDayTitle}>On this day, {onThisDayYears} {onThisDayYears === 1 ? 'year' : 'years'} ago</Text>

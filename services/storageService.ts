@@ -9,14 +9,8 @@ export async function uploadProfilePhoto(uid: string, uri: string): Promise<stri
   return await getDownloadURL(storageRef);
 }
 
-export async function uploadMemoryPhoto(coupleId: string, uid: string, uri: string): Promise<string> {
-  const response = await fetch(uri);
-  const blob = await response.blob();
-  const filename = `${Date.now()}_${uid}.jpg`;
-  const storageRef = ref(storage, `couples/${coupleId}/memories/${filename}`);
-  await uploadBytes(storageRef, blob);
-  return await getDownloadURL(storageRef);
-}
+// uploadMemoryPhoto removed — old Memories feature replaced by Moments.
+// Old Firebase Storage path couples/{coupleId}/memories/* still exists for historical "On this day".
 
 export async function uploadTruthDareAudio(coupleId: string, uid: string, round: number, uri: string): Promise<string> {
   const response = await fetch(uri);
