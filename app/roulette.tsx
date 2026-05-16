@@ -19,7 +19,7 @@ function Stars({ rating, onRate }: { rating: number; onRate?: (r: number) => voi
   return (
     <View style={starStyles.row}>
       {[1, 2, 3, 4, 5].map(s => (
-        <TouchableOpacity key={s} onPress={() => onRate?.(s)} disabled={!onRate} activeOpacity={0.7} accessibilityRole="button">
+        <TouchableOpacity key={s} onPress={() => onRate?.(s)} disabled={!onRate} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`Rate ${s} ${s === 1 ? 'star' : 'stars'}`}>
           <Text style={[starStyles.star, s <= rating && starStyles.starFilled]}>★</Text>
         </TouchableOpacity>
       ))}

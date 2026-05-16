@@ -187,7 +187,7 @@ export default function IntimacyTrackerScreen() {
         <View style={styles.sheetOverlay}>
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
-            <TouchableOpacity style={styles.sheetClose} onPress={() => setSelectedEntry(null)} accessibilityRole="button">
+            <TouchableOpacity style={styles.sheetClose} onPress={() => setSelectedEntry(null)} accessibilityRole="button" accessibilityLabel="Close">
               <Text style={styles.sheetCloseText}>✕</Text>
             </TouchableOpacity>
             {selectedEntry && (
@@ -473,7 +473,7 @@ function DetailSheet({
         <View style={styles.sheet}>
           {/* Handle + close */}
           <View style={styles.sheetHandle} />
-          <TouchableOpacity style={styles.sheetClose} onPress={() => { reset(); onClose(); }} accessibilityRole="button">
+          <TouchableOpacity style={styles.sheetClose} onPress={() => { reset(); onClose(); }} accessibilityRole="button" accessibilityLabel="Close">
             <Text style={styles.sheetCloseText}>✕</Text>
           </TouchableOpacity>
 
@@ -581,11 +581,11 @@ function DetailSheet({
                 </View>
                 {row.had === 'yes' && (
                   <View style={styles.countRow}>
-                    <TouchableOpacity onPress={() => row.setCount(Math.max(1, row.count - 1))} style={styles.countBtn} accessibilityRole="button">
+                    <TouchableOpacity onPress={() => row.setCount(Math.max(1, row.count - 1))} style={styles.countBtn} accessibilityRole="button" accessibilityLabel="Decrease">
                       <Text style={styles.countBtnText}>−</Text>
                     </TouchableOpacity>
                     <Text style={styles.countNum}>{row.count}</Text>
-                    <TouchableOpacity onPress={() => row.setCount(Math.min(9, row.count + 1))} style={styles.countBtn} accessibilityRole="button">
+                    <TouchableOpacity onPress={() => row.setCount(Math.min(9, row.count + 1))} style={styles.countBtn} accessibilityRole="button" accessibilityLabel="Increase">
                       <Text style={styles.countBtnText}>+</Text>
                     </TouchableOpacity>
                   </View>

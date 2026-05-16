@@ -136,7 +136,7 @@ export default function CountdownScreen() {
                 onPress={() => profile?.coupleId && deleteImportantDate(profile.coupleId, d.id)}
                 style={styles.deleteBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-               accessibilityRole="button">
+               accessibilityRole="button" accessibilityLabel="Delete date">
                 <Text style={styles.deleteTxt}>✕</Text>
               </TouchableOpacity>}
             </View>

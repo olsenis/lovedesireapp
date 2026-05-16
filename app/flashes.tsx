@@ -131,14 +131,14 @@ export default function FlashesScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn} accessibilityRole="button">
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={styles.headerBtnText}>‹</Text>
         </TouchableOpacity>
         <View style={styles.titleWrap}>
           <Text style={styles.title}>Teases</Text>
           <Text style={styles.titleSub}>only between you two · 24h</Text>
         </View>
-        <TouchableOpacity onPress={openLibrary} style={styles.headerBtn} accessibilityRole="button">
+        <TouchableOpacity onPress={openLibrary} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Choose photo or video from library">
           <Text style={styles.librarySymbol}>⊞</Text>
         </TouchableOpacity>
       </View>
@@ -279,7 +279,7 @@ export default function FlashesScreen() {
       {/* Full-screen viewer */}
       <Modal visible={!!viewingFlash} animationType="fade" presentationStyle="fullScreen">
         <View style={styles.viewerContainer}>
-          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingFlash(null)} accessibilityRole="button">
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingFlash(null)} accessibilityRole="button" accessibilityLabel="Close">
             <Text style={styles.viewerCloseText}>✕</Text>
           </TouchableOpacity>
 

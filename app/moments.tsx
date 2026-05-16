@@ -173,7 +173,7 @@ export default function MomentsScreen() {
       {/* Full-screen viewer */}
       <Modal visible={!!viewingMoment} animationType="fade" presentationStyle="fullScreen">
         <View style={styles.viewer}>
-          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingMoment(null)} accessibilityRole="button">
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingMoment(null)} accessibilityRole="button" accessibilityLabel="Close moment">
             <Text style={styles.viewerCloseText}>✕</Text>
           </TouchableOpacity>
           {viewingMoment && (

@@ -19,7 +19,7 @@ export default function UpgradeScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.close} accessibilityRole="button">
+        <TouchableOpacity onPress={() => router.back()} style={styles.close} accessibilityRole="button" accessibilityLabel="Close">
           <Text style={styles.closeText}>✕</Text>
         </TouchableOpacity>
       </View>

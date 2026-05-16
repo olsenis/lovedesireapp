@@ -229,7 +229,7 @@ export default function DailyWishesScreen() {
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>All Matches 🌹</Text>
-              <TouchableOpacity onPress={() => setShowMatches(false)} accessibilityRole="button">
+              <TouchableOpacity onPress={() => setShowMatches(false)} accessibilityRole="button" accessibilityLabel="Close matches">
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>

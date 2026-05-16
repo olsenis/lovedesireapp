@@ -76,7 +76,7 @@ export default function RemindersScreen() {
                 trackColor={{ false: Colors.border, true: Colors.rose }}
                 thumbColor={r.active ? Colors.burgundy : Colors.muted}
               />
-              <TouchableOpacity onPress={() => { if (coupleId) { deleteReminder(coupleId, r.id); cancelReminderNotifications(r.id); } }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
+              <TouchableOpacity onPress={() => { if (coupleId) { deleteReminder(coupleId, r.id); cancelReminderNotifications(r.id); } }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Delete reminder">
                 <Text style={styles.deleteBtn}>✕</Text>
               </TouchableOpacity>
             </View>

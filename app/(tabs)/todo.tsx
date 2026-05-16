@@ -244,8 +244,8 @@ function TodoRow({ todo, cat, uid, partnerName, onToggle, onDelete, onSelect }: 
   const sourceLabel = todo.source && todo.source !== 'manual' ? SOURCE_LABELS[todo.source] : null;
 
   return (
-    <TouchableOpacity style={[styles.todoRow, todo.completed && styles.todoRowDone]} onPress={() => onSelect(todo)} activeOpacity={0.8} accessibilityRole="button">
-      <TouchableOpacity style={[styles.check, todo.completed && styles.checkDone]} onPress={() => onToggle(todo)} accessibilityRole="button">
+    <TouchableOpacity style={[styles.todoRow, todo.completed && styles.todoRowDone]} onPress={() => onSelect(todo)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`${todo.text}, ${todo.completed ? 'completed' : 'not completed'}`}>
+      <TouchableOpacity style={[styles.check, todo.completed && styles.checkDone]} onPress={() => onToggle(todo)} accessibilityRole="button" accessibilityLabel={todo.completed ? 'Mark as not done' : 'Mark as done'}>
         {todo.completed && <Text style={styles.checkMark}>✓</Text>}
       </TouchableOpacity>
       <View style={[styles.catDot, { backgroundColor: cat.color }]}>
