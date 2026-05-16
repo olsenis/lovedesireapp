@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { subscribeNotes, createNote, openNote, LoveNote } from '../services/noteService';
+import { ALL_MOODS, MOOD_LABELS, MoodEmoji } from '../services/moodService';
 import { Colors as C } from '../constants/colors';
 import { notifyPartner } from '../services/notificationService';
 import { useHelp } from '../hooks/useHelp';
@@ -15,11 +16,14 @@ import { Spacing, Radius } from '../constants/spacing';
 type Condition = 'sad' | 'visit' | 'missing' | 'sleepless';
 type Occasion = { label: string; offset: number; condition?: Condition };
 
+// 'sad' is the generic mood-trigger occasion — user picks which mood unlocks it from a sub-grid
+const SAD_OCCASION_LABEL = "When you're feeling...";
+
 const OCCASIONS: Occasion[] = [
   { label: "Right now", offset: 0 },
   { label: "Tonight at 8pm", offset: 0 },
   { label: "This weekend", offset: -1 },
-  { label: "When you're sad", offset: 0, condition: 'sad' },
+  { label: SAD_OCCASION_LABEL, offset: 0, condition: 'sad' },
 ];
 
 const LDR_OCCASIONS: Occasion[] = [
@@ -29,7 +33,7 @@ const LDR_OCCASIONS: Occasion[] = [
 ];
 
 const CONDITION_META: Record<Condition, { emoji: string; label: string }> = {
-  sad:       { emoji: '💙', label: "When you're sad" },
+  sad:       { emoji: '💙', label: SAD_OCCASION_LABEL },
   visit:     { emoji: '✈️', label: "When I arrive" },
   missing:   { emoji: '🤗', label: "When you miss me" },
   sleepless: { emoji: '🌙', label: "When you can't sleep" },
@@ -72,6 +76,7 @@ export default function NotesScreen() {
   const help = useHelp('love-notes');
   const [message, setMessage] = useState('');
   const [occasion, setOccasion] = useState(OCCASIONS[0].label);
+  const [moodPick, setMoodPick] = useState<MoodEmoji>('😢');
   const [openedNote, setOpenedNote] = useState<LoveNote | null>(null);
 
   useEffect(() => {
@@ -83,9 +88,11 @@ export default function NotesScreen() {
     if (!message.trim() || !profile?.coupleId || !user) return;
     const occ = occasions.find(o => o.label === occasion);
     const openCondition = occ?.condition;
-    await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition);
+    const triggerEmoji = openCondition === 'sad' ? moodPick : undefined;
+    await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition, triggerEmoji);
+    const moodLabel = triggerEmoji ? MOOD_LABELS[triggerEmoji].toLowerCase() : '';
     const subtitle =
-      openCondition === 'sad'      ? 'A note will be waiting when you need it' :
+      openCondition === 'sad'      ? `A note will unlock when you feel ${moodLabel}` :
       openCondition === 'visit'    ? 'A note for when you arrive' :
       openCondition === 'missing'  ? 'A note for when you miss me' :
       openCondition === 'sleepless'? 'A note for when you can\'t sleep' :
@@ -247,8 +254,30 @@ export default function NotesScreen() {
                 );
               })}
             </View>
-            {occasion === "When you're sad" && (
-              <Text style={styles.sadHint}>Unlocks automatically when your partner logs a sad mood</Text>
+            {occasion === SAD_OCCASION_LABEL && (
+              <View style={styles.moodPickerWrap}>
+                <Text style={styles.moodPickerLabel}>Unlocks when they log this mood:</Text>
+                <View style={styles.moodPickerGrid}>
+                  {ALL_MOODS.map((m) => {
+                    const active = moodPick === m;
+                    return (
+                      <TouchableOpacity
+                        key={m}
+                        style={[styles.moodPickerCell, active && styles.moodPickerCellActive]}
+                        onPress={() => setMoodPick(m)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Trigger when partner is ${MOOD_LABELS[m]}`}
+                      >
+                        <Text style={styles.moodPickerEmoji}>{m}</Text>
+                        <Text style={[styles.moodPickerName, active && styles.moodPickerNameActive]} numberOfLines={1}>
+                          {MOOD_LABELS[m]}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.sadHint}>Unlocks when your partner logs {moodPick} {MOOD_LABELS[moodPick]} mood</Text>
+              </View>
             )}
             {occasion === "When I arrive" && (
               <Text style={styles.sadHint}>Unlocks automatically on your next-visit date</Text>
@@ -364,6 +393,19 @@ const styles = StyleSheet.create({
   occasionText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
   occasionTextActive: { color: Colors.cream, fontFamily: Fonts.bodyBold },
   sadHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: '#1565C0', marginTop: 4 },
+
+  moodPickerWrap: { gap: Spacing.sm, marginTop: 4 },
+  moodPickerLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  moodPickerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  moodPickerCell: {
+    width: '23%', alignItems: 'center', justifyContent: 'center', gap: 2,
+    paddingVertical: 8, borderRadius: Radius.md, backgroundColor: Colors.white,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  moodPickerCellActive: { backgroundColor: '#E3F2FD', borderColor: '#1565C0' },
+  moodPickerEmoji: { fontSize: 22 },
+  moodPickerName: { fontFamily: Fonts.body, fontSize: 9, color: Colors.muted, textAlign: 'center' },
+  moodPickerNameActive: { color: '#1565C0', fontFamily: Fonts.bodyBold },
   modalBtns: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },

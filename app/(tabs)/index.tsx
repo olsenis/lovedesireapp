@@ -9,7 +9,7 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
-import { subscribeNotes, LoveNote, unlockSadNotes, unlockVisitNotes } from '../../services/noteService';
+import { subscribeNotes, LoveNote, unlockMoodNotes, unlockVisitNotes } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
@@ -167,7 +167,7 @@ export default function HomeScreen() {
       await setMood(coupleId, user.uid, emoji);
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
       notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
-      if (emoji === '😢') unlockSadNotes(coupleId, user.uid).catch(() => {});
+      unlockMoodNotes(coupleId, user.uid, emoji).catch(() => {});
     } catch (e) {
       console.error('setMood failed:', e);
     }

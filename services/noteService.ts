@@ -1,15 +1,17 @@
 import { collection, addDoc, updateDoc, doc, onSnapshot, orderBy, query, limit, where, getDocs, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import type { MoodEmoji } from './moodService';
 
 export interface LoveNote {
   id: string;
   message: string;
   openAt: number;
   openCondition?: 'sad' | 'visit' | 'missing' | 'sleepless';
-  // sad      = partner sets sad mood (auto-unlock)
-  // visit    = next visit date arrives (auto-unlock)
-  // missing  = LDR stash, recipient opens when missing partner (manual)
+  // sad       = partner logs the configured mood (auto-unlock, see triggerEmoji)
+  // visit     = next visit date arrives (auto-unlock, LDR)
+  // missing   = LDR stash, recipient opens when missing partner (manual)
   // sleepless = LDR stash, recipient opens when can't sleep (manual)
+  triggerEmoji?: MoodEmoji; // present when openCondition === 'sad'; defaults to '😢' for legacy notes
   fromUid: string;
   opened: boolean;
   createdAt: number;
@@ -28,7 +30,8 @@ export async function createNote(
   fromUid: string,
   message: string,
   openAt: number,
-  openCondition?: 'sad' | 'visit' | 'missing' | 'sleepless'
+  openCondition?: 'sad' | 'visit' | 'missing' | 'sleepless',
+  triggerEmoji?: MoodEmoji,
 ): Promise<void> {
   // Only sad/visit are auto-unlocked — lock their openAt to year 9999 so time never triggers them.
   // missing/sleepless are stash letters openable anytime by the recipient.
@@ -37,24 +40,34 @@ export async function createNote(
     message,
     openAt: isAutoUnlock ? 32503680000000 : openAt,
     ...(openCondition ? { openCondition } : {}),
+    ...(triggerEmoji ? { triggerEmoji } : {}),
     fromUid,
     opened: false,
     createdAt: Date.now(),
   });
 }
 
-// Called when a user sets their mood to sad — unlocks any pending sad-condition notes from partner
-export async function unlockSadNotes(coupleId: string, uid: string): Promise<void> {
+// Called when a user sets a mood — unlocks any pending mood-trigger notes from partner that match the chosen emoji.
+// Legacy notes without triggerEmoji default to '😢' so old "sad" notes keep working.
+export async function unlockMoodNotes(coupleId: string, uid: string, emoji: MoodEmoji): Promise<void> {
   const q = query(
     collection(db, 'couples', coupleId, 'notes'),
     where('openCondition', '==', 'sad'),
     where('opened', '==', false)
   );
   const snap = await getDocs(q);
-  const toUnlock = snap.docs.filter(d => d.data().fromUid !== uid);
-  await Promise.all(toUnlock.map(d =>
-    updateDoc(d.ref, { openAt: Date.now() })
-  ));
+  const toUnlock = snap.docs.filter((d) => {
+    const data = d.data();
+    if (data.fromUid === uid) return false;
+    const noteEmoji: MoodEmoji = (data.triggerEmoji as MoodEmoji) ?? '😢';
+    return noteEmoji === emoji;
+  });
+  await Promise.all(toUnlock.map((d) => updateDoc(d.ref, { openAt: Date.now() })));
+}
+
+// Legacy alias — same behavior as unlockMoodNotes('😢', ...). Kept for any old callers.
+export async function unlockSadNotes(coupleId: string, uid: string): Promise<void> {
+  return unlockMoodNotes(coupleId, uid, '😢');
 }
 
 // Called when the next visit date has arrived — unlocks any pending visit-condition notes from partner
