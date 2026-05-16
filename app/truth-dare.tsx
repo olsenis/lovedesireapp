@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, Easing } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
@@ -30,6 +30,15 @@ export default function TruthDareScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<TruthDareSession | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Mode picker — 'picker' (default) | 'solo' (single-phone wheel) | 'multi' (level select for multiplayer)
+  const [mode, setMode] = useState<'picker' | 'solo' | 'multi'>('picker');
+
+  // Solo Dare state (merged from old Dare Wheel)
+  const [soloLevel, setSoloLevel] = useState<DareLevel>('flirty');
+  const [soloDare, setSoloDare] = useState<string | null>(null);
+  const [soloSpinning, setSoloSpinning] = useState(false);
+  const soloSpinAnim = useRef(new Animated.Value(0)).current;
 
   // Local card drawn before sending
   const [drawnCard, setDrawnCard] = useState<{ type: 'truth' | 'dare'; text: string } | null>(null);
@@ -205,20 +214,136 @@ export default function TruthDareScreen() {
     await resetTruthDare(coupleId);
   };
 
+  // Solo Dare wheel spin (single-phone, no Firestore)
+  const handleSoloSpin = () => {
+    if (soloSpinning) return;
+    if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
+    setSoloSpinning(true);
+    setSoloDare(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    soloSpinAnim.setValue(0);
+    Animated.timing(soloSpinAnim, {
+      toValue: 1, duration: 1800, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+    }).start(() => {
+      const pool = DARES.filter(d => d.level === soloLevel);
+      if (pool.length === 0) { setSoloSpinning(false); return; }
+      setSoloDare(pickRandom(pool).text);
+      setSoloSpinning(false);
+    });
+  };
+
+  const soloSpinRotate = soloSpinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '1440deg'] });
+
   // ── Lobby (no active game) ────────────────────────────────────────────────────
   if (!loading && (!session || session.round === 0)) {
+    // MODE PICKER — initial screen
+    if (mode === 'picker') {
+      return (
+        <View style={styles.screen}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+            <Text style={styles.title}>Truth or Dare</Text>
+            <View style={{ width: 60 }} />
+          </View>
+          <ScrollView contentContainerStyle={styles.modePickerWrap}>
+            <Text style={styles.modeEyebrow}>Tonight</Text>
+            <Text style={styles.modeQuestion}>How do you{'\n'}want to play?</Text>
+
+            <TouchableOpacity style={styles.modeCard} onPress={() => setMode('solo')} activeOpacity={0.85}>
+              <View style={styles.modeIconRow}>
+                <Text style={styles.modeIcon}>🎲</Text>
+                <Text style={styles.modeBadge}>Quick · one phone</Text>
+              </View>
+              <Text style={styles.modeTitle}>Solo Dare</Text>
+              <Text style={styles.modeDesc}>Spin the wheel on this phone alone. One random dare appears. No partner needed.</Text>
+              <Text style={styles.modeCta}>Spin →</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.modeOr}>or</Text>
+
+            <TouchableOpacity style={[styles.modeCard, styles.modeCardFeatured]} onPress={() => setMode('multi')} activeOpacity={0.9}>
+              <View style={styles.modeIconRow}>
+                <Text style={styles.modeIcon}>💞</Text>
+                <Text style={[styles.modeBadge, styles.modeBadgeOnDark]}>2 phones · turn-based</Text>
+              </View>
+              <Text style={[styles.modeTitle, styles.modeTitleOnDark]}>Multiplayer Round</Text>
+              <Text style={[styles.modeDesc, styles.modeDescOnDark]}>Take turns picking truth or dare for each other. Audio answers, scoring, sequential confirmation.</Text>
+              <Text style={[styles.modeCta, styles.modeCtaOnDark]}>Begin round →</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // SOLO DARE — single-phone wheel
+    if (mode === 'solo') {
+      return (
+        <View style={styles.screen}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => setMode('picker')} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+            <Text style={styles.title}>Solo Dare</Text>
+            <View style={{ width: 60 }} />
+          </View>
+          <ScrollView contentContainerStyle={styles.soloWrap}>
+            <Text style={styles.soloEyebrow}>Choose intensity</Text>
+            <View style={styles.soloLevels}>
+              {LEVELS.map(level => {
+                const c = DARE_LEVEL_CONFIG[level];
+                const locked = level === 'spicy' && !isSubscribed;
+                const active = soloLevel === level;
+                return (
+                  <TouchableOpacity
+                    key={level}
+                    style={[styles.soloLevelPill, active && styles.soloLevelPillActive, locked && styles.soloLevelPillLocked]}
+                    onPress={() => locked ? router.push('/upgrade' as any) : setSoloLevel(level)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.soloLevelText, active && styles.soloLevelTextActive]}>{locked ? '🔒 ' : ''}{c.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.wheelWrap}>
+              <View style={styles.wheelPointer} />
+              <Animated.View style={[styles.wheel, { transform: [{ rotate: soloSpinRotate }] }]}>
+                <View style={styles.wheelHub}><Text style={styles.wheelHubText}>spin</Text></View>
+              </Animated.View>
+            </View>
+
+            {soloDare && !soloSpinning && (
+              <View style={styles.soloResult}>
+                <Text style={styles.soloResultEyebrow}>Your dare</Text>
+                <Text style={styles.soloResultText}>{soloDare}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.soloSpinBtn, soloSpinning && { opacity: 0.5 }]}
+              onPress={handleSoloSpin}
+              disabled={soloSpinning}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.soloSpinBtnText}>{soloDare ? 'Spin again' : 'Spin'}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // MULTI — level select for multiplayer round
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
-          <Text style={styles.title}>Truth or Dare</Text>
+          <TouchableOpacity onPress={() => setMode('picker')} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <Text style={styles.title}>Multiplayer Round</Text>
           <View style={{ width: 60 }} />
         </View>
         <ScrollView contentContainerStyle={styles.picker}>
           <Text style={styles.pickerIntro}>
             A real 2-phone game. You challenge your partner, they answer or do the dare on their phone.
           </Text>
-          <Text style={styles.pickerSectionLabel}>New Game, choose level</Text>
+          <Text style={styles.pickerSectionLabel}>Choose level</Text>
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             return (
@@ -679,4 +804,42 @@ const styles = StyleSheet.create({
 
   scoreRow: { alignItems: 'center', paddingVertical: Spacing.sm },
   scoreText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
+
+  // ── Mode picker ─────────────────────────────────────────────────────────────
+  modePickerWrap: { padding: Spacing.lg, gap: Spacing.sm },
+  modeEyebrow: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginTop: Spacing.lg, marginBottom: Spacing.sm },
+  modeQuestion: { fontFamily: Fonts.headingItalic, fontSize: 30, color: Colors.burgundy, textAlign: 'center', lineHeight: 34, marginBottom: Spacing.xl },
+  modeCard: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.sm, ...Shadow.sm },
+  modeCardFeatured: { backgroundColor: Colors.burgundy, borderColor: 'transparent', ...Shadow.md },
+  modeIconRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
+  modeIcon: { fontSize: 32 },
+  modeBadge: { fontFamily: Fonts.bodyBold, fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: Colors.muted, backgroundColor: '#FFF0F3', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 99 },
+  modeBadgeOnDark: { color: Colors.rose, backgroundColor: 'rgba(244,167,185,0.15)' },
+  modeTitle: { fontFamily: Fonts.headingItalic, fontSize: 24, color: Colors.burgundy, marginBottom: 6, lineHeight: 28 },
+  modeTitleOnDark: { color: '#fff' },
+  modeDesc: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, lineHeight: 20 },
+  modeDescOnDark: { color: 'rgba(255,248,240,0.75)' },
+  modeCta: { fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: Colors.burgundy, marginTop: Spacing.md },
+  modeCtaOnDark: { color: Colors.rose },
+  modeOr: { fontFamily: Fonts.headingItalic, fontSize: 16, color: Colors.muted, textAlign: 'center', marginVertical: 4 },
+
+  // ── Solo dare ────────────────────────────────────────────────────────────────
+  soloWrap: { padding: Spacing.lg, gap: Spacing.md, alignItems: 'center' },
+  soloEyebrow: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, letterSpacing: 3, textTransform: 'uppercase', marginTop: Spacing.md, alignSelf: 'center' },
+  soloLevels: { flexDirection: 'row', gap: 8, marginBottom: Spacing.md, width: '100%' },
+  soloLevelPill: { flex: 1, backgroundColor: '#fff', borderRadius: 99, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  soloLevelPillActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
+  soloLevelPillLocked: { opacity: 0.4 },
+  soloLevelText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.5 },
+  soloLevelTextActive: { color: '#fff' },
+  wheelWrap: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.lg },
+  wheelPointer: { position: 'absolute', top: -4, zIndex: 2, width: 0, height: 0, borderLeftWidth: 12, borderRightWidth: 12, borderTopWidth: 18, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: Colors.burgundy },
+  wheel: { width: 240, height: 240, borderRadius: 120, backgroundColor: Colors.rose, borderWidth: 12, borderColor: Colors.blush, alignItems: 'center', justifyContent: 'center', ...Shadow.md },
+  wheelHub: { width: 84, height: 84, borderRadius: 42, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center', ...Shadow.sm },
+  wheelHubText: { fontFamily: Fonts.headingItalic, fontSize: 18, color: Colors.burgundy },
+  soloResult: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', width: '100%', ...Shadow.sm },
+  soloResultEyebrow: { fontFamily: Fonts.body, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: Colors.burgundy, marginBottom: Spacing.sm },
+  soloResultText: { fontFamily: Fonts.headingItalic, fontSize: 20, color: Colors.burgundy, textAlign: 'center', lineHeight: 26 },
+  soloSpinBtn: { backgroundColor: Colors.burgundy, borderRadius: 99, paddingVertical: 18, width: '100%', alignItems: 'center', ...Shadow.md },
+  soloSpinBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#fff', letterSpacing: 3, textTransform: 'uppercase' },
 });
