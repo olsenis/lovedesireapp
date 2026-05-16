@@ -7,14 +7,14 @@ import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
 const GAMES = [
   { emoji: '💬', title: 'Questions Game',       subtitle: 'Fun, Deep, Romantic, Spicy, Therapy & Fantasy', route: '/questions-game', bg: '#FFF0F3', paid: false },
-  { emoji: '🎯', title: 'Truth or Dare',        subtitle: 'Solo spin or 2-phone multiplayer round',        route: '/truth-dare',     bg: '#F5E6E0', paid: false },
-  { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time, then reveal',   route: '/would-you-rather', bg: '#FFF4E8', paid: false },
+  { emoji: '🎯', title: 'Truth or Dare',        subtitle: 'Solo spin or 2-phone multiplayer round',        route: '/truth-dare',     bg: '#EFD5CC', paid: false },
+  { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time, then reveal',   route: '/would-you-rather', bg: '#F8DDC5', paid: false },
   { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true },
-  { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F5E6E0', paid: true },
+  { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#EFD5CC', paid: true },
 ];
 
 const CHALLENGES = [
-  { emoji: '🗓️', title: '30-Day Challenge', subtitle: 'Reconnect, Spark, or Fire, a daily practice', route: '/challenge', bg: '#FFF4E8', paid: false },
+  { emoji: '🗓️', title: '30-Day Challenge', subtitle: 'Reconnect, Spark, or Fire, a daily practice', route: '/challenge', bg: '#F8DDC5', paid: false },
   { emoji: '🎰', title: 'Date Night Roulette', subtitle: 'Let fate pick your perfect date idea',      route: '/roulette',  bg: '#FAEEF2', paid: false },
 ];
 
@@ -68,7 +68,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: Radius.xl, padding: Spacing.lg,
-    marginBottom: Spacing.sm, gap: Spacing.md, ...Shadow.sm,
+    marginBottom: Spacing.sm, gap: Spacing.md,
+    borderWidth: 1, borderColor: 'rgba(136,14,79,0.08)',
+    ...Shadow.sm,
   },
   cardEmoji: { fontSize: 38 },
   cardText: { flex: 1 },

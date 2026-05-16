@@ -7,26 +7,26 @@ import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
 const TOGETHER = [
-  { emoji: '✅', title: 'Together List',      subtitle: 'Shared to-do list, daily life, dates, intimacy & goals', route: '/todo',      bg: '#FFF4E8', paid: false },
+  { emoji: '✅', title: 'Together List',      subtitle: 'Shared to-do list, daily life, dates, intimacy & goals', route: '/todo',      bg: '#F8DDC5', paid: false },
 ];
 
 const INTIMACY = [
   { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Log and reflect on your intimate moments',               route: '/intimacy-tracker', bg: '#FFF0F3', paid: true },
-  { emoji: '🧬', title: 'Erotic Blueprint',  subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F5E6E0', paid: true },
+  { emoji: '🧬', title: 'Erotic Blueprint',  subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#EFD5CC', paid: true },
   { emoji: '🫁', title: 'Sensate Focus',     subtitle: 'Guided touch sessions, rekindling through presence',      route: '/sensate',   bg: '#FAEEF2', paid: true },
 ];
 
 const CONNECTION = [
   { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',  route: '/notes',     bg: '#FCE4EC', paid: false },
-  { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',            route: '/moments',   bg: '#FFF4E8', paid: false },
+  { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',            route: '/moments',   bg: '#F8DDC5', paid: false },
   { emoji: '⏳', title: 'Countdowns',        subtitle: 'Important dates & anniversaries',                        route: '/countdown', bg: '#FAEEF2', paid: false },
-  { emoji: '🔔', title: 'Flirt Reminders',   subtitle: 'Daily nudges to keep the spark alive',                   route: '/reminders', bg: '#F5E6E0', paid: false },
+  { emoji: '🔔', title: 'Flirt Reminders',   subtitle: 'Daily nudges to keep the spark alive',                   route: '/reminders', bg: '#EFD5CC', paid: false },
 ];
 
 const INSIGHTS = [
   { emoji: '🌅', title: 'Sunday Check-in',   subtitle: '5-question weekly ritual, answer privately, reveal together', route: '/state-union', bg: '#FFF0F3', paid: false },
   { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',      bg: '#FFF0F3', paid: false },
-  { emoji: '🌡️', title: 'Relationship Pulse', subtitle: 'Private check-in on how things are going',              route: '/hita',      bg: '#FFF4E8', paid: false },
+  { emoji: '🌡️', title: 'Relationship Pulse', subtitle: 'Private check-in on how things are going',              route: '/hita',      bg: '#F8DDC5', paid: false },
 ];
 
 function FeatureCard({
@@ -88,7 +88,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: Radius.xl, padding: Spacing.lg,
-    marginBottom: Spacing.sm, gap: Spacing.md, ...Shadow.sm,
+    marginBottom: Spacing.sm, gap: Spacing.md,
+    borderWidth: 1, borderColor: 'rgba(136,14,79,0.08)',
+    ...Shadow.sm,
   },
   cardEmoji: { fontSize: 36 },
   cardText: { flex: 1 },
