@@ -8,6 +8,7 @@ export interface ImportantDate {
   emoji: string;
   createdBy: string;
   createdAt: number;
+  secret?: boolean; // mysterious countdown: partner sees a placeholder, creator sees the real label
 }
 
 export function subscribeDates(coupleId: string, onChange: (dates: ImportantDate[]) => void): Unsubscribe {
@@ -22,7 +23,8 @@ export async function addImportantDate(
   label: string,
   date: number,
   emoji: string,
-  createdBy: string
+  createdBy: string,
+  secret?: boolean,
 ): Promise<void> {
   await addDoc(collection(db, 'couples', coupleId, 'dates'), {
     label,
@@ -30,6 +32,7 @@ export async function addImportantDate(
     emoji,
     createdBy,
     createdAt: Date.now(),
+    ...(secret ? { secret: true } : {}),
   });
 }
 

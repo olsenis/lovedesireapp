@@ -12,26 +12,34 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 
-type Occasion = { label: string; offset: number; condition?: 'sad' | 'visit' };
+type Condition = 'sad' | 'visit' | 'missing' | 'sleepless';
+type Occasion = { label: string; offset: number; condition?: Condition };
 
 const OCCASIONS: Occasion[] = [
   { label: "Right now", offset: 0 },
+  { label: "Tonight at 8pm", offset: 0 },
   { label: "This weekend", offset: -1 },
   { label: "When you're sad", offset: 0, condition: 'sad' },
 ];
 
-const LDR_OCCASION: Occasion = { label: "When I arrive", offset: 0, condition: 'visit' };
+const LDR_OCCASIONS: Occasion[] = [
+  { label: "When I arrive", offset: 0, condition: 'visit' },
+  { label: "When you miss me", offset: 0, condition: 'missing' },
+  { label: "When you can't sleep", offset: 0, condition: 'sleepless' },
+];
+
+const CONDITION_META: Record<Condition, { emoji: string; label: string }> = {
+  sad:       { emoji: '💙', label: "When you're sad" },
+  visit:     { emoji: '✈️', label: "When I arrive" },
+  missing:   { emoji: '🤗', label: "When you miss me" },
+  sleepless: { emoji: '🌙', label: "When you can't sleep" },
+};
 
 function getOccasionTime(label: string): number {
   const now = new Date();
-  if (label === "Right now" || label === "When you're sad") return Date.now();
   if (label === "Tonight at 8pm") {
     const t = new Date(now); t.setHours(20, 0, 0, 0);
     return t.getTime() < Date.now() ? t.getTime() + 86400000 : t.getTime();
-  }
-  if (label === "Tomorrow morning") {
-    const t = new Date(now); t.setDate(t.getDate() + 1); t.setHours(8, 0, 0, 0);
-    return t.getTime();
   }
   if (label === "This weekend") {
     const t = new Date(now);
@@ -39,7 +47,6 @@ function getOccasionTime(label: string): number {
     t.setDate(t.getDate() + daysUntilSat); t.setHours(9, 0, 0, 0);
     return t.getTime();
   }
-  if (label === "In 1 week") return Date.now() + 7 * 24 * 60 * 60 * 1000;
   return Date.now();
 }
 
@@ -59,7 +66,7 @@ export default function NotesScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
   const isLDR = !!couple?.isLongDistance;
-  const occasions: Occasion[] = isLDR ? [...OCCASIONS, LDR_OCCASION] : OCCASIONS;
+  const occasions: Occasion[] = isLDR ? [...OCCASIONS, ...LDR_OCCASIONS] : OCCASIONS;
   const [notes, setNotes] = useState<LoveNote[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const help = useHelp('love-notes');
@@ -77,9 +84,13 @@ export default function NotesScreen() {
     const occ = occasions.find(o => o.label === occasion);
     const openCondition = occ?.condition;
     await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition);
-    notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌',
-      openCondition === 'sad' ? 'A note will be waiting when you need it' : 'A message is waiting for you'
-    ).catch(() => {});
+    const subtitle =
+      openCondition === 'sad'      ? 'A note will be waiting when you need it' :
+      openCondition === 'visit'    ? 'A note for when you arrive' :
+      openCondition === 'missing'  ? 'A note for when you miss me' :
+      openCondition === 'sleepless'? 'A note for when you can\'t sleep' :
+      'A message is waiting for you';
+    notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌', subtitle).catch(() => {});
     setMessage('');
     setShowCreate(false);
   };
@@ -92,7 +103,10 @@ export default function NotesScreen() {
   };
 
   const myNotes = notes.filter((n) => n.fromUid === user?.uid);
-  const forMe = notes.filter((n) => n.fromUid !== user?.uid);
+  const forMeAll = notes.filter((n) => n.fromUid !== user?.uid);
+  const isStash = (n: LoveNote) => n.openCondition === 'missing' || n.openCondition === 'sleepless';
+  const forMeStash = forMeAll.filter((n) => isStash(n) && !n.opened);
+  const forMe = forMeAll.filter((n) => !isStash(n));
 
   return (
     <View style={styles.screen}>
@@ -107,6 +121,33 @@ export default function NotesScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
+        {forMeStash.length > 0 && (
+          <>
+            <Text style={styles.groupLabel}>Open when... ✨</Text>
+            <Text style={styles.stashHint}>Sealed letters from your partner. Open one when the moment hits.</Text>
+            {forMeStash.map((note) => {
+              const meta = note.openCondition ? CONDITION_META[note.openCondition] : null;
+              return (
+                <TouchableOpacity
+                  key={note.id}
+                  style={[styles.noteCard, styles.stashCard]}
+                  onPress={() => handleOpen(note)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <View style={[styles.noteIconWrap, styles.stashIconWrap]}>
+                    <Text style={styles.noteLockEmoji}>{meta?.emoji ?? '💌'}</Text>
+                  </View>
+                  <View style={styles.noteInfo}>
+                    <Text style={styles.stashLabel}>{meta?.label ?? 'Open when'}</Text>
+                    <Text style={styles.stashSub}>Tap when you're ready</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </>
+        )}
+
         {forMe.length > 0 && (
           <>
             <Text style={styles.groupLabel}>For you 💌</Text>
@@ -184,28 +225,39 @@ export default function NotesScreen() {
             />
             <Text style={styles.modalLabel}>When can it be opened?</Text>
             <View style={styles.occasionRow}>
-              {occasions.map((o) => (
-                <TouchableOpacity
-                  key={o.label}
-                  style={[
-                    styles.occasionBtn,
-                    occasion === o.label && styles.occasionActive,
-                    o.condition === 'sad' && styles.occasionSad,
-                    o.condition === 'sad' && occasion === o.label && styles.occasionSadActive,
-                  ]}
-                  onPress={() => setOccasion(o.label)}
-                 accessibilityRole="button">
-                  <Text style={[styles.occasionText, occasion === o.label && styles.occasionTextActive]}>
-                    {o.condition === 'sad' ? '💙 ' : o.condition === 'visit' ? '✈️ ' : ''}{o.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {occasions.map((o) => {
+                const isActive = occasion === o.label;
+                const isCondition = !!o.condition;
+                return (
+                  <TouchableOpacity
+                    key={o.label}
+                    style={[
+                      styles.occasionBtn,
+                      isActive && styles.occasionActive,
+                      isCondition && styles.occasionSad,
+                      isCondition && isActive && styles.occasionSadActive,
+                    ]}
+                    onPress={() => setOccasion(o.label)}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.occasionText, isActive && styles.occasionTextActive]}>
+                      {o.condition ? `${CONDITION_META[o.condition].emoji} ` : ''}{o.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
             {occasion === "When you're sad" && (
-              <Text style={styles.sadHint}>This note will unlock when your partner logs a sad mood</Text>
+              <Text style={styles.sadHint}>Unlocks automatically when your partner logs a sad mood</Text>
             )}
             {occasion === "When I arrive" && (
-              <Text style={styles.sadHint}>This note will unlock on your next-visit date</Text>
+              <Text style={styles.sadHint}>Unlocks automatically on your next-visit date</Text>
+            )}
+            {occasion === "When you miss me" && (
+              <Text style={styles.sadHint}>Goes into their "Open when..." stash. They open it whenever they miss you.</Text>
+            )}
+            {occasion === "When you can't sleep" && (
+              <Text style={styles.sadHint}>Goes into their "Open when..." stash. They open it on a sleepless night.</Text>
             )}
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)} accessibilityRole="button">
@@ -274,6 +326,13 @@ const styles = StyleSheet.create({
   noteLocked: { backgroundColor: Colors.white },
   noteOpened: { backgroundColor: Colors.white, opacity: 0.7 },
   mySent: { backgroundColor: Colors.white },
+
+  // Stash letters — sealed envelope feel, slightly elevated
+  stashCard: { backgroundColor: '#FFF4E8', borderColor: '#E8C9A0', borderLeftWidth: 4, borderLeftColor: '#C9A77A' },
+  stashIconWrap: { backgroundColor: 'rgba(201,167,122,0.18)' },
+  stashLabel: { fontFamily: Fonts.headingItalic, fontSize: 18, color: Colors.burgundy },
+  stashSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  stashHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, marginBottom: 4, marginTop: -4 },
 
   noteIconWrap: { width: 48, height: 48, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.cream, flexShrink: 0 },
   noteIconReady: { backgroundColor: 'rgba(244,167,185,0.3)' },

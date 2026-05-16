@@ -73,6 +73,7 @@ export default function CountdownScreen() {
   const [label, setLabel] = useState('');
   const [dateStr, setDateStr] = useState('');
   const [emoji, setEmoji] = useState('❤️');
+  const [secret, setSecret] = useState(false);
   const [dateError, setDateError] = useState('');
   const help = useHelp('countdowns');
 
@@ -86,11 +87,12 @@ export default function CountdownScreen() {
     const ts = new Date(dateStr).getTime();
     if (isNaN(ts)) { setDateError('Enter a valid date (YYYY-MM-DD)'); return; }
     setDateError('');
-    await addImportantDate(profile.coupleId, label.trim(), ts, emoji, user.uid);
-    setLabel(''); setDateStr(''); setShowAdd(false);
+    await addImportantDate(profile.coupleId, label.trim(), ts, emoji, user.uid, secret);
+    setLabel(''); setDateStr(''); setSecret(false); setShowAdd(false);
   };
 
-  const allDates = [
+  type AllDate = { id: string; label: string; emoji: string; date: number; createdBy: string; createdAt: number; auto: boolean; secret?: boolean };
+  const allDates: AllDate[] = [
     ...autoDates.map(d => ({ id: `auto-${d.label}`, label: d.label, emoji: d.emoji, date: d.date, createdBy: '', createdAt: 0, auto: true })),
     ...dates.map(d => ({ ...d, auto: false })),
   ].sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date));
@@ -111,15 +113,18 @@ export default function CountdownScreen() {
         {allDates.map((d) => {
           const daysLeft = getDaysUntil(d.date);
           const isToday = daysLeft === 0;
+          const isMystery = !d.auto && !!d.secret && d.createdBy !== user?.uid;
+          const shownEmoji = isMystery ? '🤫' : d.emoji;
+          const shownLabel = isMystery ? 'A surprise from your partner' : d.label;
           return (
-            <View key={d.id} style={[styles.card, isToday && styles.cardToday, d.auto && styles.cardAuto]}>
+            <View key={d.id} style={[styles.card, isToday && styles.cardToday, d.auto && styles.cardAuto, isMystery && styles.cardMystery]}>
               <View style={[styles.cardEmojiWrap, isToday && styles.cardEmojiWrapToday]}>
-                <Text style={styles.cardEmoji}>{d.emoji}</Text>
+                <Text style={styles.cardEmoji}>{shownEmoji}</Text>
               </View>
               <View style={styles.cardMiddle}>
-                <Text style={[styles.cardLabel, isToday && styles.cardLabelToday]}>{d.label}</Text>
+                <Text style={[styles.cardLabel, isToday && styles.cardLabelToday]}>{shownLabel}</Text>
                 <Text style={styles.cardDate}>
-                  {new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
+                  {isMystery ? 'Tap reveal at the end' : new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
                 </Text>
               </View>
               <View style={styles.cardRight}>
@@ -171,6 +176,25 @@ export default function CountdownScreen() {
             <TextInput style={styles.input} placeholder="Label (e.g. Our Anniversary)" placeholderTextColor={Colors.muted} value={label} onChangeText={setLabel} />
             <TextInput style={styles.input} placeholder="Date (YYYY-MM-DD)" placeholderTextColor={Colors.muted} value={dateStr} onChangeText={(t) => { setDateStr(t); setDateError(''); }} />
             {dateError ? <Text style={styles.inputError}>{dateError}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.secretToggle, secret && styles.secretToggleActive]}
+              onPress={() => setSecret(s => !s)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Toggle mysterious countdown"
+            >
+              <Text style={styles.secretEmoji}>{secret ? '🤫' : '👀'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.secretLabel, secret && styles.secretLabelActive]}>Mysterious countdown</Text>
+                <Text style={[styles.secretSub, secret && styles.secretSubActive]}>
+                  {secret ? 'Partner sees a placeholder, you see the real label' : 'Both partners see the label'}
+                </Text>
+              </View>
+              <View style={[styles.secretCheck, secret && styles.secretCheckActive]}>
+                {secret && <Text style={styles.secretCheckMark}>✓</Text>}
+              </View>
+            </TouchableOpacity>
 
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)} accessibilityRole="button">
@@ -231,6 +255,7 @@ const styles = StyleSheet.create({
   },
   cardToday: { backgroundColor: Colors.blush, borderColor: Colors.rose },
   cardAuto: { borderStyle: 'dashed' },
+  cardMystery: { backgroundColor: '#FFF4E8', borderColor: '#E8C9A0', borderLeftWidth: 4, borderLeftColor: '#C9A77A' },
   cardEmojiWrap: { width: 52, height: 52, borderRadius: Radius.md, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardEmojiWrapToday: { backgroundColor: 'rgba(244,167,185,0.3)' },
   cardEmoji: { fontSize: 28 },
@@ -266,4 +291,19 @@ const styles = StyleSheet.create({
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   inputError: { fontFamily: Fonts.body, fontSize: 12, color: Colors.error },
+
+  secretToggle: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: Radius.lg, padding: Spacing.md,
+  },
+  secretToggleActive: { backgroundColor: '#FFF4E8', borderColor: '#C9A77A' },
+  secretEmoji: { fontSize: 26 },
+  secretLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  secretLabelActive: { color: Colors.burgundy },
+  secretSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  secretSubActive: { color: '#8B6B3A' },
+  secretCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  secretCheckActive: { backgroundColor: '#C9A77A', borderColor: '#C9A77A' },
+  secretCheckMark: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream },
 });

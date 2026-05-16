@@ -19,6 +19,13 @@ import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkS
 import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
 import { MomentEntry, subscribeMoments } from '../../services/momentService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
+import {
+  StateUnionDoc,
+  subscribeStateUnion,
+  getCurrentWeekId,
+  answeredCount as suAnsweredCount,
+  hasUserCompleted as suHasUserCompleted,
+} from '../../services/stateUnionService';
 import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -102,6 +109,7 @@ export default function HomeScreen() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [moments, setMoments] = useState<MomentEntry[]>([]);
+  const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -132,7 +140,8 @@ export default function HomeScreen() {
     const u10 = subscribeMemories(coupleId, setMemories);
     const u11 = subscribeFlashes(coupleId, setFlashes);
     const u12 = subscribeMoments(coupleId, setMoments);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); };
+    const u13 = subscribeStateUnion(coupleId, getCurrentWeekId(), setSuDoc);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); };
   }, [coupleId]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -342,6 +351,89 @@ export default function HomeScreen() {
     });
   }
 
+  // Sunday Check-in (State of the Union) — weekly ritual prompt
+  if (partnerId) {
+    const iCompleted = suHasUserCompleted(suDoc, uid);
+    const partnerCompleted = suHasUserCompleted(suDoc, partnerId);
+    const partnerProgress = suAnsweredCount(suDoc, partnerId);
+    const today = new Date();
+    const isSunday = today.getDay() === 0;
+    if (partnerCompleted && !iCompleted) {
+      // Partner is waiting for you
+      list.push({
+        emoji: '💗',
+        title: `${partner?.name ?? 'Partner'} finished the Sunday check-in`,
+        subtitle: 'Answer 5 questions to reveal both sides',
+        route: '/state-union',
+        bg: Colors.blush,
+      });
+    } else if (!iCompleted && partnerProgress > 0) {
+      // Partner started but hasn't finished — gentle nudge
+      list.push({
+        emoji: '💞',
+        title: 'Sunday check-in started',
+        subtitle: `${partner?.name ?? 'Partner'} is answering — start when you can`,
+        route: '/state-union',
+        bg: Colors.blush,
+      });
+    } else if (isSunday && !iCompleted) {
+      // It's Sunday and nobody has started — surface the ritual
+      list.push({
+        emoji: '🌅',
+        title: 'Sunday check-in',
+        subtitle: '5 questions to keep you close this week',
+        route: '/state-union',
+        bg: '#FFF0F3',
+      });
+    }
+  }
+
+  // Care package reminder (LDR, first 3 days of each month) — monthly cadence
+  if (isLDR && partner?.name) {
+    const today = new Date();
+    if (today.getDate() <= 3) {
+      list.push({
+        emoji: '🎁',
+        title: 'Care package time?',
+        subtitle: `Send ${partner.name} something small in the mail this month`,
+        route: '/notes',
+        bg: '#FFF4E8',
+      });
+    }
+  }
+
+  // Post-visit recovery (LDR, 1-3 days after the last set visit date) — rotating daily prompt.
+  // We use the raw nextVisitDate in the past, since getNextVisit() returns null once it's passed.
+  if (isLDR && couple?.nextVisitDate && couple.nextVisitDate < Date.now()) {
+    const daysSince = Math.floor((Date.now() - couple.nextVisitDate) / 86400000);
+    if (daysSince >= 1 && daysSince <= 3) {
+      const them = partner?.name ?? 'them';
+      const postvisit = [
+        { emoji: '✨', title: 'Visit memory drop',          sub: `Share your favorite photos from seeing ${them}`, route: '/moments' },
+        { emoji: '📅', title: 'Day 2 apart',               sub: 'Plan one thing to look forward to together this week', route: '/countdown' },
+        { emoji: '📞', title: 'Day 3 apart',               sub: 'Schedule your next call together', route: '/reminders' },
+      ];
+      const p = postvisit[daysSince - 1];
+      if (p) list.unshift({ emoji: p.emoji, title: p.title, subtitle: p.sub, route: p.route, bg: Colors.blush });
+    }
+  }
+
+  // Pre-visit excitement (LDR, 1-7 days before next visit) — rotating daily prompt
+  if (isLDR && nextVisit && nextVisit.daysUntil >= 1 && nextVisit.daysUntil <= 7) {
+    const them = partner?.name ?? 'them';
+    const previsit = [
+      { emoji: '💞', title: 'Tomorrow',   sub: `Last sleep before you see ${them}. Anything to say first?`, route: '/notes' },
+      { emoji: '✨', title: '2 days',     sub: 'List one thing you want to talk about in person', route: '/notes' },
+      { emoji: '🌹', title: '3 days',     sub: "Pick a Daily Pick you'd both love to try together", route: '/daily-wishes' },
+      { emoji: '📸', title: '4 days',     sub: 'Send a teaser of what is coming', route: '/flashes' },
+      { emoji: '💌', title: '5 days',     sub: 'Write a note for when they arrive', route: '/notes' },
+      { emoji: '🎁', title: '6 days',     sub: 'Plan a small surprise for them', route: '/notes' },
+      { emoji: '✈️', title: 'One week',   sub: `Write one thing you are excited to do with ${them}`, route: '/notes' },
+    ];
+    const p = previsit[nextVisit.daysUntil - 1];
+    if (p) list.unshift({ emoji: p.emoji, title: p.title, subtitle: p.sub, route: p.route, bg: Colors.blush });
+  }
+
   // Flashes: unviewed incoming flash from partner
   const incomingFlash = flashes.find(f => f.fromUid !== uid && !f.viewed) ?? null;
   if (incomingFlash) {
@@ -355,7 +447,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes]);
+  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

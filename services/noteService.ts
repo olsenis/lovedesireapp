@@ -5,7 +5,11 @@ export interface LoveNote {
   id: string;
   message: string;
   openAt: number;
-  openCondition?: 'sad' | 'visit'; // sad = partner sets sad mood; visit = next visit date arrives
+  openCondition?: 'sad' | 'visit' | 'missing' | 'sleepless';
+  // sad      = partner sets sad mood (auto-unlock)
+  // visit    = next visit date arrives (auto-unlock)
+  // missing  = LDR stash, recipient opens when missing partner (manual)
+  // sleepless = LDR stash, recipient opens when can't sleep (manual)
   fromUid: string;
   opened: boolean;
   createdAt: number;
@@ -24,12 +28,14 @@ export async function createNote(
   fromUid: string,
   message: string,
   openAt: number,
-  openCondition?: 'sad' | 'visit'
+  openCondition?: 'sad' | 'visit' | 'missing' | 'sleepless'
 ): Promise<void> {
+  // Only sad/visit are auto-unlocked — lock their openAt to year 9999 so time never triggers them.
+  // missing/sleepless are stash letters openable anytime by the recipient.
+  const isAutoUnlock = openCondition === 'sad' || openCondition === 'visit';
   await addDoc(collection(db, 'couples', coupleId, 'notes'), {
     message,
-    // If condition-based, set openAt far in future so time-check never triggers it
-    openAt: openCondition ? 32503680000000 : openAt,
+    openAt: isAutoUnlock ? 32503680000000 : openAt,
     ...(openCondition ? { openCondition } : {}),
     fromUid,
     opened: false,
