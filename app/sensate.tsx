@@ -28,8 +28,8 @@ const STAGES: Stage[] = [
     title: 'Discover',
     subtitle: 'Non-genital touch, sensation only',
     durationMinutes: 15,
-    color: '#E8F5E9',
-    textColor: '#2E7D32',
+    color: '#FAEEF2',
+    textColor: '#A4366A',
     instruction: 'Partner A touches Partner B for 15 minutes, back, arms, face, scalp. Partner B only receives and notices. No goal. No performance. Switch when the timer ends.',
     prompts: [
       'Notice the temperature of their skin.',
@@ -70,8 +70,8 @@ const STAGES: Stage[] = [
     title: 'Flow',
     subtitle: 'Mindful, no agenda',
     durationMinutes: 0,
-    color: '#F3E5F5',
-    textColor: '#6A1B9A',
+    color: '#F4A7B9',
+    textColor: '#6a0a3e',
     instruction: 'No timer. No goal. Move together with full sensory awareness, sensation, not performance. If arousal comes, let it be part of the experience without chasing it. Stay curious.',
     prompts: [
       'There is nothing to achieve.',

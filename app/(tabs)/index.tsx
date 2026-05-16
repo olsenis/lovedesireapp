@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
@@ -495,7 +496,12 @@ export default function HomeScreen() {
 
       {/* Partner hero card */}
       {isConnected ? (
-        <View style={styles.coupleCard}>
+        <LinearGradient
+          colors={['#7a0b46', '#880E4F', '#6a0a3e']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.coupleCard}
+        >
           <Text style={styles.heartWatermark}>♥</Text>
           <View style={styles.coupleRow}>
             <View style={styles.avatarCol}>
@@ -543,7 +549,7 @@ export default function HomeScreen() {
               </View>
             </View>
           </View>
-        </View>
+        </LinearGradient>
       ) : (
         <TouchableOpacity style={styles.connectBanner} onPress={() => router.push('/(auth)/pairing')} accessibilityRole="button">
           <Text style={styles.connectEmoji}>💌</Text>
@@ -829,7 +835,7 @@ const styles = StyleSheet.create({
   signOutBtn: { paddingTop: 6 },
   signOut: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
 
-  coupleCard: { backgroundColor: Colors.burgundy, borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, overflow: 'hidden', ...Shadow.md },
+  coupleCard: { borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, overflow: 'hidden', ...Shadow.md },
   heartWatermark: { position: 'absolute', fontSize: 130, color: 'rgba(255,255,255,0.04)', top: -22, right: -8, lineHeight: 140 },
   coupleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   avatarCol: { alignItems: 'center', gap: 8 },
