@@ -24,6 +24,7 @@ export interface Couple {
   startDate?: number; // actual relationship start date (set by couple)
   isLongDistance?: boolean; // LDR toggle — changes home screen, roulette, notes, etc.
   nextVisitDate?: number; // timestamp of next planned reunion (only when isLongDistance)
+  partnerBirthdays?: Record<string, string>; // uid -> 'DD.MM' — entered for partner by other partner in onboarding; partner's own UserProfile.birthday takes precedence
 }
 
 // Exclude visually ambiguous characters (0/O, 1/I/L) for easier sharing verbally
@@ -96,6 +97,10 @@ export async function setLongDistance(coupleId: string, on: boolean): Promise<vo
 
 export async function setNextVisitDate(coupleId: string, date: number | null): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId), { nextVisitDate: date ?? 0 });
+}
+
+export async function setPartnerBirthday(coupleId: string, partnerUid: string, birthday: string): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId), { [`partnerBirthdays.${partnerUid}`]: birthday });
 }
 
 export async function getCouple(coupleId: string): Promise<Couple | null> {

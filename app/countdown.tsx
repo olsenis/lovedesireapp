@@ -66,9 +66,12 @@ const EMOJIS = ['❤️', '💍', '🎂', '✈️', '🎉', '🌹', '⭐', '🏠
 
 export default function CountdownScreen() {
   const { user, profile } = useAuth();
-  const { partner } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [dates, setDates] = useState<ImportantDate[]>([]);
-  const autoDates = getAutoDates(partner?.name ?? 'Partner', partner?.birthday);
+  // Partner's own UserProfile.birthday wins; fall back to onboarding-supplied couple.partnerBirthdays.
+  const partnerUid = couple?.partner1Uid === user?.uid ? couple?.partner2Uid : couple?.partner1Uid;
+  const effectiveBirthday = partner?.birthday ?? (partnerUid ? couple?.partnerBirthdays?.[partnerUid] : undefined);
+  const autoDates = getAutoDates(partner?.name ?? 'Partner', effectiveBirthday);
   const [showAdd, setShowAdd] = useState(false);
   const [label, setLabel] = useState('');
   const [dateStr, setDateStr] = useState('');

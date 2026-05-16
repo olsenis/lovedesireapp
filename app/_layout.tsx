@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { createUserProfile } from '../services/authService';
 import { getConsent, confirmConsent } from '../services/consentService';
+import { getOnboardingState } from '../services/onboardingService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -54,27 +55,35 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  const routeAfterConsent = async (uid: string, coupleId?: string) => {
+    // Onboarding tour is only meaningful after the couple is paired.
+    // If not yet paired (no coupleId), send to tabs — pairing flow lives elsewhere.
+    if (!coupleId) { router.replace('/(tabs)'); return; }
+    const ob = await getOnboardingState(uid);
+    if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
+    router.replace('/(tabs)');
+  };
+
   useEffect(() => {
     if (loading) return;
     if (user) {
-      // Check if user has confirmed 18+ consent
       getConsent(user.uid).then((consent) => {
         if (!consent?.confirmed) {
           setShowConsent(true);
         } else {
-          router.replace('/(tabs)');
+          routeAfterConsent(user.uid, profile?.coupleId);
         }
       });
     } else {
       router.replace('/(auth)/login');
     }
-  }, [user, loading]);
+  }, [user, loading, profile?.coupleId]);
 
   const handleConfirmConsent = async () => {
     if (!user) return;
     await confirmConsent(user.uid);
     setShowConsent(false);
-    router.replace('/(tabs)');
+    routeAfterConsent(user.uid, profile?.coupleId);
   };
 
   const handleDeclineConsent = async () => {
