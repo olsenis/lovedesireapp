@@ -38,8 +38,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: 'Together',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="🎲" focused={focused} />,
+          title: 'Discover',
+          tabBarIcon: ({ focused }) => <TabIcon symbol="✨" focused={focused} />,
         }}
       />
       <Tabs.Screen

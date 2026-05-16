@@ -397,9 +397,21 @@ export default function ProfileScreen() {
               <Text style={styles.rowLabel}>Push notifications</Text>
               <Text style={styles.rowHint}>Mood, notes, challenge, matches</Text>
             </View>
-            <Text style={profile?.pushToken ? styles.notifOn : styles.notifOff}>
-              {Platform.OS === 'web' ? 'Web only' : profile?.pushToken ? 'On' : 'Off'}
-            </Text>
+            {Platform.OS === 'web' ? (
+              <Text style={styles.notifOff}>Web only</Text>
+            ) : profile?.pushToken ? (
+              <Switch
+                value={profile?.notificationsEnabled !== false}
+                onValueChange={async (next) => {
+                  if (!user) return;
+                  await createUserProfile(user.uid, { notificationsEnabled: next } as any);
+                }}
+                trackColor={{ false: Colors.border, true: Colors.rose }}
+                thumbColor={profile?.notificationsEnabled !== false ? Colors.burgundy : Colors.muted}
+              />
+            ) : (
+              <Text style={styles.notifOff}>Off</Text>
+            )}
           </View>
           {!profile?.pushToken && Platform.OS !== 'web' && (
             <>

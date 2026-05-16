@@ -116,7 +116,11 @@ export default function RootLayout() {
         if (status !== 'granted') return;
         const token = (await Notifications.getExpoPushTokenAsync()).data;
         if (token && token !== profile?.pushToken) {
-          createUserProfile(user.uid, { pushToken: token } as any);
+          // First-time registration also flips the in-app toggle ON by default.
+          // Once set, the user controls it from Profile and we never overwrite.
+          const init: { pushToken: string; notificationsEnabled?: boolean } = { pushToken: token };
+          if (profile?.notificationsEnabled === undefined) init.notificationsEnabled = true;
+          createUserProfile(user.uid, init as any);
         }
       } catch {
         // Push notifications unavailable (Expo Go, simulator, or missing projectId)

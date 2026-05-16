@@ -11,7 +11,11 @@ async function getPartnerToken(coupleId: string, myUid: string): Promise<string 
   if (!partnerId) return null;
   const partnerSnap = await getDoc(doc(db, 'users', partnerId));
   if (!partnerSnap.exists()) return null;
-  return (partnerSnap.data() as UserProfile).pushToken ?? null;
+  const profile = partnerSnap.data() as UserProfile;
+  // Respect partner's in-app toggle. notificationsEnabled === false means they
+  // explicitly turned them off in Profile, even if the token still exists.
+  if (profile.notificationsEnabled === false) return null;
+  return profile.pushToken ?? null;
 }
 
 export async function notifyPartner(

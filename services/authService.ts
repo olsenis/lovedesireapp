@@ -16,6 +16,7 @@ export interface UserProfile {
   coupleId?: string;
   inviteCode?: string;
   pushToken?: string;
+  notificationsEnabled?: boolean; // user's in-app toggle, separate from OS-level permission. Defaults to true when token is first registered.
   createdAt: number;
   birthday?: string; // DD.MM format, no year
   timezone?: string; // IANA tz like "Europe/Reykjavik" — used for LDR partner clock

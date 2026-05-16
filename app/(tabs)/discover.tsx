@@ -44,7 +44,7 @@ export default function DiscoverScreen() {
   const { isSubscribed } = useSubscription();
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Together</Text>
+      <Text style={styles.title}>Discover</Text>
       <Text style={styles.subtitle}>Games & challenges for the two of you</Text>
 
       <Text style={styles.sectionLabel}>Games</Text>
