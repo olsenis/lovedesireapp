@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
-import { Todo, TodoCategory, subscribeTodos, addTodo, toggleTodo, deleteTodo } from '../../services/todoService';
+import { Todo, TodoCategory, subscribeTodos, addTodo, toggleTodo, deleteTodo, acceptSuggestion, rejectSuggestion } from '../../services/todoService';
+import { notifyPartner } from '../../services/notificationService';
 import { useCouple } from '../../hooks/useCouple';
 import { useHelp } from '../../hooks/useHelp';
 import { HelpModal } from '../../components/HelpModal';
@@ -28,6 +29,7 @@ export default function TogetherScreen() {
   const help = useHelp('together-list');
   const [newText, setNewText] = useState('');
   const [newCat, setNewCat] = useState<TodoCategory>('daily');
+  const [newAsSuggestion, setNewAsSuggestion] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
 
   const coupleId = profile?.coupleId;
@@ -40,9 +42,29 @@ export default function TogetherScreen() {
 
   const handleAdd = async () => {
     if (!newText.trim() || !coupleId || !user) return;
-    await addTodo(coupleId, newText.trim(), newCat, user.uid);
+    await addTodo(coupleId, newText.trim(), newCat, user.uid, 'manual', newAsSuggestion);
+    if (newAsSuggestion) {
+      notifyPartner(
+        coupleId, user.uid,
+        `${profile?.name ?? 'Partner'} suggested an item ✨`,
+        `"${newText.trim().slice(0, 60)}"`
+      ).catch(() => {});
+    }
     setNewText('');
+    setNewAsSuggestion(false);
     setShowAdd(false);
+  };
+
+  const handleAccept = async (todo: Todo) => {
+    if (!coupleId) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await acceptSuggestion(coupleId, todo.id);
+  };
+
+  const handleReject = async (todo: Todo) => {
+    if (!coupleId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await rejectSuggestion(coupleId, todo.id);
   };
 
   const handleToggle = async (todo: Todo) => {
@@ -64,9 +86,15 @@ export default function TogetherScreen() {
     }
   };
 
-  const filtered = filter === 'all' ? todos : todos.filter((t) => t.category === filter);
-  const incomplete = filtered.filter((t) => !t.completed);
-  const complete = filtered.filter((t) => t.completed);
+  const isActive = (t: Todo) => !t.status || t.status === 'active';
+  const filtered = (filter === 'all' ? todos : todos.filter((t) => t.category === filter));
+  const activeOnly = filtered.filter(isActive);
+  const incomplete = activeOnly.filter((t) => !t.completed);
+  const complete = activeOnly.filter((t) => t.completed);
+  // Pending suggestions FROM partner (need my accept/reject)
+  const pendingFromPartner = todos.filter((t) => t.status === 'pending' && t.createdBy !== uid);
+  // My own pending (waiting for partner) — show subtly
+  const pendingFromMe = todos.filter((t) => t.status === 'pending' && t.createdBy === uid);
 
   return (
     <View style={styles.screen}>
@@ -98,6 +126,32 @@ export default function TogetherScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
+        {pendingFromPartner.length > 0 && (
+          <>
+            <Text style={styles.suggestLabel}>✨ Suggestions from {partner?.name ?? 'Partner'}</Text>
+            {pendingFromPartner.map((todo) => {
+              const cat = CATEGORIES.find((c) => c.key === todo.category) ?? CATEGORIES[0];
+              return (
+                <View key={todo.id} style={styles.suggestCard}>
+                  <Text style={styles.suggestEmoji}>{cat.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.suggestText}>{todo.text}</Text>
+                    <Text style={styles.suggestCat}>{cat.label}</Text>
+                  </View>
+                  <View style={styles.suggestActions}>
+                    <TouchableOpacity onPress={() => handleReject(todo)} style={styles.rejectBtn} accessibilityRole="button" accessibilityLabel="Decline suggestion">
+                      <Text style={styles.rejectBtnText}>✕</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleAccept(todo)} style={styles.acceptBtn} accessibilityRole="button" accessibilityLabel="Accept suggestion">
+                      <Text style={styles.acceptBtnText}>✓</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </>
+        )}
+
         {incomplete.map((todo) => {
           const cat = CATEGORIES.find((c) => c.key === todo.category) ?? CATEGORIES[0];
           return (
@@ -117,7 +171,13 @@ export default function TogetherScreen() {
           </>
         )}
 
-        {filtered.length === 0 && (
+        {pendingFromMe.length > 0 && (
+          <Text style={styles.pendingFromMe}>
+            ⏳ Waiting for {partner?.name ?? 'partner'} on {pendingFromMe.length} suggestion{pendingFromMe.length > 1 ? 's' : ''}
+          </Text>
+        )}
+
+        {filtered.length === 0 && pendingFromPartner.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>✨</Text>
             <Text style={styles.emptyText}>Add something you want to do together</Text>
@@ -150,12 +210,30 @@ export default function TogetherScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            <TouchableOpacity
+              style={[styles.suggestToggle, newAsSuggestion && styles.suggestToggleActive]}
+              onPress={() => setNewAsSuggestion(s => !s)}
+              activeOpacity={0.85}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: newAsSuggestion }}
+            >
+              <Text style={styles.suggestToggleEmoji}>{newAsSuggestion ? '✨' : '👀'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.suggestToggleLabel, newAsSuggestion && styles.suggestToggleLabelActive]}>
+                  {newAsSuggestion ? `Suggest to ${partner?.name ?? 'partner'}` : 'Add directly to the list'}
+                </Text>
+                <Text style={[styles.suggestToggleHint, newAsSuggestion && styles.suggestToggleHintActive]}>
+                  {newAsSuggestion ? 'They accept or decline before it appears' : 'Tap to switch to suggest mode'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)} accessibilityRole="button">
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setNewAsSuggestion(false); setShowAdd(false); }} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} accessibilityRole="button">
-                <Text style={styles.saveBtnText}>Add →</Text>
+                <Text style={styles.saveBtnText}>{newAsSuggestion ? 'Send suggestion →' : 'Add →'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -279,6 +357,36 @@ const styles = StyleSheet.create({
 
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.sm, gap: Spacing.sm },
   doneLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: Spacing.md },
+
+  // Suggestions from partner — accept/reject
+  suggestLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 2 },
+  suggestCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: '#FFF4E8', borderRadius: Radius.lg, padding: Spacing.md,
+    borderWidth: 1, borderColor: '#C9A77A', marginBottom: 8,
+  },
+  suggestEmoji: { fontSize: 24 },
+  suggestText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  suggestCat: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  suggestActions: { flexDirection: 'row', gap: 8 },
+  acceptBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.burgundy, alignItems: 'center', justifyContent: 'center' },
+  acceptBtnText: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.cream },
+  rejectBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  rejectBtnText: { fontFamily: Fonts.body, fontSize: 18, color: Colors.muted },
+  pendingFromMe: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.md },
+
+  // Suggest toggle in Add modal
+  suggestToggle: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: Radius.lg, padding: Spacing.md,
+  },
+  suggestToggleActive: { backgroundColor: '#FFF4E8', borderColor: '#C9A77A' },
+  suggestToggleEmoji: { fontSize: 26 },
+  suggestToggleLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  suggestToggleLabelActive: { color: Colors.burgundy },
+  suggestToggleHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  suggestToggleHintActive: { color: '#8B6B3A' },
 
   todoRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
   todoRowDone: { opacity: 0.55 },

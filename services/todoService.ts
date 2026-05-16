@@ -23,6 +23,9 @@ export interface Todo {
   createdBy: string;
   createdAt: number;
   source?: TodoSource;
+  // Couples-suggest pattern. 'pending' = waiting for partner to accept; 'rejected' = partner declined.
+  // Absent or 'active' = normal todo, visible to both.
+  status?: 'pending' | 'active' | 'rejected';
 }
 
 export function subscribeTodos(coupleId: string, onChange: (todos: Todo[]) => void): Unsubscribe {
@@ -42,7 +45,8 @@ export async function addTodo(
   text: string,
   category: TodoCategory,
   createdBy: string,
-  source: TodoSource = 'manual'
+  source: TodoSource = 'manual',
+  asSuggestion: boolean = false,
 ): Promise<void> {
   await addDoc(collection(db, 'couples', coupleId, 'todos'), {
     text,
@@ -51,7 +55,16 @@ export async function addTodo(
     createdBy,
     createdAt: Date.now(),
     source,
+    ...(asSuggestion ? { status: 'pending' } : {}),
   });
+}
+
+export async function acceptSuggestion(coupleId: string, todoId: string): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'todos', todoId), { status: 'active' });
+}
+
+export async function rejectSuggestion(coupleId: string, todoId: string): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'todos', todoId), { status: 'rejected' });
 }
 
 export async function toggleTodo(coupleId: string, todoId: string, completed: boolean): Promise<void> {

@@ -20,6 +20,7 @@ import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkS
 import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
 import { MomentEntry, subscribeMoments } from '../../services/momentService';
 import { ActivityCardsSession, subscribeActivityCards } from '../../services/bingoService';
+import { Todo, subscribeTodos } from '../../services/todoService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
 import {
   StateUnionDoc,
@@ -113,6 +114,7 @@ export default function HomeScreen() {
   const [moments, setMoments] = useState<MomentEntry[]>([]);
   const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
+  const [todos, setTodos] = useState<Todo[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -145,7 +147,8 @@ export default function HomeScreen() {
     const u12 = subscribeMoments(coupleId, setMoments);
     const u13 = subscribeStateUnion(coupleId, getCurrentWeekId(), setSuDoc);
     const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); };
+    const u15 = subscribeTodos(coupleId, setTodos);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -355,6 +358,18 @@ export default function HomeScreen() {
     });
   }
 
+  // Together List — partner suggested an item and is waiting for my accept/reject
+  const pendingTodos = todos.filter((t) => t.status === 'pending' && t.createdBy !== uid);
+  if (pendingTodos.length > 0) {
+    list.push({
+      emoji: '✨',
+      title: `${partner?.name ?? 'Partner'} suggested ${pendingTodos.length === 1 ? 'something' : `${pendingTodos.length} things`}`,
+      subtitle: pendingTodos.length === 1 ? `"${pendingTodos[0].text.slice(0, 60)}"` : 'Accept or decline in Together List',
+      route: '/todo',
+      bg: '#FFF4E8',
+    });
+  }
+
   // Activity Cards (Bingo) — partner picked a card and I'm the receiver
   if (bingoSession && partnerId && bingoSession.pendingCard !== null && bingoSession.turnUid === uid) {
     const cardText = bingoSession.squares?.[bingoSession.pendingCard] ?? 'a challenge';
@@ -463,7 +478,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession]);
+  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {
