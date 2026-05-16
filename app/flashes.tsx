@@ -3,7 +3,23 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView, VideoSource } from 'expo-video';
+
+// Small wrapper: each <FlashVideo> creates its own player so the useVideoPlayer
+// hook is at component top-level (rules of hooks). Mute/controls configurable.
+function FlashVideo({ uri, style, muted = false, controls = false }: {
+  uri: string;
+  style: any;
+  muted?: boolean;
+  controls?: boolean;
+}) {
+  const player = useVideoPlayer(uri as VideoSource, (p) => {
+    p.loop = true;
+    p.muted = muted;
+    p.play();
+  });
+  return <VideoView player={player} style={style} contentFit="contain" nativeControls={controls} />;
+}
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { FlashEntry, subscribeFlashes, sendFlash, markFlashViewed, formatCountdown } from '../services/flashService';
@@ -258,7 +274,7 @@ export default function FlashesScreen() {
           {selectedUri && (
             selectedType === 'photo'
               ? <Image source={{ uri: selectedUri }} style={styles.previewMedia} contentFit="cover" />
-              : <Video source={{ uri: selectedUri }} style={styles.previewMedia} resizeMode={ResizeMode.COVER} shouldPlay isLooping isMuted />
+              : <FlashVideo uri={selectedUri} style={styles.previewMedia} muted />
           )}
 
           <View style={styles.captionRow}>
@@ -286,14 +302,7 @@ export default function FlashesScreen() {
           {viewingFlash?.mediaType === 'photo' ? (
             <Image source={{ uri: viewingFlash.mediaURL }} style={styles.viewerMedia} contentFit="contain" />
           ) : viewingFlash ? (
-            <Video
-              source={{ uri: viewingFlash.mediaURL }}
-              style={styles.viewerMedia}
-              resizeMode={ResizeMode.CONTAIN}
-              shouldPlay
-              isLooping
-              useNativeControls
-            />
+            <FlashVideo uri={viewingFlash.mediaURL} style={styles.viewerMedia} controls />
           ) : null}
 
           <View style={styles.viewerFooter}>

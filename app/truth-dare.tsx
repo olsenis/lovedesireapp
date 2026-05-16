@@ -2,7 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, Easing } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
+import {
+  useAudioRecorder,
+  useAudioPlayer,
+  RecordingPresets,
+  AudioModule,
+  setAudioModeAsync,
+} from 'expo-audio';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
@@ -46,12 +52,12 @@ export default function TruthDareScreen() {
   // Truth text answer
   const [answerText, setAnswerText] = useState('');
 
-  // Audio recording state
+  // Audio recording state (expo-audio hook-based API)
   const [answerMode, setAnswerMode] = useState<'write' | 'record'>('write');
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const player = useAudioPlayer(recordingUri ?? undefined);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -68,12 +74,13 @@ export default function TruthDareScreen() {
     return subscribeTruthDare(coupleId, (s) => { setSession(s); setLoading(false); });
   }, [coupleId]);
 
-  // Clean up sound on unmount
+  // Track playback finished — expo-audio player exposes playbackStatus events
   useEffect(() => {
-    return () => {
-      soundRef.current?.unloadAsync();
-    };
-  }, []);
+    const sub = player.addListener('playbackStatusUpdate', (status) => {
+      if (status.didJustFinish) setIsPlaying(false);
+    });
+    return () => sub.remove();
+  }, [player]);
 
   const isMyTurn = session?.turnUid === uid;
   const cfg = DARE_LEVEL_CONFIG[session?.level ?? 'flirty'];
@@ -128,13 +135,14 @@ export default function TruthDareScreen() {
     setAnswerText('');
   };
 
-  // Audio recording
+  // Audio recording — expo-audio hooks (replaces deprecated expo-av)
   const handleStartRecording = async () => {
     try {
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      recordingRef.current = recording;
+      const perm = await AudioModule.requestRecordingPermissionsAsync();
+      if (!perm.granted) return;
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
       setIsRecording(true);
       setRecordingUri(null);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -144,29 +152,27 @@ export default function TruthDareScreen() {
   };
 
   const handleStopRecording = async () => {
-    if (!recordingRef.current) return;
-    await recordingRef.current.stopAndUnloadAsync();
-    const uri = recordingRef.current.getURI();
-    recordingRef.current = null;
-    setIsRecording(false);
-    setRecordingUri(uri ?? null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      await recorder.stop();
+      setIsRecording(false);
+      setRecordingUri(recorder.uri ?? null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      console.warn('Stop recording failed', e);
+      setIsRecording(false);
+    }
   };
 
   const handlePlayback = async () => {
     if (!recordingUri) return;
     if (isPlaying) {
-      await soundRef.current?.stopAsync();
+      player.pause();
       setIsPlaying(false);
       return;
     }
-    const { sound } = await Audio.Sound.createAsync({ uri: recordingUri });
-    soundRef.current = sound;
+    player.seekTo(0);
+    player.play();
     setIsPlaying(true);
-    await sound.playAsync();
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) setIsPlaying(false);
-    });
   };
 
   const handleSubmitAudioAnswer = async () => {
@@ -660,27 +666,26 @@ function DoneCard({
   isMyTurn: boolean;
 }) {
   const card = session.card!;
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const playbackPlayer = useAudioPlayer(card.audioURL ?? undefined);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    return () => { soundRef.current?.unloadAsync(); };
-  }, []);
+    const sub = playbackPlayer.addListener('playbackStatusUpdate', (status) => {
+      if (status.didJustFinish) setIsPlaying(false);
+    });
+    return () => sub.remove();
+  }, [playbackPlayer]);
 
-  const handlePlay = async () => {
+  const handlePlay = () => {
     if (!card.audioURL) return;
     if (isPlaying) {
-      await soundRef.current?.stopAsync();
+      playbackPlayer.pause();
       setIsPlaying(false);
       return;
     }
-    const { sound } = await Audio.Sound.createAsync({ uri: card.audioURL });
-    soundRef.current = sound;
+    playbackPlayer.seekTo(0);
+    playbackPlayer.play();
     setIsPlaying(true);
-    await sound.playAsync();
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) setIsPlaying(false);
-    });
   };
 
   return (
