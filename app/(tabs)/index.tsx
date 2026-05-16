@@ -19,6 +19,7 @@ import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyServ
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
 import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
 import { MomentEntry, subscribeMoments } from '../../services/momentService';
+import { ActivityCardsSession, subscribeActivityCards } from '../../services/bingoService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
 import {
   StateUnionDoc,
@@ -111,6 +112,7 @@ export default function HomeScreen() {
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [moments, setMoments] = useState<MomentEntry[]>([]);
   const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);
+  const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -142,8 +144,9 @@ export default function HomeScreen() {
     const u11 = subscribeFlashes(coupleId, setFlashes);
     const u12 = subscribeMoments(coupleId, setMoments);
     const u13 = subscribeStateUnion(coupleId, getCurrentWeekId(), setSuDoc);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); };
-  }, [coupleId, couple?.isLongDistance]);
+    const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); };
+  }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
     if (!coupleId || !partnerId) return;
@@ -352,6 +355,18 @@ export default function HomeScreen() {
     });
   }
 
+  // Activity Cards (Bingo) — partner picked a card and I'm the receiver
+  if (bingoSession && partnerId && bingoSession.pendingCard !== null && bingoSession.turnUid === uid) {
+    const cardText = bingoSession.squares?.[bingoSession.pendingCard] ?? 'a challenge';
+    list.push({
+      emoji: '🃏',
+      title: `${partner?.name ?? 'Partner'} picked a card for you`,
+      subtitle: `"${cardText.slice(0, 60)}${cardText.length > 60 ? '...' : ''}"`,
+      route: '/bingo',
+      bg: Colors.blush,
+    });
+  }
+
   // Sunday Check-in (State of the Union) — weekly ritual prompt
   if (partnerId) {
     const iCompleted = suHasUserCompleted(suDoc, uid);
@@ -448,7 +463,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc]);
+  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

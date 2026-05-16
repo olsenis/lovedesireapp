@@ -1,5 +1,4 @@
-import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, Unsubscribe } from 'firebase/firestore';
-// Note: arrayRemove and deleteField kept for legacy compat if imported elsewhere
+import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { BINGO_ACTIVITIES } from '../constants/content';
 
@@ -116,6 +115,13 @@ export async function markCardDone(
     completed: arrayUnion(index),
     pendingCard: null,
     turnUid: nextTurnUid,
+  });
+}
+
+// Undo a completed card — used when the recipient mis-tapped "we did it"
+export async function uncompleteCard(coupleId: string, index: number): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
+    completed: arrayRemove(index),
   });
 }
 

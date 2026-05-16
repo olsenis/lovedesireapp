@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { ActivityCardsSession, MAX_PASSES, MAX_RECEIVER_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards } from '../services/bingoService';
+import { ActivityCardsSession, MAX_PASSES, MAX_RECEIVER_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -19,6 +19,7 @@ export default function ActivityCardsScreen() {
   const [loading, setLoading] = useState(true);
   const [revealIndex, setRevealIndex] = useState<number | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [undoCard, setUndoCard] = useState<{ index: number; text: string } | null>(null);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const help = useHelp('bingo');
 
@@ -53,7 +54,7 @@ export default function ActivityCardsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const activity = session.squares[revealIndex];
     await flipCard(coupleId, uid, revealIndex, partnerId);
-    notifyPartner(coupleId, uid, 'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${activity}" — your turn!`).catch(() => {});
+    notifyPartner(coupleId, uid, 'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${activity}", your turn!`).catch(() => {});
     setRevealIndex(null);
   };
 
@@ -77,7 +78,7 @@ export default function ActivityCardsScreen() {
     if (!coupleId || !session || !partnerId) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await markCardDone(coupleId, session.pendingCard!, partnerId);
-    notifyPartner(coupleId, uid, 'Activity Cards ✓', `${profile?.name ?? 'Your partner'} marked the challenge as done — your turn!`).catch(() => {});
+    notifyPartner(coupleId, uid, 'Activity Cards ✓', `${profile?.name ?? 'Your partner'} marked the challenge as done, your turn!`).catch(() => {});
   };
 
   const handleSkipReceived = async () => {
@@ -153,7 +154,8 @@ export default function ActivityCardsScreen() {
                   canTap && styles.cardCanTap,
                 ]}
                 onPress={() => handleCardTap(index)}
-                disabled={!canTap}
+                onLongPress={isDone ? () => setUndoCard({ index, text: activity }) : undefined}
+                disabled={!canTap && !isDone}
                 activeOpacity={canTap ? 0.75 : 1}
                accessibilityRole="button">
                 {isDone ? (
@@ -227,6 +229,37 @@ export default function ActivityCardsScreen() {
           </Animated.View>
         </View>
       </Modal>
+
+      {/* Undo completed card */}
+      {undoCard && (
+        <Modal visible transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modal}>
+              <Text style={styles.modalTitle}>Unmark this card?</Text>
+              <Text style={styles.modalText}>"{undoCard.text}"</Text>
+              <Text style={[styles.modalText, { fontSize: 13, marginTop: 4 }]}>
+                It'll go back to pending. Use this if you tapped done by mistake.
+              </Text>
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setUndoCard(null)} accessibilityRole="button">
+                  <Text style={styles.cancelText}>Keep done</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.confirmBtn}
+                  onPress={async () => {
+                    if (!coupleId) return;
+                    await uncompleteCard(coupleId, undoCard.index);
+                    setUndoCard(null);
+                  }}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.confirmText}>Unmark</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Reset confirmation */}
       <Modal visible={confirmReset} transparent animationType="slide">
