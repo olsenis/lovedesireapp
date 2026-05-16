@@ -3,6 +3,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteField,
   query,
   collection,
   where,
@@ -96,7 +97,9 @@ export async function setLongDistance(coupleId: string, on: boolean): Promise<vo
 }
 
 export async function setNextVisitDate(coupleId: string, date: number | null): Promise<void> {
-  await updateDoc(doc(db, 'couples', coupleId), { nextVisitDate: date ?? 0 });
+  // deleteField() properly removes the property when cleared; writing 0 left dirty data
+  // that passed truthy checks by accident and broke getNextVisit/post-visit nudges.
+  await updateDoc(doc(db, 'couples', coupleId), { nextVisitDate: date ?? deleteField() });
 }
 
 export async function setPartnerBirthday(coupleId: string, partnerUid: string, birthday: string): Promise<void> {

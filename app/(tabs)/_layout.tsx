@@ -53,9 +53,6 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabIcon symbol="💝" focused={focused} />,
         }}
       />
-      {/* Hide old screens from tab bar */}
-      <Tabs.Screen name="questions" options={{ href: null }} />
-      <Tabs.Screen name="games" options={{ href: null }} />
     </Tabs>
   );
 }

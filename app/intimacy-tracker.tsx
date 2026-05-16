@@ -386,7 +386,7 @@ function StatsView({ stats, entries }: { stats: ReturnType<typeof getIntimacySta
         {stats.mostCommonLocation && (
           <View style={[styles.statCard, { flex: 1 }]}>
             <Text style={styles.statCardNum}>{LOC_LABELS[stats.mostCommonLocation].emoji}</Text>
-            <Text style={styles.statCardLabel}>Favourite spot</Text>
+            <Text style={styles.statCardLabel}>Favorite spot</Text>
             <Text style={styles.statCardSub}>{LOC_LABELS[stats.mostCommonLocation].label}</Text>
           </View>
         )}
