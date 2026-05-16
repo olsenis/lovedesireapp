@@ -32,6 +32,32 @@ Install packages with `--legacy-peer-deps` due to react-dom peer conflict:
 npm install <package> --legacy-peer-deps
 ```
 
+## Git workflow & deploy budget
+
+This project deploys to Vercel Pro on every push to `main` (~60-90s per build). Pro tier allows **1000+ deploys / day per project**, so rate limit is no longer a daily constraint, but batching is still good hygiene — each commit is a separate revert point and noisy history is harder to read.
+
+**Default:** batch related changes into a single commit. Push when you genuinely want to see it live.
+
+### Before pushing
+- `npx tsc --noEmit` — must be clean
+- `npm run build` — local prod build (catches issues Vercel would catch)
+- `npm run dev` — sanity-check the change in the running app when feasible
+
+### When to batch vs push
+- ✅ **Push immediately:** security fixes, migrations the user needs to run, single user-facing bug fixes
+- ⚠️ **Batch first:** UI tweaks, label/copy edits, iterative styling, "while I'm here" cleanups — let 3-5 small fixes accumulate into one commit
+- ❌ **Don't push:** experimental scaffolding, mockups, work-in-progress refactors
+
+### When a tiny tweak comes in
+If the user iterates on UI ("change the label", "swap to placeholder", "no, the other way"), keep editing locally and **don't commit each round**. Combine them into one commit at the end of the iteration. Each round-trip via Vercel wastes a deploy slot and adds 90s of waiting per commit.
+
+### Rate limit symptoms (mostly historical, project is on Pro)
+- Vercel dashboard shows new commits as "queued" but never builds
+- Live `/settings` version sticks at an older hash
+- Last green deploy is hours old even though git push succeeded
+
+If hit on Pro: check Vercel project settings or open a support ticket — should not happen in normal use.
+
 ## Architecture
 
 **Expo SDK 54 + TypeScript + Expo Router v6 (file-based routing)**
