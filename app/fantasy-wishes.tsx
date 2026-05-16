@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { useState, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -121,6 +121,37 @@ export default function FantasyWishesScreen() {
     setShownUnvotedIds(prev => [...prev, ...next5]);
   };
 
+  // Build heterogeneous row data for FlatList — switches based on active tab
+  type Row =
+    | { type: 'empty-explore' }
+    | { type: 'wish-current'; item: FantasyWishesItem }
+    | { type: 'load-more' }
+    | { type: 'all-done' }
+    | { type: 'voted-label' }
+    | { type: 'wish-voted'; item: FantasyWishesItem }
+    | { type: 'empty-matches' }
+    | { type: 'match-card'; item: FantasyWishesItem };
+
+  const rows = useMemo<Row[]>(() => {
+    if (activeTab === 'matches') {
+      if (matched.length === 0) return [{ type: 'empty-matches' }];
+      return matched.map(item => ({ type: 'match-card' as const, item }));
+    }
+    // Explore tab
+    const list: Row[] = [];
+    if (items.length === 0) list.push({ type: 'empty-explore' });
+    for (const item of currentBatch) list.push({ type: 'wish-current', item });
+    if (canLoadMore) list.push({ type: 'load-more' });
+    if (!canLoadMore && currentBatch.length === 0 && allVoted.length === items.length && items.length > 0) {
+      list.push({ type: 'all-done' });
+    }
+    if (allVoted.length > 0) {
+      list.push({ type: 'voted-label' });
+      for (const item of allVoted) list.push({ type: 'wish-voted', item });
+    }
+    return list;
+  }, [activeTab, matched, items.length, currentBatch, allVoted, canLoadMore]);
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -153,88 +184,84 @@ export default function FantasyWishesScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.list}>
-        {activeTab === 'explore' ? (
-          <>
-            {items.length === 0 && (
-              <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7}>
-                <Text style={styles.emptyEmoji}>{loadingPresets ? '⏳' : '✨'}</Text>
-                <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
-                <Text style={styles.emptyText}>
-                  {loadingPresets
-                    ? 'Adding 120 wishes, this takes a moment'
-                    : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
-                </Text>
-              </TouchableOpacity>
-            )}
-            {/* Current locked batch, unvoted only, fixed until Load 5 more */}
-            {currentBatch.map((item) => (
-              <WishCard key={item.id} item={item} onVote={handleVote} myVote={null} />
-            ))}
-
-            {/* Load 5 more, only when all in current batch are voted */}
-            {canLoadMore && (
-              <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8}>
-                <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* All done */}
-            {!canLoadMore && currentBatch.length === 0 && allVoted.length === items.length && items.length > 0 && (
-              <View style={styles.allDoneCard}>
-                <Text style={styles.allDoneEmoji}>✨</Text>
-                <Text style={styles.allDoneText}>You've voted on everything!</Text>
-              </View>
-            )}
-
-            {/* Already voted, accumulate below */}
-            {allVoted.length > 0 && (
-              <>
-                <Text style={styles.groupLabel}>Already voted</Text>
-                {allVoted.map((item) => (
-                  <WishCard key={item.id} item={item} onVote={handleVote} myVote={myVote(item)} />
-                ))}
-              </>
-            )}
-          </>
-        ) : (
-          <>
-            {matched.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyEmoji}>💫</Text>
-                <Text style={styles.emptyTitle}>No matches yet</Text>
-                <Text style={styles.emptyText}>When you both say Yes to something, it appears here</Text>
-              </View>
-            ) : (
-              matched.map((item) => {
-                const iPressed = (item.addToList ?? []).includes(uid);
-                const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
-                const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
-                return (
-                  <View key={item.id} style={styles.matchCard}>
-                    <Text style={styles.matchEmoji}>✨</Text>
-                    <View style={styles.matchInfo}>
-                      <Text style={styles.matchText}>{item.text}</Text>
-                      <Text style={styles.matchBadge}>✓ You both want this</Text>
-                      {bothPressed ? (
-                        <Text style={styles.addedText}>✓ Added to Together List</Text>
-                      ) : iPressed ? (
-                        <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
-                      ) : (
-                        <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8}>
-                          <Text style={styles.addToListBtnText}>
-                            {theyPressed ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
+      <FlatList
+        data={rows}
+        keyExtractor={(row, idx) => row.type === 'wish-current' || row.type === 'wish-voted' || row.type === 'match-card' ? `${row.type}-${row.item.id}` : `${row.type}-${idx}`}
+        contentContainerStyle={styles.list}
+        renderItem={({ item: row }) => {
+          switch (row.type) {
+            case 'empty-explore':
+              return (
+                <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7}>
+                  <Text style={styles.emptyEmoji}>{loadingPresets ? '⏳' : '✨'}</Text>
+                  <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
+                  <Text style={styles.emptyText}>
+                    {loadingPresets
+                      ? 'Adding 120 wishes, this takes a moment'
+                      : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            case 'wish-current':
+              return <WishCard item={row.item} onVote={handleVote} myVote={null} />;
+            case 'load-more':
+              return (
+                <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8}>
+                  <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
+                </TouchableOpacity>
+              );
+            case 'all-done':
+              return (
+                <View style={styles.allDoneCard}>
+                  <Text style={styles.allDoneEmoji}>✨</Text>
+                  <Text style={styles.allDoneText}>You've voted on everything!</Text>
+                </View>
+              );
+            case 'voted-label':
+              return <Text style={styles.groupLabel}>Already voted</Text>;
+            case 'wish-voted':
+              return <WishCard item={row.item} onVote={handleVote} myVote={myVote(row.item)} />;
+            case 'empty-matches':
+              return (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyEmoji}>💫</Text>
+                  <Text style={styles.emptyTitle}>No matches yet</Text>
+                  <Text style={styles.emptyText}>When you both say Yes to something, it appears here</Text>
+                </View>
+              );
+            case 'match-card': {
+              const item = row.item;
+              const iPressed = (item.addToList ?? []).includes(uid);
+              const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
+              const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
+              return (
+                <View style={styles.matchCard}>
+                  <Text style={styles.matchEmoji}>✨</Text>
+                  <View style={styles.matchInfo}>
+                    <Text style={styles.matchText}>{item.text}</Text>
+                    <Text style={styles.matchBadge}>✓ You both want this</Text>
+                    {bothPressed ? (
+                      <Text style={styles.addedText}>✓ Added to Together List</Text>
+                    ) : iPressed ? (
+                      <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
+                    ) : (
+                      <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8}>
+                        <Text style={styles.addToListBtnText}>
+                          {theyPressed ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                );
-              })
-            )}
-          </>
-        )}
-      </ScrollView>
+                </View>
+              );
+            }
+            default: return null;
+          }
+        }}
+        removeClippedSubviews
+        initialNumToRender={8}
+        windowSize={5}
+      />
 
       <Modal visible={showAdd} transparent animationType="slide">
         <View style={styles.modalOverlay}>
