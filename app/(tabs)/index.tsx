@@ -411,7 +411,7 @@ export default function HomeScreen() {
       const postvisit = [
         { emoji: '✨', title: 'Visit memory drop',          sub: `Share your favorite photos from seeing ${them}`, route: '/moments' },
         { emoji: '📅', title: 'Day 2 apart',               sub: 'Plan one thing to look forward to together this week', route: '/countdown' },
-        { emoji: '📞', title: 'Day 3 apart',               sub: 'Schedule your next call together', route: '/reminders' },
+        { emoji: '✈️', title: 'Day 3 apart',               sub: 'Start mapping the dates for your next visit', route: '/countdown' },
       ];
       const p = postvisit[daysSince - 1];
       if (p) list.unshift({ emoji: p.emoji, title: p.title, subtitle: p.sub, route: p.route, bg: Colors.blush });
@@ -422,13 +422,13 @@ export default function HomeScreen() {
   if (isLDR && nextVisit && nextVisit.daysUntil >= 1 && nextVisit.daysUntil <= 7) {
     const them = partner?.name ?? 'them';
     const previsit = [
-      { emoji: '💞', title: 'Tomorrow',   sub: `Last sleep before you see ${them}. Anything to say first?`, route: '/notes' },
+      { emoji: '💞', title: 'Tomorrow',   sub: `Last sleep before you see ${them}. Leave a note for the morning.`, route: '/notes' },
       { emoji: '✨', title: '2 days',     sub: 'List one thing you want to talk about in person', route: '/notes' },
       { emoji: '🌹', title: '3 days',     sub: "Pick a Daily Pick you'd both love to try together", route: '/daily-wishes' },
-      { emoji: '📸', title: '4 days',     sub: 'Send a teaser of what is coming', route: '/flashes' },
+      { emoji: '📸', title: '4 days',     sub: "Send a teaser of what's coming", route: '/flashes' },
       { emoji: '💌', title: '5 days',     sub: 'Write a note for when they arrive', route: '/notes' },
       { emoji: '🎁', title: '6 days',     sub: 'Plan a small surprise for them', route: '/notes' },
-      { emoji: '✈️', title: 'One week',   sub: `Write one thing you are excited to do with ${them}`, route: '/notes' },
+      { emoji: '✈️', title: 'One week',   sub: `Write one thing you're excited to do with ${them}`, route: '/notes' },
     ];
     const p = previsit[nextVisit.daysUntil - 1];
     if (p) list.unshift({ emoji: p.emoji, title: p.title, subtitle: p.sub, route: p.route, bg: Colors.blush });

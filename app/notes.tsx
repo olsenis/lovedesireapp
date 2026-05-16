@@ -350,7 +350,7 @@ export default function NotesScreen() {
               </View>
             )}
             {occasion === "When I arrive" && (
-              <Text style={styles.sadHint}>Unlocks automatically on your next-visit date</Text>
+              <Text style={styles.sadHint}>Unlocks automatically on the day of your next visit</Text>
             )}
             {occasion === "When you miss me" && (
               <Text style={styles.sadHint}>Goes into their "Open when..." stash. They open it whenever they miss you.</Text>

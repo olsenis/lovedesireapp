@@ -124,7 +124,7 @@ export default function CountdownScreen() {
               <View style={styles.cardMiddle}>
                 <Text style={[styles.cardLabel, isToday && styles.cardLabelToday]}>{shownLabel}</Text>
                 <Text style={styles.cardDate}>
-                  {isMystery ? 'Tap reveal at the end' : new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
+                  {isMystery ? 'Revealed when the countdown ends' : new Date(d.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
                 </Text>
               </View>
               <View style={styles.cardRight}>
