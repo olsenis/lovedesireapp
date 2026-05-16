@@ -439,19 +439,22 @@ function DetailSheet({
     if (!canSave || saving) return;
     setSaving(true);
     try {
+      // Firestore rejects undefined values — spread optional fields conditionally
       await onSave({
         initiatedBy: initiatedBy!,
         location: location!,
         types,
         positions,
-        duration: duration ? parseInt(duration) : undefined,
         mood: mood!,
-        note: note.trim() || undefined,
-        rating: rating > 0 ? rating as 1|2|3|4|5 : undefined,
-        orgasm: (myOrgasm !== null || partnerOrgasm !== null) ? {
-          me: { had: myOrgasm === 'yes', count: myOrgasm === 'yes' ? myOrgasmCount : 0 },
-          partner: { had: partnerOrgasm === 'yes', count: partnerOrgasm === 'yes' ? partnerOrgasmCount : 0 },
-        } : undefined,
+        ...(duration ? { duration: parseInt(duration) } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
+        ...(rating > 0 ? { rating: rating as 1 | 2 | 3 | 4 | 5 } : {}),
+        ...((myOrgasm !== null || partnerOrgasm !== null) ? {
+          orgasm: {
+            me:      { had: myOrgasm      === 'yes', count: myOrgasm      === 'yes' ? myOrgasmCount      : 0 },
+            partner: { had: partnerOrgasm === 'yes', count: partnerOrgasm === 'yes' ? partnerOrgasmCount : 0 },
+          },
+        } : {}),
       });
       reset();
     } catch (e: any) {
