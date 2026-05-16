@@ -211,6 +211,7 @@ export default function TruthDareScreen() {
     setDrawnCard(null);
     setAnswerText('');
     setRecordingUri(null);
+    setMode('picker'); // bring user back to mode picker after reset
     await resetTruthDare(coupleId);
   };
 
