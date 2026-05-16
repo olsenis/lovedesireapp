@@ -327,18 +327,20 @@ export default function FlashesScreen() {
 
       </ScrollView>
 
-      {/* Primary CTA + Voice + Video options */}
+      {/* 3 equal media buttons + caption */}
       <View style={styles.fabRow}>
-        <TouchableOpacity style={styles.smallFab} onPress={startVoiceRecording} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record voice note">
-          <Text style={styles.smallFabIcon}>🎙</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.smallFab} onPress={openVideoCamera} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record video">
-          <Text style={styles.smallFabIcon}>🎥</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cameraFab} onPress={() => openCamera()} activeOpacity={0.9} accessibilityRole="button">
-          <Text style={styles.cameraFabIcon}>📷</Text>
-          <Text style={styles.cameraFabText}>Send {partner?.name ?? 'Partner'} a tease</Text>
-        </TouchableOpacity>
+        <View style={styles.fabCircleRow}>
+          <TouchableOpacity style={styles.mediaFab} onPress={startVoiceRecording} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record voice note">
+            <Text style={styles.mediaFabIcon}>🎙</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mediaFab} onPress={openVideoCamera} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record video">
+            <Text style={styles.mediaFabIcon}>🎥</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.mediaFab} onPress={() => openCamera()} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Take photo">
+            <Text style={styles.mediaFabIcon}>📷</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.fabCaption}>Send {partner?.name ?? 'Partner'} a tease</Text>
       </View>
 
       {/* Compose modal */}
@@ -536,25 +538,24 @@ const styles = StyleSheet.create({
   sentVideoIcon: { fontSize: 24, color: '#fff' },
   sentCountdown: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, marginTop: 4 },
 
-  // FAB row
+  // FAB row — 3 equal media buttons + caption
   fabRow: {
     position: 'absolute', bottom: 36, left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: Spacing.sm, paddingHorizontal: Spacing.md,
+    alignItems: 'center', gap: Spacing.sm,
   },
-  videoBtn: {
-    width: 54, height: 54, borderRadius: 27,
+  fabCircleRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.lg,
+  },
+  mediaFab: {
+    width: 64, height: 64, borderRadius: 32,
     backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border, ...Shadow.md,
   },
-  videoBtnIcon: { fontSize: 22 },
-  smallFab: {
-    width: 54, height: 54, borderRadius: 27,
-    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.border, ...Shadow.md,
+  mediaFabIcon: { fontSize: 26 },
+  fabCaption: {
+    fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted,
+    textAlign: 'center', letterSpacing: 0.3,
   },
-  smallFabIcon: { fontSize: 22 },
-
   // Voice playback (used both in compose preview + full-screen viewer)
   voicePlayer: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
@@ -598,14 +599,6 @@ const styles = StyleSheet.create({
     gap: Spacing.xl,
   },
   voiceViewerIcon: { fontSize: 96 },
-  cameraFab: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.burgundy, borderRadius: 99,
-    paddingHorizontal: Spacing.xl, paddingVertical: 16,
-    ...Shadow.md,
-  },
-  cameraFabIcon: { fontSize: 22 },
-  cameraFabText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: '#fff', letterSpacing: 0.3 },
 
   // Compose
   composeContainer: { flex: 1, backgroundColor: Colors.cream },
