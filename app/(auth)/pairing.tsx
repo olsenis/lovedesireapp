@@ -60,8 +60,8 @@ export default function PairingScreen() {
   };
 
   const handleJoin = async () => {
-    if (partnerCode.trim().length !== 6) {
-      setJoinError('Please enter a 6-character code.');
+    if (partnerCode.trim().length !== 8) {
+      setJoinError('Please enter an 8-character code.');
       return;
     }
     if (!user) return;
@@ -108,7 +108,7 @@ export default function PairingScreen() {
           <ActivityIndicator color={Colors.burgundy} style={{ marginVertical: 16 }} />
         ) : (
           <TouchableOpacity onPress={handleCopy} style={styles.codeRow} accessibilityRole="button">
-            <Text style={styles.code}>{inviteCode || '------'}</Text>
+            <Text style={styles.code}>{inviteCode || '--------'}</Text>
             <Text style={styles.copyHint}>{copied ? '✓ Copied!' : 'Tap to copy'}</Text>
           </TouchableOpacity>
         )}
@@ -122,11 +122,11 @@ export default function PairingScreen() {
         <Text style={styles.cardLabel}>Enter partner's code</Text>
         <TextInput
           style={styles.codeInput}
-          placeholder="ABC123"
+          placeholder="ABCD2345"
           placeholderTextColor={Colors.muted}
           value={partnerCode}
           onChangeText={(t) => setPartnerCode(t.toUpperCase())}
-          maxLength={6}
+          maxLength={8}
           autoCapitalize="characters"
           autoCorrect={false}
         />

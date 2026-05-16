@@ -190,7 +190,7 @@ export default function ProfileScreen() {
   };
 
   const handleJoinCouple = async () => {
-    if (partnerCode.trim().length !== 6) { setPairError('Enter a 6-character code.'); return; }
+    if (partnerCode.trim().length !== 8) { setPairError('Enter an 8-character code.'); return; }
     if (!user) return;
     setPairError('');
     setPairLoading(true);
@@ -224,7 +224,7 @@ export default function ProfileScreen() {
     } else {
       ts = new Date(startDateStr).getTime();
     }
-    if (isNaN(ts)) { setStartDateError('Sláðu inn gilda dagsetningu (DD.MM.YYYY)'); return; }
+    if (isNaN(ts)) { setStartDateError('Enter a valid date (DD.MM.YYYY)'); return; }
     setStartDateError('');
     await setCoupleStartDate(profile.coupleId, ts);
     setStartDateModal(false);
@@ -581,14 +581,14 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Connect with partner</Text>
-            <Text style={styles.modalHint}>Enter your partner's 6-character invite code.</Text>
+            <Text style={styles.modalHint}>Enter your partner's 8-character invite code.</Text>
             <TextInput
               style={[styles.modalInput, styles.codeInput]}
-              placeholder="ABC123"
+              placeholder="ABCD2345"
               placeholderTextColor={Colors.muted}
               value={partnerCode}
               onChangeText={(t) => setPartnerCode(t.toUpperCase())}
-              maxLength={6}
+              maxLength={8}
               autoCapitalize="characters"
               autoCorrect={false}
               autoFocus
@@ -637,7 +637,7 @@ export default function ProfileScreen() {
             <Text style={styles.modalHint}>Set your real relationship start date to get the correct days together count.</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="DD.MM.YYYY (t.d. 14.03.2018)"
+              placeholder="DD.MM.YYYY (e.g. 14.03.2018)"
               placeholderTextColor={Colors.muted}
               value={startDateStr}
               onChangeText={(t) => { setStartDateStr(t); setStartDateError(''); }}
