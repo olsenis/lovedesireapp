@@ -5,7 +5,7 @@ export interface FlashEntry {
   id: string;
   fromUid: string;
   mediaURL: string;
-  mediaType: 'photo' | 'video';
+  mediaType: 'photo' | 'video' | 'voice';
   caption?: string;
   createdAt: number;
   expiresAt: number;
@@ -34,7 +34,7 @@ export async function sendFlash(
   coupleId: string,
   fromUid: string,
   mediaURL: string,
-  mediaType: 'photo' | 'video',
+  mediaType: 'photo' | 'video' | 'voice',
   caption?: string
 ): Promise<void> {
   const now = Date.now();

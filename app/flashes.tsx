@@ -4,9 +4,16 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView, VideoSource } from 'expo-video';
+import {
+  useAudioRecorder,
+  useAudioPlayer,
+  RecordingPresets,
+  AudioModule,
+  setAudioModeAsync,
+} from 'expo-audio';
 
-// Small wrapper: each <FlashVideo> creates its own player so the useVideoPlayer
-// hook is at component top-level (rules of hooks). Mute/controls configurable.
+// Each <FlashVideo> instantiates its own player so the useVideoPlayer hook
+// stays at top-level (rules of hooks). Mute/controls configurable.
 function FlashVideo({ uri, style, muted = false, controls = false }: {
   uri: string;
   style: any;
@@ -20,6 +27,39 @@ function FlashVideo({ uri, style, muted = false, controls = false }: {
   });
   return <VideoView player={player} style={style} contentFit="contain" nativeControls={controls} />;
 }
+
+// Voice playback widget — its own useAudioPlayer instance so the hook stays at top-level.
+function FlashVoice({ uri, large = false }: { uri: string; large?: boolean }) {
+  const player = useAudioPlayer(uri);
+  const [isPlaying, setIsPlaying] = useState(false);
+  useEffect(() => {
+    const sub = player.addListener('playbackStatusUpdate', (status) => {
+      if (status.didJustFinish) setIsPlaying(false);
+    });
+    return () => sub.remove();
+  }, [player]);
+  const toggle = () => {
+    if (isPlaying) { player.pause(); setIsPlaying(false); return; }
+    player.seekTo(0);
+    player.play();
+    setIsPlaying(true);
+  };
+  return (
+    <TouchableOpacity
+      onPress={toggle}
+      style={[styles.voicePlayer, large && styles.voicePlayerLg]}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={isPlaying ? 'Pause voice message' : 'Play voice message'}
+    >
+      <Text style={[styles.voicePlayerIcon, large && styles.voicePlayerIconLg]}>{isPlaying ? '⏸' : '▶'}</Text>
+      <Text style={[styles.voicePlayerLabel, large && styles.voicePlayerLabelLg]}>
+        {isPlaying ? 'Playing...' : large ? 'Tap to play' : 'Voice note'}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { FlashEntry, subscribeFlashes, sendFlash, markFlashViewed, formatCountdown } from '../services/flashService';
@@ -39,10 +79,12 @@ export default function FlashesScreen() {
   const [sending, setSending] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
   const [selectedUri, setSelectedUri] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<'photo' | 'video'>('photo');
+  const [selectedType, setSelectedType] = useState<'photo' | 'video' | 'voice'>('photo');
   const [caption, setCaption] = useState('');
   const [viewingFlash, setViewingFlash] = useState<FlashEntry | null>(null);
   const [tick, setTick] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   useEffect(() => {
     if (!coupleId) return;
@@ -109,16 +151,49 @@ export default function FlashesScreen() {
     }
   };
 
+  const startVoiceRecording = async () => {
+    try {
+      const perm = await AudioModule.requestRecordingPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Microphone access needed', 'Please allow microphone access in Settings.');
+        return;
+      }
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      setIsRecording(true);
+      setSelectedUri(null);
+      setSelectedType('voice');
+      setShowCompose(true);
+    } catch (e) {
+      console.warn('Recording failed', e);
+      Alert.alert('Could not start recording', 'Please try again.');
+    }
+  };
+
+  const stopVoiceRecording = async () => {
+    try {
+      await recorder.stop();
+      setIsRecording(false);
+      setSelectedUri(recorder.uri ?? null);
+    } catch (e) {
+      console.warn('Stop recording failed', e);
+      setIsRecording(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!selectedUri || !coupleId || !uid) return;
     setSending(true);
     try {
       const url = await uploadFlashMedia(coupleId, uid, selectedUri, selectedType);
       await sendFlash(coupleId, uid, url, selectedType, caption.trim() || undefined);
+      const typeIcon = selectedType === 'voice' ? '🎙' : '📸';
+      const typeWord = selectedType === 'voice' ? 'voice note' : 'tease';
       notifyPartner(
         coupleId, uid,
-        `${profile?.name ?? 'Partner'} sent you a tease 📸`,
-        caption.trim() || 'Tap to view before it disappears'
+        `${profile?.name ?? 'Partner'} sent you a ${typeWord} ${typeIcon}`,
+        caption.trim() || 'Tap to listen before it disappears'
       ).catch(() => {});
       setShowCompose(false);
       setSelectedUri(null);
@@ -167,22 +242,26 @@ export default function FlashesScreen() {
             <Text style={styles.sectionLabel}>
               From {partner?.name ?? 'Partner'} · {unviewed.length} new
             </Text>
-            {unviewed.map(flash => (
-              <TouchableOpacity
-                key={flash.id}
-                style={styles.tapToViewCard}
-                onPress={() => openFlash(flash)}
-                activeOpacity={0.9}
-               accessibilityRole="button">
-                <View style={styles.tapToViewGlow} />
-                <Text style={styles.tapToViewEmoji}>📸</Text>
-                <View style={styles.tapToViewText}>
-                  <Text style={styles.tapToViewTitle}>Tap to view</Text>
-                  <Text style={styles.tapToViewSub}>Disappears after opening · {formatCountdown(flash.expiresAt)} left</Text>
-                </View>
-                <Text style={styles.tapToViewArrow}>›</Text>
-              </TouchableOpacity>
-            ))}
+            {unviewed.map(flash => {
+              const isVoice = flash.mediaType === 'voice';
+              return (
+                <TouchableOpacity
+                  key={flash.id}
+                  style={styles.tapToViewCard}
+                  onPress={() => openFlash(flash)}
+                  activeOpacity={0.9}
+                  accessibilityRole="button"
+                >
+                  <View style={styles.tapToViewGlow} />
+                  <Text style={styles.tapToViewEmoji}>{isVoice ? '🎙' : '📸'}</Text>
+                  <View style={styles.tapToViewText}>
+                    <Text style={styles.tapToViewTitle}>{isVoice ? 'Tap to listen' : 'Tap to view'}</Text>
+                    <Text style={styles.tapToViewSub}>Disappears after opening · {formatCountdown(flash.expiresAt)} left</Text>
+                  </View>
+                  <Text style={styles.tapToViewArrow}>›</Text>
+                </TouchableOpacity>
+              );
+            })}
           </>
         )}
 
@@ -232,10 +311,13 @@ export default function FlashesScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {sent.map(flash => (
                 <TouchableOpacity key={flash.id} style={styles.sentThumb} onPress={() => setViewingFlash(flash)} accessibilityRole="button">
-                  {flash.mediaType === 'photo'
-                    ? <Image source={{ uri: flash.mediaURL }} style={styles.sentMedia} contentFit="cover" />
-                    : <View style={[styles.sentMedia, styles.sentVideoThumb]}><Text style={styles.sentVideoIcon}>▶</Text></View>
-                  }
+                  {flash.mediaType === 'photo' ? (
+                    <Image source={{ uri: flash.mediaURL }} style={styles.sentMedia} contentFit="cover" />
+                  ) : flash.mediaType === 'voice' ? (
+                    <View style={[styles.sentMedia, styles.sentVoiceThumb]}><Text style={styles.sentVoiceIcon}>🎙</Text></View>
+                  ) : (
+                    <View style={[styles.sentMedia, styles.sentVideoThumb]}><Text style={styles.sentVideoIcon}>▶</Text></View>
+                  )}
                   <Text style={styles.sentCountdown}>{formatCountdown(flash.expiresAt)}</Text>
                 </TouchableOpacity>
               ))}
@@ -245,10 +327,13 @@ export default function FlashesScreen() {
 
       </ScrollView>
 
-      {/* Primary CTA + Video option */}
+      {/* Primary CTA + Voice + Video options */}
       <View style={styles.fabRow}>
-        <TouchableOpacity style={styles.videoBtn} onPress={openVideoCamera} activeOpacity={0.85} accessibilityRole="button">
-          <Text style={styles.videoBtnIcon}>🎥</Text>
+        <TouchableOpacity style={styles.smallFab} onPress={startVoiceRecording} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record voice note">
+          <Text style={styles.smallFabIcon}>🎙</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.smallFab} onPress={openVideoCamera} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record video">
+          <Text style={styles.smallFabIcon}>🎥</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cameraFab} onPress={() => openCamera()} activeOpacity={0.9} accessibilityRole="button">
           <Text style={styles.cameraFabIcon}>📷</Text>
@@ -260,22 +345,56 @@ export default function FlashesScreen() {
       <Modal visible={showCompose} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.composeContainer}>
           <View style={styles.composeHeader}>
-            <TouchableOpacity onPress={() => { setShowCompose(false); setSelectedUri(null); setCaption(''); }} accessibilityRole="button">
+            <TouchableOpacity
+              onPress={async () => {
+                if (isRecording) { try { await recorder.stop(); } catch {} setIsRecording(false); }
+                setShowCompose(false);
+                setSelectedUri(null);
+                setCaption('');
+              }}
+              accessibilityRole="button"
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.composeTitle}>Send Tease</Text>
-            <TouchableOpacity onPress={handleSend} disabled={sending} accessibilityRole="button">
+            <Text style={styles.composeTitle}>{selectedType === 'voice' ? 'Send voice note' : 'Send Tease'}</Text>
+            <TouchableOpacity
+              onPress={handleSend}
+              disabled={sending || !selectedUri || isRecording}
+              accessibilityRole="button"
+            >
               {sending
                 ? <ActivityIndicator color={Colors.burgundy} />
-                : <Text style={styles.sendText}>Send</Text>}
+                : <Text style={[styles.sendText, (!selectedUri || isRecording) && { opacity: 0.35 }]}>Send</Text>}
             </TouchableOpacity>
           </View>
 
-          {selectedUri && (
+          {selectedType === 'voice' ? (
+            <View style={styles.voiceComposeBody}>
+              {isRecording ? (
+                <TouchableOpacity style={styles.recordingPill} onPress={stopVoiceRecording} activeOpacity={0.85} accessibilityRole="button">
+                  <View style={styles.recordingDot} />
+                  <Text style={styles.recordingText}>Recording... tap to stop</Text>
+                </TouchableOpacity>
+              ) : selectedUri ? (
+                <>
+                  <FlashVoice uri={selectedUri} large />
+                  <TouchableOpacity
+                    onPress={startVoiceRecording}
+                    style={styles.rerecordBtn}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.rerecordText}>↺ Record again</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.voicePlaceholder}>Tap the mic to start recording</Text>
+              )}
+            </View>
+          ) : selectedUri ? (
             selectedType === 'photo'
               ? <Image source={{ uri: selectedUri }} style={styles.previewMedia} contentFit="cover" />
               : <FlashVideo uri={selectedUri} style={styles.previewMedia} muted />
-          )}
+          ) : null}
 
           <View style={styles.captionRow}>
             <TextInput
@@ -301,6 +420,11 @@ export default function FlashesScreen() {
 
           {viewingFlash?.mediaType === 'photo' ? (
             <Image source={{ uri: viewingFlash.mediaURL }} style={styles.viewerMedia} contentFit="contain" />
+          ) : viewingFlash?.mediaType === 'voice' ? (
+            <View style={styles.voiceViewerWrap}>
+              <Text style={styles.voiceViewerIcon}>🎙</Text>
+              <FlashVoice uri={viewingFlash.mediaURL} large />
+            </View>
           ) : viewingFlash ? (
             <FlashVideo uri={viewingFlash.mediaURL} style={styles.viewerMedia} controls />
           ) : null}
@@ -424,6 +548,56 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border, ...Shadow.md,
   },
   videoBtnIcon: { fontSize: 22 },
+  smallFab: {
+    width: 54, height: 54, borderRadius: 27,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.border, ...Shadow.md,
+  },
+  smallFabIcon: { fontSize: 22 },
+
+  // Voice playback (used both in compose preview + full-screen viewer)
+  voicePlayer: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: Colors.blush, borderRadius: 99,
+    paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm,
+  },
+  voicePlayerLg: {
+    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
+  },
+  voicePlayerIcon: { fontSize: 18, color: Colors.burgundy },
+  voicePlayerIconLg: { fontSize: 28 },
+  voicePlayerLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  voicePlayerLabelLg: { fontSize: 16 },
+
+  // Sent voice thumbnail
+  sentVoiceThumb: { alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.blush },
+  sentVoiceIcon: { fontSize: 28 },
+
+  // Voice compose body
+  voiceComposeBody: {
+    padding: Spacing.xl, alignItems: 'center', justifyContent: 'center',
+    minHeight: 240, gap: Spacing.lg,
+  },
+  recordingPill: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: '#FFEBEE', borderRadius: 99,
+    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
+    borderWidth: 1, borderColor: '#EF9A9A',
+  },
+  recordingDot: {
+    width: 12, height: 12, borderRadius: 6, backgroundColor: '#C62828',
+  },
+  recordingText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#B71C1C' },
+  rerecordBtn: { paddingVertical: Spacing.sm },
+  rerecordText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+  voicePlaceholder: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted },
+
+  // Voice viewer (fullscreen)
+  voiceViewerWrap: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    gap: Spacing.xl,
+  },
+  voiceViewerIcon: { fontSize: 96 },
   cameraFab: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
     backgroundColor: Colors.burgundy, borderRadius: 99,

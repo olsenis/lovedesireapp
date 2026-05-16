@@ -33,11 +33,11 @@ export async function uploadFlashMedia(
   coupleId: string,
   uid: string,
   uri: string,
-  type: 'photo' | 'video'
+  type: 'photo' | 'video' | 'voice'
 ): Promise<string> {
   const response = await fetch(uri);
   const blob = await response.blob();
-  const ext = type === 'video' ? 'mp4' : 'jpg';
+  const ext = type === 'video' ? 'mp4' : type === 'voice' ? 'm4a' : 'jpg';
   const filename = `${Date.now()}_${uid}.${ext}`;
   const storageRef = ref(storage, `couples/${coupleId}/flashes/${filename}`);
   await uploadBytes(storageRef, blob);
