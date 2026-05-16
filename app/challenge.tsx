@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput 
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
@@ -15,10 +16,13 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-const PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire', 'desire'];
+const BASE_PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire', 'desire'];
 
 export default function ChallengeScreen() {
   const { user, profile, loading: authLoading } = useAuth();
+  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const isLDR = !!couple?.isLongDistance;
+  const PROGRAMS: ChallengeProgram[] = isLDR ? [...BASE_PROGRAMS, 'distance'] : BASE_PROGRAMS;
   const [state, setState] = useState<ChallengeState | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
