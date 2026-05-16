@@ -225,7 +225,7 @@ export default function OnboardingTourScreen() {
             <Text style={styles.heroEmoji}>✈️</Text>
             <Text style={styles.title}>Do you live in different places?</Text>
             <Text style={styles.body}>
-              Long-distance mode adds a partner clock, visit countdown, virtual date filter, and a 30-day Distance challenge.
+              Long-distance mode unlocks features built for couples apart.
             </Text>
             <View style={styles.choiceRow}>
               <TouchableOpacity
