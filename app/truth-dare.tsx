@@ -306,10 +306,33 @@ export default function TruthDareScreen() {
             </View>
 
             <View style={styles.wheelWrap}>
+              <View style={styles.wheelHalo} pointerEvents="none" />
               <View style={styles.wheelPointer} />
               <Animated.View style={[styles.wheel, { transform: [{ rotate: soloSpinRotate }] }]}>
-                <View style={styles.wheelHub}><Text style={styles.wheelHubText}>spin</Text></View>
+                {/* 12 decorative petal dots around the wheel */}
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.wheelPetal,
+                      i % 2 === 0 && styles.wheelPetalAlt,
+                      { transform: [{ rotate: `${i * 30}deg` }, { translateY: -98 }] },
+                    ]}
+                  />
+                ))}
               </Animated.View>
+              {/* Inner cream ring (sits on top of rotating wheel) */}
+              <View style={styles.wheelInnerRing} pointerEvents="none" />
+              {/* Center button — this IS the spin action */}
+              <TouchableOpacity
+                style={[styles.wheelCenterBtn, soloSpinning && { opacity: 0.6 }]}
+                onPress={handleSoloSpin}
+                disabled={soloSpinning}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.wheelCenterLabel}>Spin</Text>
+                <Text style={styles.wheelCenterDots}>• • •</Text>
+              </TouchableOpacity>
             </View>
 
             {soloDare && !soloSpinning && (
@@ -318,15 +341,6 @@ export default function TruthDareScreen() {
                 <Text style={styles.soloResultText}>{soloDare}</Text>
               </View>
             )}
-
-            <TouchableOpacity
-              style={[styles.soloSpinBtn, soloSpinning && { opacity: 0.5 }]}
-              onPress={handleSoloSpin}
-              disabled={soloSpinning}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.soloSpinBtnText}>{soloDare ? 'Spin again' : 'Spin'}</Text>
-            </TouchableOpacity>
           </ScrollView>
         </View>
       );
@@ -833,14 +847,50 @@ const styles = StyleSheet.create({
   soloLevelPillLocked: { opacity: 0.4 },
   soloLevelText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.5 },
   soloLevelTextActive: { color: '#fff' },
-  wheelWrap: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.lg },
-  wheelPointer: { position: 'absolute', top: -4, zIndex: 2, width: 0, height: 0, borderLeftWidth: 12, borderRightWidth: 12, borderTopWidth: 18, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: Colors.burgundy },
-  wheel: { width: 240, height: 240, borderRadius: 120, backgroundColor: Colors.rose, borderWidth: 12, borderColor: Colors.blush, alignItems: 'center', justifyContent: 'center', ...Shadow.md },
-  wheelHub: { width: 84, height: 84, borderRadius: 42, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center', ...Shadow.sm },
-  wheelHubText: { fontFamily: Fonts.headingItalic, fontSize: 18, color: Colors.burgundy },
-  soloResult: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', width: '100%', ...Shadow.sm },
+  wheelWrap: { width: 280, height: 280, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.xl },
+  wheelHalo: { position: 'absolute', width: 280, height: 280, borderRadius: 140, backgroundColor: Colors.rose, opacity: 0.18 },
+  wheelPointer: {
+    position: 'absolute', top: 6, zIndex: 4,
+    width: 0, height: 0,
+    borderLeftWidth: 14, borderRightWidth: 14, borderTopWidth: 22,
+    borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: Colors.burgundy,
+  },
+  wheel: {
+    width: 240, height: 240, borderRadius: 120,
+    backgroundColor: Colors.rose,
+    alignItems: 'center', justifyContent: 'center',
+    ...Shadow.md,
+  },
+  // Decorative petals around the rotating wheel rim (12 dots at 30° intervals)
+  wheelPetal: {
+    position: 'absolute',
+    width: 14, height: 14, borderRadius: 7,
+    backgroundColor: Colors.blush,
+    top: '50%', left: '50%',
+    marginTop: -7, marginLeft: -7,
+  },
+  wheelPetalAlt: { backgroundColor: '#F8BBD0' },
+  // Cream ring sits on top of the rotating wheel (doesn't rotate)
+  wheelInnerRing: {
+    position: 'absolute',
+    width: 170, height: 170, borderRadius: 85,
+    backgroundColor: Colors.cream,
+    zIndex: 2,
+  },
+  // Center button = the spin action
+  wheelCenterBtn: {
+    position: 'absolute',
+    width: 120, height: 120, borderRadius: 60,
+    backgroundColor: Colors.burgundy,
+    borderWidth: 3, borderColor: Colors.cream,
+    alignItems: 'center', justifyContent: 'center',
+    zIndex: 3,
+    ...Shadow.md,
+  },
+  wheelCenterLabel: { fontFamily: Fonts.headingItalic, fontSize: 28, color: Colors.cream, letterSpacing: 1, lineHeight: 30 },
+  wheelCenterDots: { fontFamily: Fonts.body, fontSize: 9, color: 'rgba(255,248,240,0.55)', letterSpacing: 4, marginTop: 2 },
+
+  soloResult: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', width: '100%', ...Shadow.sm, marginTop: Spacing.md },
   soloResultEyebrow: { fontFamily: Fonts.body, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: Colors.burgundy, marginBottom: Spacing.sm },
   soloResultText: { fontFamily: Fonts.headingItalic, fontSize: 20, color: Colors.burgundy, textAlign: 'center', lineHeight: 26 },
-  soloSpinBtn: { backgroundColor: Colors.burgundy, borderRadius: 99, paddingVertical: 18, width: '100%', alignItems: 'center', ...Shadow.md },
-  soloSpinBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#fff', letterSpacing: 3, textTransform: 'uppercase' },
 });

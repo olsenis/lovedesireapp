@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Spin wheel — refined</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Lato:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --burgundy: #880E4F;
+    --burgundy-deep: #6a0a3e;
+    --burgundy-soft: #A4366A;
+    --cream: #FFF8F0;
+    --rose: #F4A7B9;
+    --rose-soft: #F8BBD0;
+    --blush: #FCE4EC;
+    --blush-soft: #FFF0F3;
+    --muted: #9E7B84;
+    --border: #F0D5DC;
+    --gold: #C9A77A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(180deg, #f5ece3 0%, #efe2d4 100%);
+    font-family: 'Lato', sans-serif;
+    color: #2A1820;
+    padding: 60px 20px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 36px;
+    color: var(--burgundy);
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 56px;
+  }
+  .row {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .variant {
+    width: 380px;
+    background: var(--cream);
+    border-radius: 32px;
+    padding: 48px 28px;
+    box-shadow: 0 20px 50px rgba(136, 14, 79, 0.12);
+    text-align: center;
+  }
+  .variant-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--burgundy);
+    margin-bottom: 4px;
+  }
+  .variant-tag {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 32px;
+  }
+
+  /* Pills */
+  .pills { display: flex; gap: 8px; margin-bottom: 36px; }
+  .pill {
+    flex: 1;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 10px 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--burgundy);
+    letter-spacing: 0.3px;
+  }
+  .pill.active { background: var(--burgundy); color: #fff; border-color: var(--burgundy); }
+  .pill.lock { opacity: 0.4; }
+
+  /* ──────────────── WHEEL VARIANT 1: Concentric rings + center button ──────────────── */
+  .wheel-1 {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    margin: 0 auto 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wheel-1::before {
+    /* outer halo */
+    content: '';
+    position: absolute;
+    inset: -16px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(244, 167, 185, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .ring-outer-1 {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      var(--blush) 0deg 30deg,
+      var(--rose-soft) 30deg 60deg,
+      var(--blush) 60deg 90deg,
+      var(--rose-soft) 90deg 120deg,
+      var(--blush) 120deg 150deg,
+      var(--rose-soft) 150deg 180deg,
+      var(--blush) 180deg 210deg,
+      var(--rose-soft) 210deg 240deg,
+      var(--blush) 240deg 270deg,
+      var(--rose-soft) 270deg 300deg,
+      var(--blush) 300deg 330deg,
+      var(--rose-soft) 330deg 360deg
+    );
+    box-shadow: inset 0 0 0 8px rgba(255, 248, 240, 0.6), 0 12px 30px rgba(136, 14, 79, 0.15);
+    animation: spin1 14s linear infinite;
+  }
+  .ring-mid-1 {
+    position: absolute;
+    width: 75%; height: 75%;
+    border-radius: 50%;
+    background: var(--cream);
+    box-shadow: inset 0 4px 12px rgba(136, 14, 79, 0.06);
+  }
+  .center-btn-1 {
+    position: absolute;
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #a01c5e 0%, var(--burgundy) 60%, var(--burgundy-deep) 100%);
+    color: var(--cream);
+    border: 3px solid var(--cream);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(136, 14, 79, 0.4),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.15),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    transition: transform 0.15s ease;
+    z-index: 2;
+  }
+  .center-btn-1:hover { transform: scale(1.04); }
+  .center-btn-1:active { transform: scale(0.96); }
+  .center-btn-1 .label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  .center-btn-1 .dot {
+    font-size: 8px;
+    letter-spacing: 4px;
+    margin-top: 4px;
+    opacity: 0.6;
+  }
+  .pointer-1 {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 20px solid var(--burgundy);
+    filter: drop-shadow(0 3px 6px rgba(136, 14, 79, 0.25));
+    z-index: 3;
+  }
+  @keyframes spin1 { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  /* ──────────────── WHEEL VARIANT 2: Heart accents + glow ──────────────── */
+  .wheel-2 {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    margin: 0 auto 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ring-outer-2 {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at center, var(--blush-soft) 30%, var(--rose) 75%, var(--burgundy-soft) 100%);
+    box-shadow:
+      inset 0 0 0 6px rgba(255, 248, 240, 0.45),
+      inset 0 0 30px rgba(136, 14, 79, 0.12),
+      0 16px 38px rgba(136, 14, 79, 0.22);
+    animation: spin2 18s linear infinite;
+  }
+  .heart {
+    position: absolute;
+    color: rgba(136, 14, 79, 0.35);
+    font-size: 14px;
+    transform-origin: 130px 130px;
+  }
+  .heart-1 { top: 14px; left: 50%; transform: translateX(-50%); }
+  .heart-2 { top: 50%; right: 14px; transform: translateY(-50%); }
+  .heart-3 { bottom: 14px; left: 50%; transform: translateX(-50%); }
+  .heart-4 { top: 50%; left: 14px; transform: translateY(-50%); }
+  .heart-5 { top: 36px; right: 36px; }
+  .heart-6 { top: 36px; left: 36px; }
+  .heart-7 { bottom: 36px; right: 36px; }
+  .heart-8 { bottom: 36px; left: 36px; }
+  .center-btn-2 {
+    position: absolute;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18) 0%, transparent 50%),
+      linear-gradient(155deg, var(--burgundy-deep) 0%, var(--burgundy) 60%, #a01c5e 100%);
+    color: var(--cream);
+    border: 4px solid var(--cream);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 10px 26px rgba(136, 14, 79, 0.45),
+                inset 0 -3px 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s ease;
+    z-index: 2;
+  }
+  .center-btn-2:hover { transform: scale(1.05); }
+  .center-btn-2:active { transform: scale(0.95); }
+  .center-btn-2 .label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 30px;
+    letter-spacing: 1.5px;
+    line-height: 1;
+  }
+  .center-btn-2 .sub {
+    font-family: 'Lato', sans-serif;
+    font-size: 8px;
+    letter-spacing: 4px;
+    margin-top: 4px;
+    opacity: 0.5;
+    text-transform: uppercase;
+  }
+  .pointer-2 {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 24px;
+    background: var(--burgundy);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
+    filter: drop-shadow(0 4px 8px rgba(136, 14, 79, 0.3));
+    z-index: 3;
+  }
+  @keyframes spin2 { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  /* Result card */
+  .result {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    text-align: center;
+  }
+  .result-eyebrow {
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--burgundy-soft);
+    margin-bottom: 8px;
+  }
+  .result-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--burgundy);
+    line-height: 1.35;
+  }
+</style>
+</head>
+<body>
+<h1>Spin wheel — refined</h1>
+<p class="sub">center button · no separate Spin button below</p>
+
+<div class="row">
+
+  <!-- Variant 1: Conic gradient rings -->
+  <div class="variant">
+    <div class="variant-label">Variant A</div>
+    <div class="variant-tag">Petal segments + glow</div>
+
+    <div class="pills">
+      <div class="pill">Sweet</div>
+      <div class="pill active">Flirty</div>
+      <div class="pill lock">🔒 Spicy</div>
+    </div>
+
+    <div class="wheel-1">
+      <div class="pointer-1"></div>
+      <div class="ring-outer-1"></div>
+      <div class="ring-mid-1"></div>
+      <button class="center-btn-1">
+        <span class="label">Spin</span>
+        <span class="dot">• • •</span>
+      </button>
+    </div>
+
+    <div class="result">
+      <div class="result-eyebrow">Your dare</div>
+      <div class="result-text">Kiss for 30 seconds without using hands</div>
+    </div>
+  </div>
+
+  <!-- Variant 2: Heart accents + radial gradient -->
+  <div class="variant">
+    <div class="variant-label">Variant B</div>
+    <div class="variant-tag">Heart compass · soft glow</div>
+
+    <div class="pills">
+      <div class="pill">Sweet</div>
+      <div class="pill active">Flirty</div>
+      <div class="pill lock">🔒 Spicy</div>
+    </div>
+
+    <div class="wheel-2">
+      <div class="pointer-2"></div>
+      <div class="ring-outer-2">
+        <span class="heart heart-1">♥</span>
+        <span class="heart heart-2">♥</span>
+        <span class="heart heart-3">♥</span>
+        <span class="heart heart-4">♥</span>
+        <span class="heart heart-5">♥</span>
+        <span class="heart heart-6">♥</span>
+        <span class="heart heart-7">♥</span>
+        <span class="heart heart-8">♥</span>
+      </div>
+      <button class="center-btn-2">
+        <span class="label">Spin</span>
+        <span class="sub">tap to spin</span>
+      </button>
+    </div>
+
+    <div class="result">
+      <div class="result-eyebrow">Your dare</div>
+      <div class="result-text">Whisper your most honest compliment</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
