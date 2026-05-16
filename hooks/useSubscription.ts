@@ -1,10 +1,12 @@
 import { useAuth } from './useAuth';
 
-// Add admin emails here — these always get premium access for testing
-const ADMIN_EMAILS: string[] = [
+// Dev-only override: certain test accounts always get premium access.
+// __DEV__ is true in Expo Dev/Expo Go and false in production EAS builds,
+// so these emails are stripped from prod bundles. Keep this list short.
+const ADMIN_EMAILS: string[] = __DEV__ ? [
   'olsenis@gmail.com',
   'evadissigrunardottir@gmail.com',
-];
+] : [];
 
 export interface SubscriptionState {
   isSubscribed: boolean;

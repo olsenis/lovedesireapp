@@ -97,8 +97,8 @@ export default function MomentsScreen() {
             <Text style={styles.promptTitle}>Capture today's moment</Text>
             <Text style={styles.promptSub}>
               {partnerHasPhoto
-                ? `${partner?.name ?? 'Partner'} already captured theirs — take yours to reveal both`
-                : 'Both of you take a photo — reveal together'}
+                ? `${partner?.name ?? 'Partner'} already captured theirs, take yours to reveal both`
+                : 'Both of you take a photo, reveal together'}
             </Text>
             <TouchableOpacity style={styles.cameraBtn} onPress={openCamera} disabled={uploading} activeOpacity={0.85} accessibilityRole="button">
               {uploading

@@ -209,11 +209,11 @@ export default function StateUnionScreen() {
                 <Text style={styles.revealQ}>{i + 1}. {q}</Text>
                 <View style={styles.revealAnswerRow}>
                   <Text style={styles.revealAnswerLabel}>You</Text>
-                  <Text style={styles.revealAnswerText}>{suDoc?.answers?.[uid]?.[i] ?? '—'}</Text>
+                  <Text style={styles.revealAnswerText}>{suDoc?.answers?.[uid]?.[i] ?? '-'}</Text>
                 </View>
                 <View style={[styles.revealAnswerRow, styles.revealAnswerRowAlt]}>
                   <Text style={[styles.revealAnswerLabel, styles.revealAnswerLabelAlt]}>{partnerName}</Text>
-                  <Text style={styles.revealAnswerText}>{suDoc?.answers?.[partnerId]?.[i] ?? '—'}</Text>
+                  <Text style={styles.revealAnswerText}>{suDoc?.answers?.[partnerId]?.[i] ?? '-'}</Text>
                 </View>
               </View>
             ))}
@@ -247,8 +247,8 @@ export default function StateUnionScreen() {
                         {STATE_UNION_QUESTIONS.map((q, i) => (
                           <View key={i} style={styles.historyBlock}>
                             <Text style={styles.historyQ}>{q}</Text>
-                            <Text style={styles.historyA}><Text style={styles.historyALabel}>You: </Text>{h.answers?.[uid]?.[i] ?? '—'}</Text>
-                            <Text style={styles.historyA}><Text style={styles.historyALabel}>{partnerName}: </Text>{h.answers?.[partnerId]?.[i] ?? '—'}</Text>
+                            <Text style={styles.historyA}><Text style={styles.historyALabel}>You: </Text>{h.answers?.[uid]?.[i] ?? '-'}</Text>
+                            <Text style={styles.historyA}><Text style={styles.historyALabel}>{partnerName}: </Text>{h.answers?.[partnerId]?.[i] ?? '-'}</Text>
                           </View>
                         ))}
                       </View>

@@ -138,7 +138,7 @@ export default function ProfileScreen() {
   const isConnected = !!couple?.partner2Uid;
   const daysStr = couple
     ? `${Math.floor((Date.now() - (couple.startDate ?? couple.createdAt)) / 86400000)} days`
-    : '—';
+    : '-';
 
   const handlePickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -314,14 +314,14 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.row} onPress={() => { setEditName(profile?.name ?? ''); setEditNameModal(true); }} accessibilityRole="button">
             <Text style={styles.rowLabel}>Display name</Text>
             <View style={styles.rowRight}>
-              <Text style={styles.rowValue}>{profile?.name ?? '—'}</Text>
+              <Text style={styles.rowValue}>{profile?.name ?? '-'}</Text>
               <Text style={styles.rowChevron}>›</Text>
             </View>
           </TouchableOpacity>
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Email</Text>
-            <Text style={styles.rowValue}>{user?.email ?? '—'}</Text>
+            <Text style={styles.rowValue}>{user?.email ?? '-'}</Text>
           </View>
           <View style={styles.divider} />
           <TouchableOpacity style={styles.row} onPress={() => { setBirthdayStr(profile?.birthday ?? ''); setBirthdayModal(true); }} accessibilityRole="button">
@@ -345,7 +345,7 @@ export default function ProfileScreen() {
             <>
               <View style={styles.row}>
                 <Text style={styles.rowLabel}>Partner</Text>
-                <Text style={styles.rowValue}>{partner?.name ?? '—'}</Text>
+                <Text style={styles.rowValue}>{partner?.name ?? '-'}</Text>
               </View>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={() => { setStartDateStr(''); setStartDateError(''); setStartDateModal(true); }} accessibilityRole="button">
@@ -361,7 +361,7 @@ export default function ProfileScreen() {
               <View style={styles.divider} />
               <View style={styles.row}>
                 <Text style={styles.rowLabel}>Your invite code</Text>
-                <Text style={styles.inviteCode}>{profile?.inviteCode ?? '—'}</Text>
+                <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
               </View>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }} accessibilityRole="button">
@@ -378,7 +378,7 @@ export default function ProfileScreen() {
             <>
               <View style={styles.row}>
                 <Text style={styles.rowLabel}>Your invite code</Text>
-                <Text style={styles.inviteCode}>{profile?.inviteCode ?? '—'}</Text>
+                <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
               </View>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }} accessibilityRole="button">
@@ -665,7 +665,7 @@ export default function ProfileScreen() {
             <Text style={styles.modalHint}>Enter your full birthday (DD.MM.YYYY). Your partner will see a countdown and your age.</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="DD.MM.YYYY — e.g. 25.12.1990"
+              placeholder="DD.MM.YYYY (e.g. 25.12.1990)"
               placeholderTextColor={Colors.muted}
               value={birthdayStr}
               onChangeText={setBirthdayStr}

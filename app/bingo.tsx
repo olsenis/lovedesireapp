@@ -121,7 +121,7 @@ export default function ActivityCardsScreen() {
             {isReceiver
               ? `${partnerName} sent you a challenge!`
               : isMyTurn
-              ? 'Your turn — pick any card'
+              ? 'Your turn, pick any card'
               : `${partnerName}'s turn to pick`}
           </Text>
         </View>
@@ -130,7 +130,7 @@ export default function ActivityCardsScreen() {
         <Text style={styles.progressText}>{revealed.length} of 25 flipped · {remaining} remaining</Text>
         {isMyTurn && (
           <Text style={styles.passesText}>
-            {passesLeft > 0 ? `${passesLeft} pass${passesLeft !== 1 ? 'es' : ''} left` : 'No passes left — must accept next card'}
+            {passesLeft > 0 ? `${passesLeft} pass${passesLeft !== 1 ? 'es' : ''} left` : 'No passes left, must accept next card'}
           </Text>
         )}
 
@@ -249,7 +249,7 @@ export default function ActivityCardsScreen() {
       <HelpModal
         visible={help.visible}
         title="Activity Cards"
-        description="25 face-down cards, each with an intimate activity. Take turns picking one — you never know what you'll get!"
+        description="25 face-down cards, each with an intimate activity. Take turns picking one, you never know what you'll get!"
         tips={[
           "Take turns picking a face-down card",
           "Tap 'Accept this challenge' to flip it and pass the turn",

@@ -345,7 +345,7 @@ export default function HomeScreen() {
         : "Capture today's moment",
       subtitle: partnerCapturedToday
         ? 'Take yours to reveal both photos'
-        : 'Both of you take a photo — reveal together',
+        : 'Both of you take a photo, reveal together',
       route: '/moments',
       bg: Colors.blush,
     });

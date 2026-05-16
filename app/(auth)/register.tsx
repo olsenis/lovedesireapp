@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { register } from '../../services/authService';
+import { confirmConsent } from '../../services/consentService';
+import { auth } from '../../services/firebase';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius } from '../../constants/spacing';
@@ -19,12 +21,17 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleRegister = async () => {
     if (!email || !password || !confirm) {
       setError('Please fill in all fields.');
+      return;
+    }
+    if (!ageConfirmed) {
+      setError('You must confirm you are 18 or older to continue.');
       return;
     }
     if (password !== confirm) {
@@ -39,6 +46,11 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register(email.trim(), password);
+      // Record consent immediately after the auth account is created.
+      // This satisfies GDPR + Apple Guideline 1.1.4 (consent before any data collection).
+      if (auth.currentUser) {
+        await confirmConsent(auth.currentUser.uid);
+      }
       router.replace('/(auth)/onboarding');
     } catch (e: any) {
       if (e.code === 'auth/email-already-in-use') {
@@ -88,12 +100,32 @@ export default function RegisterScreen() {
             secureTextEntry
           />
 
+          <TouchableOpacity
+            style={styles.ageRow}
+            onPress={() => setAgeConfirmed(a => !a)}
+            activeOpacity={0.85}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: ageConfirmed }}
+            accessibilityLabel="I am 18 or older"
+          >
+            <View style={[styles.checkbox, ageConfirmed && styles.checkboxChecked]}>
+              {ageConfirmed && <Text style={styles.checkboxMark}>✓</Text>}
+            </View>
+            <Text style={styles.ageText}>
+              I confirm I am 18 or older and accept the{' '}
+              <Text style={styles.linkInline} onPress={() => router.push('/terms-of-service' as any)}>Terms</Text>
+              {' '}and{' '}
+              <Text style={styles.linkInline} onPress={() => router.push('/privacy-policy' as any)}>Privacy Policy</Text>
+            </Text>
+          </TouchableOpacity>
+
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Button
             label="Create Account"
             onPress={handleRegister}
             loading={loading}
+            disabled={!ageConfirmed}
             style={styles.button}
           />
         </View>
@@ -168,5 +200,44 @@ const styles = StyleSheet.create({
   linkBold: {
     fontFamily: Fonts.bodyBold,
     color: Colors.burgundy,
+  },
+  ageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: Colors.burgundy,
+    borderColor: Colors.burgundy,
+  },
+  checkboxMark: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+    color: Colors.cream,
+    lineHeight: 14,
+  },
+  ageText: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.muted,
+    lineHeight: 19,
+  },
+  linkInline: {
+    fontFamily: Fonts.bodyBold,
+    color: Colors.burgundy,
+    textDecorationLine: 'underline',
   },
 });
