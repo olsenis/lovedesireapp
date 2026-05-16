@@ -43,11 +43,13 @@ export default function RouletteScreen() {
   const [ratings, setRatings] = useState<DateRatings>({});
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [filter, setFilter] = useState<'all' | 'home' | 'out' | 'adventure'>('all');
+  const [topRatedOnly, setTopRatedOnly] = useState(false);
   // LDR couples: default to virtual-only filter (in-person dates aren't actionable when apart)
   const isLDR = !!couple?.isLongDistance;
   const [showInPerson, setShowInPerson] = useState(false);
   const virtualOnly = isLDR && !showInPerson;
   const applyVirtualFilter = (list: DateIdea[]) => virtualOnly ? list.filter(d => d.virtual === true) : list;
+  const applyRatingFilter = (list: DateIdea[]) => topRatedOnly ? list.filter(d => (ratings[getKey(d.title)] ?? 0) >= 4) : list;
   const help = useHelp('date-night');
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export default function RouletteScreen() {
       easing: Easing.out(Easing.exp),
       useNativeDriver: true,
     }).start(() => {
-      const pool = applyVirtualFilter(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter));
+      const pool = applyRatingFilter(applyVirtualFilter(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter)));
       if (pool.length === 0) { setSpinning(false); return; }
       const picked = pool[Math.floor(Math.random() * pool.length)];
       setResult(picked);
@@ -130,13 +132,25 @@ export default function RouletteScreen() {
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel={showInPerson ? 'Hide in-person dates' : 'Show in-person dates too'}
-            style={{ alignSelf: 'center', marginTop: -Spacing.md, marginBottom: Spacing.md }}
+            style={{ alignSelf: 'center', marginTop: -Spacing.md, marginBottom: Spacing.sm }}
           >
             <Text style={{ fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted }}>
               {showInPerson ? '✈️ Show virtual only' : '✈️ Show in-person dates too'}
             </Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          onPress={() => setTopRatedOnly(t => !t)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={topRatedOnly ? 'Show all dates' : 'Show only highly-rated dates'}
+          style={{ alignSelf: 'center', marginBottom: Spacing.md }}
+        >
+          <Text style={{ fontFamily: Fonts.bodyItalic, fontSize: 13, color: topRatedOnly ? Colors.burgundy : Colors.muted }}>
+            {topRatedOnly ? '★ Showing 4★+ only · show all' : '★ Show only 4★+ favorites'}
+          </Text>
+        </TouchableOpacity>
 
         {/* Spinner */}
         <View style={styles.spinnerOuter}>
@@ -180,7 +194,7 @@ export default function RouletteScreen() {
 
         {/* All options list */}
         <Text style={styles.listTitle}>All date ideas</Text>
-        {applyVirtualFilter(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter)).map((idea) => {
+        {applyRatingFilter(applyVirtualFilter(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter))).map((idea) => {
           const r = ratings[getKey(idea.title)] ?? 0;
           return (
             <View key={idea.title} style={[styles.ideaRow, r > 0 && styles.ideaRowRated]}>
