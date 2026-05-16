@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { subscribeNotes, createNote, openNote, LoveNote } from '../services/noteService';
+import { subscribeNotes, createNote, openNote, updateNote, deleteNote, LoveNote } from '../services/noteService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji } from '../services/moodService';
 import { Colors as C } from '../constants/colors';
 import { notifyPartner } from '../services/notificationService';
@@ -78,28 +78,76 @@ export default function NotesScreen() {
   const [occasion, setOccasion] = useState(OCCASIONS[0].label);
   const [moodPick, setMoodPick] = useState<MoodEmoji>('😢');
   const [openedNote, setOpenedNote] = useState<LoveNote | null>(null);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<LoveNote | null>(null);
 
   useEffect(() => {
     if (!profile?.coupleId) return;
     return subscribeNotes(profile.coupleId, setNotes);
   }, [profile?.coupleId]);
 
+  const resetComposer = () => {
+    setMessage('');
+    setOccasion(OCCASIONS[0].label);
+    setMoodPick('😢');
+    setEditingNoteId(null);
+  };
+
   const handleCreate = async () => {
     if (!message.trim() || !profile?.coupleId || !user) return;
     const occ = occasions.find(o => o.label === occasion);
     const openCondition = occ?.condition;
     const triggerEmoji = openCondition === 'sad' ? moodPick : undefined;
-    await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition, triggerEmoji);
-    const moodLabel = triggerEmoji ? MOOD_LABELS[triggerEmoji].toLowerCase() : '';
-    const subtitle =
-      openCondition === 'sad'      ? `A note will unlock when you feel ${moodLabel}` :
-      openCondition === 'visit'    ? 'A note for when you arrive' :
-      openCondition === 'missing'  ? 'A note for when you miss me' :
-      openCondition === 'sleepless'? 'A note for when you can\'t sleep' :
-      'A message is waiting for you';
-    notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌', subtitle).catch(() => {});
-    setMessage('');
+
+    if (editingNoteId) {
+      // Edit existing — no notification re-fired
+      await updateNote(profile.coupleId, editingNoteId, message.trim(), getOccasionTime(occasion), openCondition, triggerEmoji);
+    } else {
+      await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition, triggerEmoji);
+      const moodLabel = triggerEmoji ? MOOD_LABELS[triggerEmoji].toLowerCase() : '';
+      const subtitle =
+        openCondition === 'sad'      ? `A note will unlock when you feel ${moodLabel}` :
+        openCondition === 'visit'    ? 'A note for when you arrive' :
+        openCondition === 'missing'  ? 'A note for when you miss me' :
+        openCondition === 'sleepless'? 'A note for when you can\'t sleep' :
+        'A message is waiting for you';
+      notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌', subtitle).catch(() => {});
+    }
+
+    resetComposer();
     setShowCreate(false);
+  };
+
+  const handleEdit = (note: LoveNote) => {
+    setEditingNoteId(note.id);
+    setMessage(note.message);
+    if (note.openCondition === 'sad') {
+      setOccasion(SAD_OCCASION_LABEL);
+      setMoodPick(note.triggerEmoji ?? '😢');
+    } else if (note.openCondition && CONDITION_META[note.openCondition]) {
+      setOccasion(CONDITION_META[note.openCondition].label);
+    } else {
+      setOccasion('Right now');
+    }
+    setShowCreate(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm || !profile?.coupleId) return;
+    await deleteNote(profile.coupleId, deleteConfirm.id);
+    setDeleteConfirm(null);
+  };
+
+  const myNoteStatus = (note: LoveNote): string => {
+    if (note.opened) return 'Opened ✓';
+    if (note.openCondition === 'sad') {
+      const emoji = note.triggerEmoji ?? '😢';
+      return `Unlocks when partner feels ${emoji} ${MOOD_LABELS[emoji]}`;
+    }
+    if (note.openCondition === 'visit')     return 'Unlocks on your next visit';
+    if (note.openCondition === 'missing')   return "In partner's Open When... stash";
+    if (note.openCondition === 'sleepless') return "In partner's Open When... stash";
+    return timeLabel(note.openAt);
   };
 
   const handleOpen = async (note: LoveNote) => {
@@ -197,8 +245,30 @@ export default function NotesScreen() {
                 </View>
                 <View style={styles.noteInfo}>
                   <Text style={styles.noteText} numberOfLines={2}>{note.message}</Text>
-                  <Text style={styles.noteTime}>{timeLabel(note.openAt)}</Text>
+                  <Text style={styles.noteTime}>{myNoteStatus(note)}</Text>
                 </View>
+                {!note.opened && (
+                  <View style={styles.myNoteActions}>
+                    <TouchableOpacity
+                      onPress={() => handleEdit(note)}
+                      style={styles.myNoteActionBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Edit note"
+                    >
+                      <Text style={styles.myNoteActionText}>✎</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setDeleteConfirm(note)}
+                      style={styles.myNoteActionBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Delete note"
+                    >
+                      <Text style={styles.myNoteActionText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             ))}
           </>
@@ -216,11 +286,11 @@ export default function NotesScreen() {
         )}
       </ScrollView>
 
-      {/* Create modal */}
+      {/* Create / Edit modal */}
       <Modal visible={showCreate} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Write a Love Note</Text>
+            <Text style={styles.modalTitle}>{editingNoteId ? 'Edit Love Note' : 'Write a Love Note'}</Text>
             <TextInput
               style={styles.textarea}
               placeholder="Write something from the heart..."
@@ -289,16 +359,43 @@ export default function NotesScreen() {
               <Text style={styles.sadHint}>Goes into their "Open when..." stash. They open it on a sleepless night.</Text>
             )}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)} accessibilityRole="button">
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => { resetComposer(); setShowCreate(false); }}
+                accessibilityRole="button"
+              >
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.sendBtn} onPress={handleCreate} accessibilityRole="button">
-                <Text style={styles.sendText}>Send 💌</Text>
+                <Text style={styles.sendText}>{editingNoteId ? 'Save changes' : 'Send 💌'}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+
+      {/* Delete confirm modal */}
+      {deleteConfirm && (
+        <Modal visible transparent animationType="fade">
+          <View style={styles.overlay}>
+            <View style={[styles.modal, { gap: Spacing.md }]}>
+              <Text style={styles.modalTitle}>Delete this note?</Text>
+              <Text style={styles.deleteHint}>Your partner won't see it. This cannot be undone.</Text>
+              <View style={styles.deletePreview}>
+                <Text style={styles.deletePreviewText} numberOfLines={3}>"{deleteConfirm.message}"</Text>
+              </View>
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeleteConfirm(null)} accessibilityRole="button">
+                  <Text style={styles.cancelText}>Keep it</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.sendBtn, { backgroundColor: '#C62828' }]} onPress={confirmDelete} accessibilityRole="button">
+                  <Text style={styles.sendText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Opened note viewer */}
       {openedNote && (
@@ -406,6 +503,21 @@ const styles = StyleSheet.create({
   moodPickerEmoji: { fontSize: 22 },
   moodPickerName: { fontFamily: Fonts.body, fontSize: 9, color: Colors.muted, textAlign: 'center' },
   moodPickerNameActive: { color: '#1565C0', fontFamily: Fonts.bodyBold },
+
+  myNoteActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  myNoteActionBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: Colors.cream, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  myNoteActionText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
+
+  deleteHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, lineHeight: 19 },
+  deletePreview: {
+    backgroundColor: Colors.white, borderRadius: Radius.md, padding: Spacing.md,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  deletePreviewText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.text, lineHeight: 20 },
   modalBtns: { flexDirection: 'row', gap: Spacing.md },
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },

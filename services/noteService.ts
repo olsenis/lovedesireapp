@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, doc, onSnapshot, orderBy, query, limit, where, getDocs, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, deleteField, doc, onSnapshot, orderBy, query, limit, where, getDocs, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import type { MoodEmoji } from './moodService';
 
@@ -86,4 +86,26 @@ export async function unlockVisitNotes(coupleId: string, uid: string): Promise<v
 
 export async function openNote(coupleId: string, noteId: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'notes', noteId), { opened: true });
+}
+
+export async function updateNote(
+  coupleId: string,
+  noteId: string,
+  message: string,
+  openAt: number,
+  openCondition?: 'sad' | 'visit' | 'missing' | 'sleepless',
+  triggerEmoji?: MoodEmoji,
+): Promise<void> {
+  const isAutoUnlock = openCondition === 'sad' || openCondition === 'visit';
+  // deleteField() removes the property server-side when the user clears a condition or emoji
+  await updateDoc(doc(db, 'couples', coupleId, 'notes', noteId), {
+    message,
+    openAt: isAutoUnlock ? 32503680000000 : openAt,
+    openCondition: openCondition ?? deleteField(),
+    triggerEmoji:  triggerEmoji  ?? deleteField(),
+  });
+}
+
+export async function deleteNote(coupleId: string, noteId: string): Promise<void> {
+  await deleteDoc(doc(db, 'couples', coupleId, 'notes', noteId));
 }
