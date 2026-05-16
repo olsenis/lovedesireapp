@@ -7,6 +7,7 @@ export type QuestionCategory = 'fun' | 'deep' | 'romantic' | 'spicy' | 'therapy'
 export interface Question {
   text: string;
   category: QuestionCategory;
+  tags?: string[]; // e.g. ['ldr'] — used to mix LDR-flavored questions into existing categories
 }
 
 export const QUESTION_CATEGORY_CONFIG: Record<QuestionCategory, { label: string; emoji: string; color: string }> = {
@@ -649,6 +650,7 @@ export interface DateIdea {
   description: string;
   emoji: string;
   type: 'home' | 'out' | 'adventure';
+  virtual?: boolean; // true = works for long-distance couples (video, sync watching, parallel cooking, etc.)
 }
 
 export const DATE_IDEAS: DateIdea[] = [
@@ -925,7 +927,7 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
 
 // ─── 30-DAY INTIMACY CHALLENGE ────────────────────────────────────────────────
 
-export type ChallengeProgram = 'reconnect' | 'spark' | 'fire' | 'desire';
+export type ChallengeProgram = 'reconnect' | 'spark' | 'fire' | 'desire' | 'distance';
 
 export interface ChallengeTask {
   day: number;
@@ -939,6 +941,7 @@ export const CHALLENGE_PROGRAM_CONFIG: Record<ChallengeProgram, {
   spark:     { label: 'Spark',     emoji: '✨', color: '#FFF9C4', textColor: '#F57F17', description: 'Playful, flirty, and warm, reignite the energy between you' },
   fire:      { label: 'Fire',      emoji: '🔥', color: '#FFCCBC', textColor: '#BF360C', description: 'Bold, explicit, and unapologetic, for couples ready to burn bright' },
   desire:    { label: 'Desire',    emoji: '💋', color: '#FCE4EC', textColor: '#880E4F', description: 'A 30-day sexual exploration, technique, communication, and discovery' },
+  distance:  { label: 'Distance',  emoji: '✈️', color: '#E1F5FE', textColor: '#0277BD', description: 'For long-distance couples, daily rituals that close the miles' },
 };
 
 export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
@@ -1070,6 +1073,8 @@ export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
     { day: 29, text: "Flip a coin, winner is dominant. Tell your partner 'do what you want with me' and mean it. Agree on a safe word first. Push your limits." },
     { day: 30, text: "Stay up as long as you can. Revisit your favourite moments from the 29 days. Aim for 5 orgasms or 5 rounds. Bonus day: caress, rest, then just fuck." },
   ],
+  // LDR program — empty placeholder, content TBD via content prompts
+  distance: [],
 };
 
 // ─── TRUTH OR DARE, TRUTHS ───────────────────────────────────────────────────

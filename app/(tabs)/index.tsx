@@ -9,7 +9,7 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
-import { subscribeNotes, LoveNote, unlockSadNotes } from '../../services/noteService';
+import { subscribeNotes, LoveNote, unlockSadNotes, unlockVisitNotes } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
@@ -47,6 +47,27 @@ function getAnniversary(couple: { createdAt: number; startDate?: number }): { da
   const years = next.getFullYear() - start.getFullYear();
   const dateLabel = next.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   return { dateLabel, daysUntil, years };
+}
+
+// Returns next-visit countdown info, or null if no date set / already past
+function getNextVisit(nextVisitDate?: number): { dateLabel: string; daysUntil: number } | null {
+  if (!nextVisitDate) return null;
+  const target = new Date(nextVisitDate);
+  const now = new Date();
+  const daysUntil = Math.ceil((target.getTime() - now.getTime()) / 86400000);
+  if (daysUntil < 0) return null;
+  const dateLabel = target.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return { dateLabel, daysUntil };
+}
+
+// Format time in a given IANA timezone, returns "HH:MM" or null if invalid
+function timeInZone(tz?: string): string | null {
+  if (!tz) return null;
+  try {
+    return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+  } catch {
+    return null;
+  }
 }
 
 interface NudgeItem {
@@ -151,6 +172,22 @@ export default function HomeScreen() {
   const isConnected = !!couple?.partner2Uid;
   const togetherSince = useMemo(() => (couple ? getTogetherSince(couple) : ''), [couple]);
   const anniversary = useMemo(() => (couple ? getAnniversary(couple) : null), [couple]);
+  const isLDR = !!couple?.isLongDistance;
+
+  // When the next visit date has arrived (or passed), unlock any "When I arrive" notes
+  useEffect(() => {
+    if (!coupleId || !uid || !couple?.nextVisitDate) return;
+    if (couple.nextVisitDate <= Date.now()) {
+      unlockVisitNotes(coupleId, uid).catch(() => {});
+    }
+  }, [coupleId, uid, couple?.nextVisitDate]);
+  const nextVisit = useMemo(() => getNextVisit(couple?.nextVisitDate), [couple?.nextVisitDate]);
+  // Show both pills only if both events fall within 60 days; otherwise show whichever is closer
+  const showBothEvents = !!(anniversary && nextVisit && anniversary.daysUntil <= 60 && nextVisit.daysUntil <= 60);
+  const showNextVisitOnly = !!nextVisit && (!anniversary || (!showBothEvents && nextVisit.daysUntil <= anniversary.daysUntil));
+  const showAnniversaryOnly = !!anniversary && (!nextVisit || (!showBothEvents && anniversary.daysUntil < nextVisit.daysUntil));
+  const myTimezone = isLDR ? timeInZone(profile?.timezone) : null;
+  const partnerTimezone = isLDR ? timeInZone(partner?.timezone) : null;
 
   // Build nudge items (memoized — only rebuilds when one of the sources actually changes)
   const nudges = useMemo<NudgeItem[]>(() => {
@@ -374,6 +411,7 @@ export default function HomeScreen() {
                 <PartnerAvatar name={profile?.name ?? '?'} photoURL={profile?.photoURL} size={64} />
               </View>
               <Text style={styles.avatarNameLight}>{profile?.name}</Text>
+              {myTimezone && <Text style={styles.tzClock}>{myTimezone}</Text>}
               <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7} accessibilityRole="button">
                 <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
               </TouchableOpacity>
@@ -381,7 +419,7 @@ export default function HomeScreen() {
             <View style={styles.middleCol}>
               <Text style={styles.sinceLabel}>together since</Text>
               <Text style={styles.sinceDate}>{togetherSince}</Text>
-              {anniversary && (
+              {(showBothEvents || showAnniversaryOnly) && anniversary && (
                 <View style={styles.anniversaryPill}>
                   <Text style={styles.anniversaryText}>
                     {anniversary.daysUntil <= 1 ? '🎉 Today!' : `🎉 ${anniversary.dateLabel}`}
@@ -391,12 +429,23 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               )}
+              {(showBothEvents || showNextVisitOnly) && nextVisit && (
+                <View style={[styles.anniversaryPill, { marginTop: showBothEvents ? 4 : 0 }]}>
+                  <Text style={styles.anniversaryText}>
+                    {nextVisit.daysUntil === 0 ? '✈️ Today!' : `✈️ ${nextVisit.dateLabel}`}
+                  </Text>
+                  <Text style={styles.anniversaryDays}>
+                    {nextVisit.daysUntil === 0 ? 'next visit' : `in ${nextVisit.daysUntil} days · next visit`}
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={styles.avatarCol}>
               <View style={styles.avatarRing}>
                 <PartnerAvatar name={partner?.name ?? '?'} photoURL={partner?.photoURL} size={64} />
               </View>
               <Text style={styles.avatarNameLight}>{partner?.name ?? '...'}</Text>
+              {partnerTimezone && <Text style={styles.tzClock}>{partnerTimezone}</Text>}
               <View style={styles.moodPill}>
                 <Text style={styles.moodPillEmoji}>{partnerMood?.emoji ?? '·'}</Text>
               </View>
@@ -694,6 +743,7 @@ const styles = StyleSheet.create({
   avatarCol: { alignItems: 'center', gap: 8 },
   avatarRing: { borderRadius: Radius.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.28)', padding: 3 },
   avatarNameLight: { fontFamily: Fonts.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+  tzClock: { fontFamily: Fonts.body, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1, letterSpacing: 0.3 },
   moodPill: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 4 },
   moodPillEmoji: { fontSize: 18 },
   middleCol: { alignItems: 'center', gap: 4 },

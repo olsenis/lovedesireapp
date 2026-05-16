@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { DATE_IDEAS, DateIdea } from '../constants/content';
 import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
 import { addTodo } from '../services/todoService';
 import { DateRatings, subscribeDateRatings, rateDate, getKey } from '../services/dateRatingService';
 import { useHelp } from '../hooks/useHelp';
@@ -35,12 +36,18 @@ const starStyles = StyleSheet.create({
 
 export default function RouletteScreen() {
   const { user, profile } = useAuth();
+  const { couple } = useCouple(user?.uid, profile?.coupleId);
   const [result, setResult] = useState<DateIdea | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [saved, setSaved] = useState(false);
   const [ratings, setRatings] = useState<DateRatings>({});
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [filter, setFilter] = useState<'all' | 'home' | 'out' | 'adventure'>('all');
+  // LDR couples: default to virtual-only filter (in-person dates aren't actionable when apart)
+  const isLDR = !!couple?.isLongDistance;
+  const [showInPerson, setShowInPerson] = useState(false);
+  const virtualOnly = isLDR && !showInPerson;
+  const applyVirtualFilter = (list: DateIdea[]) => virtualOnly ? list.filter(d => d.virtual === true) : list;
   const help = useHelp('date-night');
 
   useEffect(() => {
@@ -75,7 +82,7 @@ export default function RouletteScreen() {
       easing: Easing.out(Easing.exp),
       useNativeDriver: true,
     }).start(() => {
-      const pool = filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter);
+      const pool = applyVirtualFilter(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter));
       if (pool.length === 0) { setSpinning(false); return; }
       const picked = pool[Math.floor(Math.random() * pool.length)];
       setResult(picked);
@@ -117,6 +124,19 @@ export default function RouletteScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        {isLDR && (
+          <TouchableOpacity
+            onPress={() => setShowInPerson(s => !s)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={showInPerson ? 'Hide in-person dates' : 'Show in-person dates too'}
+            style={{ alignSelf: 'center', marginTop: -Spacing.md, marginBottom: Spacing.md }}
+          >
+            <Text style={{ fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted }}>
+              {showInPerson ? '✈️ Show virtual only' : '✈️ Show in-person dates too'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Spinner */}
         <View style={styles.spinnerOuter}>
@@ -160,7 +180,7 @@ export default function RouletteScreen() {
 
         {/* All options list */}
         <Text style={styles.listTitle}>All date ideas</Text>
-        {(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter)).map((idea) => {
+        {applyVirtualFilter(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter)).map((idea) => {
           const r = ratings[getKey(idea.title)] ?? 0;
           return (
             <View key={idea.title} style={[styles.ideaRow, r > 0 && styles.ideaRowRated]}>

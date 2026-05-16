@@ -22,6 +22,8 @@ export interface Couple {
   inviteExpiresAt?: number; // expires 7 days after creation
   createdAt: number;
   startDate?: number; // actual relationship start date (set by couple)
+  isLongDistance?: boolean; // LDR toggle — changes home screen, roulette, notes, etc.
+  nextVisitDate?: number; // timestamp of next planned reunion (only when isLongDistance)
 }
 
 // Exclude visually ambiguous characters (0/O, 1/I/L) for easier sharing verbally
@@ -86,6 +88,14 @@ export async function regenerateInviteCode(coupleId: string): Promise<string> {
 
 export async function setCoupleStartDate(coupleId: string, startDate: number): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId), { startDate });
+}
+
+export async function setLongDistance(coupleId: string, on: boolean): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId), { isLongDistance: on });
+}
+
+export async function setNextVisitDate(coupleId: string, date: number | null): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId), { nextVisitDate: date ?? 0 });
 }
 
 export async function getCouple(coupleId: string): Promise<Couple | null> {

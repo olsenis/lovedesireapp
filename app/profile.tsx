@@ -11,7 +11,7 @@ import { auth } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
-import { joinCouple, setCoupleStartDate } from '../services/coupleService';
+import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
 import { uploadProfilePhoto } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
 import { Colors } from '../constants/colors';
@@ -49,6 +49,9 @@ export default function ProfileScreen() {
   const [helpOn, setHelpOn] = useState(true);
   const [intimacyLogOn, setIntimacyLogOn] = useState(false);
   const [explicitOn, setExplicitOn] = useState(true);
+  const [ldrOn, setLdrOn] = useState(false);
+  const [nextVisitStr, setNextVisitStr] = useState('');
+  const [nextVisitError, setNextVisitError] = useState('');
   const [birthdayStr, setBirthdayStr] = useState('');
   const [birthdayModal, setBirthdayModal] = useState(false);
 
@@ -61,6 +64,46 @@ export default function ProfileScreen() {
     setIntimacyLogOn(profile?.features?.intimacyLog ?? false);
     setExplicitOn(profile?.features?.explicitContent ?? true);
   }, [profile?.features?.intimacyLog, profile?.features?.explicitContent]);
+
+  // Sync LDR state from couple doc
+  useEffect(() => {
+    setLdrOn(couple?.isLongDistance ?? false);
+    if (couple?.nextVisitDate) {
+      const d = new Date(couple.nextVisitDate);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      setNextVisitStr(`${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`);
+    } else {
+      setNextVisitStr('');
+    }
+  }, [couple?.isLongDistance, couple?.nextVisitDate]);
+
+  const toggleLdr = async (val: boolean) => {
+    setLdrOn(val);
+    if (profile?.coupleId) await setLongDistance(profile.coupleId, val);
+  };
+
+  const handleSaveNextVisit = async () => {
+    if (!profile?.coupleId) return;
+    setNextVisitError('');
+    const s = nextVisitStr.trim();
+    if (!s) {
+      // empty = clear the date
+      await setNextVisitDate(profile.coupleId, null);
+      return;
+    }
+    const parts = s.split('.');
+    if (parts.length !== 3 || parts.some(p => isNaN(Number(p)))) {
+      setNextVisitError('Use DD.MM.YYYY format');
+      return;
+    }
+    const [d, m, y] = parts.map(Number);
+    const date = new Date(y, m - 1, d, 12, 0, 0);
+    if (isNaN(date.getTime())) {
+      setNextVisitError('Invalid date');
+      return;
+    }
+    await setNextVisitDate(profile.coupleId, date.getTime());
+  };
 
   const toggleExplicit = async (val: boolean) => {
     setExplicitOn(val);
@@ -396,6 +439,43 @@ export default function ProfileScreen() {
               thumbColor={explicitOn ? Colors.burgundy : Colors.muted}
             />
           </View>
+          {isConnected && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.row}>
+                <View style={styles.rowTextStack}>
+                  <Text style={styles.rowLabel}>Long distance</Text>
+                  <Text style={styles.rowHint}>Shows partner's local time, next-visit countdown, virtual date filter, and LDR-flavored questions.</Text>
+                </View>
+                <Switch
+                  value={ldrOn}
+                  onValueChange={toggleLdr}
+                  trackColor={{ false: Colors.border, true: Colors.rose }}
+                  thumbColor={ldrOn ? Colors.burgundy : Colors.muted}
+                />
+              </View>
+              {ldrOn && (
+                <>
+                  <View style={styles.divider} />
+                  <View style={styles.row}>
+                    <View style={styles.rowTextStack}>
+                      <Text style={styles.rowLabel}>Next visit</Text>
+                      <Text style={styles.rowHint}>When are you seeing each other next? (DD.MM.YYYY, leave blank to clear)</Text>
+                      <TextInput
+                        style={[styles.modalInput, { marginTop: 8 }]}
+                        value={nextVisitStr}
+                        onChangeText={setNextVisitStr}
+                        placeholder="DD.MM.YYYY"
+                        placeholderTextColor={Colors.muted}
+                        onBlur={handleSaveNextVisit}
+                      />
+                      {nextVisitError ? <Text style={{ color: Colors.error, fontSize: 12, marginTop: 4 }}>{nextVisitError}</Text> : null}
+                    </View>
+                  </View>
+                </>
+              )}
+            </>
+          )}
         </View>
 
         {/* Help */}

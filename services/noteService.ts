@@ -5,7 +5,7 @@ export interface LoveNote {
   id: string;
   message: string;
   openAt: number;
-  openCondition?: 'sad'; // if set, only unlocks when partner logs sad mood
+  openCondition?: 'sad' | 'visit'; // sad = partner sets sad mood; visit = next visit date arrives
   fromUid: string;
   opened: boolean;
   createdAt: number;
@@ -24,12 +24,12 @@ export async function createNote(
   fromUid: string,
   message: string,
   openAt: number,
-  openCondition?: 'sad'
+  openCondition?: 'sad' | 'visit'
 ): Promise<void> {
   await addDoc(collection(db, 'couples', coupleId, 'notes'), {
     message,
     // If condition-based, set openAt far in future so time-check never triggers it
-    openAt: openCondition === 'sad' ? 32503680000000 : openAt,
+    openAt: openCondition ? 32503680000000 : openAt,
     ...(openCondition ? { openCondition } : {}),
     fromUid,
     opened: false,
@@ -42,6 +42,20 @@ export async function unlockSadNotes(coupleId: string, uid: string): Promise<voi
   const q = query(
     collection(db, 'couples', coupleId, 'notes'),
     where('openCondition', '==', 'sad'),
+    where('opened', '==', false)
+  );
+  const snap = await getDocs(q);
+  const toUnlock = snap.docs.filter(d => d.data().fromUid !== uid);
+  await Promise.all(toUnlock.map(d =>
+    updateDoc(d.ref, { openAt: Date.now() })
+  ));
+}
+
+// Called when the next visit date has arrived — unlocks any pending visit-condition notes from partner
+export async function unlockVisitNotes(coupleId: string, uid: string): Promise<void> {
+  const q = query(
+    collection(db, 'couples', coupleId, 'notes'),
+    where('openCondition', '==', 'visit'),
     where('opened', '==', false)
   );
   const snap = await getDocs(q);

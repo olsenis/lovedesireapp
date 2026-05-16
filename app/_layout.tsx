@@ -115,6 +115,19 @@ export default function RootLayout() {
     })();
   }, [loading, user]);
 
+  // Auto-detect timezone and store on user profile (used for LDR partner clock)
+  useEffect(() => {
+    if (loading || !user) return;
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz && tz !== profile?.timezone) {
+        createUserProfile(user.uid, { timezone: tz } as any);
+      }
+    } catch {
+      // Intl may be unavailable in rare environments — silent fail
+    }
+  }, [loading, user, profile?.timezone]);
+
   if (!fontsLoaded && !fontError) return null;
 
   if (showConsent) {

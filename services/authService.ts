@@ -18,6 +18,7 @@ export interface UserProfile {
   pushToken?: string;
   createdAt: number;
   birthday?: string; // DD.MM format, no year
+  timezone?: string; // IANA tz like "Europe/Reykjavik" — used for LDR partner clock
   features?: {
     intimacyLog?: boolean;
     explicitContent?: boolean; // paid users can disable explicit content

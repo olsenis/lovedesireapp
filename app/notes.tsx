@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
 import { subscribeNotes, createNote, openNote, LoveNote } from '../services/noteService';
 import { Colors as C } from '../constants/colors';
 import { notifyPartner } from '../services/notificationService';
@@ -11,11 +12,15 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 
-const OCCASIONS = [
+type Occasion = { label: string; offset: number; condition?: 'sad' | 'visit' };
+
+const OCCASIONS: Occasion[] = [
   { label: "Right now", offset: 0 },
   { label: "This weekend", offset: -1 },
-  { label: "When you're sad", offset: 0, condition: 'sad' as const },
+  { label: "When you're sad", offset: 0, condition: 'sad' },
 ];
+
+const LDR_OCCASION: Occasion = { label: "When I arrive", offset: 0, condition: 'visit' };
 
 function getOccasionTime(label: string): number {
   const now = new Date();
@@ -52,6 +57,9 @@ function timeLabel(openAt: number): string {
 
 export default function NotesScreen() {
   const { user, profile } = useAuth();
+  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const isLDR = !!couple?.isLongDistance;
+  const occasions: Occasion[] = isLDR ? [...OCCASIONS, LDR_OCCASION] : OCCASIONS;
   const [notes, setNotes] = useState<LoveNote[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const help = useHelp('love-notes');
@@ -66,7 +74,7 @@ export default function NotesScreen() {
 
   const handleCreate = async () => {
     if (!message.trim() || !profile?.coupleId || !user) return;
-    const occ = OCCASIONS.find(o => o.label === occasion);
+    const occ = occasions.find(o => o.label === occasion);
     const openCondition = occ?.condition;
     await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition);
     notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌',
@@ -176,7 +184,7 @@ export default function NotesScreen() {
             />
             <Text style={styles.modalLabel}>When can it be opened?</Text>
             <View style={styles.occasionRow}>
-              {OCCASIONS.map((o) => (
+              {occasions.map((o) => (
                 <TouchableOpacity
                   key={o.label}
                   style={[
@@ -188,13 +196,16 @@ export default function NotesScreen() {
                   onPress={() => setOccasion(o.label)}
                  accessibilityRole="button">
                   <Text style={[styles.occasionText, occasion === o.label && styles.occasionTextActive]}>
-                    {o.condition === 'sad' ? '💙 ' : ''}{o.label}
+                    {o.condition === 'sad' ? '💙 ' : o.condition === 'visit' ? '✈️ ' : ''}{o.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
             {occasion === "When you're sad" && (
               <Text style={styles.sadHint}>This note will unlock when your partner logs a sad mood</Text>
+            )}
+            {occasion === "When I arrive" && (
+              <Text style={styles.sadHint}>This note will unlock on your next-visit date</Text>
             )}
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)} accessibilityRole="button">
