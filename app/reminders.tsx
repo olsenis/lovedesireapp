@@ -45,11 +45,11 @@ export default function RemindersScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Flirt Reminders</Text>
-        <TouchableOpacity onPress={() => setShowCreate(true)}>
+        <TouchableOpacity onPress={() => setShowCreate(true)} accessibilityRole="button">
           <Text style={styles.addBtn}>+ New</Text>
         </TouchableOpacity>
       </View>
@@ -76,7 +76,7 @@ export default function RemindersScreen() {
                 trackColor={{ false: Colors.border, true: Colors.rose }}
                 thumbColor={r.active ? Colors.burgundy : Colors.muted}
               />
-              <TouchableOpacity onPress={() => { if (coupleId) { deleteReminder(coupleId, r.id); cancelReminderNotifications(r.id); } }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { if (coupleId) { deleteReminder(coupleId, r.id); cancelReminderNotifications(r.id); } }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button">
                 <Text style={styles.deleteBtn}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -88,7 +88,7 @@ export default function RemindersScreen() {
             <Text style={styles.emptyEmoji}>🔔</Text>
             <Text style={styles.emptyTitle}>No reminders yet</Text>
             <Text style={styles.emptyText}>Set up daily nudges to keep the spark alive</Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowCreate(true)}>
+            <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowCreate(true)} accessibilityRole="button">
               <Text style={styles.emptyBtnText}>Create first reminder</Text>
             </TouchableOpacity>
           </View>
@@ -101,7 +101,7 @@ export default function RemindersScreen() {
             style={styles.suggestion}
             onPress={() => { setMessage(s); setShowCreate(true); }}
             activeOpacity={0.8}
-          >
+           accessibilityRole="button">
             <Text style={styles.suggestionText}>{s}</Text>
             <Text style={styles.suggestionPlus}>+</Text>
           </TouchableOpacity>
@@ -140,17 +140,17 @@ export default function RemindersScreen() {
                   key={label}
                   style={[styles.dayBtn, days.includes(i) && styles.dayActive]}
                   onPress={() => toggleDay(i)}
-                >
+                 accessibilityRole="button">
                   <Text style={[styles.dayText, days.includes(i) && styles.dayTextActive]}>{label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSave} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Save 🔔</Text>
               </TouchableOpacity>
             </View>

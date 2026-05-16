@@ -179,7 +179,7 @@ export default function TwoTruthsScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
             <Text style={styles.backText}>‹ Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Two Truths One Lie</Text>
@@ -199,7 +199,7 @@ export default function TwoTruthsScreen() {
                 style={[styles.levelCard, { backgroundColor: c.color }]}
                 onPress={() => handleStart(level)}
                 activeOpacity={0.85}
-              >
+               accessibilityRole="button">
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
@@ -225,11 +225,11 @@ export default function TwoTruthsScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Two Truths One Lie</Text>
-        <TouchableOpacity onPress={handleReset} style={styles.resetBtn}>
+        <TouchableOpacity onPress={handleReset} style={styles.resetBtn} accessibilityRole="button">
           <Text style={styles.resetBtnText}>↺ New</Text>
         </TouchableOpacity>
       </View>
@@ -264,7 +264,7 @@ export default function TwoTruthsScreen() {
                 style={[styles.statementCard, lie === i && styles.statementCardLie]}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLie(lie === i ? null : i); }}
                 activeOpacity={0.85}
-              >
+               accessibilityRole="button">
                 <View style={styles.statementCardLeft}>
                   <Text style={[styles.statementCardText, lie === i && styles.statementCardTextLie]}>{s}</Text>
                 </View>
@@ -279,7 +279,7 @@ export default function TwoTruthsScreen() {
               style={styles.refreshBtn}
               onPress={generateStatements}
               activeOpacity={0.8}
-            >
+             accessibilityRole="button">
               <Text style={styles.refreshBtnText}>↻ Get different statements</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -287,7 +287,7 @@ export default function TwoTruthsScreen() {
               onPress={handleSubmitStatements}
               disabled={lie === null}
               activeOpacity={0.85}
-            >
+             accessibilityRole="button">
               <Text style={styles.actionBtnText}>Send to {partnerName} →</Text>
             </TouchableOpacity>
           </>
@@ -306,7 +306,7 @@ export default function TwoTruthsScreen() {
           <>
             <Text style={styles.hint}>Which one is the lie? Tap to guess.</Text>
             {session.statements.map((s, i) => (
-              <TouchableOpacity key={i} style={styles.guessCard} onPress={() => handleGuess(i)} activeOpacity={0.85}>
+              <TouchableOpacity key={i} style={styles.guessCard} onPress={() => handleGuess(i)} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.guessNum}>{i + 1}</Text>
                 <Text style={styles.guessText}>{s}</Text>
               </TouchableOpacity>
@@ -340,7 +340,7 @@ export default function TwoTruthsScreen() {
               <Text style={styles.dareText}>{session.dare}</Text>
             </View>
 
-            <TouchableOpacity style={styles.actionBtn} onPress={handleNext} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleNext} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.actionBtnText}>
                 Next — {session.writerUid === uid ? partnerName : 'your'} turn to write →
               </Text>

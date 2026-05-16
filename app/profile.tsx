@@ -238,7 +238,7 @@ export default function ProfileScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Profile</Text>
@@ -249,7 +249,7 @@ export default function ProfileScreen() {
 
         {/* Avatar + name */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={handlePickPhoto} style={styles.avatarWrap}>
+          <TouchableOpacity onPress={handlePickPhoto} style={styles.avatarWrap} accessibilityRole="button">
             {profile?.photoURL ? (
               <Image source={{ uri: profile.photoURL }} style={styles.avatar} contentFit="cover" />
             ) : (
@@ -268,7 +268,7 @@ export default function ProfileScreen() {
         {/* Account */}
         <Text style={styles.sectionLabel}>Account</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.row} onPress={() => { setEditName(profile?.name ?? ''); setEditNameModal(true); }}>
+          <TouchableOpacity style={styles.row} onPress={() => { setEditName(profile?.name ?? ''); setEditNameModal(true); }} accessibilityRole="button">
             <Text style={styles.rowLabel}>Display name</Text>
             <View style={styles.rowRight}>
               <Text style={styles.rowValue}>{profile?.name ?? '—'}</Text>
@@ -281,7 +281,7 @@ export default function ProfileScreen() {
             <Text style={styles.rowValue}>{user?.email ?? '—'}</Text>
           </View>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => { setBirthdayStr(profile?.birthday ?? ''); setBirthdayModal(true); }}>
+          <TouchableOpacity style={styles.row} onPress={() => { setBirthdayStr(profile?.birthday ?? ''); setBirthdayModal(true); }} accessibilityRole="button">
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>Your birthday</Text>
               <Text style={styles.rowHint}>{profile?.birthday ? `${profile.birthday} — visible to partner` : 'Tap to add (DD.MM.YYYY)'}</Text>
@@ -289,7 +289,7 @@ export default function ProfileScreen() {
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => { setPwError(''); setPwSuccess(false); setPasswordModal(true); }}>
+          <TouchableOpacity style={styles.row} onPress={() => { setPwError(''); setPwSuccess(false); setPasswordModal(true); }} accessibilityRole="button">
             <Text style={styles.rowLabel}>Change password</Text>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
@@ -305,7 +305,7 @@ export default function ProfileScreen() {
                 <Text style={styles.rowValue}>{partner?.name ?? '—'}</Text>
               </View>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => { setStartDateStr(''); setStartDateError(''); setStartDateModal(true); }}>
+              <TouchableOpacity style={styles.row} onPress={() => { setStartDateStr(''); setStartDateError(''); setStartDateModal(true); }} accessibilityRole="button">
                 <View style={styles.rowTextStack}>
                   <Text style={styles.rowLabel}>Days together</Text>
                   <Text style={styles.rowHint}>{couple?.startDate ? 'Custom date set' : 'Tap to set your real start date'}</Text>
@@ -321,12 +321,12 @@ export default function ProfileScreen() {
                 <Text style={styles.inviteCode}>{profile?.inviteCode ?? '—'}</Text>
               </View>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }}>
+              <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }} accessibilityRole="button">
                 <Text style={styles.rowLabel}>Enter partner's code</Text>
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={handleDisconnect}>
+              <TouchableOpacity style={styles.row} onPress={handleDisconnect} accessibilityRole="button">
                 <Text style={[styles.rowLabel, { color: Colors.error }]}>Disconnect couple</Text>
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
@@ -338,7 +338,7 @@ export default function ProfileScreen() {
                 <Text style={styles.inviteCode}>{profile?.inviteCode ?? '—'}</Text>
               </View>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }}>
+              <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }} accessibilityRole="button">
                 <Text style={[styles.rowLabel, { color: Colors.burgundy }]}>Enter partner's code</Text>
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
@@ -416,7 +416,7 @@ export default function ProfileScreen() {
           {helpOn && (
             <>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={handleResetHelp}>
+              <TouchableOpacity style={styles.row} onPress={handleResetHelp} accessibilityRole="button">
                 <Text style={styles.rowLabel}>Reset all hints</Text>
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
@@ -426,22 +426,22 @@ export default function ProfileScreen() {
 
         {/* Legal */}
         <View style={styles.legalRow}>
-          <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)} activeOpacity={0.7} accessibilityRole="button">
             <Text style={styles.legalLinkText}>Privacy Policy</Text>
           </TouchableOpacity>
           <Text style={styles.legalSep}>·</Text>
-          <TouchableOpacity onPress={() => router.push('/terms-of-service' as any)} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => router.push('/terms-of-service' as any)} activeOpacity={0.7} accessibilityRole="button">
             <Text style={styles.legalLinkText}>Terms of Service</Text>
           </TouchableOpacity>
         </View>
 
         {/* Sign out */}
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.signOutBtn} onPress={handleLogout} activeOpacity={0.8} accessibilityRole="button">
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
 
         {/* Delete account */}
-        <TouchableOpacity style={styles.deleteAccountBtn} onPress={() => { setDeleteError(''); setDeletePw(''); setDeleteModal(true); }} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.deleteAccountBtn} onPress={() => { setDeleteError(''); setDeletePw(''); setDeleteModal(true); }} activeOpacity={0.8} accessibilityRole="button">
           <Text style={styles.deleteAccountText}>Delete account</Text>
         </TouchableOpacity>
 
@@ -455,10 +455,10 @@ export default function ProfileScreen() {
             <TextInput style={styles.modalInput} value={editName} onChangeText={setEditName}
               placeholder="Your name" placeholderTextColor={Colors.muted} autoFocus />
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditNameModal(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditNameModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveName} disabled={saving}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveName} disabled={saving} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
               </TouchableOpacity>
             </View>
@@ -483,10 +483,10 @@ export default function ProfileScreen() {
                   placeholderTextColor={Colors.muted} value={confirmPw} onChangeText={setConfirmPw} secureTextEntry />
                 {pwError ? <Text style={styles.errorText}>{pwError}</Text> : null}
                 <View style={styles.modalBtns}>
-                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setPasswordModal(false)}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setPasswordModal(false)} accessibilityRole="button">
                     <Text style={styles.cancelText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.saveBtn} onPress={handleChangePassword} disabled={saving}>
+                  <TouchableOpacity style={styles.saveBtn} onPress={handleChangePassword} disabled={saving} accessibilityRole="button">
                     <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Update'}</Text>
                   </TouchableOpacity>
                 </View>
@@ -515,10 +515,10 @@ export default function ProfileScreen() {
             />
             {pairError ? <Text style={styles.errorText}>{pairError}</Text> : null}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setPairModal(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setPairModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleJoinCouple} disabled={pairLoading}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleJoinCouple} disabled={pairLoading} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>{pairLoading ? 'Connecting…' : 'Connect'}</Text>
               </TouchableOpacity>
             </View>
@@ -538,10 +538,10 @@ export default function ProfileScreen() {
               placeholderTextColor={Colors.muted} value={deletePw} onChangeText={setDeletePw} secureTextEntry autoFocus />
             {deleteError ? <Text style={styles.errorText}>{deleteError}</Text> : null}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeleteModal(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeleteModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={handleDeleteAccount} disabled={saving}>
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={handleDeleteAccount} disabled={saving} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>{saving ? 'Deleting…' : 'Delete'}</Text>
               </TouchableOpacity>
             </View>
@@ -566,10 +566,10 @@ export default function ProfileScreen() {
             />
             {startDateError ? <Text style={styles.errorText}>{startDateError}</Text> : null}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setStartDateModal(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setStartDateModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveStartDate}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveStartDate} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>
@@ -594,10 +594,10 @@ export default function ProfileScreen() {
               autoFocus
             />
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setBirthdayModal(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setBirthdayModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveBirthday}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveBirthday} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>

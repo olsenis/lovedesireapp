@@ -73,7 +73,7 @@ export default function BlueprintScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Erotic Blueprint</Text>
@@ -91,7 +91,7 @@ export default function BlueprintScreen() {
 
           <Text style={styles.question}>Which resonates more deeply with you?</Text>
 
-          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[0] }]} onPress={() => pick(q.a.type)} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[0] }]} onPress={() => pick(q.a.type)} activeOpacity={0.8} accessibilityRole="button">
             <Text style={styles.optionText}>{q.a.text}</Text>
           </TouchableOpacity>
 
@@ -101,7 +101,7 @@ export default function BlueprintScreen() {
             <View style={styles.orLine} />
           </View>
 
-          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[1] }]} onPress={() => pick(q.b.type)} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[1] }]} onPress={() => pick(q.b.type)} activeOpacity={0.8} accessibilityRole="button">
             <Text style={styles.optionText}>{q.b.text}</Text>
           </TouchableOpacity>
         </View>
@@ -195,7 +195,7 @@ export default function BlueprintScreen() {
             })}
           </View>
 
-          <TouchableOpacity style={styles.retakeBtn} onPress={retake}>
+          <TouchableOpacity style={styles.retakeBtn} onPress={retake} accessibilityRole="button">
             <Text style={styles.retakeText}>Retake quiz ↻</Text>
           </TouchableOpacity>
         </ScrollView>

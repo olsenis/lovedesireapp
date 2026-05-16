@@ -98,7 +98,7 @@ export default function RegisterScreen() {
           />
         </View>
 
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()} accessibilityRole="button">
           <Text style={styles.link}>
             Already have an account? <Text style={styles.linkBold}>Sign in</Text>
           </Text>

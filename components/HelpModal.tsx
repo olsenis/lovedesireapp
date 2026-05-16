@@ -32,10 +32,10 @@ export function HelpModal({ visible, title, description, tips, onDismiss, onDism
               ))}
             </View>
           )}
-          <TouchableOpacity style={styles.gotItBtn} onPress={onDismiss} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.gotItBtn} onPress={onDismiss} activeOpacity={0.85} accessibilityRole="button">
             <Text style={styles.gotItText}>Got it →</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.dismissAllBtn} onPress={onDismissAll}>
+          <TouchableOpacity style={styles.dismissAllBtn} onPress={onDismissAll} accessibilityRole="button">
             <Text style={styles.dismissAllText}>I don't need more help</Text>
           </TouchableOpacity>
         </View>

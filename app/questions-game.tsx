@@ -76,7 +76,7 @@ export default function QuestionsGameScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Questions</Text>
@@ -98,7 +98,7 @@ export default function QuestionsGameScreen() {
               style={[styles.catBtn, active && { backgroundColor: c.color, borderColor: Colors.border }]}
               onPress={() => { if (PAID_CATEGORIES.includes(cat) && !isSubscribed) { router.push('/upgrade' as any); return; } setCategory(cat); }}
               activeOpacity={0.8}
-            >
+             accessibilityRole="button">
               <Text style={styles.catEmoji}>{c.emoji}</Text>
               <Text style={[styles.catLabel, active && { color: Colors.text, fontFamily: Fonts.bodyBold }]}>{c.label}{PAID_CATEGORIES.includes(cat) && !isSubscribed ? ' 🔒' : ''}</Text>
             </TouchableOpacity>
@@ -164,7 +164,7 @@ export default function QuestionsGameScreen() {
                     onPress={() => handleSubmit(gi)}
                     disabled={!(drafts[gi] ?? '').trim()}
                     activeOpacity={0.85}
-                  >
+                   accessibilityRole="button">
                     <Text style={styles.sendBtnText}>Send answer →</Text>
                   </TouchableOpacity>
                 </View>

@@ -68,7 +68,7 @@ export default function OnboardingScreen() {
         <Text style={styles.subtitle}>Tell us a little about yourself</Text>
 
         {/* Photo picker */}
-        <TouchableOpacity style={styles.avatarButton} onPress={pickPhoto}>
+        <TouchableOpacity style={styles.avatarButton} onPress={pickPhoto} accessibilityRole="button">
           {photoURI ? (
             <Image source={{ uri: photoURI }} style={styles.avatar} contentFit="cover" />
           ) : (

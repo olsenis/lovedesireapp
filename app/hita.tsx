@@ -80,7 +80,7 @@ export default function HitaScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Relationship Pulse</Text>
@@ -116,7 +116,7 @@ export default function HitaScreen() {
                       style={[styles.ratingBtn, active && { backgroundColor: SCORE_COLORS[n], borderColor: SCORE_COLORS[n] }]}
                       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setScores((s) => ({ ...s, [q.key]: n })); }}
                       activeOpacity={0.8}
-                    >
+                     accessibilityRole="button">
                       <Text style={[styles.ratingNum, active && { color: Colors.white }]}>{n}</Text>
                     </TouchableOpacity>
                   );
@@ -129,7 +129,7 @@ export default function HitaScreen() {
             style={[styles.submitBtn, !allAnswered && styles.submitDisabled]}
             onPress={submit}
             disabled={!allAnswered}
-          >
+           accessibilityRole="button">
             <Text style={styles.submitText}>See my pulse →</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -137,10 +137,10 @@ export default function HitaScreen() {
         <>
           {/* Results/History tabs */}
           <View style={styles.tabBar}>
-            <TouchableOpacity style={[styles.tabBtn, resultsTab === 'results' && styles.tabBtnActive]} onPress={() => setResultsTab('results')}>
+            <TouchableOpacity style={[styles.tabBtn, resultsTab === 'results' && styles.tabBtnActive]} onPress={() => setResultsTab('results')} accessibilityRole="button">
               <Text style={[styles.tabText, resultsTab === 'results' && styles.tabTextActive]}>Results</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.tabBtn, resultsTab === 'history' && styles.tabBtnActive]} onPress={() => setResultsTab('history')}>
+            <TouchableOpacity style={[styles.tabBtn, resultsTab === 'history' && styles.tabBtnActive]} onPress={() => setResultsTab('history')} accessibilityRole="button">
               <Text style={[styles.tabText, resultsTab === 'history' && styles.tabTextActive]}>History</Text>
             </TouchableOpacity>
           </View>
@@ -180,7 +180,7 @@ export default function HitaScreen() {
                 ))}
               </View>
 
-              <TouchableOpacity style={styles.retakeBtn} onPress={() => { setScores({}); setDone(false); }}>
+              <TouchableOpacity style={styles.retakeBtn} onPress={() => { setScores({}); setDone(false); }} accessibilityRole="button">
                 <Text style={styles.retakeText}>Retake ↻</Text>
               </TouchableOpacity>
             </ScrollView>

@@ -103,11 +103,11 @@ export default function ActivityCardsScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Activity Cards</Text>
-        <TouchableOpacity onPress={() => setConfirmReset(true)} style={styles.resetBtn}>
+        <TouchableOpacity onPress={() => setConfirmReset(true)} style={styles.resetBtn} accessibilityRole="button">
           <Text style={styles.resetBtnText}>↺ New</Text>
         </TouchableOpacity>
       </View>
@@ -155,7 +155,7 @@ export default function ActivityCardsScreen() {
                 onPress={() => handleCardTap(index)}
                 disabled={!canTap}
                 activeOpacity={canTap ? 0.75 : 1}
-              >
+               accessibilityRole="button">
                 {isDone ? (
                   <>
                     <Text style={styles.cardDoneEmoji}>✓</Text>
@@ -188,14 +188,14 @@ export default function ActivityCardsScreen() {
             <Text style={styles.revealActivity}>
               {hasPendingCard ? session.squares[session.pendingCard!] : ''}
             </Text>
-            <TouchableOpacity style={styles.acceptBtn} onPress={handleMarkDone} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.acceptBtn} onPress={handleMarkDone} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.acceptBtnText}>✓ We did it!</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.captureBtn} onPress={() => { handleMarkDone(); router.push('/moments' as any); }} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.captureBtn} onPress={() => { handleMarkDone(); router.push('/moments' as any); }} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.captureBtnText}>📸 We did it — capture this moment</Text>
             </TouchableOpacity>
             {receiverPassesLeft > 0 ? (
-              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived}>
+              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived} accessibilityRole="button">
                 <Text style={styles.cancelRevealText}>Skip — not for us ({receiverPassesLeft} left)</Text>
               </TouchableOpacity>
             ) : (
@@ -214,11 +214,11 @@ export default function ActivityCardsScreen() {
               {revealIndex !== null ? session.squares[revealIndex] : ''}
             </Text>
             <Text style={styles.revealHint}>Do this together, then it's {partnerName}'s turn</Text>
-            <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.acceptBtnText}>✓ Accept this challenge</Text>
             </TouchableOpacity>
             {passesLeft > 0 ? (
-              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handlePass}>
+              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handlePass} accessibilityRole="button">
                 <Text style={styles.cancelRevealText}>Pass — put it back ({passesLeft} left)</Text>
               </TouchableOpacity>
             ) : (
@@ -235,10 +235,10 @@ export default function ActivityCardsScreen() {
             <Text style={styles.modalTitle}>New deck?</Text>
             <Text style={styles.modalText}>This will shuffle a fresh set of 25 activity cards.</Text>
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setConfirmReset(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setConfirmReset(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleReset}>
+              <TouchableOpacity style={styles.confirmBtn} onPress={handleReset} accessibilityRole="button">
                 <Text style={styles.confirmText}>↺ New deck</Text>
               </TouchableOpacity>
             </View>

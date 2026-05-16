@@ -155,17 +155,17 @@ export default function FantasyWishesScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Fantasy Wishes</Text>
         <View style={{ flexDirection: 'row', gap: Spacing.md }}>
           {items.length > 0 && (
-            <TouchableOpacity onPress={handleReset} disabled={resetting}>
+            <TouchableOpacity onPress={handleReset} disabled={resetting} accessibilityRole="button">
               <Text style={styles.resetBtn}>{resetting ? '…' : '↺'}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => setShowAdd(true)}>
+          <TouchableOpacity onPress={() => setShowAdd(true)} accessibilityRole="button">
             <Text style={styles.addBtn}>+ Add</Text>
           </TouchableOpacity>
         </View>
@@ -176,10 +176,10 @@ export default function FantasyWishesScreen() {
       </View>
 
       <View style={styles.tabRow}>
-        <TouchableOpacity style={[styles.tab, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')}>
+        <TouchableOpacity style={[styles.tab, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')} accessibilityRole="button">
           <Text style={[styles.tabText, activeTab === 'explore' && styles.tabTextActive]}>Explore</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === 'matches' && styles.tabActive]} onPress={() => setActiveTab('matches')}>
+        <TouchableOpacity style={[styles.tab, activeTab === 'matches' && styles.tabActive]} onPress={() => setActiveTab('matches')} accessibilityRole="button">
           <Text style={[styles.tabText, activeTab === 'matches' && styles.tabTextActive]}>✓ Matches ({matched.length})</Text>
         </TouchableOpacity>
       </View>
@@ -192,7 +192,7 @@ export default function FantasyWishesScreen() {
           switch (row.type) {
             case 'empty-explore':
               return (
-                <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7} accessibilityRole="button">
                   <Text style={styles.emptyEmoji}>{loadingPresets ? '⏳' : '✨'}</Text>
                   <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
                   <Text style={styles.emptyText}>
@@ -206,7 +206,7 @@ export default function FantasyWishesScreen() {
               return <WishCard item={row.item} onVote={handleVote} myVote={null} />;
             case 'load-more':
               return (
-                <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8} accessibilityRole="button">
                   <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
                 </TouchableOpacity>
               );
@@ -245,7 +245,7 @@ export default function FantasyWishesScreen() {
                     ) : iPressed ? (
                       <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
                     ) : (
-                      <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8}>
+                      <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8} accessibilityRole="button">
                         <Text style={styles.addToListBtnText}>
                           {theyPressed ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
                         </Text>
@@ -277,10 +277,10 @@ export default function FantasyWishesScreen() {
               autoFocus
             />
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Add</Text>
               </TouchableOpacity>
             </View>
@@ -324,7 +324,7 @@ function WishCard({ item, onVote, myVote }: {
               style={[styles.voteBtn, active && { backgroundColor: colors[v], borderColor: colors[v] }]}
               onPress={() => onVote(item, v)}
               activeOpacity={0.8}
-            >
+             accessibilityRole="button">
               <Text style={[styles.voteBtnText, active && { color: Colors.white }]}>{labels[v]}</Text>
             </TouchableOpacity>
           );

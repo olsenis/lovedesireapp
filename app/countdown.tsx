@@ -98,11 +98,11 @@ export default function CountdownScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Countdowns</Text>
-        <TouchableOpacity onPress={() => setShowAdd(true)}>
+        <TouchableOpacity onPress={() => setShowAdd(true)} accessibilityRole="button">
           <Text style={styles.addBtn}>+ Add</Text>
         </TouchableOpacity>
       </View>
@@ -136,7 +136,7 @@ export default function CountdownScreen() {
                 onPress={() => profile?.coupleId && deleteImportantDate(profile.coupleId, d.id)}
                 style={styles.deleteBtn}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
+               accessibilityRole="button">
                 <Text style={styles.deleteTxt}>✕</Text>
               </TouchableOpacity>}
             </View>
@@ -148,7 +148,7 @@ export default function CountdownScreen() {
             <Text style={styles.emptyEmoji}>⏳</Text>
             <Text style={styles.emptyTitle}>No dates yet</Text>
             <Text style={styles.emptyText}>Add your anniversary, first date, trips and more</Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowAdd(true)}>
+            <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowAdd(true)} accessibilityRole="button">
               <Text style={styles.emptyBtnText}>Add a date</Text>
             </TouchableOpacity>
           </View>
@@ -162,7 +162,7 @@ export default function CountdownScreen() {
 
             <View style={styles.emojiRow}>
               {EMOJIS.map((e) => (
-                <TouchableOpacity key={e} style={[styles.emojiBtn, emoji === e && styles.emojiActive]} onPress={() => setEmoji(e)}>
+                <TouchableOpacity key={e} style={[styles.emojiBtn, emoji === e && styles.emojiActive]} onPress={() => setEmoji(e)} accessibilityRole="button">
                   <Text style={styles.emojiOpt}>{e}</Text>
                 </TouchableOpacity>
               ))}
@@ -173,10 +173,10 @@ export default function CountdownScreen() {
             {dateError ? <Text style={styles.inputError}>{dateError}</Text> : null}
 
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>

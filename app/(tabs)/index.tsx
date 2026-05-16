@@ -359,7 +359,7 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.headerDate}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
-        <TouchableOpacity style={styles.signOutBtn} onPress={() => router.push('/profile' as any)}>
+        <TouchableOpacity style={styles.signOutBtn} onPress={() => router.push('/profile' as any)} accessibilityRole="button">
           <Text style={styles.signOut}>Profile</Text>
         </TouchableOpacity>
       </View>
@@ -374,7 +374,7 @@ export default function HomeScreen() {
                 <PartnerAvatar name={profile?.name ?? '?'} photoURL={profile?.photoURL} size={64} />
               </View>
               <Text style={styles.avatarNameLight}>{profile?.name}</Text>
-              <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7} accessibilityRole="button">
                 <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
               </TouchableOpacity>
             </View>
@@ -404,7 +404,7 @@ export default function HomeScreen() {
           </View>
         </View>
       ) : (
-        <TouchableOpacity style={styles.connectBanner} onPress={() => router.push('/(auth)/pairing')}>
+        <TouchableOpacity style={styles.connectBanner} onPress={() => router.push('/(auth)/pairing')} accessibilityRole="button">
           <Text style={styles.connectEmoji}>💌</Text>
           <Text style={styles.connectText}>Invite your partner to connect</Text>
           {couple?.inviteCode && (
@@ -421,7 +421,7 @@ export default function HomeScreen() {
           style={styles.sparkBanner}
           onPress={() => coupleId && markSparkSeen(coupleId, incomingSpark.id)}
           activeOpacity={0.85}
-        >
+         accessibilityRole="button">
           <Text style={styles.sparkBannerEmoji}>{incomingSpark.emoji}</Text>
           <View style={styles.sparkBannerText}>
             <Text style={styles.sparkBannerTitle}>{partner?.name ?? 'Your partner'} sent you love</Text>
@@ -433,7 +433,7 @@ export default function HomeScreen() {
 
       {/* On this day */}
       {onThisDay && (
-        <TouchableOpacity style={styles.onThisDayCard} onPress={() => router.push('/moments' as any)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.onThisDayCard} onPress={() => router.push('/moments' as any)} activeOpacity={0.85} accessibilityRole="button">
           <Text style={styles.onThisDayEmoji}>📸</Text>
           <View style={styles.onThisDayText}>
             <Text style={styles.onThisDayTitle}>On this day, {onThisDayYears} {onThisDayYears === 1 ? 'year' : 'years'} ago</Text>
@@ -445,7 +445,7 @@ export default function HomeScreen() {
 
       {/* Onboarding: missing name */}
       {nameMissing && (
-        <TouchableOpacity style={styles.onboardCard} onPress={() => router.push('/profile' as any)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.onboardCard} onPress={() => router.push('/profile' as any)} activeOpacity={0.85} accessibilityRole="button">
           <Text style={styles.onboardEmoji}>👤</Text>
           <View style={styles.onboardText}>
             <Text style={styles.onboardTitle}>Add your name</Text>
@@ -457,7 +457,7 @@ export default function HomeScreen() {
 
       {/* Onboarding: set start date */}
       {startDateMissing && !nameMissing && (
-        <TouchableOpacity style={styles.onboardCard} onPress={() => router.push('/profile' as any)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.onboardCard} onPress={() => router.push('/profile' as any)} activeOpacity={0.85} accessibilityRole="button">
           <Text style={styles.onboardEmoji}>📅</Text>
           <View style={styles.onboardText}>
             <Text style={styles.onboardTitle}>When did you get together?</Text>
@@ -473,13 +473,13 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>How are you feeling?</Text>
           <View style={styles.moodGrid}>
             {visibleMoods.map((emoji) => (
-              <TouchableOpacity key={emoji} style={styles.moodBtn} onPress={() => handleMoodPick(emoji)} activeOpacity={0.7}>
+              <TouchableOpacity key={emoji} style={styles.moodBtn} onPress={() => handleMoodPick(emoji)} activeOpacity={0.7} accessibilityRole="button">
                 <Text style={styles.moodEmoji}>{emoji}</Text>
                 <Text style={styles.moodLabel}>{MOOD_LABELS[emoji]}</Text>
               </TouchableOpacity>
             ))}
             {!isSubscribed && ADULT_MOODS.map((emoji) => (
-              <TouchableOpacity key={emoji} style={[styles.moodBtn, { opacity: 0.4 }]} onPress={() => router.push('/upgrade' as any)} activeOpacity={0.7}>
+              <TouchableOpacity key={emoji} style={[styles.moodBtn, { opacity: 0.4 }]} onPress={() => router.push('/upgrade' as any)} activeOpacity={0.7} accessibilityRole="button">
                 <Text style={styles.moodEmoji}>{emoji}</Text>
                 <Text style={styles.moodLabel}>🔒</Text>
               </TouchableOpacity>
@@ -495,7 +495,7 @@ export default function HomeScreen() {
         <View style={styles.sectionLine} />
       </View>
 
-      <TouchableOpacity style={styles.ritualRow} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.ritualRow} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.ritualOrnament}>♥</Text>
         <View style={styles.ritualText}>
           <Text style={styles.ritualTitle}>Three questions tonight</Text>
@@ -518,7 +518,7 @@ export default function HomeScreen() {
               style={styles.quickItem}
               onPress={() => !sparkSent && setShowSparkPicker(true)}
               activeOpacity={0.7}
-            >
+             accessibilityRole="button">
               <Text style={styles.quickIcon}>{sparkSent ? '✓' : '❤️'}</Text>
               <Text style={styles.quickLabel}>{sparkSent ? 'Sent' : 'Love'}</Text>
             </TouchableOpacity>
@@ -527,7 +527,7 @@ export default function HomeScreen() {
               style={styles.quickItem}
               onPress={() => router.push('/flashes?send=1' as any)}
               activeOpacity={0.7}
-            >
+             accessibilityRole="button">
               <Text style={styles.quickIcon}>📸</Text>
               <Text style={styles.quickLabel}>Tease</Text>
             </TouchableOpacity>
@@ -536,7 +536,7 @@ export default function HomeScreen() {
               style={styles.quickItem}
               onPress={() => router.push('/notes' as any)}
               activeOpacity={0.7}
-            >
+             accessibilityRole="button">
               <Text style={styles.quickIcon}>💌</Text>
               <Text style={styles.quickLabel}>Note</Text>
             </TouchableOpacity>
@@ -551,7 +551,7 @@ export default function HomeScreen() {
         <View style={styles.sectionLine} />
       </View>
 
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/daily-wishes' as any)} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/daily-wishes' as any)} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.gameEmoji}>🌹</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Daily Picks</Text>
@@ -560,7 +560,7 @@ export default function HomeScreen() {
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/roulette' as any)} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/roulette' as any)} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.gameEmoji}>🎲</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Date Roulette</Text>
@@ -569,7 +569,7 @@ export default function HomeScreen() {
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/would-you-rather' as any)} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/would-you-rather' as any)} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.gameEmoji}>🤔</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Would You Rather</Text>
@@ -578,7 +578,7 @@ export default function HomeScreen() {
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/truth-dare' as any)} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/truth-dare' as any)} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.gameEmoji}>🎯</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Truth or Dare</Text>
@@ -587,7 +587,7 @@ export default function HomeScreen() {
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/fantasy-wishes' as any)} activeOpacity={0.85}>
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/fantasy-wishes' as any)} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.gameEmoji}>✨</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Fantasy Wishes</Text>
@@ -606,7 +606,7 @@ export default function HomeScreen() {
               style={[styles.nudgeCard, { backgroundColor: n.bg }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(n.route as any); }}
               activeOpacity={0.85}
-            >
+             accessibilityRole="button">
               <Text style={styles.nudgeEmoji}>{n.emoji}</Text>
               <View style={styles.nudgeText}>
                 <Text style={styles.nudgeTitle}>{n.title}</Text>
@@ -633,12 +633,12 @@ export default function HomeScreen() {
               style={styles.sparkOptionRow}
               onPress={() => { setShowSparkPicker(false); handleSendSpark(opt.emoji, opt.message); }}
               activeOpacity={0.8}
-            >
+             accessibilityRole="button">
               <Text style={styles.sparkOptionEmoji}>{opt.emoji}</Text>
               <Text style={styles.sparkOptionText}>{opt.message}</Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity style={styles.sparkCancelBtn} onPress={() => setShowSparkPicker(false)}>
+          <TouchableOpacity style={styles.sparkCancelBtn} onPress={() => setShowSparkPicker(false)} accessibilityRole="button">
             <Text style={styles.sparkCancelText}>Cancel</Text>
           </TouchableOpacity>
         </View>

@@ -114,7 +114,7 @@ export default function MoodHistoryScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Mood History</Text>
@@ -122,10 +122,10 @@ export default function MoodHistoryScreen() {
       </View>
 
       <View style={styles.tabBar}>
-        <TouchableOpacity style={[styles.tabBtn, tab === 'mine' && styles.tabBtnActive]} onPress={() => setTab('mine')}>
+        <TouchableOpacity style={[styles.tabBtn, tab === 'mine' && styles.tabBtnActive]} onPress={() => setTab('mine')} accessibilityRole="button">
           <Text style={[styles.tabText, tab === 'mine' && styles.tabTextActive]}>Mine</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabBtn, tab === 'together' && styles.tabBtnActive]} onPress={() => setTab('together')}>
+        <TouchableOpacity style={[styles.tabBtn, tab === 'together' && styles.tabBtnActive]} onPress={() => setTab('together')} accessibilityRole="button">
           <Text style={[styles.tabText, tab === 'together' && styles.tabTextActive]}>Together</Text>
         </TouchableOpacity>
       </View>
@@ -144,7 +144,7 @@ export default function MoodHistoryScreen() {
                   style={[styles.moodBtn, myMood?.emoji === emoji && styles.moodBtnActive]}
                   onPress={() => handleMoodPick(emoji)}
                   activeOpacity={0.7}
-                >
+                 accessibilityRole="button">
                   <Text style={styles.moodEmoji}>{emoji}</Text>
                   <Text style={styles.moodLabel}>{MOOD_LABELS[emoji]}</Text>
                 </TouchableOpacity>

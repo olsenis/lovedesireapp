@@ -242,7 +242,7 @@ export default function TruthDareScreen() {
       return (
         <View style={styles.screen}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
             <Text style={styles.title}>Truth or Dare</Text>
             <View style={{ width: 60 }} />
           </View>
@@ -250,7 +250,7 @@ export default function TruthDareScreen() {
             <Text style={styles.modeEyebrow}>Tonight</Text>
             <Text style={styles.modeQuestion}>How do you{'\n'}want to play?</Text>
 
-            <TouchableOpacity style={styles.modeCard} onPress={() => setMode('solo')} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.modeCard} onPress={() => setMode('solo')} activeOpacity={0.85} accessibilityRole="button">
               <View style={styles.modeIconRow}>
                 <Text style={styles.modeIcon}>🎲</Text>
                 <Text style={styles.modeBadge}>Quick · one phone</Text>
@@ -262,7 +262,7 @@ export default function TruthDareScreen() {
 
             <Text style={styles.modeOr}>or</Text>
 
-            <TouchableOpacity style={[styles.modeCard, styles.modeCardFeatured]} onPress={() => setMode('multi')} activeOpacity={0.9}>
+            <TouchableOpacity style={[styles.modeCard, styles.modeCardFeatured]} onPress={() => setMode('multi')} activeOpacity={0.9} accessibilityRole="button">
               <View style={styles.modeIconRow}>
                 <Text style={styles.modeIcon}>💞</Text>
                 <Text style={[styles.modeBadge, styles.modeBadgeOnDark]}>2 phones · turn-based</Text>
@@ -281,7 +281,7 @@ export default function TruthDareScreen() {
       return (
         <View style={styles.screen}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setMode('picker')} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
             <Text style={styles.title}>Solo Dare</Text>
             <View style={{ width: 60 }} />
           </View>
@@ -298,7 +298,7 @@ export default function TruthDareScreen() {
                     style={[styles.soloLevelPill, active && styles.soloLevelPillActive, locked && styles.soloLevelPillLocked]}
                     onPress={() => locked ? router.push('/upgrade' as any) : setSoloLevel(level)}
                     activeOpacity={0.8}
-                  >
+                   accessibilityRole="button">
                     <Text style={[styles.soloLevelText, active && styles.soloLevelTextActive]}>{locked ? '🔒 ' : ''}{c.label}</Text>
                   </TouchableOpacity>
                 );
@@ -329,7 +329,7 @@ export default function TruthDareScreen() {
                 onPress={handleSoloSpin}
                 disabled={soloSpinning}
                 activeOpacity={0.85}
-              >
+               accessibilityRole="button">
                 <Text style={styles.wheelCenterLabel}>Spin</Text>
                 <Text style={styles.wheelCenterDots}>• • •</Text>
               </TouchableOpacity>
@@ -350,7 +350,7 @@ export default function TruthDareScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => setMode('picker')} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Multiplayer Round</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -362,7 +362,7 @@ export default function TruthDareScreen() {
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             return (
-              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85}>
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
@@ -400,9 +400,9 @@ export default function TruthDareScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Truth or Dare</Text>
-        <TouchableOpacity onPress={handleReset} style={styles.resetBtn}><Text style={styles.resetBtnText}>↺ New</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleReset} style={styles.resetBtn} accessibilityRole="button"><Text style={styles.resetBtnText}>↺ New</Text></TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -417,7 +417,7 @@ export default function TruthDareScreen() {
                 style={[styles.levelTab, active && { backgroundColor: c.color }]}
                 onPress={async () => { if (coupleId) { setDrawnCard(null); await startTruthDare(coupleId, uid, level); } }}
                 activeOpacity={0.8}
-              >
+               accessibilityRole="button">
                 <Text style={styles.levelTabEmoji}>{c.emoji}</Text>
                 <Text style={[styles.levelTabLabel, active && { color: c.textColor }]}>{c.label}</Text>
               </TouchableOpacity>
@@ -437,12 +437,12 @@ export default function TruthDareScreen() {
         ═══════════════════════════════════════════════════════════ */}
         {session.phase === 'picking' && isMyTurn && !drawnCard && (
           <View style={styles.choiceRow}>
-            <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.choiceBtnEmoji}>🤔</Text>
               <Text style={styles.choiceBtnLabel}>Truth</Text>
               <Text style={styles.choiceBtnSub}>{partnerName} answers a question</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.choiceBtn, { borderColor: cfg.textColor }]} onPress={() => handleChoose('dare')} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.choiceBtn, { borderColor: cfg.textColor }]} onPress={() => handleChoose('dare')} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.choiceBtnEmoji}>{cfg.emoji}</Text>
               <Text style={[styles.choiceBtnLabel, { color: cfg.textColor }]}>Dare</Text>
               <Text style={styles.choiceBtnSub}>{partnerName} does a challenge</Text>
@@ -463,10 +463,10 @@ export default function TruthDareScreen() {
             <Text style={styles.previewHint}>
               {drawnCard.type === 'truth' ? `${partnerName} will answer this question` : `${partnerName} will do this dare`}
             </Text>
-            <TouchableOpacity style={styles.sendBtn} onPress={handleSendCard} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.sendBtn} onPress={handleSendCard} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.sendBtnText}>Send to {partnerName} →</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleRedraw} style={styles.skipBtn}>
+            <TouchableOpacity onPress={handleRedraw} style={styles.skipBtn} accessibilityRole="button">
               <Text style={styles.skipText}>Skip, get a different one →</Text>
             </TouchableOpacity>
           </View>
@@ -510,13 +510,13 @@ export default function TruthDareScreen() {
                   <TouchableOpacity
                     style={[styles.modeTab, answerMode === 'write' && styles.modeTabActive]}
                     onPress={() => setAnswerMode('write')}
-                  >
+                   accessibilityRole="button">
                     <Text style={[styles.modeTabText, answerMode === 'write' && styles.modeTabTextActive]}>✏️ Write</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modeTab, answerMode === 'record' && styles.modeTabActive]}
                     onPress={() => setAnswerMode('record')}
-                  >
+                   accessibilityRole="button">
                     <Text style={[styles.modeTabText, answerMode === 'record' && styles.modeTabTextActive]}>🎤 Record</Text>
                   </TouchableOpacity>
                 </View>
@@ -537,7 +537,7 @@ export default function TruthDareScreen() {
                       onPress={handleSubmitTextAnswer}
                       disabled={!answerText.trim()}
                       activeOpacity={0.85}
-                    >
+                     accessibilityRole="button">
                       <Text style={styles.actionBtnText}>Send my answer →</Text>
                     </TouchableOpacity>
                   </>
@@ -546,20 +546,20 @@ export default function TruthDareScreen() {
                 {answerMode === 'record' && (
                   <View style={styles.recordArea}>
                     {!isRecording && !recordingUri && (
-                      <TouchableOpacity style={styles.micBtn} onPress={handleStartRecording} activeOpacity={0.85}>
+                      <TouchableOpacity style={styles.micBtn} onPress={handleStartRecording} activeOpacity={0.85} accessibilityRole="button">
                         <Text style={styles.micEmoji}>🎙️</Text>
                         <Text style={styles.micLabel}>Tap to record</Text>
                       </TouchableOpacity>
                     )}
                     {isRecording && (
-                      <TouchableOpacity style={[styles.micBtn, styles.micBtnRecording]} onPress={handleStopRecording} activeOpacity={0.85}>
+                      <TouchableOpacity style={[styles.micBtn, styles.micBtnRecording]} onPress={handleStopRecording} activeOpacity={0.85} accessibilityRole="button">
                         <Text style={styles.micEmoji}>⏹️</Text>
                         <Text style={styles.micLabel}>Recording… tap to stop</Text>
                       </TouchableOpacity>
                     )}
                     {recordingUri && !isRecording && (
                       <>
-                        <TouchableOpacity style={styles.playbackBtn} onPress={handlePlayback} activeOpacity={0.85}>
+                        <TouchableOpacity style={styles.playbackBtn} onPress={handlePlayback} activeOpacity={0.85} accessibilityRole="button">
                           <Text style={styles.playbackBtnText}>{isPlaying ? '⏸ Playing…' : '▶ Play recording'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -567,13 +567,13 @@ export default function TruthDareScreen() {
                           onPress={handleSubmitAudioAnswer}
                           disabled={isUploading}
                           activeOpacity={0.85}
-                        >
+                         accessibilityRole="button">
                           {isUploading
                             ? <ActivityIndicator color={Colors.white} />
                             : <Text style={styles.actionBtnText}>Send my answer →</Text>
                           }
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setRecordingUri(null)} style={styles.skipBtn}>
+                        <TouchableOpacity onPress={() => setRecordingUri(null)} style={styles.skipBtn} accessibilityRole="button">
                           <Text style={styles.skipText}>Re-record →</Text>
                         </TouchableOpacity>
                       </>
@@ -581,7 +581,7 @@ export default function TruthDareScreen() {
                   </View>
                 )}
 
-                <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
+                <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} accessibilityRole="button">
                   <Text style={styles.skipText}>Skip this one →</Text>
                 </TouchableOpacity>
               </>
@@ -597,7 +597,7 @@ export default function TruthDareScreen() {
 
             {/* ── DARE: picker confirms after partner does ── */}
             {session.card.type === 'dare' && isMyTurn && partnerConfirmedDare && !iConfirmedDare && (
-              <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85}>
+              <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.actionBtnText}>✓ {partnerName} completed it, confirm!</Text>
               </TouchableOpacity>
             )}
@@ -605,10 +605,10 @@ export default function TruthDareScreen() {
             {/* ── DARE: partner does it ── */}
             {session.card.type === 'dare' && !isMyTurn && !iConfirmedDare && (
               <>
-                <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85}>
+                <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85} accessibilityRole="button">
                   <Text style={styles.actionBtnText}>✓ Dare completed</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
+                <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} accessibilityRole="button">
                   <Text style={styles.skipText}>Skip this one →</Text>
                 </TouchableOpacity>
               </>
@@ -698,7 +698,7 @@ function DoneCard({
           <Text style={styles.answerRevealLabel}>
             {card.answeredBy === uid ? 'Your answer:' : `${partnerName}'s answer:`}
           </Text>
-          <TouchableOpacity style={styles.playbackBtn} onPress={handlePlay} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.playbackBtn} onPress={handlePlay} activeOpacity={0.85} accessibilityRole="button">
             <Text style={styles.playbackBtnText}>{isPlaying ? '⏸ Playing…' : '▶ Play voice answer'}</Text>
           </TouchableOpacity>
         </View>
@@ -719,7 +719,7 @@ function DoneCard({
         </View>
       )}
 
-      <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={onDone} activeOpacity={0.85}>
+      <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={onDone} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.actionBtnText}>Done, {isMyTurn ? partnerName + "'s" : 'your'} turn →</Text>
       </TouchableOpacity>
     </View>

@@ -107,7 +107,7 @@ export default function PairingScreen() {
         {loadingCreate ? (
           <ActivityIndicator color={Colors.burgundy} style={{ marginVertical: 16 }} />
         ) : (
-          <TouchableOpacity onPress={handleCopy} style={styles.codeRow}>
+          <TouchableOpacity onPress={handleCopy} style={styles.codeRow} accessibilityRole="button">
             <Text style={styles.code}>{inviteCode || '------'}</Text>
             <Text style={styles.copyHint}>{copied ? '✓ Copied!' : 'Tap to copy'}</Text>
           </TouchableOpacity>
@@ -140,7 +140,7 @@ export default function PairingScreen() {
         />
       </View>
 
-      <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
+      <TouchableOpacity onPress={handleSkip} style={styles.skipButton} accessibilityRole="button">
         <Text style={styles.skipText}>Skip for now</Text>
       </TouchableOpacity>
     </View>

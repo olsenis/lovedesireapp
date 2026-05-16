@@ -19,7 +19,7 @@ function Stars({ rating, onRate }: { rating: number; onRate?: (r: number) => voi
   return (
     <View style={starStyles.row}>
       {[1, 2, 3, 4, 5].map(s => (
-        <TouchableOpacity key={s} onPress={() => onRate?.(s)} disabled={!onRate} activeOpacity={0.7}>
+        <TouchableOpacity key={s} onPress={() => onRate?.(s)} disabled={!onRate} activeOpacity={0.7} accessibilityRole="button">
           <Text style={[starStyles.star, s <= rating && starStyles.starFilled]}>★</Text>
         </TouchableOpacity>
       ))}
@@ -92,7 +92,7 @@ export default function RouletteScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Date Night</Text>
@@ -110,7 +110,7 @@ export default function RouletteScreen() {
               style={[styles.filterBtn, filter === t && styles.filterActive]}
               onPress={() => { setFilter(t); setResult(null); }}
               activeOpacity={0.8}
-            >
+             accessibilityRole="button">
               <Text style={[styles.filterText, filter === t && styles.filterTextActive]}>
                 {t === 'all' ? 'All ✨' : TYPE_LABELS[t]}
               </Text>
@@ -125,7 +125,7 @@ export default function RouletteScreen() {
           </Animated.View>
         </View>
 
-        <TouchableOpacity style={styles.spinBtn} onPress={spin} disabled={spinning} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.spinBtn} onPress={spin} disabled={spinning} activeOpacity={0.85} accessibilityRole="button">
           <Text style={styles.spinBtnText}>{spinning ? 'Choosing…' : 'Spin for a Date!'}</Text>
         </TouchableOpacity>
 
@@ -137,7 +137,7 @@ export default function RouletteScreen() {
             <Text style={styles.resultDesc}>{result.description}</Text>
             <View style={styles.resultFooter}>
               <Text style={styles.resultType}>{TYPE_LABELS[result.type]}</Text>
-              <TouchableOpacity onPress={spin}>
+              <TouchableOpacity onPress={spin} accessibilityRole="button">
                 <Text style={styles.reroll}>Try again ↻</Text>
               </TouchableOpacity>
             </View>
@@ -152,7 +152,7 @@ export default function RouletteScreen() {
               onPress={handleSave}
               disabled={saved}
               activeOpacity={0.85}
-            >
+             accessibilityRole="button">
               <Text style={styles.saveBtnText}>{saved ? '✓ Saved to Together List' : '💾 Save for later'}</Text>
             </TouchableOpacity>
           </View>

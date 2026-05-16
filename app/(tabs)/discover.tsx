@@ -29,7 +29,7 @@ function FeatureCard({
       style={[styles.card, { backgroundColor: bg }]}
       onPress={() => router.push(locked ? '/upgrade' : route as any)}
       activeOpacity={0.8}
-    >
+     accessibilityRole="button">
       <Text style={styles.cardEmoji}>{emoji}</Text>
       <View style={styles.cardText}>
         <Text style={styles.cardTitle}>{title}</Text>

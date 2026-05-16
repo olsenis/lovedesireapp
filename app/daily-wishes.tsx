@@ -95,7 +95,7 @@ export default function DailyWishesScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
             <Text style={styles.backText}>‹ Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Daily Picks</Text>
@@ -108,7 +108,7 @@ export default function DailyWishesScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Daily Picks</Text>
@@ -125,7 +125,7 @@ export default function DailyWishesScreen() {
               style={[styles.catTab, active && { backgroundColor: c.color }]}
               onPress={() => { setSelectedCat(cat); scrollRef.current?.scrollTo({ y: 0, animated: false }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               activeOpacity={0.8}
-            >
+             accessibilityRole="button">
               <Text style={styles.catTabEmoji}>{c.emoji}</Text>
               <Text style={[styles.catTabLabel, active && { color: c.textColor, fontFamily: Fonts.bodyBold }]}>
                 {c.label}
@@ -150,7 +150,7 @@ export default function DailyWishesScreen() {
               <Text style={styles.progressLabel}>{cfg.emoji} Matches</Text>
             </View>
             <View style={styles.progressDivider} />
-            <TouchableOpacity style={styles.progressItem} onPress={() => totalMatchCount > 0 && setShowMatches(true)} activeOpacity={totalMatchCount > 0 ? 0.7 : 1}>
+            <TouchableOpacity style={styles.progressItem} onPress={() => totalMatchCount > 0 && setShowMatches(true)} activeOpacity={totalMatchCount > 0 ? 0.7 : 1} accessibilityRole="button">
               <Text style={[styles.progressNum, { color: totalMatchCount > 0 ? Colors.burgundy : Colors.muted }]}>{totalMatchCount}</Text>
               <Text style={[styles.progressLabel, totalMatchCount > 0 && styles.progressLabelTap]}>Total matches{totalMatchCount > 0 ? ' ›' : ''}</Text>
             </TouchableOpacity>
@@ -186,7 +186,7 @@ export default function DailyWishesScreen() {
                       Waiting for {partner?.name ?? 'partner'} to add ✓
                     </Text>
                   ) : (
-                    <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToList(globalIndex)} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToList(globalIndex)} activeOpacity={0.8} accessibilityRole="button">
                       <Text style={styles.addBtnText}>
                         {theyAdded ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
                       </Text>
@@ -203,14 +203,14 @@ export default function DailyWishesScreen() {
                       style={[styles.voteBtn, vote === 'yes' && { backgroundColor: Colors.success, borderColor: Colors.success }]}
                       onPress={() => handleVote(globalIndex, 'yes')}
                       activeOpacity={0.8}
-                    >
+                     accessibilityRole="button">
                       <Text style={[styles.voteBtnText, vote === 'yes' && styles.voteBtnTextActive]}>✓ Yes</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.voteBtn, vote === 'no' && { backgroundColor: Colors.muted, borderColor: Colors.muted }]}
                       onPress={() => handleVote(globalIndex, 'no')}
                       activeOpacity={0.8}
-                    >
+                     accessibilityRole="button">
                       <Text style={[styles.voteBtnText, vote === 'no' && styles.voteBtnTextActive]}>✗ Not for me</Text>
                     </TouchableOpacity>
                   </View>
@@ -229,7 +229,7 @@ export default function DailyWishesScreen() {
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>All Matches 🌹</Text>
-              <TouchableOpacity onPress={() => setShowMatches(false)}>
+              <TouchableOpacity onPress={() => setShowMatches(false)} accessibilityRole="button">
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -253,7 +253,7 @@ export default function DailyWishesScreen() {
                       ) : iAdded ? (
                         <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
                       ) : (
-                        <TouchableOpacity style={styles.addBtn} onPress={() => { handleAddToList(gi); }} activeOpacity={0.8}>
+                        <TouchableOpacity style={styles.addBtn} onPress={() => { handleAddToList(gi); }} activeOpacity={0.8} accessibilityRole="button">
                           <Text style={styles.addBtnText}>
                             {theyAdded ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
                           </Text>

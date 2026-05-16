@@ -177,7 +177,7 @@ export default function SensateScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
             <Text style={styles.backText}>‹ Back</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Sensate Focus</Text>
@@ -196,7 +196,7 @@ export default function SensateScreen() {
                 style={[styles.stageCard, { backgroundColor: stage.color, borderColor: stage.color }]}
                 onPress={() => startStage(stage)}
                 activeOpacity={0.85}
-              >
+               accessibilityRole="button">
                 <View style={styles.stageTop}>
                   <View style={[styles.stageNumWrap, { borderColor: stage.textColor }]}>
                     <Text style={[styles.stageNum, { color: stage.textColor }]}>{stage.id}</Text>
@@ -229,7 +229,7 @@ export default function SensateScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: activeStage.color }]}>
       <View style={[styles.header, { borderBottomColor: 'rgba(0,0,0,0.08)', backgroundColor: 'transparent' }]}>
-        <TouchableOpacity onPress={() => setActiveStage(null)} style={styles.back}>
+        <TouchableOpacity onPress={() => setActiveStage(null)} style={styles.back} accessibilityRole="button">
           <Text style={[styles.backText, { color: activeStage.textColor }]}>‹ Stages</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: activeStage.textColor }]}>{activeStage.title}</Text>
@@ -259,7 +259,7 @@ export default function SensateScreen() {
                 style={[styles.timerBtn, { backgroundColor: activeStage.textColor }]}
                 onPress={toggleTimer}
                 activeOpacity={0.85}
-              >
+               accessibilityRole="button">
                 <Text style={styles.timerBtnText}>{running ? 'Pause' : elapsed === 0 ? 'Start Timer' : 'Resume'}</Text>
               </TouchableOpacity>
             )}
@@ -267,7 +267,7 @@ export default function SensateScreen() {
         )}
 
         {/* Prompt card */}
-        <TouchableOpacity onPress={nextPrompt} activeOpacity={0.9} style={styles.promptWrap}>
+        <TouchableOpacity onPress={nextPrompt} activeOpacity={0.9} style={styles.promptWrap} accessibilityRole="button">
           <Animated.View style={[styles.promptCard, { opacity: promptAnim }]}>
             <Text style={[styles.promptText, { color: activeStage.textColor }]}>
               {activeStage.prompts[promptIndex]}
@@ -299,7 +299,7 @@ export default function SensateScreen() {
               style={[styles.markBtn, { backgroundColor: activeStage.textColor }]}
               onPress={handleMarkComplete}
               activeOpacity={0.85}
-            >
+             accessibilityRole="button">
               <Text style={styles.markBtnText}>✓ Mark session complete</Text>
             </TouchableOpacity>
           )

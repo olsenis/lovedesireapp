@@ -73,7 +73,7 @@ export default function WouldYouRatherScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Would You Rather</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -82,7 +82,7 @@ export default function WouldYouRatherScreen() {
           {LEVELS.map(level => {
             const cfg = WYR_LEVEL_CONFIG[level];
             return (
-              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: cfg.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85}>
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: cfg.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.levelEmoji}>{cfg.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
@@ -107,7 +107,7 @@ export default function WouldYouRatherScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Would You Rather</Text>
         <View style={styles.scoreWrap}>
           <Text style={[styles.score, { color: cfg.textColor }]}>{session.score.match}/{session.score.total}</Text>
@@ -128,7 +128,7 @@ export default function WouldYouRatherScreen() {
           onPress={() => handleAnswer('a')}
           disabled={!!myAnswer}
           activeOpacity={0.85}
-        >
+         accessibilityRole="button">
           <Text style={[styles.optionLetter, myAnswer === 'a' && { color: Colors.white }]}>A</Text>
           <Text style={[styles.optionText, myAnswer === 'a' && { color: Colors.white }]}>{currentQ.a}</Text>
           {bothAnswered && partnerAnswer === 'a' && <Text style={styles.partnerTag}>{partner?.name ?? 'Partner'}</Text>}
@@ -146,7 +146,7 @@ export default function WouldYouRatherScreen() {
           onPress={() => handleAnswer('b')}
           disabled={!!myAnswer}
           activeOpacity={0.85}
-        >
+         accessibilityRole="button">
           <Text style={[styles.optionLetter, myAnswer === 'b' && { color: Colors.white }]}>B</Text>
           <Text style={[styles.optionText, myAnswer === 'b' && { color: Colors.white }]}>{currentQ.b}</Text>
           {bothAnswered && partnerAnswer === 'b' && <Text style={styles.partnerTag}>{partner?.name ?? 'Partner'}</Text>}
@@ -168,7 +168,7 @@ export default function WouldYouRatherScreen() {
             {currentQ.discussion && (
               <Text style={styles.discussionPrompt}>💬 {currentQ.discussion}</Text>
             )}
-            <TouchableOpacity style={[styles.nextBtn, { backgroundColor: cfg.textColor }]} onPress={handleNext} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.nextBtn, { backgroundColor: cfg.textColor }]} onPress={handleNext} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.nextBtnText}>Next question →</Text>
             </TouchableOpacity>
           </View>

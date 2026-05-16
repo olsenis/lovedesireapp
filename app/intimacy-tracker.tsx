@@ -64,7 +64,7 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
       style={[styles.chip, selected && styles.chipSelected]}
       onPress={onPress}
       activeOpacity={0.8}
-    >
+     accessibilityRole="button">
       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -105,7 +105,7 @@ export default function IntimacyTrackerScreen() {
     <View style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Intimacy Log</Text>
@@ -120,7 +120,7 @@ export default function IntimacyTrackerScreen() {
             style={[styles.tabBtn, tab === t && styles.tabBtnActive]}
             onPress={() => setTab(t)}
             activeOpacity={0.8}
-          >
+           accessibilityRole="button">
             <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
               {t === 'log' ? 'Log' : 'Stats'}
             </Text>
@@ -136,7 +136,7 @@ export default function IntimacyTrackerScreen() {
               style={styles.heroBtn}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setShowSheet(true); }}
               activeOpacity={0.85}
-            >
+             accessibilityRole="button">
               <Text style={styles.heroBtnText}>We were{'\n'}intimate</Text>
               <Text style={styles.heroBtnDate}>
                 {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -160,7 +160,7 @@ export default function IntimacyTrackerScreen() {
                   onPress={() => setSelectedEntry(entry)}
                   onLongPress={() => handleDelete(entry)}
                   activeOpacity={0.85}
-                >
+                 accessibilityRole="button">
                   <Text style={styles.entryDate}>{fmtDate(entry.createdAt)}</Text>
                   <View style={styles.entryTypes}>
                     {entry.types.slice(0, 3).map(t => (
@@ -187,7 +187,7 @@ export default function IntimacyTrackerScreen() {
         <View style={styles.sheetOverlay}>
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
-            <TouchableOpacity style={styles.sheetClose} onPress={() => setSelectedEntry(null)}>
+            <TouchableOpacity style={styles.sheetClose} onPress={() => setSelectedEntry(null)} accessibilityRole="button">
               <Text style={styles.sheetCloseText}>✕</Text>
             </TouchableOpacity>
             {selectedEntry && (
@@ -243,7 +243,7 @@ export default function IntimacyTrackerScreen() {
                   style={[styles.saveBtn, { backgroundColor: Colors.error, marginTop: Spacing.md }]}
                   onPress={() => { setSelectedEntry(null); handleDelete(selectedEntry); }}
                   activeOpacity={0.85}
-                >
+                 accessibilityRole="button">
                   <Text style={styles.saveBtnText}>Delete entry</Text>
                 </TouchableOpacity>
               </ScrollView>
@@ -473,7 +473,7 @@ function DetailSheet({
         <View style={styles.sheet}>
           {/* Handle + close */}
           <View style={styles.sheetHandle} />
-          <TouchableOpacity style={styles.sheetClose} onPress={() => { reset(); onClose(); }}>
+          <TouchableOpacity style={styles.sheetClose} onPress={() => { reset(); onClose(); }} accessibilityRole="button">
             <Text style={styles.sheetCloseText}>✕</Text>
           </TouchableOpacity>
 
@@ -484,7 +484,7 @@ function DetailSheet({
             <Text style={styles.sheetSection}>Overall rating <Text style={styles.optional}>optional</Text></Text>
             <View style={styles.starsRow}>
               {[1,2,3,4,5].map(s => (
-                <TouchableOpacity key={s} onPress={() => setRating(rating === s ? 0 : s)} activeOpacity={0.8}>
+                <TouchableOpacity key={s} onPress={() => setRating(rating === s ? 0 : s)} activeOpacity={0.8} accessibilityRole="button">
                   <Text style={styles.star}>{s <= rating ? '★' : '☆'}</Text>
                 </TouchableOpacity>
               ))}
@@ -513,7 +513,7 @@ function DetailSheet({
                   style={[styles.locationBtn, location === l.key && styles.locationBtnSelected]}
                   onPress={() => setLocation(l.key)}
                   activeOpacity={0.8}
-                >
+                 accessibilityRole="button">
                   <Text style={styles.locationEmoji}>{l.emoji}</Text>
                   <Text style={[styles.locationLabel, location === l.key && styles.locationLabelSelected]}>{l.label}</Text>
                 </TouchableOpacity>
@@ -560,7 +560,7 @@ function DetailSheet({
                   style={[styles.moodBtn, mood === m.key && styles.moodBtnSelected]}
                   onPress={() => setMood(m.key)}
                   activeOpacity={0.8}
-                >
+                 accessibilityRole="button">
                   <Text style={styles.moodBtnEmoji}>{m.emoji}</Text>
                   <Text style={[styles.moodBtnLabel, mood === m.key && styles.moodBtnLabelSelected]}>{m.label}</Text>
                 </TouchableOpacity>
@@ -581,11 +581,11 @@ function DetailSheet({
                 </View>
                 {row.had === 'yes' && (
                   <View style={styles.countRow}>
-                    <TouchableOpacity onPress={() => row.setCount(Math.max(1, row.count - 1))} style={styles.countBtn}>
+                    <TouchableOpacity onPress={() => row.setCount(Math.max(1, row.count - 1))} style={styles.countBtn} accessibilityRole="button">
                       <Text style={styles.countBtnText}>−</Text>
                     </TouchableOpacity>
                     <Text style={styles.countNum}>{row.count}</Text>
-                    <TouchableOpacity onPress={() => row.setCount(Math.min(9, row.count + 1))} style={styles.countBtn}>
+                    <TouchableOpacity onPress={() => row.setCount(Math.min(9, row.count + 1))} style={styles.countBtn} accessibilityRole="button">
                       <Text style={styles.countBtnText}>+</Text>
                     </TouchableOpacity>
                   </View>
@@ -625,7 +625,7 @@ function DetailSheet({
               onPress={handleSave}
               disabled={!canSave || saving}
               activeOpacity={0.85}
-            >
+             accessibilityRole="button">
               <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
             </TouchableOpacity>
           </ScrollView>

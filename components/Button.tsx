@@ -44,7 +44,7 @@ export function Button({
       onPress={handlePress}
       activeOpacity={0.8}
       disabled={disabled || loading}
-    >
+     accessibilityRole="button">
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? Colors.cream : Colors.burgundy} />
       ) : (

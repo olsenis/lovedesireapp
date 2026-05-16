@@ -43,7 +43,7 @@ export default function QuizScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Love Language</Text>
@@ -62,7 +62,7 @@ export default function QuizScreen() {
 
           <Text style={styles.question}>Which feels more meaningful to you?</Text>
 
-          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[0] }]} onPress={() => pick(q.a.language)} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[0] }]} onPress={() => pick(q.a.language)} activeOpacity={0.8} accessibilityRole="button">
             <Text style={styles.optionText}>{q.a.text}</Text>
           </TouchableOpacity>
 
@@ -72,7 +72,7 @@ export default function QuizScreen() {
             <View style={styles.orLine} />
           </View>
 
-          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[1] }]} onPress={() => pick(q.b.language)} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[1] }]} onPress={() => pick(q.b.language)} activeOpacity={0.8} accessibilityRole="button">
             <Text style={styles.optionText}>{q.b.text}</Text>
           </TouchableOpacity>
         </View>
@@ -102,7 +102,7 @@ export default function QuizScreen() {
             })}
           </View>
 
-          <TouchableOpacity style={styles.restartBtn} onPress={restart}>
+          <TouchableOpacity style={styles.restartBtn} onPress={restart} accessibilityRole="button">
             <Text style={styles.restartText}>Retake quiz ↻</Text>
           </TouchableOpacity>
         </ScrollView>

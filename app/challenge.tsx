@@ -112,7 +112,7 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>30-Day Challenge</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -125,7 +125,7 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>30-Day Challenge</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -137,7 +137,7 @@ export default function ChallengeScreen() {
             const cfg = CHALLENGE_PROGRAM_CONFIG[p];
             return (
               <TouchableOpacity key={p} style={[styles.programCard, { backgroundColor: cfg.color, borderColor: cfg.color }, starting && { opacity: 0.6 }]}
-                onPress={() => handleStart(p)} activeOpacity={0.85} disabled={starting}>
+                onPress={() => handleStart(p)} activeOpacity={0.85} disabled={starting} accessibilityRole="button">
                 <View style={styles.programTop}>
                   <Text style={styles.programEmoji}>{cfg.emoji}</Text>
                   <View style={styles.programInfo}>
@@ -171,10 +171,10 @@ export default function ChallengeScreen() {
                   <Text style={styles.ruleText}>{rule}</Text>
                 </View>
               ))}
-              <TouchableOpacity style={styles.confirmBtn} onPress={confirmDesire} activeOpacity={0.85}>
+              <TouchableOpacity style={styles.confirmBtn} onPress={confirmDesire} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.confirmBtnText}>I'm in, let's go 💋</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setDesireModal(false)} style={styles.cancelLink}>
+              <TouchableOpacity onPress={() => setDesireModal(false)} style={styles.cancelLink} accessibilityRole="button">
                 <Text style={styles.cancelLinkText}>Not now</Text>
               </TouchableOpacity>
             </View>
@@ -195,7 +195,7 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleReset} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={handleReset} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Review Days</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -222,7 +222,7 @@ export default function ChallengeScreen() {
                 </View>
                 <Text style={styles.dayText}>{displayText}</Text>
                 {myEditsLeft > 0 && (
-                  <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn}>
+                  <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn} accessibilityRole="button">
                     <Text style={styles.editBtnText}>✏️</Text>
                   </TouchableOpacity>
                 )}
@@ -231,10 +231,10 @@ export default function ChallengeScreen() {
             );
           })}
 
-          <TouchableOpacity style={[styles.activateBtn, { backgroundColor: cfg.textColor }]} onPress={handleActivate} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.activateBtn, { backgroundColor: cfg.textColor }]} onPress={handleActivate} activeOpacity={0.85} accessibilityRole="button">
             <Text style={styles.activateBtnText}>Start Challenge →</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleReset} style={styles.cancelLink}>
+          <TouchableOpacity onPress={handleReset} style={styles.cancelLink} accessibilityRole="button">
             <Text style={styles.cancelLinkText}>Choose a different program</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -254,10 +254,10 @@ export default function ChallengeScreen() {
                 placeholderTextColor={Colors.muted}
               />
               <View style={styles.editModalBtns}>
-                <TouchableOpacity style={styles.editCancelBtn} onPress={() => setEditModal(false)}>
+                <TouchableOpacity style={styles.editCancelBtn} onPress={() => setEditModal(false)} accessibilityRole="button">
                   <Text style={styles.cancelLinkText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.confirmBtn} onPress={handleSaveEdit} activeOpacity={0.85}>
+                <TouchableOpacity style={styles.confirmBtn} onPress={handleSaveEdit} activeOpacity={0.85} accessibilityRole="button">
                   <Text style={styles.confirmBtnText}>Save edit</Text>
                 </TouchableOpacity>
               </View>
@@ -279,9 +279,9 @@ export default function ChallengeScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>30-Day Challenge</Text>
-        <TouchableOpacity onPress={handleReset}><Text style={styles.resetBtn}>Reset</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleReset} accessibilityRole="button"><Text style={styles.resetBtn}>Reset</Text></TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -316,11 +316,11 @@ export default function ChallengeScreen() {
               <Text style={styles.waitingText}>You've marked this done, waiting for your partner ✓</Text>
             ) : (
               <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.markBtn, { backgroundColor: cfg.textColor, flex: 1 }]} onPress={handleMark} activeOpacity={0.85}>
+                <TouchableOpacity style={[styles.markBtn, { backgroundColor: cfg.textColor, flex: 1 }]} onPress={handleMark} activeOpacity={0.85} accessibilityRole="button">
                   <Text style={styles.markBtnText}>Mark as done ✓</Text>
                 </TouchableOpacity>
                 {myVetoesLeft > 0 && !isVetoDay && (
-                  <TouchableOpacity style={styles.vetoBtn} onPress={handleVeto} activeOpacity={0.85}>
+                  <TouchableOpacity style={styles.vetoBtn} onPress={handleVeto} activeOpacity={0.85} accessibilityRole="button">
                     <Text style={styles.vetoBtnText}>🎲 Veto ({myVetoesLeft})</Text>
                   </TouchableOpacity>
                 )}

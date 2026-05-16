@@ -109,13 +109,13 @@ export default function LoginScreen() {
             style={styles.button}
           />
 
-          <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn}>
+          <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn} accessibilityRole="button">
             <Text style={styles.forgotText}>Forgot your password?</Text>
           </TouchableOpacity>
         </View>
 
         <Link href="/(auth)/register" asChild>
-          <TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button">
             <Text style={styles.link}>
               Don't have an account? <Text style={styles.linkBold}>Create one</Text>
             </Text>

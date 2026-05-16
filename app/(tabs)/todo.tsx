@@ -72,7 +72,7 @@ export default function TogetherScreen() {
     <View style={styles.screen}>
       <View style={styles.header}>
         <Text style={styles.title}>Together List</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(true)}>
+        <TouchableOpacity style={styles.addBtn} onPress={() => setShowAdd(true)} accessibilityRole="button">
           <Text style={styles.addBtnText}>+ Add</Text>
         </TouchableOpacity>
       </View>
@@ -82,7 +82,7 @@ export default function TogetherScreen() {
         <TouchableOpacity
           style={[styles.filterBtn, filter === 'all' && styles.filterActive]}
           onPress={() => setFilter('all')}
-        >
+         accessibilityRole="button">
           <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>All</Text>
         </TouchableOpacity>
         {CATEGORIES.map((cat) => (
@@ -90,7 +90,7 @@ export default function TogetherScreen() {
             key={cat.key}
             style={[styles.filterBtn, filter === cat.key && styles.filterActive]}
             onPress={() => setFilter(cat.key)}
-          >
+           accessibilityRole="button">
             <Text style={styles.filterEmoji}>{cat.emoji}</Text>
             <Text style={[styles.filterText, filter === cat.key && styles.filterTextActive]}>{cat.label}</Text>
           </TouchableOpacity>
@@ -144,17 +144,17 @@ export default function TogetherScreen() {
                   key={cat.key}
                   style={[styles.catBtn, newCat === cat.key && { backgroundColor: cat.color, borderColor: cat.color }]}
                   onPress={() => setNewCat(cat.key)}
-                >
+                 accessibilityRole="button">
                   <Text style={styles.catEmoji}>{cat.emoji}</Text>
                   <Text style={styles.catLabel}>{cat.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleAdd} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Add →</Text>
               </TouchableOpacity>
             </View>
@@ -192,12 +192,12 @@ export default function TogetherScreen() {
                       style={[styles.detailBtn, selectedTodo.completed && styles.detailBtnDone]}
                       onPress={() => { handleToggle(selectedTodo); setSelectedTodo({ ...selectedTodo, completed: !selectedTodo.completed }); }}
                       activeOpacity={0.85}
-                    >
+                     accessibilityRole="button">
                       <Text style={[styles.detailBtnText, selectedTodo.completed && styles.detailBtnTextDone]}>
                         {selectedTodo.completed ? '↩ Mark as undone' : '✓ Mark as done'}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.detailDeleteBtn} onPress={() => handleDelete(selectedTodo.id)} activeOpacity={0.85}>
+                    <TouchableOpacity style={styles.detailDeleteBtn} onPress={() => handleDelete(selectedTodo.id)} activeOpacity={0.85} accessibilityRole="button">
                       <Text style={styles.detailDeleteText}>Remove</Text>
                     </TouchableOpacity>
                   </View>
@@ -244,8 +244,8 @@ function TodoRow({ todo, cat, uid, partnerName, onToggle, onDelete, onSelect }: 
   const sourceLabel = todo.source && todo.source !== 'manual' ? SOURCE_LABELS[todo.source] : null;
 
   return (
-    <TouchableOpacity style={[styles.todoRow, todo.completed && styles.todoRowDone]} onPress={() => onSelect(todo)} activeOpacity={0.8}>
-      <TouchableOpacity style={[styles.check, todo.completed && styles.checkDone]} onPress={() => onToggle(todo)}>
+    <TouchableOpacity style={[styles.todoRow, todo.completed && styles.todoRowDone]} onPress={() => onSelect(todo)} activeOpacity={0.8} accessibilityRole="button">
+      <TouchableOpacity style={[styles.check, todo.completed && styles.checkDone]} onPress={() => onToggle(todo)} accessibilityRole="button">
         {todo.completed && <Text style={styles.checkMark}>✓</Text>}
       </TouchableOpacity>
       <View style={[styles.catDot, { backgroundColor: cat.color }]}>

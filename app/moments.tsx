@@ -76,7 +76,7 @@ export default function MomentsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Moments</Text>
@@ -100,7 +100,7 @@ export default function MomentsScreen() {
                 ? `${partner?.name ?? 'Partner'} already captured theirs — take yours to reveal both`
                 : 'Both of you take a photo — reveal together'}
             </Text>
-            <TouchableOpacity style={styles.cameraBtn} onPress={openCamera} disabled={uploading} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.cameraBtn} onPress={openCamera} disabled={uploading} activeOpacity={0.85} accessibilityRole="button">
               {uploading
                 ? <ActivityIndicator color="#fff" />
                 : <Text style={styles.cameraBtnText}>📷  Take photo</Text>}
@@ -119,7 +119,7 @@ export default function MomentsScreen() {
           </View>
         ) : (
           // Both submitted — reveal side by side
-          <TouchableOpacity style={styles.revealCard} onPress={() => setViewingMoment(todayMoment!)} activeOpacity={0.9}>
+          <TouchableOpacity style={styles.revealCard} onPress={() => setViewingMoment(todayMoment!)} activeOpacity={0.9} accessibilityRole="button">
             <Image
               source={{ uri: todayMoment?.photos?.[uid]?.photoURL }}
               style={styles.revealPhoto}
@@ -149,7 +149,7 @@ export default function MomentsScreen() {
                   style={styles.gridCell}
                   onPress={() => setViewingMoment(moment)}
                   activeOpacity={0.85}
-                >
+                 accessibilityRole="button">
                   <View style={styles.gridPair}>
                     {moment.photos?.[uid]
                       ? <Image source={{ uri: moment.photos[uid].photoURL }} style={styles.gridPhoto} contentFit="cover" />
@@ -173,7 +173,7 @@ export default function MomentsScreen() {
       {/* Full-screen viewer */}
       <Modal visible={!!viewingMoment} animationType="fade" presentationStyle="fullScreen">
         <View style={styles.viewer}>
-          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingMoment(null)}>
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingMoment(null)} accessibilityRole="button">
             <Text style={styles.viewerCloseText}>✕</Text>
           </TouchableOpacity>
           {viewingMoment && (

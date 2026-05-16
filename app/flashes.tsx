@@ -131,14 +131,14 @@ export default function FlashesScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn} accessibilityRole="button">
           <Text style={styles.headerBtnText}>‹</Text>
         </TouchableOpacity>
         <View style={styles.titleWrap}>
           <Text style={styles.title}>Teases</Text>
           <Text style={styles.titleSub}>only between you two · 24h</Text>
         </View>
-        <TouchableOpacity onPress={openLibrary} style={styles.headerBtn}>
+        <TouchableOpacity onPress={openLibrary} style={styles.headerBtn} accessibilityRole="button">
           <Text style={styles.librarySymbol}>⊞</Text>
         </TouchableOpacity>
       </View>
@@ -157,7 +157,7 @@ export default function FlashesScreen() {
                 style={styles.tapToViewCard}
                 onPress={() => openFlash(flash)}
                 activeOpacity={0.9}
-              >
+               accessibilityRole="button">
                 <View style={styles.tapToViewGlow} />
                 <Text style={styles.tapToViewEmoji}>📸</Text>
                 <View style={styles.tapToViewText}>
@@ -201,7 +201,7 @@ export default function FlashesScreen() {
                 style={styles.viewedCard}
                 onPress={() => openFlash(flash)}
                 activeOpacity={0.85}
-              >
+               accessibilityRole="button">
                 <Text style={styles.viewedEmoji}>📷</Text>
                 <Text style={styles.viewedText}>Opened · {formatCountdown(flash.expiresAt)} left</Text>
               </TouchableOpacity>
@@ -215,7 +215,7 @@ export default function FlashesScreen() {
             <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>You sent</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {sent.map(flash => (
-                <TouchableOpacity key={flash.id} style={styles.sentThumb} onPress={() => setViewingFlash(flash)}>
+                <TouchableOpacity key={flash.id} style={styles.sentThumb} onPress={() => setViewingFlash(flash)} accessibilityRole="button">
                   {flash.mediaType === 'photo'
                     ? <Image source={{ uri: flash.mediaURL }} style={styles.sentMedia} contentFit="cover" />
                     : <View style={[styles.sentMedia, styles.sentVideoThumb]}><Text style={styles.sentVideoIcon}>▶</Text></View>
@@ -231,10 +231,10 @@ export default function FlashesScreen() {
 
       {/* Primary CTA + Video option */}
       <View style={styles.fabRow}>
-        <TouchableOpacity style={styles.videoBtn} onPress={openVideoCamera} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.videoBtn} onPress={openVideoCamera} activeOpacity={0.85} accessibilityRole="button">
           <Text style={styles.videoBtnIcon}>🎥</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.cameraFab} onPress={() => openCamera()} activeOpacity={0.9}>
+        <TouchableOpacity style={styles.cameraFab} onPress={() => openCamera()} activeOpacity={0.9} accessibilityRole="button">
           <Text style={styles.cameraFabIcon}>📷</Text>
           <Text style={styles.cameraFabText}>Send {partner?.name ?? 'Partner'} a tease</Text>
         </TouchableOpacity>
@@ -244,11 +244,11 @@ export default function FlashesScreen() {
       <Modal visible={showCompose} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.composeContainer}>
           <View style={styles.composeHeader}>
-            <TouchableOpacity onPress={() => { setShowCompose(false); setSelectedUri(null); setCaption(''); }}>
+            <TouchableOpacity onPress={() => { setShowCompose(false); setSelectedUri(null); setCaption(''); }} accessibilityRole="button">
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
             <Text style={styles.composeTitle}>Send Tease</Text>
-            <TouchableOpacity onPress={handleSend} disabled={sending}>
+            <TouchableOpacity onPress={handleSend} disabled={sending} accessibilityRole="button">
               {sending
                 ? <ActivityIndicator color={Colors.burgundy} />
                 : <Text style={styles.sendText}>Send</Text>}
@@ -279,7 +279,7 @@ export default function FlashesScreen() {
       {/* Full-screen viewer */}
       <Modal visible={!!viewingFlash} animationType="fade" presentationStyle="fullScreen">
         <View style={styles.viewerContainer}>
-          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingFlash(null)}>
+          <TouchableOpacity style={styles.viewerClose} onPress={() => setViewingFlash(null)} accessibilityRole="button">
             <Text style={styles.viewerCloseText}>✕</Text>
           </TouchableOpacity>
 

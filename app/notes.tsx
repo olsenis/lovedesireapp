@@ -89,11 +89,11 @@ export default function NotesScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Love Notes</Text>
-        <TouchableOpacity onPress={() => setShowCreate(true)}>
+        <TouchableOpacity onPress={() => setShowCreate(true)} accessibilityRole="button">
           <Text style={styles.createBtn}>Write</Text>
         </TouchableOpacity>
       </View>
@@ -111,7 +111,7 @@ export default function NotesScreen() {
                   onPress={() => handleOpen(note)}
                   disabled={!canOpen}
                   activeOpacity={0.85}
-                >
+                 accessibilityRole="button">
                   <View style={[styles.noteIconWrap, canOpen ? styles.noteIconReady : styles.noteIconLocked]}>
                     <Text style={styles.noteLockEmoji}>{note.opened ? '💌' : canOpen ? '✉️' : '🔒'}</Text>
                   </View>
@@ -153,7 +153,7 @@ export default function NotesScreen() {
             <Text style={styles.emptyEmoji}>💌</Text>
             <Text style={styles.emptyTitle}>No notes yet</Text>
             <Text style={styles.emptyText}>Write a timed message your partner will love</Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowCreate(true)}>
+            <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowCreate(true)} accessibilityRole="button">
               <Text style={styles.emptyBtnText}>Write a note</Text>
             </TouchableOpacity>
           </View>
@@ -186,7 +186,7 @@ export default function NotesScreen() {
                     o.condition === 'sad' && occasion === o.label && styles.occasionSadActive,
                   ]}
                   onPress={() => setOccasion(o.label)}
-                >
+                 accessibilityRole="button">
                   <Text style={[styles.occasionText, occasion === o.label && styles.occasionTextActive]}>
                     {o.condition === 'sad' ? '💙 ' : ''}{o.label}
                   </Text>
@@ -197,10 +197,10 @@ export default function NotesScreen() {
               <Text style={styles.sadHint}>This note will unlock when your partner logs a sad mood</Text>
             )}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.sendBtn} onPress={handleCreate}>
+              <TouchableOpacity style={styles.sendBtn} onPress={handleCreate} accessibilityRole="button">
                 <Text style={styles.sendText}>Send 💌</Text>
               </TouchableOpacity>
             </View>
@@ -211,7 +211,7 @@ export default function NotesScreen() {
       {/* Opened note viewer */}
       {openedNote && (
         <Modal visible transparent animationType="fade">
-          <TouchableOpacity style={styles.noteViewer} onPress={() => setOpenedNote(null)} activeOpacity={1}>
+          <TouchableOpacity style={styles.noteViewer} onPress={() => setOpenedNote(null)} activeOpacity={1} accessibilityRole="button">
             <View style={styles.noteViewerCard}>
               <Text style={styles.noteViewerEmoji}>💌</Text>
               <Text style={styles.noteViewerMsg}>{openedNote.message}</Text>
