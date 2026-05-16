@@ -1,38 +1,21 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { setCoupleStartDate, setLongDistance, setNextVisitDate, setPartnerBirthday } from '../services/coupleService';
-import { createUserProfile } from '../services/authService';
 import { setMood, ALL_MOODS, MOOD_LABELS, MoodEmoji } from '../services/moodService';
 import { markOnboardingComplete } from '../services/onboardingService';
 import { useSubscription } from '../hooks/useSubscription';
+import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-// DD.MM.YYYY → timestamp at noon UTC. Returns null on invalid input.
-function parseDateInput(s: string): number | null {
-  const m = s.trim().match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{2,4})$/);
-  if (!m) return null;
-  const d = parseInt(m[1], 10);
-  const mo = parseInt(m[2], 10) - 1;
-  let y = parseInt(m[3], 10);
-  if (y < 100) y += 2000;
-  const date = new Date(Date.UTC(y, mo, d, 12, 0, 0));
-  return isNaN(date.getTime()) ? null : date.getTime();
-}
-
-// DD.MM → normalised "DD.MM" string. Returns null on invalid input.
-function parseBirthdayInput(s: string): string | null {
-  const m = s.trim().match(/^(\d{1,2})[.\-/](\d{1,2})$/);
-  if (!m) return null;
-  const d = parseInt(m[1], 10);
-  const mo = parseInt(m[2], 10);
-  if (d < 1 || d > 31 || mo < 1 || mo > 12) return null;
-  return `${String(d).padStart(2, '0')}.${String(mo).padStart(2, '0')}`;
+// Birthday is stored as 'DD.MM' (no year) — derive from a Date.
+function dateToBirthdayString(d: Date): string {
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 const TOTAL_STEPS = 6;
@@ -48,14 +31,11 @@ export default function OnboardingTourScreen() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  // Step inputs
-  const [startDateInput, setStartDateInput] = useState('');
-  const [startDateError, setStartDateError] = useState('');
+  // Step inputs — Date objects (timestamps stored to Firestore on save)
+  const [startDate, setStartDate] = useState<Date | null>(null);
   const [ldrAnswer, setLdrAnswer] = useState<'yes' | 'no' | null>(null);
-  const [nextVisitInput, setNextVisitInput] = useState('');
-  const [nextVisitError, setNextVisitError] = useState('');
-  const [birthdayInput, setBirthdayInput] = useState('');
-  const [birthdayError, setBirthdayError] = useState('');
+  const [nextVisit, setNextVisit] = useState<Date | null>(null);
+  const [birthday, setBirthday] = useState<Date | null>(null);
   const [moodPicked, setMoodPicked] = useState<MoodEmoji | null>(null);
 
   // Mood gating mirrors home screen — adult moods are paid-only
@@ -75,13 +55,10 @@ export default function OnboardingTourScreen() {
 
   // Step 2: save anniversary
   const handleStartDateContinue = async () => {
-    setStartDateError('');
-    const ts = parseDateInput(startDateInput);
-    if (!ts) { setStartDateError('Use DD.MM.YYYY (e.g. 14.02.2020)'); return; }
-    if (ts > Date.now()) { setStartDateError('Pick a date in the past'); return; }
+    if (!startDate) return;
     setSaving(true);
     try {
-      await setCoupleStartDate(coupleId, ts);
+      await setCoupleStartDate(coupleId, startDate.getTime());
       goNext();
     } finally { setSaving(false); }
   };
@@ -89,14 +66,11 @@ export default function OnboardingTourScreen() {
   // Step 3: save LDR + optional next visit
   const handleLdrContinue = async () => {
     if (ldrAnswer === null) return;
-    setNextVisitError('');
     setSaving(true);
     try {
       await setLongDistance(coupleId, ldrAnswer === 'yes');
-      if (ldrAnswer === 'yes' && nextVisitInput.trim()) {
-        const ts = parseDateInput(nextVisitInput);
-        if (!ts) { setNextVisitError('Use DD.MM.YYYY'); setSaving(false); return; }
-        await setNextVisitDate(coupleId, ts);
+      if (ldrAnswer === 'yes' && nextVisit) {
+        await setNextVisitDate(coupleId, nextVisit.getTime());
       }
       goNext();
     } finally { setSaving(false); }
@@ -105,15 +79,12 @@ export default function OnboardingTourScreen() {
   // Step 4: save partner birthday on couple doc (both partners are members, so write succeeds).
   // Partner's own UserProfile.birthday still takes precedence in Countdowns if they set it themselves.
   const handleBirthdayContinue = async () => {
-    if (!birthdayInput.trim()) { goNext(); return; }
-    setBirthdayError('');
-    const normalised = parseBirthdayInput(birthdayInput);
-    if (!normalised) { setBirthdayError('Use DD.MM (e.g. 14.02)'); return; }
+    if (!birthday) { goNext(); return; }
     const partnerUid = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
     if (!partnerUid) { goNext(); return; }
     setSaving(true);
     try {
-      await setPartnerBirthday(coupleId, partnerUid, normalised);
+      await setPartnerBirthday(coupleId, partnerUid, dateToBirthdayString(birthday));
       goNext();
     } finally { setSaving(false); }
   };
@@ -195,21 +166,16 @@ export default function OnboardingTourScreen() {
             <Text style={styles.body}>
               Sets your anniversary countdown and the days-together counter on home.
             </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="DD.MM.YYYY"
-              placeholderTextColor={Colors.muted}
-              value={startDateInput}
-              onChangeText={(t) => { setStartDateInput(t); setStartDateError(''); }}
-              keyboardType="numbers-and-punctuation"
-              maxLength={10}
-              autoFocus
+            <BrandDatePicker
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Pick the date"
+              maximumDate={new Date()}
             />
-            {startDateError ? <Text style={styles.errorText}>{startDateError}</Text> : null}
             <TouchableOpacity
-              style={[styles.primaryBtn, (!startDateInput.trim() || saving) && styles.btnDisabled]}
+              style={[styles.primaryBtn, (!startDate || saving) && styles.btnDisabled]}
               onPress={handleStartDateContinue}
-              disabled={!startDateInput.trim() || saving}
+              disabled={!startDate || saving}
               accessibilityRole="button"
             >
               {saving ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Continue</Text>}
@@ -247,16 +213,12 @@ export default function OnboardingTourScreen() {
             {ldrAnswer === 'yes' && (
               <View style={styles.ldrFollowUp}>
                 <Text style={styles.bodySmall}>When's your next visit? (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="DD.MM.YYYY"
-                  placeholderTextColor={Colors.muted}
-                  value={nextVisitInput}
-                  onChangeText={(t) => { setNextVisitInput(t); setNextVisitError(''); }}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={10}
+                <BrandDatePicker
+                  value={nextVisit}
+                  onChange={setNextVisit}
+                  placeholder="Pick the date"
+                  minimumDate={new Date()}
                 />
-                {nextVisitError ? <Text style={styles.errorText}>{nextVisitError}</Text> : null}
               </View>
             )}
 
@@ -278,23 +240,19 @@ export default function OnboardingTourScreen() {
             <Text style={styles.body}>
               Adds an annual countdown so you never forget. Day and month only.
             </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="DD.MM"
-              placeholderTextColor={Colors.muted}
-              value={birthdayInput}
-              onChangeText={(t) => { setBirthdayInput(t); setBirthdayError(''); }}
-              keyboardType="numbers-and-punctuation"
-              maxLength={5}
+            <BrandDatePicker
+              value={birthday}
+              onChange={setBirthday}
+              placeholder="Pick the day and month"
+              hideYear
             />
-            {birthdayError ? <Text style={styles.errorText}>{birthdayError}</Text> : null}
             <TouchableOpacity
               style={[styles.primaryBtn, saving && styles.btnDisabled]}
               onPress={handleBirthdayContinue}
               disabled={saving}
               accessibilityRole="button"
             >
-              {saving ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>{birthdayInput.trim() ? 'Continue' : 'Skip'}</Text>}
+              {saving ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>{birthday ? 'Continue' : 'Skip'}</Text>}
             </TouchableOpacity>
           </View>
         )}

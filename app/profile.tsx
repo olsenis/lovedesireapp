@@ -14,6 +14,7 @@ import { createUserProfile, logout, disconnectFromCouple } from '../services/aut
 import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
 import { uploadProfilePhoto } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
+import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -41,7 +42,7 @@ export default function ProfileScreen() {
   const [deletePw, setDeletePw] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [startDateModal, setStartDateModal] = useState(false);
-  const [startDateStr, setStartDateStr] = useState('');
+  const [startDatePick, setStartDatePick] = useState<Date | null>(null);
   const [startDateError, setStartDateError] = useState('');
 
   const [saving, setSaving] = useState(false);
@@ -50,9 +51,9 @@ export default function ProfileScreen() {
   const [intimacyLogOn, setIntimacyLogOn] = useState(false);
   const [explicitOn, setExplicitOn] = useState(true);
   const [ldrOn, setLdrOn] = useState(false);
-  const [nextVisitStr, setNextVisitStr] = useState('');
+  const [nextVisitPick, setNextVisitPick] = useState<Date | null>(null);
   const [nextVisitError, setNextVisitError] = useState('');
-  const [birthdayStr, setBirthdayStr] = useState('');
+  const [birthdayPick, setBirthdayPick] = useState<Date | null>(null);
   const [birthdayModal, setBirthdayModal] = useState(false);
 
   useEffect(() => {
@@ -68,13 +69,7 @@ export default function ProfileScreen() {
   // Sync LDR state from couple doc
   useEffect(() => {
     setLdrOn(couple?.isLongDistance ?? false);
-    if (couple?.nextVisitDate) {
-      const d = new Date(couple.nextVisitDate);
-      const pad = (n: number) => String(n).padStart(2, '0');
-      setNextVisitStr(`${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`);
-    } else {
-      setNextVisitStr('');
-    }
+    setNextVisitPick(couple?.nextVisitDate ? new Date(couple.nextVisitDate) : null);
   }, [couple?.isLongDistance, couple?.nextVisitDate]);
 
   const toggleLdr = async (val: boolean) => {
@@ -82,27 +77,11 @@ export default function ProfileScreen() {
     if (profile?.coupleId) await setLongDistance(profile.coupleId, val);
   };
 
-  const handleSaveNextVisit = async () => {
+  const handleSaveNextVisit = async (next: Date | null) => {
     if (!profile?.coupleId) return;
     setNextVisitError('');
-    const s = nextVisitStr.trim();
-    if (!s) {
-      // empty = clear the date
-      await setNextVisitDate(profile.coupleId, null);
-      return;
-    }
-    const parts = s.split('.');
-    if (parts.length !== 3 || parts.some(p => isNaN(Number(p)))) {
-      setNextVisitError('Use DD.MM.YYYY format');
-      return;
-    }
-    const [d, m, y] = parts.map(Number);
-    const date = new Date(y, m - 1, d, 12, 0, 0);
-    if (isNaN(date.getTime())) {
-      setNextVisitError('Invalid date');
-      return;
-    }
-    await setNextVisitDate(profile.coupleId, date.getTime());
+    setNextVisitPick(next);
+    await setNextVisitDate(profile.coupleId, next ? next.getTime() : null);
   };
 
   const toggleExplicit = async (val: boolean) => {
@@ -111,10 +90,11 @@ export default function ProfileScreen() {
   };
 
   const handleSaveBirthday = async () => {
-    if (!user || !birthdayStr.trim()) return;
-    const parts = birthdayStr.trim().split('.');
-    if (parts.length !== 3 || parts.some(p => isNaN(Number(p)))) return;
-    await createUserProfile(user.uid, { birthday: birthdayStr.trim() } as any);
+    if (!user || !birthdayPick) return;
+    const dd = String(birthdayPick.getDate()).padStart(2, '0');
+    const mm = String(birthdayPick.getMonth() + 1).padStart(2, '0');
+    const yyyy = birthdayPick.getFullYear();
+    await createUserProfile(user.uid, { birthday: `${dd}.${mm}.${yyyy}` } as any);
     setBirthdayModal(false);
   };
 
@@ -214,21 +194,11 @@ export default function ProfileScreen() {
   };
 
   const handleSaveStartDate = async () => {
-    if (!startDateStr || !profile?.coupleId) return;
-    // Accept DD.MM.YYYY format
-    const parts = startDateStr.trim().split('.');
-    let ts: number;
-    if (parts.length === 3) {
-      const [dd, mm, yyyy] = parts;
-      ts = new Date(`${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`).getTime();
-    } else {
-      ts = new Date(startDateStr).getTime();
-    }
-    if (isNaN(ts)) { setStartDateError('Enter a valid date (DD.MM.YYYY)'); return; }
+    if (!startDatePick || !profile?.coupleId) return;
     setStartDateError('');
-    await setCoupleStartDate(profile.coupleId, ts);
+    await setCoupleStartDate(profile.coupleId, startDatePick.getTime());
     setStartDateModal(false);
-    setStartDateStr('');
+    setStartDatePick(null);
   };
 
   const handleDisconnect = () => {
@@ -324,7 +294,16 @@ export default function ProfileScreen() {
             <Text style={styles.rowValue}>{user?.email ?? '-'}</Text>
           </View>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => { setBirthdayStr(profile?.birthday ?? ''); setBirthdayModal(true); }} accessibilityRole="button">
+          <TouchableOpacity style={styles.row} onPress={() => {
+            // Pre-fill picker from saved 'DD.MM.YYYY' if present
+            if (profile?.birthday) {
+              const [dd, mm, yyyy] = profile.birthday.split('.');
+              if (dd && mm && yyyy) setBirthdayPick(new Date(`${yyyy}-${mm}-${dd}`));
+            } else {
+              setBirthdayPick(null);
+            }
+            setBirthdayModal(true);
+          }} accessibilityRole="button">
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>Your birthday</Text>
               <Text style={styles.rowHint}>{profile?.birthday ? `${profile.birthday} — visible to partner` : 'Tap to add (DD.MM.YYYY)'}</Text>
@@ -348,7 +327,11 @@ export default function ProfileScreen() {
                 <Text style={styles.rowValue}>{partner?.name ?? '-'}</Text>
               </View>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => { setStartDateStr(''); setStartDateError(''); setStartDateModal(true); }} accessibilityRole="button">
+              <TouchableOpacity style={styles.row} onPress={() => {
+                setStartDatePick(couple?.startDate ? new Date(couple.startDate) : null);
+                setStartDateError('');
+                setStartDateModal(true);
+              }} accessibilityRole="button">
                 <View style={styles.rowTextStack}>
                   <Text style={styles.rowLabel}>Days together</Text>
                   <Text style={styles.rowHint}>{couple?.startDate ? 'Custom date set' : 'Tap to set your real start date'}</Text>
@@ -472,15 +455,15 @@ export default function ProfileScreen() {
                   <View style={styles.row}>
                     <View style={styles.rowTextStack}>
                       <Text style={styles.rowLabel}>Next visit</Text>
-                      <Text style={styles.rowHint}>When are you seeing each other next? (DD.MM.YYYY, leave blank to clear)</Text>
-                      <TextInput
-                        style={[styles.modalInput, { marginTop: 8 }]}
-                        value={nextVisitStr}
-                        onChangeText={setNextVisitStr}
-                        placeholder="DD.MM.YYYY"
-                        placeholderTextColor={Colors.muted}
-                        onBlur={handleSaveNextVisit}
-                      />
+                      <Text style={styles.rowHint}>When are you seeing each other next?</Text>
+                      <View style={{ marginTop: 8 }}>
+                        <BrandDatePicker
+                          value={nextVisitPick}
+                          onChange={handleSaveNextVisit}
+                          placeholder="Pick the date"
+                          minimumDate={new Date()}
+                        />
+                      </View>
                       {nextVisitError ? <Text style={{ color: Colors.error, fontSize: 12, marginTop: 4 }}>{nextVisitError}</Text> : null}
                     </View>
                   </View>
@@ -647,21 +630,18 @@ export default function ProfileScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>When did you get together?</Text>
             <Text style={styles.modalHint}>Set your real relationship start date to get the correct days together count.</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="DD.MM.YYYY (e.g. 14.03.2018)"
-              placeholderTextColor={Colors.muted}
-              value={startDateStr}
-              onChangeText={(t) => { setStartDateStr(t); setStartDateError(''); }}
-              keyboardType="numeric"
-              autoFocus
+            <BrandDatePicker
+              value={startDatePick}
+              onChange={setStartDatePick}
+              placeholder="Pick the date"
+              maximumDate={new Date()}
             />
             {startDateError ? <Text style={styles.errorText}>{startDateError}</Text> : null}
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setStartDateModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveStartDate} accessibilityRole="button">
+              <TouchableOpacity style={[styles.saveBtn, !startDatePick && { opacity: 0.4 }]} onPress={handleSaveStartDate} disabled={!startDatePick} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>
@@ -674,22 +654,18 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Your birthday</Text>
-            <Text style={styles.modalHint}>Enter your full birthday (DD.MM.YYYY). Your partner will see a countdown and your age.</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="DD.MM.YYYY (e.g. 25.12.1990)"
-              placeholderTextColor={Colors.muted}
-              value={birthdayStr}
-              onChangeText={setBirthdayStr}
-              keyboardType="numbers-and-punctuation"
-              maxLength={10}
-              autoFocus
+            <Text style={styles.modalHint}>Pick your full birthday. Your partner will see a countdown and your age.</Text>
+            <BrandDatePicker
+              value={birthdayPick}
+              onChange={setBirthdayPick}
+              placeholder="Pick the date"
+              maximumDate={new Date()}
             />
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setBirthdayModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveBirthday} accessibilityRole="button">
+              <TouchableOpacity style={[styles.saveBtn, !birthdayPick && { opacity: 0.4 }]} onPress={handleSaveBirthday} disabled={!birthdayPick} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>Save</Text>
               </TouchableOpacity>
             </View>

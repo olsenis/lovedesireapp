@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { ImportantDate, subscribeDates, addImportantDate, deleteImportantDate, getDaysUntil } from '../services/importantDateService';
+import { BrandDatePicker } from '../components/BrandDatePicker';
 
 function getNextOccurrence(month: number, day: number): number {
   const now = new Date();
@@ -74,7 +75,7 @@ export default function CountdownScreen() {
   const autoDates = getAutoDates(partner?.name ?? 'Partner', effectiveBirthday);
   const [showAdd, setShowAdd] = useState(false);
   const [label, setLabel] = useState('');
-  const [dateStr, setDateStr] = useState('');
+  const [datePick, setDatePick] = useState<Date | null>(null);
   const [emoji, setEmoji] = useState('❤️');
   const [secret, setSecret] = useState(false);
   const [dateError, setDateError] = useState('');
@@ -86,12 +87,10 @@ export default function CountdownScreen() {
   }, [profile?.coupleId]);
 
   const handleAdd = async () => {
-    if (!label.trim() || !dateStr || !profile?.coupleId || !user) return;
-    const ts = new Date(dateStr).getTime();
-    if (isNaN(ts)) { setDateError('Enter a valid date (YYYY-MM-DD)'); return; }
+    if (!label.trim() || !datePick || !profile?.coupleId || !user) return;
     setDateError('');
-    await addImportantDate(profile.coupleId, label.trim(), ts, emoji, user.uid, secret);
-    setLabel(''); setDateStr(''); setSecret(false); setShowAdd(false);
+    await addImportantDate(profile.coupleId, label.trim(), datePick.getTime(), emoji, user.uid, secret);
+    setLabel(''); setDatePick(null); setSecret(false); setShowAdd(false);
   };
 
   type AllDate = { id: string; label: string; emoji: string; date: number; createdBy: string; createdAt: number; auto: boolean; secret?: boolean };
@@ -177,7 +176,7 @@ export default function CountdownScreen() {
             </View>
 
             <TextInput style={styles.input} placeholder="Label (e.g. Our Anniversary)" placeholderTextColor={Colors.muted} value={label} onChangeText={setLabel} />
-            <TextInput style={styles.input} placeholder="Date (YYYY-MM-DD)" placeholderTextColor={Colors.muted} value={dateStr} onChangeText={(t) => { setDateStr(t); setDateError(''); }} />
+            <BrandDatePicker value={datePick} onChange={(d) => { setDatePick(d); setDateError(''); }} placeholder="Pick the date" />
             {dateError ? <Text style={styles.inputError}>{dateError}</Text> : null}
 
             <TouchableOpacity
