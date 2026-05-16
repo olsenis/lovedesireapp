@@ -55,9 +55,14 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  const routeAfterConsent = async (uid: string, coupleId?: string) => {
+  const routeAfterConsent = async (uid: string, coupleId?: string, name?: string) => {
+    // Legacy users could have an empty name from before validation existed.
+    // Force them through the (auth)/onboarding screen which requires it.
+    if (!name || name.trim() === '') {
+      router.replace('/(auth)/onboarding');
+      return;
+    }
     // Onboarding tour is only meaningful after the couple is paired.
-    // If not yet paired (no coupleId), send to tabs — pairing flow lives elsewhere.
     if (!coupleId) { router.replace('/(tabs)'); return; }
     const ob = await getOnboardingState(uid);
     if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
@@ -71,19 +76,19 @@ export default function RootLayout() {
         if (!consent?.confirmed) {
           setShowConsent(true);
         } else {
-          routeAfterConsent(user.uid, profile?.coupleId);
+          routeAfterConsent(user.uid, profile?.coupleId, profile?.name);
         }
       });
     } else {
       router.replace('/(auth)/login');
     }
-  }, [user, loading, profile?.coupleId]);
+  }, [user, loading, profile?.coupleId, profile?.name]);
 
   const handleConfirmConsent = async () => {
     if (!user) return;
     await confirmConsent(user.uid);
     setShowConsent(false);
-    routeAfterConsent(user.uid, profile?.coupleId);
+    routeAfterConsent(user.uid, profile?.coupleId, profile?.name);
   };
 
   const handleDeclineConsent = async () => {
