@@ -358,6 +358,24 @@ export default function HomeScreen() {
     });
   }
 
+  // Year in Review window (Dec 28 → Jan 7) — surface the recap
+  {
+    const today = new Date();
+    const m = today.getMonth();
+    const d = today.getDate();
+    const inWindow = (m === 11 && d >= 28) || (m === 0 && d <= 7);
+    if (inWindow && partnerId) {
+      const yearTitle = m === 11 ? today.getFullYear() : today.getFullYear() - 1;
+      list.unshift({
+        emoji: '✨',
+        title: `Your ${yearTitle} Year in Review`,
+        subtitle: 'Swipeable cards · screenshot to share',
+        route: '/year-in-review',
+        bg: '#FFF4E8',
+      });
+    }
+  }
+
   // Together List — partner suggested an item and is waiting for my accept/reject
   const pendingTodos = todos.filter((t) => t.status === 'pending' && t.createdBy !== uid);
   if (pendingTodos.length > 0) {

@@ -499,6 +499,22 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Year in Review */}
+        {couple?.partner2Uid && (
+          <TouchableOpacity
+            style={[styles.row, { marginTop: Spacing.lg, backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border }]}
+            onPress={() => router.push('/year-in-review' as any)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+          >
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>✨ Year in Review</Text>
+              <Text style={styles.rowHint}>See your story so far, swipeable cards</Text>
+            </View>
+            <Text style={{ fontFamily: Fonts.body, fontSize: 18, color: Colors.burgundy }}>›</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Legal */}
         <View style={styles.legalRow}>
           <TouchableOpacity onPress={() => router.push('/privacy-policy' as any)} activeOpacity={0.7} accessibilityRole="button">
