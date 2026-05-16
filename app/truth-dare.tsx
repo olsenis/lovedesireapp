@@ -313,31 +313,33 @@ export default function TruthDareScreen() {
 
             <View style={styles.wheelWrap}>
               <View style={styles.wheelHalo} pointerEvents="none" />
-              <View style={styles.wheelPointer} />
+              <View style={styles.wheelOuterRing} pointerEvents="none" />
+              <View style={styles.wheelPointer} pointerEvents="none" />
               <Animated.View style={[styles.wheel, { transform: [{ rotate: soloSpinRotate }] }]}>
-                {/* 12 decorative petal dots around the wheel */}
-                {Array.from({ length: 12 }).map((_, i) => (
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
                   <View
-                    key={i}
+                    key={deg}
                     style={[
-                      styles.wheelPetal,
-                      i % 2 === 0 && styles.wheelPetalAlt,
-                      { transform: [{ rotate: `${i * 30}deg` }, { translateY: -98 }] },
+                      styles.wheelHeartWrap,
+                      { transform: [{ rotate: `${deg}deg` }, { translateY: -100 }, { rotate: `${-deg}deg` }] },
                     ]}
-                  />
+                    pointerEvents="none"
+                  >
+                    <Text style={styles.wheelHeart}>♥</Text>
+                  </View>
                 ))}
               </Animated.View>
-              {/* Inner cream ring (sits on top of rotating wheel) */}
               <View style={styles.wheelInnerRing} pointerEvents="none" />
-              {/* Center button — this IS the spin action */}
               <TouchableOpacity
-                style={[styles.wheelCenterBtn, soloSpinning && { opacity: 0.6 }]}
+                style={[styles.wheelCenterBtn, soloSpinning && { opacity: 0.65 }]}
                 onPress={handleSoloSpin}
                 disabled={soloSpinning}
                 activeOpacity={0.85}
-               accessibilityRole="button">
+                accessibilityRole="button"
+                accessibilityLabel="Spin the wheel"
+              >
                 <Text style={styles.wheelCenterLabel}>Spin</Text>
-                <Text style={styles.wheelCenterDots}>• • •</Text>
+                <Text style={styles.wheelCenterMark}>✦</Text>
               </TouchableOpacity>
             </View>
 
@@ -853,47 +855,57 @@ const styles = StyleSheet.create({
   soloLevelText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.5 },
   soloLevelTextActive: { color: '#fff' },
   wheelWrap: { width: 280, height: 280, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.xl },
-  wheelHalo: { position: 'absolute', width: 280, height: 280, borderRadius: 140, backgroundColor: Colors.rose, opacity: 0.18 },
+  wheelHalo: { position: 'absolute', width: 296, height: 296, borderRadius: 148, backgroundColor: Colors.rose, opacity: 0.18 },
+  wheelOuterRing: {
+    position: 'absolute', width: 262, height: 262, borderRadius: 131,
+    borderWidth: 1, borderColor: 'rgba(136,14,79,0.2)',
+  },
   wheelPointer: {
-    position: 'absolute', top: 6, zIndex: 4,
+    position: 'absolute', top: -2, zIndex: 5,
     width: 0, height: 0,
-    borderLeftWidth: 14, borderRightWidth: 14, borderTopWidth: 22,
+    borderLeftWidth: 12, borderRightWidth: 12, borderTopWidth: 22,
     borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: Colors.burgundy,
+    shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6,
+    elevation: 6,
   },
   wheel: {
     width: 240, height: 240, borderRadius: 120,
     backgroundColor: Colors.rose,
     alignItems: 'center', justifyContent: 'center',
+    borderWidth: 4, borderColor: 'rgba(255,248,240,0.55)',
     ...Shadow.md,
   },
-  // Decorative petals around the rotating wheel rim (12 dots at 30° intervals)
-  wheelPetal: {
+  wheelHeartWrap: {
     position: 'absolute',
-    width: 14, height: 14, borderRadius: 7,
-    backgroundColor: Colors.blush,
+    width: 28, height: 28,
     top: '50%', left: '50%',
-    marginTop: -7, marginLeft: -7,
+    marginTop: -14, marginLeft: -14,
+    alignItems: 'center', justifyContent: 'center',
   },
-  wheelPetalAlt: { backgroundColor: '#F8BBD0' },
-  // Cream ring sits on top of the rotating wheel (doesn't rotate)
+  wheelHeart: {
+    fontSize: 22,
+    color: 'rgba(136,14,79,0.4)',
+    lineHeight: 24,
+  },
   wheelInnerRing: {
     position: 'absolute',
     width: 170, height: 170, borderRadius: 85,
     backgroundColor: Colors.cream,
+    borderWidth: 1, borderColor: 'rgba(136,14,79,0.18)',
     zIndex: 2,
   },
-  // Center button = the spin action
   wheelCenterBtn: {
     position: 'absolute',
-    width: 120, height: 120, borderRadius: 60,
+    width: 124, height: 124, borderRadius: 62,
     backgroundColor: Colors.burgundy,
-    borderWidth: 3, borderColor: Colors.cream,
+    borderWidth: 4, borderColor: Colors.cream,
     alignItems: 'center', justifyContent: 'center',
     zIndex: 3,
-    ...Shadow.md,
+    shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.42, shadowRadius: 14,
+    elevation: 10,
   },
-  wheelCenterLabel: { fontFamily: Fonts.headingItalic, fontSize: 28, color: Colors.cream, letterSpacing: 1, lineHeight: 30 },
-  wheelCenterDots: { fontFamily: Fonts.body, fontSize: 9, color: 'rgba(255,248,240,0.55)', letterSpacing: 4, marginTop: 2 },
+  wheelCenterLabel: { fontFamily: Fonts.headingItalic, fontSize: 32, color: Colors.cream, letterSpacing: 1.5, lineHeight: 36 },
+  wheelCenterMark: { fontSize: 10, color: 'rgba(255,248,240,0.55)', marginTop: 2 },
 
   soloResult: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', width: '100%', ...Shadow.sm, marginTop: Spacing.md },
   soloResultEyebrow: { fontFamily: Fonts.body, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: Colors.burgundy, marginBottom: Spacing.sm },
