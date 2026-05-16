@@ -39,10 +39,10 @@ export default function QuestionsGameScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    const u1 = subscribeDailyQuestions(coupleId, setDailyDoc);
+    const u1 = subscribeDailyQuestions(coupleId, setDailyDoc, { isLDR: !!couple?.isLongDistance });
     const u2 = subscribeStreak(coupleId, setStreak);
     return () => { u1(); u2(); };
-  }, [coupleId]);
+  }, [coupleId, couple?.isLongDistance]);
 
   const catItems = (dailyDoc?.items ?? [])
     .map((q, gi) => ({ q, gi }))

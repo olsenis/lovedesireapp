@@ -132,7 +132,7 @@ export default function HomeScreen() {
     const u1 = subscribeChallenge(coupleId, setChallengeState);
     const u2 = subscribeNotes(coupleId, setNotes);
     const u3 = subscribeFantasyWishes(coupleId, setFwItems);
-    const u4 = subscribeDailyQuestions(coupleId, setDailyQDoc);
+    const u4 = subscribeDailyQuestions(coupleId, setDailyQDoc, { isLDR: !!couple?.isLongDistance });
     const u5 = subscribeDailyWishes(coupleId, setDailyWishDoc);
     const u6 = subscribeWYR(coupleId, setWyrSession);
     const u7 = subscribeIntimacyLog(coupleId, setIntimacyEntries);
@@ -142,7 +142,7 @@ export default function HomeScreen() {
     const u12 = subscribeMoments(coupleId, setMoments);
     const u13 = subscribeStateUnion(coupleId, getCurrentWeekId(), setSuDoc);
     return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); };
-  }, [coupleId]);
+  }, [coupleId, couple?.isLongDistance]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
     if (!coupleId || !partnerId) return;

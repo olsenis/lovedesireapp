@@ -40,10 +40,15 @@ function deterministicShuffle(pool: Question[], seedStr: string): Question[] {
 
 const CATEGORIES: QuestionCategory[] = ['fun', 'deep', 'romantic', 'spicy', 'therapy', 'fantasy'];
 
-function pickDailyQuestions(date: string, coupleId: string): Question[] {
+function pickDailyQuestions(date: string, coupleId: string, isLDR: boolean): Question[] {
   const result: Question[] = [];
   for (const cat of CATEGORIES) {
-    const pool = QUESTIONS.filter((q) => q.category === cat);
+    const pool = QUESTIONS.filter((q) => {
+      if (q.category !== cat) return false;
+      // LDR-tagged questions are gibberish for cohabiting couples
+      if (!isLDR && q.tags?.includes('ldr')) return false;
+      return true;
+    });
     const shuffled = deterministicShuffle(pool, date + coupleId + cat);
     result.push(...shuffled.slice(0, 3));
   }
@@ -52,15 +57,17 @@ function pickDailyQuestions(date: string, coupleId: string): Question[] {
 
 export function subscribeDailyQuestions(
   coupleId: string,
-  onChange: (doc: DailyQuestionDoc) => void
+  onChange: (doc: DailyQuestionDoc) => void,
+  options?: { isLDR?: boolean },
 ): Unsubscribe {
   const date = todayKey();
+  const isLDR = options?.isLDR ?? false;
   const ref = doc(db, 'couples', coupleId, 'dailyQuestions', date);
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
       onChange(snap.data() as DailyQuestionDoc);
     } else {
-      const items = pickDailyQuestions(date, coupleId);
+      const items = pickDailyQuestions(date, coupleId, isLDR);
       const newDoc: DailyQuestionDoc = { date, items, discussed: {}, answers: {} };
       await setDoc(ref, newDoc);
       onChange(newDoc);
