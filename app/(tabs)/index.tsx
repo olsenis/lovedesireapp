@@ -388,8 +388,10 @@ export default function HomeScreen() {
     });
   }
 
-  // Activity Cards (Bingo) — partner picked a card and I'm the receiver
-  if (bingoSession && partnerId && bingoSession.pendingCard !== null && bingoSession.turnUid === uid) {
+  // Activity Cards (Bingo) — partner picked a card and I'm the receiver.
+  // Use typeof number check to guard against undefined/null pendingCard
+  // (older session docs created before the resetActivityCards fix may not have the field).
+  if (bingoSession && partnerId && typeof bingoSession.pendingCard === 'number' && bingoSession.turnUid === uid) {
     const cardText = bingoSession.squares?.[bingoSession.pendingCard] ?? 'a challenge';
     list.push({
       emoji: '🃏',
