@@ -120,10 +120,12 @@ export default function SensateScreen() {
 
   useEffect(() => {
     if (!running) return;
-    intervalRef.current = setInterval(() => {
+    // Use a local handle to avoid stale ref bugs across re-runs of this effect.
+    const handle = setInterval(() => {
       setElapsed((e) => {
         if (totalSeconds > 0 && e >= totalSeconds) {
-          clearInterval(intervalRef.current!);
+          clearInterval(handle);
+          intervalRef.current = null;
           setRunning(false);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           return e;
@@ -139,7 +141,11 @@ export default function SensateScreen() {
         return e + 1;
       });
     }, 1000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    intervalRef.current = handle;
+    return () => {
+      clearInterval(handle);
+      intervalRef.current = null;
+    };
   }, [running, totalSeconds]);
 
   const startStage = (stage: Stage) => {

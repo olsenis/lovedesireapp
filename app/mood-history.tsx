@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useSubscription } from '../hooks/useSubscription';
 import { notifyPartner } from '../services/notificationService';
 import { MoodEntry, MoodEmoji, MOOD_LABELS, ALL_MOODS, subscribeMoodHistory, setMood, getTodaysMood, subscribeToMoods } from '../services/moodService';
-import { unlockSadNotes } from '../services/noteService';
+import { unlockMoodNotes } from '../services/noteService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -74,7 +74,7 @@ export default function MoodHistoryScreen() {
       await setMood(coupleId, user.uid, emoji);
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
       notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
-      if (emoji === '😢') unlockSadNotes(coupleId, user.uid).catch(() => {});
+      unlockMoodNotes(coupleId, user.uid, emoji).catch(() => {});
     } catch (e) {
       console.error('setMood failed:', e);
     }

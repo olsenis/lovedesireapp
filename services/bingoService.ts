@@ -147,9 +147,19 @@ export async function resetActivityCards(
   const month = monthKey();
   const newReset = (session.resetCount ?? 0) + 1;
   const squares = generateCard(month + coupleId + String(newReset));
+  // setDoc replaces the whole document, so every field on ActivityCardsSession
+  // must be set here or downstream readers hit `undefined.has(index)` / similar crashes.
   await setDoc(doc(db, 'couples', coupleId, 'bingo', month), {
-    month, squares, revealed: [], revealedBy: {},
-    turnUid: starterUid, resetCount: newReset,
+    month,
+    squares,
+    revealed: [],
+    revealedBy: {},
+    completed: [],
+    pendingCard: null,
+    turnUid: starterUid,
+    resetCount: newReset,
+    passes: {},
+    receiverPasses: {},
   });
 }
 
