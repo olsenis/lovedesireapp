@@ -1,6 +1,7 @@
 import { doc, setDoc, updateDoc, getDoc, onSnapshot, arrayUnion, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
+import { awardPoints, POINTS } from './levelsService';
 
 export interface DailyQuestionDoc {
   date: string;
@@ -93,6 +94,7 @@ export async function submitAnswer(
   await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
     [`answers.${uid}.${globalIndex}`]: answer,
   });
+  awardPoints(coupleId, POINTS.questionAnswered).catch(() => {});
 }
 
 export async function checkAndUpdateStreak(coupleId: string): Promise<void> {
@@ -101,12 +103,14 @@ export async function checkAndUpdateStreak(coupleId: string): Promise<void> {
   const snap = await getDoc(streakRef);
   if (!snap.exists()) {
     await setDoc(streakRef, { count: 1, lastDate: today });
+    awardPoints(coupleId, POINTS.questionStreakDay).catch(() => {});
     return;
   }
   const streak = snap.data() as QuestionStreak;
   if (streak.lastDate === today) return;
   const newCount = streak.lastDate === yesterdayKey() ? streak.count + 1 : 1;
   await setDoc(streakRef, { count: newCount, lastDate: today });
+  awardPoints(coupleId, POINTS.questionStreakDay).catch(() => {});
 }
 
 export function bothAnswered(

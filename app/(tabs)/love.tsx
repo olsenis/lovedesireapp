@@ -27,6 +27,7 @@ const CONNECTION = [
 
 const INSIGHTS = [
   { emoji: '📖', title: 'Our Story',         subtitle: 'Timeline of your milestones, met to married and beyond',  route: '/our-story',  bg: '#FFF0F3', paid: false },
+  { emoji: '🕰️', title: 'Time Capsules',     subtitle: 'Seal a memory now, open it years from today',            route: '/time-capsules', bg: '#FFF3E0', paid: false },
   { emoji: '🌅', title: 'Sunday Check-in',   subtitle: '5-question weekly ritual, answer privately, reveal together', route: '/state-union', bg: '#FFF0F3', paid: false },
   { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',      bg: '#E3F2FD', paid: false },
   { emoji: '🌡️', title: 'Relationship Pulse', subtitle: 'Private check-in on how things are going',              route: '/hita',      bg: '#FFF3E0', paid: false },

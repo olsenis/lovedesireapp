@@ -7,6 +7,7 @@ import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
 const GAMES = [
   { emoji: '💬', title: 'Questions Game',       subtitle: 'Fun, Deep, Romantic, Spicy, Therapy & Fantasy', route: '/questions-game', bg: '#E3F2FD', paid: false },
+  { emoji: '🆚', title: 'Versus',               subtitle: 'How well do you know your partner? Guess their answers', route: '/versus',         bg: '#FFE5EC', paid: false },
   { emoji: '🎯', title: 'Truth or Dare',        subtitle: 'Solo spin or 2-phone multiplayer round',        route: '/truth-dare',     bg: '#F3E5F5', paid: false },
   { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time, then reveal',   route: '/would-you-rather', bg: '#FFF9C4', paid: false },
   { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true },

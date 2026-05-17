@@ -4,10 +4,14 @@
 
 export type QuestionCategory = 'fun' | 'deep' | 'romantic' | 'spicy' | 'therapy' | 'fantasy';
 
+export type QuestionFormat = 'open' | 'binary' | 'scale';
+
 export interface Question {
   text: string;
   category: QuestionCategory;
   tags?: string[]; // e.g. ['ldr'] — used to mix LDR-flavored questions into existing categories
+  format?: QuestionFormat; // undefined means 'open' (legacy text answer)
+  options?: [string, string]; // required when format === 'binary'
 }
 
 export const QUESTION_CATEGORY_CONFIG: Record<QuestionCategory, { label: string; emoji: string; color: string }> = {
@@ -471,6 +475,40 @@ export const QUESTIONS: Question[] = [
   { text: "What's a small ritual we have across the distance that you'd be quietly devastated to lose?", category: 'therapy', tags: ['ldr'] },
   { text: "What's something about your week you tend not to tell me, because you don't want to weigh on me from far away?", category: 'therapy', tags: ['ldr'] },
   { text: "When you picture our first morning together after this distance ends, what actually happens in it?", category: 'therapy', tags: ['ldr'] },
+
+  // ── Binary questions (quick A/B for daily habit) ──────────────────────────
+  { text: "Morning or night?", category: 'fun', format: 'binary', options: ['Morning person', 'Night owl'] },
+  { text: "Beach vacation or mountain getaway?", category: 'fun', format: 'binary', options: ['Beach', 'Mountains'] },
+  { text: "Big party or small dinner with close friends?", category: 'fun', format: 'binary', options: ['Big party', 'Small dinner'] },
+  { text: "Save up for one big thing or spend on small treats often?", category: 'fun', format: 'binary', options: ['One big thing', 'Many small treats'] },
+  { text: "Sweet snacks or salty?", category: 'fun', format: 'binary', options: ['Sweet', 'Salty'] },
+  { text: "Read the book or watch the movie?", category: 'fun', format: 'binary', options: ['Book', 'Movie'] },
+  { text: "Cook at home together or eat out?", category: 'romantic', format: 'binary', options: ['Cook at home', 'Eat out'] },
+  { text: "Surprise gift or thoughtful gift?", category: 'romantic', format: 'binary', options: ['Surprise', 'Thoughtful'] },
+  { text: "Slow dance or fast dance?", category: 'romantic', format: 'binary', options: ['Slow', 'Fast'] },
+  { text: "Quiet weekend together or weekend full of plans?", category: 'romantic', format: 'binary', options: ['Quiet', 'Full of plans'] },
+  { text: "Big spoon or little spoon?", category: 'romantic', format: 'binary', options: ['Big spoon', 'Little spoon'] },
+  { text: "Lights on or lights off?", category: 'spicy', format: 'binary', options: ['Lights on', 'Lights off'] },
+  { text: "Slow build or jump straight in?", category: 'spicy', format: 'binary', options: ['Slow build', 'Jump in'] },
+  { text: "Morning sex or night sex?", category: 'spicy', format: 'binary', options: ['Morning', 'Night'] },
+  { text: "Soft touch or firm grip?", category: 'spicy', format: 'binary', options: ['Soft', 'Firm'] },
+
+  // ── Scale questions (1-5 sliders for nuanced feelings) ─────────────────────
+  { text: "How adventurous are you feeling lately?", category: 'fun', format: 'scale' },
+  { text: "How rested do you feel this week?", category: 'fun', format: 'scale' },
+  { text: "How emotionally close do you feel to me right now?", category: 'deep', format: 'scale' },
+  { text: "How safe do you feel sharing something hard with me lately?", category: 'deep', format: 'scale' },
+  { text: "How seen do you feel by me this week?", category: 'deep', format: 'scale' },
+  { text: "How much do you want physical closeness today?", category: 'romantic', format: 'scale' },
+  { text: "How present have you been able to be in us this week?", category: 'romantic', format: 'scale' },
+  { text: "How comfortable do you feel asking me for what you want in bed?", category: 'spicy', format: 'scale' },
+  { text: "How adventurous are you feeling in the bedroom these days?", category: 'spicy', format: 'scale' },
+  { text: "How satisfied are you with the frequency of our intimacy right now?", category: 'spicy', format: 'scale' },
+  { text: "How heard do you feel when something is bothering you?", category: 'therapy', format: 'scale' },
+  { text: "How well do you think we resolve conflict lately?", category: 'therapy', format: 'scale' },
+  { text: "How open do you feel to exploring a new fantasy together?", category: 'fantasy', format: 'scale' },
+  { text: "How curious are you about something we haven't tried?", category: 'fantasy', format: 'scale' },
+  { text: "How connected do you feel to me when we're apart?", category: 'deep', format: 'scale', tags: ['ldr'] },
 ];
 
 // ─── DARE WHEEL ───────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, deleteField, doc, onSnapshot, orderBy, query, limit, where, getDocs, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import type { MoodEmoji } from './moodService';
+import { awardPoints, POINTS } from './levelsService';
 
 export interface LoveNote {
   id: string;
@@ -45,6 +46,7 @@ export async function createNote(
     opened: false,
     createdAt: Date.now(),
   });
+  awardPoints(coupleId, POINTS.noteSent).catch(() => {});
 }
 
 // Called when a user sets a mood — unlocks any pending mood-trigger notes from partner that match the chosen emoji.
@@ -86,6 +88,7 @@ export async function unlockVisitNotes(coupleId: string, uid: string): Promise<v
 
 export async function openNote(coupleId: string, noteId: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'notes', noteId), { opened: true });
+  awardPoints(coupleId, POINTS.noteOpened).catch(() => {});
 }
 
 export async function updateNote(

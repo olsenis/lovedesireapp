@@ -1,5 +1,6 @@
 import { collection, addDoc, query, getDocs, onSnapshot, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { awardPoints, POINTS } from './levelsService';
 
 export type MoodEmoji = '😍' | '🥰' | '😊' | '😌' | '😴' | '💪' | '😤' | '😢' | '🥺' | '😰' | '😈' | '🥵';
 
@@ -45,6 +46,7 @@ export async function setMood(coupleId: string, uid: string, emoji: MoodEmoji, n
     note: note ?? '',
     createdAt: Date.now(),
   });
+  awardPoints(coupleId, POINTS.mood).catch(() => {});
 }
 
 // Fetches today's mood without compound index, uses single-field orderBy + client-side filter

@@ -15,6 +15,7 @@ import { createUserProfile, logout, disconnectFromCouple } from '../services/aut
 import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
 import { uploadProfilePhoto } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
+import { subscribeLevel, CoupleLevel, getTier, getNextTier, progressToNext, LEVELS } from '../services/levelsService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -70,6 +71,15 @@ export default function ProfileScreen() {
     if (!user) return;
     getHelpState(user.uid).then((s) => setHelpOn(s.enabled));
   }, [user]);
+
+  const [level, setLevel] = useState<CoupleLevel>({ points: 0, lastUpdated: 0 });
+  useEffect(() => {
+    if (!profile?.coupleId) return;
+    return subscribeLevel(profile.coupleId, setLevel);
+  }, [profile?.coupleId]);
+  const tier = getTier(level.points);
+  const nextTier = getNextTier(level.points);
+  const pct = Math.min(progressToNext(level.points) * 100, 100);
 
   useEffect(() => {
     setIntimacyLogOn(profile?.features?.intimacyLog ?? false);
@@ -326,6 +336,33 @@ export default function ProfileScreen() {
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Level */}
+        {isConnected && (
+          <>
+            <Text style={styles.sectionLabel}>Together</Text>
+            <View style={styles.levelCard}>
+              <View style={styles.levelTopRow}>
+                <Text style={styles.levelEmoji}>{tier.emoji}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.levelTier}>{tier.label}</Text>
+                  <Text style={styles.levelDesc}>{tier.description}</Text>
+                </View>
+                <Text style={styles.levelPoints}>{level.points} pts</Text>
+              </View>
+              {nextTier && (
+                <>
+                  <View style={styles.levelBarBg}>
+                    <View style={[styles.levelBarFill, { width: `${pct}%` }]} />
+                  </View>
+                  <Text style={styles.levelNext}>
+                    {nextTier.max - level.points > 0 ? `${nextTier.max - level.points} pts to ${nextTier.label} ${nextTier.emoji}` : `Welcome to ${nextTier.label}`}
+                  </Text>
+                </>
+              )}
+            </View>
+          </>
+        )}
 
         {/* Couple */}
         <Text style={styles.sectionLabel}>Your couple</Text>
@@ -737,6 +774,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.md,
   },
   card: { backgroundColor: Colors.white, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadow.sm },
+
+  levelCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm, gap: Spacing.sm, marginBottom: Spacing.md },
+  levelTopRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  levelEmoji: { fontSize: 38 },
+  levelTier: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
+  levelDesc: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  levelPoints: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
+  levelBarBg: { height: 8, backgroundColor: Colors.border, borderRadius: 4, overflow: 'hidden', marginTop: 4 },
+  levelBarFill: { height: '100%', backgroundColor: Colors.burgundy, borderRadius: 4 },
+  levelNext: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: 14 },
   rowTextStack: { flex: 1 },
   rowLabel: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text },

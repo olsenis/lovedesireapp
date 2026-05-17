@@ -56,22 +56,21 @@ export default function QuestionsGameScreen() {
 
   const answeredCount = catItems.filter(({ gi }) => !!myAnswer(gi)).length;
 
-  const handleSubmit = async (gi: number) => {
-    const text = (drafts[gi] ?? '').trim();
-    if (!coupleId || !dailyDoc || !text) return;
+  const submitValue = async (gi: number, value: string) => {
+    if (!coupleId || !dailyDoc || !value) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await submitAnswer(coupleId, uid, gi, text);
+    await submitAnswer(coupleId, uid, gi, value);
     setDrafts(d => { const n = { ...d }; delete n[gi]; return n; });
 
     const partnerAlreadyAnswered = !!(partnerId && dailyDoc.answers?.[partnerId]?.[String(gi)]);
     if (partnerAlreadyAnswered) {
-      // Both answered — update streak
       checkAndUpdateStreak(coupleId);
     } else {
-      // Notify partner it's their turn
       notifyPartner(coupleId, uid, 'Questions 💬', `${profile?.name ?? 'Your partner'} answered a question, your turn!`);
     }
   };
+
+  const handleSubmit = (gi: number) => submitValue(gi, (drafts[gi] ?? '').trim());
 
   return (
     <View style={styles.screen}>
@@ -151,22 +150,64 @@ export default function QuestionsGameScreen() {
                   {theirs && (
                     <Text style={styles.partnerWaiting}>{partnerName} already answered, your turn!</Text>
                   )}
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Type your answer..."
-                    placeholderTextColor={Colors.muted}
-                    value={drafts[gi] ?? ''}
-                    onChangeText={t => setDrafts(d => ({ ...d, [gi]: t }))}
-                    multiline
-                  />
-                  <TouchableOpacity
-                    style={[styles.sendBtn, !(drafts[gi] ?? '').trim() && { opacity: 0.4 }]}
-                    onPress={() => handleSubmit(gi)}
-                    disabled={!(drafts[gi] ?? '').trim()}
-                    activeOpacity={0.85}
-                   accessibilityRole="button">
-                    <Text style={styles.sendBtnText}>Send answer →</Text>
-                  </TouchableOpacity>
+
+                  {q.format === 'binary' && q.options ? (
+                    <View style={styles.binaryWrap}>
+                      <TouchableOpacity
+                        style={styles.binaryBtn}
+                        onPress={() => submitValue(gi, q.options![0])}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.binaryBtnText}>{q.options[0]}</Text>
+                      </TouchableOpacity>
+                      <View style={styles.binaryOr}><Text style={styles.binaryOrText}>or</Text></View>
+                      <TouchableOpacity
+                        style={styles.binaryBtn}
+                        onPress={() => submitValue(gi, q.options![1])}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.binaryBtnText}>{q.options[1]}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : q.format === 'scale' ? (
+                    <View style={styles.scaleWrap}>
+                      <Text style={styles.scaleHint}>1 = not at all · 5 = completely</Text>
+                      <View style={styles.scaleRow}>
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <TouchableOpacity
+                            key={n}
+                            style={styles.scaleBtn}
+                            onPress={() => submitValue(gi, String(n))}
+                            activeOpacity={0.8}
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.scaleNum}>{n}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Type your answer..."
+                        placeholderTextColor={Colors.muted}
+                        value={drafts[gi] ?? ''}
+                        onChangeText={t => setDrafts(d => ({ ...d, [gi]: t }))}
+                        multiline
+                      />
+                      <TouchableOpacity
+                        style={[styles.sendBtn, !(drafts[gi] ?? '').trim() && { opacity: 0.4 }]}
+                        onPress={() => handleSubmit(gi)}
+                        disabled={!(drafts[gi] ?? '').trim()}
+                        activeOpacity={0.85}
+                       accessibilityRole="button">
+                        <Text style={styles.sendBtnText}>Send answer →</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               )}
             </View>
@@ -257,6 +298,18 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full, alignItems: 'center',
   },
   sendBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+
+  binaryWrap: { gap: Spacing.sm },
+  binaryBtn: { backgroundColor: Colors.white, borderRadius: Radius.lg, paddingVertical: Spacing.lg, alignItems: 'center', borderWidth: 1.5, borderColor: Colors.border },
+  binaryBtnText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.text },
+  binaryOr: { alignItems: 'center', paddingVertical: 4 },
+  binaryOrText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+
+  scaleWrap: { gap: Spacing.sm },
+  scaleHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
+  scaleRow: { flexDirection: 'row', gap: Spacing.sm },
+  scaleBtn: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: Radius.md, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.border },
+  scaleNum: { fontFamily: Fonts.bodyBold, fontSize: 20, color: Colors.text },
 
   loading: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', marginTop: Spacing.xl },
 });
