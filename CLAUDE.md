@@ -97,6 +97,8 @@ app/                         Full-screen sub-screens
   quiz.tsx                   Love Language Quiz — 10-question result
   hita.tsx                   Relationship Pulse — private 10-question satisfaction tracker
   daily-wishes.tsx           Daily Picks — 5/day per category (Sweet/Flirty/Spicy/Sexual)
+  time-capsules.tsx          Time Capsules — seal a message/photo to open at a future date (1y/5y/10y or custom)
+  versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
   wishlist.tsx               Shared Wishlist (legacy — not in main nav)
   fantasy.tsx                Fantasy Match (legacy — replaced by fantasy-wishes.tsx)
 ```
@@ -128,6 +130,8 @@ couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
 couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
+couples/{coupleId}/timeCapsules/{id} TimeCapsule — message, photoURL?, sealedAt, openAt, sealedBy, sealedByName, opened
+couples/{coupleId}/meta/level       CoupleLevel — points (cumulative), lastUpdated (Relationship Levels gamification)
 ```
 
 ### Services (`/services`)
@@ -149,13 +153,16 @@ couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
 | `notificationService.ts` | `notifyPartner` — POSTs to Expo Push API |
 | `memoryService.ts` | `subscribeMemories`, `addMemory`, `deleteMemory` |
 | `importantDateService.ts` | `subscribeDates`, `addImportantDate`, `deleteImportantDate`, `getDaysUntil` |
-| `storageService.ts` | `uploadProfilePhoto`, `uploadMemoryPhoto`, `uploadTruthDareAudio` — Firebase Storage |
+| `storageService.ts` | `uploadProfilePhoto`, `uploadMemoryPhoto`, `uploadTruthDareAudio`, `uploadCapsulePhoto`, `uploadFlashMedia`, `uploadMomentPhoto` — Firebase Storage. Photos compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before upload. |
 | `helpService.ts` | `getHelpState`, `markFeatureSeen`, `setHelpEnabled`, `disableAllHelp`, `resetHelp` |
 | `dailyWishService.ts` | `subscribeDailyWishes`, `voteDailyWish`, `markAddToList`, `bothWantToAdd` |
 | `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `subscribeStreak`, `submitAnswer`, `checkAndUpdateStreak`, `bothAnswered`, `markDiscussed`, `bothDiscussed` |
 | `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR` |
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
+| `timeCapsuleService.ts` | `subscribeTimeCapsules`, `sealTimeCapsule`, `markCapsuleOpened`, `isUnlocked` |
+| `versusService.ts` | `loadVersusPool` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items |
+| `levelsService.ts` | `subscribeLevel`, `awardPoints` (atomic via runTransaction), `getTier`, `getNextTier`, `progressToNext`, `LEVELS`, `POINTS` constants |
 
 ### Hooks
 
@@ -167,10 +174,10 @@ couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
 
 All static game content lives here — import from this file, never hardcode in screens:
 
-- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 403 questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy. Target 500+. See `memory/question_writer_prompt.md` for quality standards.
+- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 403+ questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy. `Question` interface gained `format?: 'open' | 'binary' | 'scale'` + `options?: [string, string]` (May 2026). 15 binary + 15 scale variants in pool. Target 500+. See `memory/question_writer_prompt.md` for quality standards.
 - `DARES` + `DARE_LEVEL_CONFIG` — ~141 dares across Sweet (~45)/Flirty (~46)/Spicy (~50). Clear level separation: Sweet=cute/romantic, Flirty=sensual kissing/touch, Spicy=explicitly sexual/X-rated. Target 200+. See `memory/explicit_content_prompt.md`.
-- `TRUTHS` — 74 truths across Sweet(25)/Flirty(24)/Spicy(25). Target 200+. Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual. See `memory/explicit_content_prompt.md`.
-- `DATE_IDEAS` — 48 date ideas (home/out/adventure, 16 each)
+- `TRUTHS` — 310 truths across Sweet(95)/Flirty(95)/Spicy(120). Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual. See `memory/explicit_content_prompt.md`.
+- `DATE_IDEAS` — 130 date ideas (53 home + 39 out + 38 adventure + 28 with `virtual: true` for LDR). Rich 1-2 sentence descriptions.
 - `PRESET_WISHES` — 60 wishlist presets (Romantic/Adventure/Intimate/Spicy, 15 each)
 - `QUIZ_QUESTIONS` + `LOVE_LANGUAGE_LABELS` — 10 A/B love language questions
 - `BLUEPRINT_QUESTIONS` + `BLUEPRINT_TYPE_CONFIG` + `BLUEPRINT_COMPATIBILITY` — 15 A/B questions, 5 types, 25-pair compatibility guidance
@@ -199,7 +206,13 @@ Three prompts for expanding content — always use the right one for the categor
 
 **WYR session persistence:** Session stored in Firestore — Back button and app exit do NOT reset the game. Push notification sent when you answer. Home screen nudge appears when partner answered but you haven't.
 
-**Questions Game reveal:** Both partners answer privately (text input). Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side. Daily streak (`couples/{coupleId}/streaks/questions`) increments when both answer on the same day. Streak shown as 🔥 N in header.
+**Questions Game reveal:** Both partners answer privately. Open-text uses TextInput. Binary uses two large buttons (q.options[0] | or | q.options[1]). Scale uses 1-5 chips with "1 = not at all · 5 = completely" hint. Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side. Daily streak (`couples/{coupleId}/streaks/questions`) increments when both answer on the same day. Streak shown as 🔥 N in header.
+
+**Versus:** Pulls binary-format answers from last 45 days of `dailyQuestions`. Builds a 10-question shuffled quiz of items where partner has answered. Each card shows partner's actual answer + 1 decoy (the other binary option). Instant reveal with ✓/✗ after pick. Final score shown with gradient hero card. Empty state nudges to play more Questions first.
+
+**Time Capsules:** Sealed `couples/{coupleId}/timeCapsules/{id}` doc with `openAt` timestamp. Client UI shows Locked vs Ready-to-open based on `isUnlocked()` (compares openAt to Date.now). Not adversarially secure — both partners can technically query Firestore directly — but the lock is emotional/UX, not security. Photo optional, uploaded via `uploadCapsulePhoto`. Long-term emotional moat distinct from Love Notes (weeks) and Tease (24h).
+
+**Relationship Levels:** `couples/{coupleId}/meta/level` stores cumulative points. 5 tiers (Spark 0-100 → Glow 100-500 → Warm 500-2000 → Bond 2000-5000 → Eternal 5000+). `awardPoints(coupleId, n)` uses `runTransaction` so parallel actions can't lose updates. Wired into setMood, submitAnswer, checkAndUpdateStreak, sendSpark, createNote, openNote, submitMomentPhoto. Profile screen shows tier + points + progress bar + next-tier hint. No mascot, no badges — brand-appropriate gamification.
 
 **Activity Cards:** 25 face-down cards, turn-based. Picker has 2 passes to swap before accepting. Receiver gets the card and can mark "We did it!" or skip (1 pass). Cards have 3 states: face-down, pending (accepted not done), completed (green). `pendingCard` field tracks which card is waiting for receiver. Paid feature.
 
@@ -217,7 +230,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Home screen nudges ("Waiting for you"):** index.tsx subscribes to challenge, notes, fantasyWishes, dailyQuestions, dailyWishes, and WYR. Shows nudge card when partner has acted but current user hasn't.
 
-**Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`.
+**Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`, Moments at `couples/{coupleId}/moments/{date}_{uid}.jpg`, Flashes at `couples/{coupleId}/flashes/{ts}_{uid}.{ext}`, Time Capsules at `couples/{coupleId}/timeCapsules/{ts}_{uid}.jpg`. All photo uploads compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before `uploadBytes`.
 
 **Content rules:** No em dashes (—) anywhere in UI strings — use commas instead. Dares must be physical actions (do something), not verbal (say/tell/describe). Spicy level = explicitly X-rated language.
 
@@ -226,13 +239,15 @@ Three prompts for expanding content — always use the right one for the categor
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only
 - Dare Wheel: Sweet + Flirty only
-- Questions Game: Fun, Deep, Romantic, Therapy only
+- Questions Game: Fun, Deep, Romantic, Therapy only (including binary + scale variants in those categories)
+- Versus mode (full — uses partner's binary-question history)
 - Would You Rather: Playful + Romantic only
 - Daily Picks: Sweet + Flirty only
 - Date Night Roulette (full)
-- All connection features: Mood, Notes, Memories, Countdowns, Reminders (full)
-- Love Language Quiz, Relationship Pulse (full)
+- All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease, Time Capsules (full)
+- Love Language Quiz, Relationship Pulse (with trend chart, full)
 - 30-Day Challenge: Reconnect + Spark programs only
+- Relationship Levels — gamification, free for all couples
 
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
 - Truth or Dare: Spicy level
