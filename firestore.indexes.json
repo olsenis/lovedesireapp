@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "notes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "openCondition", "order": "ASCENDING" },
+        { "fieldPath": "opened", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

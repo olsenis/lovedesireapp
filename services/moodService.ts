@@ -28,9 +28,13 @@ export interface MoodEntry {
   createdAt: number;
 }
 
+// UTC day boundary — matches every other date-keyed service (dailyQuestions,
+// dailyWishes, moments, sensate, storage). Local-time boundary used to mean
+// LDR couples in different timezones saw mood "today" drift one day relative
+// to all other features, breaking streak counters and "today's mood" logic.
 function todayStart(): number {
   const d = new Date();
-  d.setHours(0, 0, 0, 0);
+  d.setUTCHours(0, 0, 0, 0);
   return d.getTime();
 }
 
