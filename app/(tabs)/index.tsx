@@ -199,9 +199,12 @@ export default function HomeScreen() {
   }, [coupleId, uid, couple?.nextVisitDate]);
   const nextVisit = useMemo(() => getNextVisit(couple?.nextVisitDate), [couple?.nextVisitDate]);
   // Show both pills only if both events fall within 60 days; otherwise show whichever is closer
-  const showBothEvents = !!(anniversary && nextVisit && anniversary.daysUntil <= 60 && nextVisit.daysUntil <= 60);
-  const showNextVisitOnly = !!nextVisit && (!anniversary || (!showBothEvents && nextVisit.daysUntil <= anniversary.daysUntil));
-  const showAnniversaryOnly = !!anniversary && (!nextVisit || (!showBothEvents && anniversary.daysUntil < nextVisit.daysUntil));
+  // Next-visit pill is only meaningful in LDR mode. Even if nextVisitDate is still
+  // set in Firestore from when LDR was on, the user has turned it off — hide it.
+  const visibleNextVisit = isLDR ? nextVisit : null;
+  const showBothEvents = !!(anniversary && visibleNextVisit && anniversary.daysUntil <= 60 && visibleNextVisit.daysUntil <= 60);
+  const showNextVisitOnly = !!visibleNextVisit && (!anniversary || (!showBothEvents && visibleNextVisit.daysUntil <= anniversary.daysUntil));
+  const showAnniversaryOnly = !!anniversary && (!visibleNextVisit || (!showBothEvents && anniversary.daysUntil < visibleNextVisit.daysUntil));
   const myTimezone = isLDR ? timeInZone(profile?.timezone) : null;
   const partnerTimezone = isLDR ? timeInZone(partner?.timezone) : null;
 
@@ -577,13 +580,13 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               )}
-              {(showBothEvents || showNextVisitOnly) && nextVisit && (
+              {(showBothEvents || showNextVisitOnly) && visibleNextVisit && (
                 <View style={[styles.anniversaryPill, { marginTop: showBothEvents ? 4 : 0 }]}>
                   <Text style={styles.anniversaryText}>
-                    {nextVisit.daysUntil === 0 ? '✈️ Today!' : `✈️ ${nextVisit.dateLabel}`}
+                    {visibleNextVisit.daysUntil === 0 ? '✈️ Today!' : `✈️ ${visibleNextVisit.dateLabel}`}
                   </Text>
                   <Text style={styles.anniversaryDays}>
-                    {nextVisit.daysUntil === 0 ? 'next visit' : `in ${nextVisit.daysUntil} days · next visit`}
+                    {visibleNextVisit.daysUntil === 0 ? 'next visit' : `in ${visibleNextVisit.daysUntil} days · next visit`}
                   </Text>
                 </View>
               )}
