@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LoveLanguage } from '../constants/content';
+import { useAuth } from '../hooks/useAuth';
+import { createUserProfile } from '../services/authService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -12,6 +14,7 @@ import { HelpModal } from '../components/HelpModal';
 const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 
 export default function QuizScreen() {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<Record<LoveLanguage, number>>({ words: 0, acts: 0, gifts: 0, time: 0, touch: 0 });
   const [done, setDone] = useState(false);
@@ -39,6 +42,12 @@ export default function QuizScreen() {
   const sorted = (Object.entries(scores) as [LoveLanguage, number][]).sort((a, b) => b[1] - a[1]);
   const primary = sorted[0][0];
   const max = sorted[0][1];
+
+  // Persist the top result on the user profile so partner-side insight generation can read it.
+  useEffect(() => {
+    if (!done || !user) return;
+    createUserProfile(user.uid, { loveLanguage: primary } as any).catch(() => {});
+  }, [done, primary, user]);
 
   return (
     <View style={styles.screen}>

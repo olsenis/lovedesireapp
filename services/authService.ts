@@ -20,6 +20,7 @@ export interface UserProfile {
   createdAt: number;
   birthday?: string; // DD.MM format, no year
   timezone?: string; // IANA tz like "Europe/Reykjavik" — used for LDR partner clock
+  loveLanguage?: 'words' | 'acts' | 'gifts' | 'time' | 'touch'; // top result from Love Language quiz
   features?: {
     intimacyLog?: boolean;
     explicitContent?: boolean; // paid users can disable explicit content

@@ -70,6 +70,46 @@ function getNextVisit(nextVisitDate?: number): { dateLabel: string; daysUntil: n
   return { dateLabel, daysUntil };
 }
 
+type LangTip = { tip: string; cta: string; route: string };
+
+// Daily-rotating tips per partner's love language. Picks one per day based on day-of-year.
+function getLanguageTip(language: string | undefined, partnerName: string): LangTip | null {
+  if (!language) return null;
+  const day = Math.floor(Date.now() / 86400000);
+  const tipsByLanguage: Record<string, LangTip[]> = {
+    words: [
+      { tip: `Tell ${partnerName} one specific thing you love about who they are.`, cta: 'Write a Love Note', route: '/notes' },
+      { tip: `Send ${partnerName} a voice note. Hearing it lands differently than reading it.`, cta: 'Open Tease', route: '/flashes' },
+      { tip: `Send a spark with words that name what you appreciate today.`, cta: 'Send a spark', route: '/(tabs)' },
+      { tip: `Pick a Question from Romantic and answer with words ${partnerName} hasn't heard.`, cta: 'Open Questions', route: '/questions-game' },
+    ],
+    acts: [
+      { tip: `Do one small thing for ${partnerName} they didn't ask for. Notice what.`, cta: 'Add to Together List', route: '/todo' },
+      { tip: `Take one task off ${partnerName}'s plate today. Don't announce it.`, cta: 'Open list', route: '/todo' },
+      { tip: `Plan a small surprise. Acts of Service is felt in unprompted effort.`, cta: 'Open Countdowns', route: '/countdown' },
+    ],
+    gifts: [
+      { tip: `It's the thought, not the price. Send ${partnerName} a Tease photo of something that made you think of them today.`, cta: 'Send a Tease', route: '/flashes' },
+      { tip: `Schedule a Love Note unlocked for tonight with one specific thing you got them in mind.`, cta: 'Write a Love Note', route: '/notes' },
+      { tip: `Pick a Daily Pick from Sweet and treat it like a small gift today.`, cta: 'Open Daily Picks', route: '/daily-wishes' },
+    ],
+    time: [
+      { tip: `Carve out 30 phone-free minutes with ${partnerName} today. Mark it on the Calendar so it's real.`, cta: 'Open Calendar', route: '/calendar' },
+      { tip: `Do a slow Sunday Check-in tonight. Quality time is the love language and the check-in lives there.`, cta: 'Start the check-in', route: '/state-union' },
+      { tip: `Run Date Roulette together. Pick something that lasts longer than dinner.`, cta: 'Spin the wheel', route: '/roulette' },
+      { tip: `Play Questions Game tonight. 3 questions, no phones, eye contact.`, cta: 'Open Questions', route: '/questions-game' },
+    ],
+    touch: [
+      { tip: `Try a Sensate Focus stage tonight. Touch without goal is exactly ${partnerName}'s language.`, cta: 'Open Sensate', route: '/sensate' },
+      { tip: `Long hug today. 20 seconds at least. Don't talk during it.`, cta: '', route: '' },
+      { tip: `Hands on, eye contact, slow. Pick one Dare from Sweet level for tonight.`, cta: 'Open Truth or Dare', route: '/truth-dare' },
+    ],
+  };
+  const tips = tipsByLanguage[language];
+  if (!tips || tips.length === 0) return null;
+  return tips[day % tips.length];
+}
+
 // Format time in a given IANA timezone, returns "HH:MM" or null if invalid
 function timeInZone(tz?: string): string | null {
   if (!tz) return null;
@@ -615,6 +655,25 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Daily insight card — based on partner's Love Language quiz result */}
+      {(() => {
+        const tip = getLanguageTip((partner as any)?.loveLanguage, partner?.name ?? 'them');
+        if (!tip) return null;
+        const langMeta = (partner as any)?.loveLanguage ? `${(partner as any).loveLanguage}` : '';
+        return (
+          <TouchableOpacity
+            style={styles.insightCard}
+            onPress={() => tip.route && router.push(tip.route as any)}
+            activeOpacity={tip.route ? 0.85 : 1}
+            accessibilityRole={tip.route ? 'button' : undefined}
+          >
+            <Text style={styles.insightEyebrow}>INSIGHT FOR YOU{langMeta ? ` · ${langMeta.toUpperCase()}` : ''}</Text>
+            <Text style={styles.insightTip}>{tip.tip}</Text>
+            {tip.cta ? <Text style={styles.insightCta}>{tip.cta} →</Text> : null}
+          </TouchableOpacity>
+        );
+      })()}
+
       {/* Incoming spark banner */}
       {incomingSpark && (
         <TouchableOpacity
@@ -943,6 +1002,15 @@ const styles = StyleSheet.create({
 
 
   sparkBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm },
+  insightCard: {
+    backgroundColor: '#FFF4E8', borderRadius: Radius.xl,
+    padding: Spacing.lg, marginBottom: Spacing.md,
+    borderWidth: 1, borderColor: '#E8C9A0',
+    gap: 6,
+  },
+  insightEyebrow: { fontFamily: Fonts.bodyBold, fontSize: 10, color: '#8B6B3A', letterSpacing: 2, textTransform: 'uppercase' },
+  insightTip: { fontFamily: Fonts.headingItalic, fontSize: 18, color: Colors.burgundy, lineHeight: 26 },
+  insightCta: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, marginTop: 4 },
   sparkBannerEmoji: { fontSize: 28 },
   sparkBannerText: { flex: 1 },
   sparkBannerTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
