@@ -21,6 +21,7 @@ const CONNECTION = [
   { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',  route: '/notes',     bg: '#FCE4EC', paid: false },
   { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',            route: '/moments',   bg: '#FFF9C4', paid: false },
   { emoji: '⏳', title: 'Countdowns',        subtitle: 'Important dates & anniversaries',                        route: '/countdown', bg: '#E8F5E9', paid: false },
+  { emoji: '📅', title: 'Calendar',          subtitle: 'Month view of all your shared dates',                    route: '/calendar',  bg: '#FCE4EC', paid: false },
   { emoji: '🔔', title: 'Flirt Reminders',   subtitle: 'Daily nudges to keep the spark alive',                   route: '/reminders', bg: '#F3E5F5', paid: false },
 ];
 
