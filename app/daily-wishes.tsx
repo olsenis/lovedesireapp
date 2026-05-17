@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import {
   DailyWishDoc, DailyVote,
-  subscribeDailyWishes, voteDailyWish, isMatch, markAddToList, bothWantToAdd,
+  subscribeDailyWishes, voteDailyWish, isMatch, markAddToListAtomic, bothWantToAdd,
 } from '../services/dailyWishService';
 import { addTodo } from '../services/todoService';
 import { DAILY_WISH_CATEGORY_CONFIG, DailyWishCategory } from '../constants/content';
@@ -49,14 +49,14 @@ export default function DailyWishesScreen() {
   };
 
   const handleAddToList = async (globalIndex: number) => {
-    if (!coupleId || !dailyDoc) return;
+    if (!coupleId || !dailyDoc || !partnerId) return;
     const alreadyPressed = (dailyDoc.addToList?.[globalIndex] ?? []).includes(uid);
     if (alreadyPressed) return;
-    const partnerAlreadyPressed = !!partnerId && (dailyDoc.addToList?.[globalIndex] ?? []).includes(partnerId);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await markAddToList(coupleId, uid, globalIndex);
-    // Only add todo if partner already pressed (we're second → add once)
-    if (partnerAlreadyPressed) {
+    // Atomic add — only the caller whose write completed the pair gets completedNow=true,
+    // so the todo is added exactly once even under concurrent presses.
+    const { completedNow } = await markAddToListAtomic(coupleId, uid, partnerId, globalIndex);
+    if (completedNow) {
       const item = dailyDoc.items[globalIndex];
       const cat = item.category === 'sweet' ? 'dates'
         : item.category === 'sexual' ? 'fantasy'

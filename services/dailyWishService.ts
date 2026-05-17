@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DAILY_WISH_ITEMS, DailyWishItem, DailyWishCategory } from '../constants/content';
 
@@ -71,11 +71,33 @@ export async function voteDailyWish(coupleId: string, uid: string, globalIndex: 
 }
 
 // Mark that this user wants to add this match to the Together List
-// Returns true if BOTH partners have now pressed it (caller should then add the todo)
 export async function markAddToList(coupleId: string, uid: string, globalIndex: number): Promise<void> {
   const date = todayKey();
   await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', date), {
     [`addToList.${globalIndex}`]: arrayUnion(uid),
+  });
+}
+
+// Atomic alternative for the "both pressed → add todo" race condition.
+// Returns completedNow=true only for the caller whose write made the pair complete.
+// Use this from the screen instead of markAddToList + reading local doc afterwards.
+export async function markAddToListAtomic(
+  coupleId: string,
+  uid: string,
+  partnerId: string,
+  globalIndex: number,
+): Promise<{ completedNow: boolean }> {
+  const date = todayKey();
+  const ref = doc(db, 'couples', coupleId, 'dailyWishes', date);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return { completedNow: false };
+    const data = snap.data() as DailyWishDoc;
+    const currentList = data.addToList?.[globalIndex] ?? [];
+    if (currentList.includes(uid)) return { completedNow: false }; // Idempotent — already pressed
+    const newList = [...currentList, uid];
+    tx.update(ref, { [`addToList.${globalIndex}`]: newList });
+    return { completedNow: newList.includes(partnerId) };
   });
 }
 

@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { WYRLevel } from '../constants/content';
 
@@ -28,12 +28,20 @@ export async function startWYR(coupleId: string, level: WYRLevel): Promise<void>
   });
 }
 
-export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer, session: WYRSession): Promise<void> {
-  const newAnswers = { ...session.answers, [uid]: answer };
-  const bothAnswered = Object.keys(newAnswers).length >= 2;
-  await updateDoc(doc(db, 'couples', coupleId, 'wyr', 'active'), {
-    [`answers.${uid}`]: answer,
-    ...(bothAnswered ? { revealed: true } : {}),
+export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer, _session?: WYRSession): Promise<void> {
+  // Transaction reads the live state so two simultaneous answers can't both
+  // see 'only my answer' and miss flipping revealed=true.
+  const ref = doc(db, 'couples', coupleId, 'wyr', 'active');
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const live = snap.data() as WYRSession;
+    const newAnswers = { ...live.answers, [uid]: answer };
+    const bothAnswered = Object.keys(newAnswers).length >= 2;
+    tx.update(ref, {
+      [`answers.${uid}`]: answer,
+      ...(bothAnswered ? { revealed: true } : {}),
+    });
   });
 }
 

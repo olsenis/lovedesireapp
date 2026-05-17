@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, getDoc, onSnapshot, query, collection, orderBy, limit, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, getDoc, onSnapshot, runTransaction, query, collection, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface MomentPhoto {
@@ -49,19 +49,36 @@ export async function submitMomentPhoto(
 ): Promise<void> {
   const today = todayKey();
   const ref = doc(db, 'couples', coupleId, 'moments', today);
-  // Create document if it doesn't exist, then update nested photos field
-  await setDoc(ref, { createdAt: Date.now(), photos: {} }, { merge: true });
-  // updateDoc treats dot notation as nested path — sets photos[uid] correctly
-  await updateDoc(ref, { [`photos.${uid}`]: { photoURL, createdAt: Date.now() } });
+  const streakRef = doc(db, 'couples', coupleId, 'streaks', 'moments');
 
-  // Check if both partners have submitted and update streak
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    const data = snap.data() as MomentEntry;
-    if (data.photos?.[uid] && data.photos?.[partnerUid]) {
-      await checkAndUpdateMomentStreak(coupleId);
+  // Atomic submit-and-maybe-bump-streak. Without this transaction the previous
+  // setDoc + updateDoc + getDoc + checkAndUpdateMomentStreak chain could:
+  //   - double-bump the streak when both partners post simultaneously, OR
+  //   - skip the bump entirely because both reads return "only my photo".
+  await runTransaction(db, async (tx) => {
+    const [docSnap, streakSnap] = await Promise.all([tx.get(ref), tx.get(streakRef)]);
+    const now = Date.now();
+
+    // Build the resulting photos map post-this-submit so we can decide streak in one read.
+    const existing = docSnap.exists() ? (docSnap.data() as MomentEntry) : { date: today, photos: {}, createdAt: now };
+    const nextPhotos = { ...(existing.photos ?? {}), [uid]: { photoURL, createdAt: now } };
+
+    if (docSnap.exists()) {
+      tx.update(ref, { [`photos.${uid}`]: { photoURL, createdAt: now } });
+    } else {
+      tx.set(ref, { createdAt: now, photos: { [uid]: { photoURL, createdAt: now } } });
     }
-  }
+
+    // Streak rule: bump if both partners have a photo today AND we haven't already bumped today.
+    const bothPresent = !!nextPhotos[uid] && !!nextPhotos[partnerUid];
+    if (!bothPresent) return;
+
+    const streak = streakSnap.exists() ? (streakSnap.data() as MomentStreak) : null;
+    if (streak?.lastDate === today) return; // Already bumped today
+
+    const newCount = streak?.lastDate === yesterdayKey() ? streak.count + 1 : 1;
+    tx.set(streakRef, { count: newCount, lastDate: today });
+  });
 }
 
 export async function getMomentStreak(coupleId: string): Promise<number> {
