@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as Notifications from 'expo-notifications';
 import { Image } from 'expo-image';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -55,6 +56,15 @@ export default function ProfileScreen() {
   const [nextVisitError, setNextVisitError] = useState('');
   const [birthdayPick, setBirthdayPick] = useState<Date | null>(null);
   const [birthdayModal, setBirthdayModal] = useState(false);
+
+  // Track OS-level notification permission — pushToken alone can persist after permission is revoked.
+  const [osNotifGranted, setOsNotifGranted] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    Notifications.getPermissionsAsync()
+      .then((p) => setOsNotifGranted(p.status === 'granted'))
+      .catch(() => setOsNotifGranted(false));
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -382,7 +392,7 @@ export default function ProfileScreen() {
             </View>
             {Platform.OS === 'web' ? (
               <Text style={styles.notifOff}>Web only</Text>
-            ) : profile?.pushToken ? (
+            ) : osNotifGranted ? (
               <Switch
                 value={profile?.notificationsEnabled !== false}
                 onValueChange={async (next) => {
@@ -396,7 +406,7 @@ export default function ProfileScreen() {
               <Text style={styles.notifOff}>Off</Text>
             )}
           </View>
-          {!profile?.pushToken && Platform.OS !== 'web' && (
+          {osNotifGranted === false && Platform.OS !== 'web' && (
             <>
               <View style={styles.divider} />
               <Text style={styles.notifHint}>

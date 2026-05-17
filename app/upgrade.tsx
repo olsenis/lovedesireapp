@@ -5,14 +5,12 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
 const FEATURES = [
-  { emoji: '🔥', title: 'Spicy Truth or Dare', desc: 'Explicitly sexual dares and intimate truths' },
-  { emoji: '✨', title: 'Fantasy Wishes', desc: 'Explore 290+ explicit scenarios together' },
-  { emoji: '🧬', title: 'Erotic Blueprint', desc: 'Discover your intimacy type and compatibility' },
-  { emoji: '🫁', title: 'Sensate Focus', desc: 'Guided touch sessions from sex therapy' },
-  { emoji: '💋', title: 'Spicy Daily Picks', desc: 'Sexual category unlocked every day' },
-  { emoji: '🌶️', title: 'Spicy Questions', desc: 'Explicit Fantasy and Spicy question categories' },
-  { emoji: '🔥', title: 'Fire & Desire Challenges', desc: '30-day programs for sexual reconnection' },
-  { emoji: '🤔', title: 'Spicy Would You Rather', desc: 'The explicitly sexual level unlocked' },
+  { emoji: '🔥', title: 'Reignite desire', desc: 'Explicit dares, truths, and daily picks that take things further' },
+  { emoji: '🧬', title: 'Discover your blueprint', desc: 'Find out how you each experience pleasure, and how to match' },
+  { emoji: '🫁', title: 'Slow down and reconnect', desc: 'Guided Sensate Focus sessions from sex therapy practice' },
+  { emoji: '✨', title: 'Explore safely together', desc: '290+ fantasy scenarios revealed only when you both say yes' },
+  { emoji: '🌶️', title: 'Go deeper in conversation', desc: 'Spicy and Fantasy question categories unlocked' },
+  { emoji: '🎲', title: 'Push your edges', desc: 'Fire and Desire 30-day programs for sexual reconnection' },
 ];
 
 export default function UpgradeScreen() {
@@ -28,7 +26,7 @@ export default function UpgradeScreen() {
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>💝</Text>
           <Text style={styles.heroTitle}>Desire Premium</Text>
-          <Text style={styles.heroSub}>Unlock everything for you and your partner</Text>
+          <Text style={styles.heroSub}>For couples who want to go further, together</Text>
         </View>
 
         <View style={styles.featureList}>

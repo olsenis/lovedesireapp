@@ -34,10 +34,8 @@ function getAutoDates(partnerName: string, partnerBirthday?: string): AutoDate[]
   const now = new Date();
   const year = now.getFullYear();
   const dates: AutoDate[] = [
-    { label: 'Valentínusardagur', emoji: '💝', date: getNextOccurrence(2, 14) },
-    { label: 'Konudagurinn', emoji: '👩', date: getNthWeekday(year, 2, 0, 3) },
-    { label: 'Bóndadagurinn', emoji: '👨', date: getNthWeekday(year, 1, 1, 3) },
-    { label: 'Mæðradagurinn', emoji: '👩‍👧', date: getNthWeekday(year, 5, 0, 2) },
+    { label: "Valentine's Day", emoji: '💝', date: getNextOccurrence(2, 14) },
+    { label: "Mother's Day", emoji: '👩‍👧', date: getNthWeekday(year, 5, 0, 2) },
   ];
   if (partnerBirthday) {
     const parts = partnerBirthday.split('.');

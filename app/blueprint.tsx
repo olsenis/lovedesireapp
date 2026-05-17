@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
@@ -109,11 +110,19 @@ export default function BlueprintScreen() {
         <ScrollView contentContainerStyle={styles.results}>
 
           {/* Your type hero */}
-          <View style={[styles.heroCard, { backgroundColor: myPrimary.color }]}>
+          <LinearGradient
+            colors={[myPrimary.color, '#FFFFFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.heroCard}
+          >
+            <Text style={styles.heroOrnamentTop}>✦</Text>
+            <Text style={styles.heroEyebrow}>Your blueprint</Text>
             <Text style={styles.heroEmoji}>{myPrimary.emoji}</Text>
             <Text style={styles.heroLabel}>{myPrimary.label}</Text>
+            <View style={styles.heroDivider} />
             <Text style={styles.heroDesc}>{myPrimary.description}</Text>
-          </View>
+          </LinearGradient>
 
           {/* Turn ons / offs */}
           <View style={styles.traitRow}>
@@ -246,9 +255,12 @@ const styles = StyleSheet.create({
   or: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted },
 
   results: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg, paddingTop: Spacing.lg },
-  heroCard: { borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.md, ...Shadow.sm },
-  heroEmoji: { fontSize: 64 },
-  heroLabel: { fontFamily: Fonts.heading, fontSize: 30, color: Colors.text },
+  heroCard: { borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm, ...Shadow.sm, borderWidth: 1, borderColor: Colors.border },
+  heroOrnamentTop: { fontSize: 14, color: Colors.burgundy, opacity: 0.45, marginBottom: -4 },
+  heroEyebrow: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 1.5 },
+  heroEmoji: { fontSize: 64, marginTop: Spacing.sm },
+  heroLabel: { fontFamily: Fonts.headingItalic, fontSize: 34, color: Colors.burgundy, textAlign: 'center' },
+  heroDivider: { width: 36, height: 1, backgroundColor: Colors.burgundy, opacity: 0.25, marginVertical: 6 },
   heroDesc: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text, textAlign: 'center', lineHeight: 24 },
   traitRow: { flexDirection: 'row', gap: Spacing.md },
   traitCard: { flex: 1, borderRadius: Radius.lg, padding: Spacing.md, gap: 6, borderWidth: 1, borderColor: Colors.border },

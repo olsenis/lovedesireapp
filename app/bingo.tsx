@@ -88,6 +88,7 @@ export default function ActivityCardsScreen() {
     if (!coupleId || !session || !partnerId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await skipReceivedCard(coupleId, uid, session, partnerId);
+    notifyPartner(coupleId, uid, 'Activity Cards', `${profile?.name ?? 'Your partner'} skipped this one, your turn to pick again`).catch(() => {});
   };
 
   const handleReset = async () => {

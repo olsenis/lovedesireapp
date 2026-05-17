@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
@@ -248,7 +249,14 @@ export default function SensateScreen() {
         {/* Timer ring */}
         {activeStage.durationMinutes > 0 && (
           <View style={styles.timerSection}>
-            <View style={[styles.timerRing, { borderColor: activeStage.textColor, opacity: done ? 0.4 : 1 }]}>
+            <View style={[styles.timerOuterRing, { borderColor: activeStage.textColor, opacity: done ? 0.3 : 0.35 }]} />
+            <LinearGradient
+              colors={['rgba(255,255,255,0.7)', 'rgba(255,255,255,0.25)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={[styles.timerRing, { borderColor: activeStage.textColor, opacity: done ? 0.4 : 1 }]}
+            >
+              <Text style={[styles.timerOrnament, { color: activeStage.textColor }]}>✦</Text>
               {done ? (
                 <Text style={[styles.timerDone, { color: activeStage.textColor }]}>✓ Done</Text>
               ) : (
@@ -259,7 +267,7 @@ export default function SensateScreen() {
                   <Text style={[styles.timerLabel, { color: activeStage.textColor }]}>remaining</Text>
                 </>
               )}
-            </View>
+            </LinearGradient>
             {!done && (
               <TouchableOpacity
                 style={[styles.timerBtn, { backgroundColor: activeStage.textColor }]}
@@ -360,16 +368,19 @@ const styles = StyleSheet.create({
   sessionContent: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, alignItems: 'center', gap: Spacing.xl, paddingTop: Spacing.lg },
   sessionSub: { fontFamily: Fonts.bodyItalic, fontSize: 15, textAlign: 'center' },
 
-  timerSection: { alignItems: 'center', gap: Spacing.lg },
+  timerSection: { alignItems: 'center', gap: Spacing.lg, position: 'relative' },
+  timerOuterRing: {
+    position: 'absolute', top: -10, width: 200, height: 200, borderRadius: 100, borderWidth: 1,
+  },
   timerRing: {
     width: 180, height: 180, borderRadius: 90, borderWidth: 4,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 6,
   },
-  timerNum: { fontFamily: Fonts.heading, fontSize: 46, lineHeight: 52 },
-  timerLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13 },
-  timerDone: { fontFamily: Fonts.heading, fontSize: 28 },
+  timerOrnament: { position: 'absolute', top: 18, fontSize: 12, opacity: 0.5 },
+  timerNum: { fontFamily: Fonts.heading, fontSize: 50, lineHeight: 56 },
+  timerLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13, opacity: 0.7 },
+  timerDone: { fontFamily: Fonts.headingItalic, fontSize: 32 },
   timerBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full },
   timerBtnText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.white },
 

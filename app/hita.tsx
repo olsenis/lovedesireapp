@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -29,6 +30,49 @@ const SCORE_COLORS = ['', Colors.error, '#F9A825', Colors.muted, Colors.success,
 function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+function fmtShortDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// Mini trend chart: vertical bars left-to-right, oldest to newest, height = avg/5 * fill area.
+function TrendChart({ results }: { results: PulseResult[] }) {
+  const chrono = [...results].reverse().slice(-8); // oldest to newest, max 8 points
+  if (chrono.length < 2) return null;
+  return (
+    <View style={chartStyles.wrap}>
+      <Text style={chartStyles.title}>Pulse over time</Text>
+      <LinearGradient colors={[Colors.blush, Colors.cream]} style={chartStyles.chartBg}>
+        <View style={chartStyles.bars}>
+          {chrono.map((r) => {
+            const heightPct = Math.max(((r.avg - 1) / 4) * 100, 6); // min 6% so even 1.0 renders a sliver
+            const color = r.avg >= 4 ? Colors.burgundy : r.avg >= 3 ? Colors.rose : Colors.muted;
+            return (
+              <View key={r.id} style={chartStyles.barCol}>
+                <View style={[chartStyles.bar, { height: `${heightPct}%`, backgroundColor: color }]} />
+              </View>
+            );
+          })}
+        </View>
+      </LinearGradient>
+      <View style={chartStyles.axis}>
+        <Text style={chartStyles.axisText}>{fmtShortDate(chrono[0].createdAt)}</Text>
+        <Text style={chartStyles.axisText}>{fmtShortDate(chrono[chrono.length - 1].createdAt)}</Text>
+      </View>
+    </View>
+  );
+}
+
+const chartStyles = StyleSheet.create({
+  wrap: { width: '100%', gap: 6 },
+  title: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center' },
+  chartBg: { height: 120, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  bars: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 4 },
+  barCol: { flex: 1, height: '100%', justifyContent: 'flex-end', alignItems: 'center' },
+  bar: { width: '70%', borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+  axis: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.sm },
+  axisText: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted },
+});
 
 export default function HitaScreen() {
   const { user, profile } = useAuth();
@@ -148,10 +192,16 @@ export default function HitaScreen() {
           {resultsTab === 'results' ? (
             <ScrollView contentContainerStyle={styles.results}>
               <Text style={styles.resultTitle}>Your Pulse</Text>
-              <View style={styles.gauge}>
+              <LinearGradient
+                colors={['#FFF0F3', Colors.blush, '#F4A7B9']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.gauge}
+              >
+                <Text style={styles.gaugeOrnament}>✦</Text>
                 <Text style={styles.gaugeNum}>{avg.toFixed(1)}</Text>
                 <Text style={styles.gaugeLabel}>out of 5</Text>
-              </View>
+              </LinearGradient>
 
               <Text style={styles.resultMsg}>
                 {avg >= 4.5 ? "Things are flourishing 🌸 Keep nurturing what you have." :
@@ -186,6 +236,7 @@ export default function HitaScreen() {
             </ScrollView>
           ) : (
             <ScrollView contentContainerStyle={styles.historyContent}>
+              <TrendChart results={history} />
               {trend && (
                 <View style={styles.trendCard}>
                   <Text style={styles.trendText}>
@@ -267,9 +318,10 @@ const styles = StyleSheet.create({
 
   results: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.lg, alignItems: 'center', paddingTop: Spacing.xl },
   resultTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, letterSpacing: 1.5, textTransform: 'uppercase' },
-  gauge: { width: 160, height: 160, borderRadius: 80, backgroundColor: Colors.blush, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: Colors.rose, shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 6 },
-  gaugeNum: { fontFamily: Fonts.heading, fontSize: 56, color: Colors.burgundy, lineHeight: 62 },
-  gaugeLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+  gauge: { width: 180, height: 180, borderRadius: 90, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: Colors.white, shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
+  gaugeOrnament: { position: 'absolute', top: 18, fontSize: 14, color: Colors.burgundy, opacity: 0.6 },
+  gaugeNum: { fontFamily: Fonts.heading, fontSize: 64, color: Colors.burgundy, lineHeight: 70 },
+  gaugeLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.burgundy, opacity: 0.7 },
   resultMsg: { fontFamily: Fonts.bodyItalic, fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 26 },
   suggestionBox: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, width: '100%', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, borderLeftColor: Colors.rose },
   suggestionTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
