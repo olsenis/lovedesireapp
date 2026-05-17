@@ -72,7 +72,10 @@ export default function ActivityCardsScreen() {
   const completed = session?.completed ?? [];
   const completedSet = new Set(completed);
   const hasPendingCard = session?.pendingCard !== null && session?.pendingCard !== undefined;
-  const isReceiver = hasPendingCard && !isMyTurn;
+  // flipCard sets turnUid to the partner (the receiver), so when you ARE the
+  // receiver, isMyTurn is true AND there's a pending card. The previous
+  // `!isMyTurn` was inverted and meant receivers never saw the accept/skip modal.
+  const isReceiver = hasPendingCard && isMyTurn;
 
   const handleMarkDone = async () => {
     if (!coupleId || !session || !partnerId) return;
