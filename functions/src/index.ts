@@ -80,7 +80,26 @@ export const rateLimitedJoin = onCall(async (req) => {
 
 // ─── Tier 1.6: GDPR delete-user cascade ─────────────────────────────────────
 // Triggered automatically when Firebase Auth user is deleted.
-// Deletes all user data + couple data they're part of + storage files.
+//
+// Design: a delete must remove the user's own identity data but not destroy
+// the partner's shared history. Memories, notes, challenges, etc. were created
+// jointly — wiping them when only one partner leaves is GDPR overreach and a
+// terrible UX for the remaining partner.
+//
+// Behaviour:
+// 1. If the user is in a couple AND the partner is still present:
+//    - Scrub the leaving user's uid from the couple doc (set their slot to null)
+//    - Mark `partnerLeftAt` so the remaining partner can be informed
+//    - Keep all couple subcollections + storage (shared history)
+// 2. If the user is in a couple AND the partner is also already gone (or never
+//    joined), it is safe to delete the entire couple + subcollections + storage.
+// 3. Always delete the leaving user's own profile + private subcollections +
+//    profile photo.
+//
+// Per-uid solo entries inside shared subcollections (mood entries tagged with
+// the deleting user, intimacy log entries loggedBy them) are kept as part of the
+// couple's shared history — the partner may want to look back. Privacy Policy
+// must reflect this.
 export const deleteUserCascade = auth.user().onDelete(async (user) => {
   const uid = user.uid;
   console.log(`Cascading delete for ${uid}`);
@@ -90,13 +109,28 @@ export const deleteUserCascade = auth.user().onDelete(async (user) => {
   const asPartner2 = await db.collection('couples').where('partner2Uid', '==', uid).get();
   const coupleDocs = [...asPartner1.docs, ...asPartner2.docs];
 
-  // 2. Delete each couple's subcollections + storage + the couple doc itself
   for (const coupleDoc of coupleDocs) {
-    const coupleId = coupleDoc.id;
-    await deleteCoupleData(coupleId);
+    const data = coupleDoc.data() as { partner1Uid?: string; partner2Uid?: string };
+    const isPartner1 = data.partner1Uid === uid;
+    const otherUid = isPartner1 ? data.partner2Uid : data.partner1Uid;
+    const partnerStillPresent = !!otherUid && otherUid !== uid;
+
+    if (partnerStillPresent) {
+      // Scrub identity; keep shared history for the remaining partner
+      await coupleDoc.ref.update({
+        [isPartner1 ? 'partner1Uid' : 'partner2Uid']: null,
+        partnerLeftAt: admin.firestore.FieldValue.serverTimestamp(),
+        partnerLeftUid: uid,
+      });
+      console.log(`Scrubbed ${uid} from couple ${coupleDoc.id}, kept shared data for ${otherUid}`);
+    } else {
+      // No remaining partner — safe to delete everything
+      await deleteCoupleData(coupleDoc.id);
+      console.log(`Deleted orphan couple ${coupleDoc.id} (no partner present)`);
+    }
   }
 
-  // 3. Delete user's own profile + private subcollection
+  // 2. Delete the leaving user's identity-only data
   await deleteUserData(uid);
 
   console.log(`Cascade delete complete for ${uid}`);

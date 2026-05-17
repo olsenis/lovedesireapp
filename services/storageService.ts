@@ -1,8 +1,27 @@
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { storage } from './firebase';
 
+// Compress an image at the URI to max 1920px wide + JPEG quality 0.7.
+// At scale this cuts photo bandwidth ~5-10× vs raw camera output (10MB → 1-2MB).
+// Returns a new URI pointing to the compressed file in the OS temp dir.
+async function compressImage(uri: string): Promise<string> {
+  try {
+    const result = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1920 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
+    );
+    return result.uri;
+  } catch {
+    // If manipulation fails (e.g. unsupported format on web), fall back to the original
+    return uri;
+  }
+}
+
 export async function uploadProfilePhoto(uid: string, uri: string): Promise<string> {
-  const response = await fetch(uri);
+  const compressed = await compressImage(uri);
+  const response = await fetch(compressed);
   const blob = await response.blob();
   const storageRef = ref(storage, `users/${uid}/profile.jpg`);
   await uploadBytes(storageRef, blob);
@@ -21,7 +40,8 @@ export async function uploadTruthDareAudio(coupleId: string, uid: string, round:
 }
 
 export async function uploadMomentPhoto(coupleId: string, uid: string, uri: string): Promise<string> {
-  const response = await fetch(uri);
+  const compressed = await compressImage(uri);
+  const response = await fetch(compressed);
   const blob = await response.blob();
   const date = new Date().toISOString().slice(0, 10);
   const storageRef = ref(storage, `couples/${coupleId}/moments/${date}_${uid}.jpg`);
@@ -35,7 +55,9 @@ export async function uploadFlashMedia(
   uri: string,
   type: 'photo' | 'video' | 'voice'
 ): Promise<string> {
-  const response = await fetch(uri);
+  // Only compress photos — video and voice need their original encoding
+  const sourceUri = type === 'photo' ? await compressImage(uri) : uri;
+  const response = await fetch(sourceUri);
   const blob = await response.blob();
   const ext = type === 'video' ? 'mp4' : type === 'voice' ? 'm4a' : 'jpg';
   const filename = `${Date.now()}_${uid}.${ext}`;
