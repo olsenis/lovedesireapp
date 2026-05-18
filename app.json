@@ -15,7 +15,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.desire.app"
+      "bundleIdentifier": "com.desire.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Love Desire uses the camera so you can capture daily Moments, send Tease photos and videos, and add photos to Time Capsules.",
+        "NSMicrophoneUsageDescription": "Love Desire uses the microphone so you can record voice notes in Tease and audio answers in Truth or Dare.",
+        "NSPhotoLibraryUsageDescription": "Love Desire needs access to your photo library so you can pick photos for your profile, Moments, Tease, and Time Capsules.",
+        "NSPhotoLibraryAddUsageDescription": "Love Desire can save photos to your library when you choose to export a Moment or Time Capsule.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +31,16 @@
       },
       "package": "com.desire.app",
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.INTERNET"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -41,7 +57,14 @@
         }
       ],
       "expo-secure-store",
-      "expo-image-picker"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Love Desire needs access to your photo library so you can pick photos for your profile, Moments, Tease, and Time Capsules.",
+          "cameraPermission": "Love Desire uses the camera so you can capture daily Moments, send Tease photos and videos, and add photos to Time Capsules.",
+          "microphonePermission": "Love Desire uses the microphone so you can record voice notes in Tease and audio answers in Truth or Dare."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
