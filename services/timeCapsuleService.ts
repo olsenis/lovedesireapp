@@ -1,6 +1,5 @@
 import { collection, addDoc, doc, getDoc, updateDoc, setDoc, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
-import { awardPoints, POINTS } from './levelsService';
 
 // Time Capsules are split into two docs for security:
 //   couples/{coupleId}/timeCapsules/{id}          metadata, both partners can always read
@@ -57,7 +56,6 @@ export async function sealTimeCapsule(
     message,
     ...(photoURL ? { photoURL } : {}),
   });
-  awardPoints(coupleId, POINTS.capsuleSealed, 'capsuleSealed').catch(() => {});
 }
 
 export async function getCapsuleContent(coupleId: string, capsuleId: string): Promise<TimeCapsuleContent | null> {

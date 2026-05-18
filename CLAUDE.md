@@ -130,8 +130,10 @@ couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
 couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
-couples/{coupleId}/timeCapsules/{id} TimeCapsule — message, photoURL?, sealedAt, openAt, sealedBy, sealedByName, opened
-couples/{coupleId}/meta/level       CoupleLevel — points (cumulative), lastUpdated (Relationship Levels gamification)
+couples/{coupleId}/timeCapsules/{id} TimeCapsule metadata — sealedAt, openAt, sealedBy, sealedByName, opened, hasPhoto
+couples/{coupleId}/timeCapsules/{id}/sealed/data TimeCapsuleContent — message, photoURL? (rules: only readable by sealer or after openAt)
+couples/{coupleId}/stateUnion/{weekId} StateUnionDoc — weekId, startedAt, completedAt{uid:ts}, answeredCount{uid:n}
+couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers{qi:text}, updatedAt (rules: only readable by owner OR after both completed)
 ```
 
 ### Services (`/services`)
@@ -160,9 +162,8 @@ couples/{coupleId}/meta/level       CoupleLevel — points (cumulative), lastUpd
 | `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR` |
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
-| `timeCapsuleService.ts` | `subscribeTimeCapsules`, `sealTimeCapsule`, `markCapsuleOpened`, `isUnlocked` |
+| `timeCapsuleService.ts` | `subscribeTimeCapsules` (metadata), `sealTimeCapsule` (writes metadata + content as separate docs), `getCapsuleContent` (lazy fetch of /sealed/data when opening), `markCapsuleOpened`, `isUnlocked` |
 | `versusService.ts` | `loadVersusPool` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items |
-| `levelsService.ts` | `subscribeLevel`, `awardPoints` (atomic via runTransaction), `getTier`, `getNextTier`, `progressToNext`, `LEVELS`, `POINTS` constants |
 
 ### Hooks
 
@@ -210,9 +211,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Versus:** Pulls binary-format answers from last 45 days of `dailyQuestions`. Builds a 10-question shuffled quiz of items where partner has answered. Each card shows partner's actual answer + 1 decoy (the other binary option). Instant reveal with ✓/✗ after pick. Final score shown with gradient hero card. Empty state nudges to play more Questions first.
 
-**Time Capsules:** Sealed `couples/{coupleId}/timeCapsules/{id}` doc with `openAt` timestamp. Client UI shows Locked vs Ready-to-open based on `isUnlocked()` (compares openAt to Date.now). Not adversarially secure — both partners can technically query Firestore directly — but the lock is emotional/UX, not security. Photo optional, uploaded via `uploadCapsulePhoto`. Long-term emotional moat distinct from Love Notes (weeks) and Tease (24h).
-
-**Relationship Levels:** `couples/{coupleId}/meta/level` stores cumulative points. 5 tiers (Spark 0-100 → Glow 100-500 → Warm 500-2000 → Bond 2000-5000 → Eternal 5000+). `awardPoints(coupleId, n)` uses `runTransaction` so parallel actions can't lose updates. Wired into setMood, submitAnswer, checkAndUpdateStreak, sendSpark, createNote, openNote, submitMomentPhoto. Profile screen shows tier + points + progress bar + next-tier hint. No mascot, no badges — brand-appropriate gamification.
+**Time Capsules:** Two-doc structure for security. `couples/{coupleId}/timeCapsules/{id}` holds metadata (sealedBy, sealedByName, sealedAt, openAt, opened, hasPhoto) and is always readable by both partners so the partner can see locked countdown. `couples/{coupleId}/timeCapsules/{id}/sealed/data` holds content (message, photoURL) and is gated: rules allow read only by the sealer OR after openAt has passed. This means a partner with a custom Firestore client genuinely cannot peek at sealed content. Loaded via `getCapsuleContent` when the user taps to open a ready capsule.
 
 **Activity Cards:** 25 face-down cards, turn-based. Picker has 2 passes to swap before accepting. Receiver gets the card and can mark "We did it!" or skip (1 pass). Cards have 3 states: face-down, pending (accepted not done), completed (green). `pendingCard` field tracks which card is waiting for receiver. Paid feature.
 
@@ -247,7 +246,6 @@ Three prompts for expanding content — always use the right one for the categor
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease, Time Capsules (full)
 - Love Language Quiz, Relationship Pulse (with trend chart, full)
 - 30-Day Challenge: Reconnect + Spark programs only
-- Relationship Levels — gamification, free for all couples
 
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
 - Truth or Dare: Spicy level

@@ -1,6 +1,5 @@
 import { doc, setDoc, updateDoc, getDoc, onSnapshot, runTransaction, query, collection, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
-import { awardPoints, POINTS } from './levelsService';
 
 export interface MomentPhoto {
   photoURL: string;
@@ -80,8 +79,6 @@ export async function submitMomentPhoto(
     const newCount = streak?.lastDate === yesterdayKey() ? streak.count + 1 : 1;
     tx.set(streakRef, { count: newCount, lastDate: today });
   });
-  // Award after transaction commits so we don't double-award on retries
-  awardPoints(coupleId, POINTS.momentCaptured, 'momentCaptured').catch(() => {});
 }
 
 export async function getMomentStreak(coupleId: string): Promise<number> {
