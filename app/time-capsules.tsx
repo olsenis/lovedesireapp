@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { subscribeTimeCapsules, sealTimeCapsule, markCapsuleOpened, isUnlocked, TimeCapsule } from '../services/timeCapsuleService';
+import { subscribeTimeCapsules, sealTimeCapsule, markCapsuleOpened, isUnlocked, getCapsuleContent, TimeCapsule, TimeCapsuleContent } from '../services/timeCapsuleService';
 import { uploadCapsulePhoto } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
@@ -48,6 +48,7 @@ export default function TimeCapsulesScreen() {
   const [openDate, setOpenDate] = useState<Date | null>(null);
   const [sealing, setSealing] = useState(false);
   const [viewing, setViewing] = useState<TimeCapsule | null>(null);
+  const [viewingContent, setViewingContent] = useState<TimeCapsuleContent | null>(null);
   const help = useHelp('time-capsules');
 
   const coupleId = profile?.coupleId;
@@ -101,10 +102,23 @@ export default function TimeCapsulesScreen() {
     }
   };
 
-  const handleOpenCapsule = (c: TimeCapsule) => {
+  const handleOpenCapsule = async (c: TimeCapsule) => {
+    if (!coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setViewing(c);
-    if (!c.opened && coupleId) markCapsuleOpened(coupleId, c.id).catch(() => {});
+    setViewingContent(null);
+    try {
+      const content = await getCapsuleContent(coupleId, c.id);
+      setViewingContent(content);
+    } catch {
+      // Partner trying to open before openAt → rules deny. Show metadata only.
+    }
+    if (!c.opened) markCapsuleOpened(coupleId, c.id).catch(() => {});
+  };
+
+  const closeViewing = () => {
+    setViewing(null);
+    setViewingContent(null);
   };
 
   return (
@@ -257,9 +271,9 @@ export default function TimeCapsulesScreen() {
             {viewing && (
               <ScrollView contentContainerStyle={{ gap: Spacing.md }}>
                 <Text style={styles.viewEyebrow}>Sealed {fmtDate(viewing.sealedAt)} by {viewing.sealedByName}</Text>
-                {viewing.photoURL && <Image source={{ uri: viewing.photoURL }} style={styles.viewPhoto} />}
-                <Text style={styles.viewMessage}>{viewing.message}</Text>
-                <TouchableOpacity style={styles.closeBtn} onPress={() => setViewing(null)} accessibilityRole="button">
+                {viewingContent?.photoURL && <Image source={{ uri: viewingContent.photoURL }} style={styles.viewPhoto} />}
+                <Text style={styles.viewMessage}>{viewingContent?.message ?? 'Loading...'}</Text>
+                <TouchableOpacity style={styles.closeBtn} onPress={closeViewing} accessibilityRole="button">
                   <Text style={styles.closeText}>Close</Text>
                 </TouchableOpacity>
               </ScrollView>

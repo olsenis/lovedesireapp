@@ -30,8 +30,15 @@ service cloud.firestore {
         request.auth.uid == uid || isPartnerOf(uid)
       );
 
-      // Only the user themselves can write their own profile.
-      allow write: if request.auth != null && request.auth.uid == uid;
+      // User can write their own profile, but NOT isPremium — that field is set
+      // server-side by the RevenueCat webhook (functions/src/index.ts). Without
+      // this lock, any client could write isPremium: true and unlock the paid tier.
+      allow write: if request.auth != null
+        && request.auth.uid == uid
+        && (
+          !('isPremium' in request.resource.data)
+          || request.resource.data.isPremium == resource.data.get('isPremium', false)
+        );
 
       // Private subcollections: blueprint, consent, help, profile (birthday, push opt-in, etc.)
       // Strictly self-only.
@@ -69,6 +76,60 @@ service cloud.firestore {
           && isMemberOfCouple(coupleId);
       }
 
+      // ── Time Capsules: metadata visible to both partners always, content gated ──
+      // Metadata (sealedBy, sealedByName, openAt, opened, hasPhoto) is always
+      // readable so the partner can see locked countdown. The actual message and
+      // photo URL live in /sealed/data and are only readable AFTER openAt has
+      // passed OR if the requester is the sealer themselves. This preserves the
+      // core "1y / 5y / 10y sealed" promise even against a custom Firestore client.
+      match /timeCapsules/{capsuleId} {
+        allow read: if isMemberOfCouple(coupleId);
+        allow create: if isMemberOfCouple(coupleId)
+          && request.resource.data.sealedBy == request.auth.uid;
+        allow update: if isMemberOfCouple(coupleId)
+          && request.resource.data.sealedBy == resource.data.sealedBy;
+        allow delete: if isMemberOfCouple(coupleId)
+          && resource.data.sealedBy == request.auth.uid;
+
+        match /sealed/{contentDoc} {
+          // Sealer can always read their own content (UI shows preview while sealing).
+          // Partner can read only AFTER the parent's openAt has passed.
+          allow read: if isMemberOfCouple(coupleId) && (
+            get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.sealedBy == request.auth.uid
+            || get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.openAt <= request.time.toMillis()
+          );
+          allow create: if isMemberOfCouple(coupleId)
+            && get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.sealedBy == request.auth.uid;
+          // Content is immutable once sealed — that's the whole point.
+          allow update: if false;
+          allow delete: if isMemberOfCouple(coupleId)
+            && get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.sealedBy == request.auth.uid;
+        }
+      }
+
+      // ── Sunday Check-in: parent doc tracks completion, per-user answers gated ──
+      // Parent doc (weekId metadata + completedAt map) is always readable so the
+      // partner can see "they completed, waiting for me". Per-user answers live
+      // in /entries/{uid} and are readable only by the owner OR by partner AFTER
+      // both partners have completed. Prevents real-time peek at partner's draft.
+      match /stateUnion/{weekId} {
+        allow read: if isMemberOfCouple(coupleId);
+        allow create, update: if isMemberOfCouple(coupleId);
+        allow delete: if false;
+
+        match /entries/{userId} {
+          allow read: if isMemberOfCouple(coupleId) && (
+            request.auth.uid == userId
+            || (
+              get(/databases/$(database)/documents/couples/$(coupleId)/stateUnion/$(weekId)).data.get('completedAt', {}).keys().hasAll([request.auth.uid, userId])
+            )
+          );
+          allow create, update: if isMemberOfCouple(coupleId)
+            && request.auth.uid == userId;
+          allow delete: if false;
+        }
+      }
+
       // ── All other subcollections under a couple ────────────────────────────
       // Schema validation: prevent spoofing of identity fields.
       // Any document the caller creates with these fields MUST have them set to themselves.
@@ -80,6 +141,7 @@ service cloud.firestore {
           && (!('fromUid'   in request.resource.data) || request.resource.data.fromUid   == request.auth.uid)
           && (!('createdBy' in request.resource.data) || request.resource.data.createdBy == request.auth.uid)
           && (!('loggedBy'  in request.resource.data) || request.resource.data.loggedBy  == request.auth.uid)
+          && (!('sealedBy'  in request.resource.data) || request.resource.data.sealedBy  == request.auth.uid)
           && (!('uid'       in request.resource.data) || request.resource.data.uid       == request.auth.uid);
         // Updates: identity fields are immutable once set
         allow update: if request.auth != null
@@ -87,6 +149,7 @@ service cloud.firestore {
           && (!('fromUid'   in resource.data) || request.resource.data.fromUid   == resource.data.fromUid)
           && (!('createdBy' in resource.data) || request.resource.data.createdBy == resource.data.createdBy)
           && (!('loggedBy'  in resource.data) || request.resource.data.loggedBy  == resource.data.loggedBy)
+          && (!('sealedBy'  in resource.data) || request.resource.data.sealedBy  == resource.data.sealedBy)
           && (!('uid'       in resource.data) || request.resource.data.uid       == resource.data.uid);
         allow delete: if request.auth != null && isMemberOfCouple(coupleId);
       }

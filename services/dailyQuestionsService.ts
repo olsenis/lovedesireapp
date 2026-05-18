@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, getDoc, onSnapshot, arrayUnion, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, getDoc, onSnapshot, arrayUnion, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 import { awardPoints, POINTS } from './levelsService';
@@ -94,23 +94,33 @@ export async function submitAnswer(
   await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
     [`answers.${uid}.${globalIndex}`]: answer,
   });
-  awardPoints(coupleId, POINTS.questionAnswered).catch(() => {});
+  awardPoints(coupleId, POINTS.questionAnswered, 'questionAnswered').catch(() => {});
 }
 
+// Streak bump must be atomic — without the transaction, both partners
+// submitting near-simultaneously could each read lastDate ≠ today, both
+// write today, and both award the +5 streak bonus twice. The transaction
+// guarantees only one write wins; the other sees lastDate === today and skips.
 export async function checkAndUpdateStreak(coupleId: string): Promise<void> {
   const streakRef = doc(db, 'couples', coupleId, 'streaks', 'questions');
   const today = todayKey();
-  const snap = await getDoc(streakRef);
-  if (!snap.exists()) {
-    await setDoc(streakRef, { count: 1, lastDate: today });
-    awardPoints(coupleId, POINTS.questionStreakDay).catch(() => {});
-    return;
+  let bumped = false;
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(streakRef);
+    if (!snap.exists()) {
+      tx.set(streakRef, { count: 1, lastDate: today });
+      bumped = true;
+      return;
+    }
+    const streak = snap.data() as QuestionStreak;
+    if (streak.lastDate === today) return; // already bumped today by partner's submission
+    const newCount = streak.lastDate === yesterdayKey() ? streak.count + 1 : 1;
+    tx.set(streakRef, { count: newCount, lastDate: today });
+    bumped = true;
+  });
+  if (bumped) {
+    awardPoints(coupleId, POINTS.questionStreakDay, 'questionStreakDay').catch(() => {});
   }
-  const streak = snap.data() as QuestionStreak;
-  if (streak.lastDate === today) return;
-  const newCount = streak.lastDate === yesterdayKey() ? streak.count + 1 : 1;
-  await setDoc(streakRef, { count: newCount, lastDate: today });
-  awardPoints(coupleId, POINTS.questionStreakDay).catch(() => {});
 }
 
 export function bothAnswered(

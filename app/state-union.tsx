@@ -7,8 +7,11 @@ import { useCouple } from '../hooks/useCouple';
 import {
   STATE_UNION_QUESTIONS,
   StateUnionDoc,
+  StateUnionEntry,
   getCurrentWeekId,
   subscribeStateUnion,
+  subscribeStateUnionEntry,
+  getStateUnionEntry,
   ensureStateUnionDoc,
   submitStateUnionAnswer,
   markStateUnionCompleted,
@@ -38,7 +41,10 @@ export default function StateUnionScreen() {
   const weekId = useMemo(() => getCurrentWeekId(), []);
 
   const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);
+  const [myEntry, setMyEntry] = useState<StateUnionEntry | null>(null);
+  const [partnerEntry, setPartnerEntry] = useState<StateUnionEntry | null>(null);
   const [history, setHistory] = useState<StateUnionDoc[]>([]);
+  const [historyEntries, setHistoryEntries] = useState<Record<string, { mine: StateUnionEntry | null; theirs: StateUnionEntry | null }>>({});
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(0);
   const [draftAnswer, setDraftAnswer] = useState('');
@@ -51,20 +57,30 @@ export default function StateUnionScreen() {
     ensureStateUnionDoc(coupleId, weekId).catch(() => {});
     const u1 = subscribeStateUnion(coupleId, weekId, (d) => { setSuDoc(d); setLoading(false); });
     const u2 = subscribeStateUnionHistory(coupleId, setHistory);
-    return () => { u1(); u2(); };
-  }, [coupleId, weekId]);
-
-  // Sync the draft with the saved answer when navigating between questions
-  useEffect(() => {
-    if (!suDoc) return;
-    const saved = suDoc.answers?.[uid]?.[step] ?? '';
-    setDraftAnswer(saved);
-  }, [step, suDoc, uid]);
+    const u3 = subscribeStateUnionEntry(coupleId, weekId, uid, setMyEntry);
+    return () => { u1(); u2(); u3(); };
+  }, [coupleId, weekId, uid]);
 
   const myAnswered = answeredCount(suDoc, uid);
   const partnerAnswered = partnerId ? answeredCount(suDoc, partnerId) : 0;
   const iCompleted = hasUserCompleted(suDoc, uid);
   const both = !!partnerId && bothCompleted(suDoc, uid, partnerId);
+
+  // Only subscribe to partner's entry once both have completed — firestore rules
+  // deny the read otherwise. Without this gate, the listener throws permission-denied.
+  useEffect(() => {
+    if (!coupleId || !partnerId || !both) {
+      setPartnerEntry(null);
+      return;
+    }
+    return subscribeStateUnionEntry(coupleId, weekId, partnerId, setPartnerEntry);
+  }, [coupleId, partnerId, both, weekId]);
+
+  // Sync the draft with the saved answer when navigating between questions
+  useEffect(() => {
+    const saved = myEntry?.answers?.[String(step)] ?? '';
+    setDraftAnswer(saved);
+  }, [step, myEntry]);
 
   const handleSaveAndNext = async () => {
     if (!coupleId || !draftAnswer.trim()) return;
@@ -209,11 +225,11 @@ export default function StateUnionScreen() {
                 <Text style={styles.revealQ}>{i + 1}. {q}</Text>
                 <View style={styles.revealAnswerRow}>
                   <Text style={styles.revealAnswerLabel}>You</Text>
-                  <Text style={styles.revealAnswerText}>{suDoc?.answers?.[uid]?.[i] ?? '-'}</Text>
+                  <Text style={styles.revealAnswerText}>{myEntry?.answers?.[String(i)] ?? '-'}</Text>
                 </View>
                 <View style={[styles.revealAnswerRow, styles.revealAnswerRowAlt]}>
                   <Text style={[styles.revealAnswerLabel, styles.revealAnswerLabelAlt]}>{partnerName}</Text>
-                  <Text style={styles.revealAnswerText}>{suDoc?.answers?.[partnerId]?.[i] ?? '-'}</Text>
+                  <Text style={styles.revealAnswerText}>{partnerEntry?.answers?.[String(i)] ?? '-'}</Text>
                 </View>
               </View>
             ))}
@@ -233,7 +249,17 @@ export default function StateUnionScreen() {
                   <View key={h.weekId} style={styles.historyCard}>
                     <TouchableOpacity
                       style={styles.historyHeader}
-                      onPress={() => setExpandedWeek(expanded ? null : h.weekId)}
+                      onPress={async () => {
+                        const next = expanded ? null : h.weekId;
+                        setExpandedWeek(next);
+                        if (next && !historyEntries[h.weekId] && coupleId && partnerId && isBoth) {
+                          const [mine, theirs] = await Promise.all([
+                            getStateUnionEntry(coupleId, h.weekId, uid),
+                            getStateUnionEntry(coupleId, h.weekId, partnerId),
+                          ]);
+                          setHistoryEntries((prev) => ({ ...prev, [h.weekId]: { mine, theirs } }));
+                        }
+                      }}
                       accessibilityRole="button"
                     >
                       <View style={{ flex: 1 }}>
@@ -244,13 +270,18 @@ export default function StateUnionScreen() {
                     </TouchableOpacity>
                     {expanded && isBoth && partnerId && (
                       <View style={styles.historyAnswers}>
-                        {STATE_UNION_QUESTIONS.map((q, i) => (
-                          <View key={i} style={styles.historyBlock}>
-                            <Text style={styles.historyQ}>{q}</Text>
-                            <Text style={styles.historyA}><Text style={styles.historyALabel}>You: </Text>{h.answers?.[uid]?.[i] ?? '-'}</Text>
-                            <Text style={styles.historyA}><Text style={styles.historyALabel}>{partnerName}: </Text>{h.answers?.[partnerId]?.[i] ?? '-'}</Text>
-                          </View>
-                        ))}
+                        {STATE_UNION_QUESTIONS.map((q, i) => {
+                          const cached = historyEntries[h.weekId];
+                          const mine = cached?.mine?.answers?.[String(i)] ?? '...';
+                          const theirs = cached?.theirs?.answers?.[String(i)] ?? '...';
+                          return (
+                            <View key={i} style={styles.historyBlock}>
+                              <Text style={styles.historyQ}>{q}</Text>
+                              <Text style={styles.historyA}><Text style={styles.historyALabel}>You: </Text>{mine}</Text>
+                              <Text style={styles.historyA}><Text style={styles.historyALabel}>{partnerName}: </Text>{theirs}</Text>
+                            </View>
+                          );
+                        })}
                       </View>
                     )}
                   </View>

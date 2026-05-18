@@ -46,7 +46,7 @@ export async function setMood(coupleId: string, uid: string, emoji: MoodEmoji, n
     note: note ?? '',
     createdAt: Date.now(),
   });
-  awardPoints(coupleId, POINTS.mood).catch(() => {});
+  awardPoints(coupleId, POINTS.mood, 'mood').catch(() => {});
 }
 
 // Fetches today's mood without compound index, uses single-field orderBy + client-side filter

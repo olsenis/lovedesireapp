@@ -46,7 +46,7 @@ export async function sendSpark(
     createdAt: Date.now(),
     seen: false,
   });
-  awardPoints(coupleId, POINTS.sparkSent).catch(() => {});
+  awardPoints(coupleId, POINTS.sparkSent, 'sparkSent').catch(() => {});
 }
 
 export async function markSparkSeen(coupleId: string, sparkId: string): Promise<void> {

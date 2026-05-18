@@ -81,7 +81,7 @@ export async function submitMomentPhoto(
     tx.set(streakRef, { count: newCount, lastDate: today });
   });
   // Award after transaction commits so we don't double-award on retries
-  awardPoints(coupleId, POINTS.momentCaptured).catch(() => {});
+  awardPoints(coupleId, POINTS.momentCaptured, 'momentCaptured').catch(() => {});
 }
 
 export async function getMomentStreak(coupleId: string): Promise<number> {

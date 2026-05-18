@@ -1,15 +1,25 @@
-import { collection, addDoc, doc, updateDoc, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, setDoc, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { awardPoints, POINTS } from './levelsService';
+
+// Time Capsules are split into two docs for security:
+//   couples/{coupleId}/timeCapsules/{id}          metadata, both partners can always read
+//   couples/{coupleId}/timeCapsules/{id}/sealed/data  content, only sealer or after openAt
+// See firestore.rules — partner cannot peek at message/photoURL before openAt.
 
 export interface TimeCapsule {
   id: string;
+  sealedAt: number;
+  openAt: number;
+  sealedBy: string;
+  sealedByName: string;
+  opened: boolean;
+  hasPhoto: boolean;
+}
+
+export interface TimeCapsuleContent {
   message: string;
   photoURL?: string;
-  sealedAt: number;
-  openAt: number; // timestamp when the capsule unlocks
-  sealedBy: string; // uid
-  sealedByName: string; // snapshot of name so it survives if user changes name
-  opened: boolean; // partner has viewed after unlock
 }
 
 export function subscribeTimeCapsules(
@@ -33,15 +43,27 @@ export async function sealTimeCapsule(
   openAt: number,
   photoURL?: string,
 ): Promise<void> {
-  await addDoc(collection(db, 'couples', coupleId, 'timeCapsules'), {
-    message,
+  // 1) Create metadata doc — both partners can read this immediately
+  const metadataRef = await addDoc(collection(db, 'couples', coupleId, 'timeCapsules'), {
     sealedAt: Date.now(),
     openAt,
     sealedBy,
     sealedByName,
     opened: false,
+    hasPhoto: !!photoURL,
+  });
+  // 2) Write content to a sealed subdoc — rules deny partner read until openAt
+  await setDoc(doc(db, 'couples', coupleId, 'timeCapsules', metadataRef.id, 'sealed', 'data'), {
+    message,
     ...(photoURL ? { photoURL } : {}),
   });
+  awardPoints(coupleId, POINTS.capsuleSealed, 'capsuleSealed').catch(() => {});
+}
+
+export async function getCapsuleContent(coupleId: string, capsuleId: string): Promise<TimeCapsuleContent | null> {
+  const snap = await getDoc(doc(db, 'couples', coupleId, 'timeCapsules', capsuleId, 'sealed', 'data'));
+  if (!snap.exists()) return null;
+  return snap.data() as TimeCapsuleContent;
 }
 
 export async function markCapsuleOpened(coupleId: string, capsuleId: string): Promise<void> {

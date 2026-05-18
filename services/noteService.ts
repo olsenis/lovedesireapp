@@ -46,7 +46,7 @@ export async function createNote(
     opened: false,
     createdAt: Date.now(),
   });
-  awardPoints(coupleId, POINTS.noteSent).catch(() => {});
+  awardPoints(coupleId, POINTS.noteSent, 'noteSent').catch(() => {});
 }
 
 // Called when a user sets a mood — unlocks any pending mood-trigger notes from partner that match the chosen emoji.
@@ -88,7 +88,7 @@ export async function unlockVisitNotes(coupleId: string, uid: string): Promise<v
 
 export async function openNote(coupleId: string, noteId: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'notes', noteId), { opened: true });
-  awardPoints(coupleId, POINTS.noteOpened).catch(() => {});
+  awardPoints(coupleId, POINTS.noteOpened, 'noteOpened').catch(() => {});
 }
 
 export async function updateNote(

@@ -21,11 +21,22 @@ export const STATE_UNION_QUESTIONS: string[] = [
   'What are we looking forward to together?',
 ];
 
+// Parent doc — both partners can always read this. Tracks completion only.
 export interface StateUnionDoc {
   weekId: string;
   startedAt: number;
-  answers: Record<string, Record<string, string>>;
+  // completedAt is the gate — until BOTH uids have a timestamp here,
+  // each partner's entries subdoc is hidden from the other (firestore rules).
   completedAt?: Record<string, number>;
+  // Optional progress counter so the partner can see "they're answering"
+  // without seeing the answers themselves.
+  answeredCount?: Record<string, number>;
+}
+
+// Per-user entries subdoc — readable by owner always, by partner only after both completed.
+export interface StateUnionEntry {
+  answers: Record<string, string>; // questionIndex -> answer text
+  updatedAt: number;
 }
 
 export function getCurrentWeekId(d: Date = new Date()): string {
@@ -38,6 +49,7 @@ export function getCurrentWeekId(d: Date = new Date()): string {
   return `${date.getUTCFullYear()}-${String(weekNum).padStart(2, '0')}`;
 }
 
+// Parent metadata subscription — always allowed.
 export function subscribeStateUnion(
   coupleId: string,
   weekId: string,
@@ -49,12 +61,45 @@ export function subscribeStateUnion(
   });
 }
 
+// Subscribe to a SPECIFIC user's entries doc. Firestore will return an error
+// if the requester isn't allowed (i.e. partner trying to read partner's draft
+// before both have completed). The caller should only subscribe to:
+//   - their own (always allowed), OR
+//   - partner's (only after bothCompleted is true).
+export function subscribeStateUnionEntry(
+  coupleId: string,
+  weekId: string,
+  uid: string,
+  onChange: (entry: StateUnionEntry | null) => void,
+): Unsubscribe {
+  const ref = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  return onSnapshot(
+    ref,
+    (snap) => onChange(snap.exists() ? (snap.data() as StateUnionEntry) : null),
+    () => onChange(null), // permission-denied is expected before both completed
+  );
+}
+
+// One-shot fetch of a user's entries doc — used by the history view when the
+// user expands a past week. Returns null if not found or permission denied.
+export async function getStateUnionEntry(
+  coupleId: string,
+  weekId: string,
+  uid: string,
+): Promise<StateUnionEntry | null> {
+  try {
+    const snap = await getDoc(doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid));
+    return snap.exists() ? (snap.data() as StateUnionEntry) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function ensureStateUnionDoc(coupleId: string, weekId: string): Promise<void> {
   const ref = doc(db, 'couples', coupleId, 'stateUnion', weekId);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    const newDoc: StateUnionDoc = { weekId, startedAt: Date.now(), answers: {}, completedAt: {} };
-    await setDoc(ref, newDoc);
+    await setDoc(ref, { weekId, startedAt: Date.now(), completedAt: {}, answeredCount: {} });
   }
 }
 
@@ -65,9 +110,26 @@ export async function submitStateUnionAnswer(
   questionIndex: number,
   answer: string,
 ): Promise<void> {
-  await updateDoc(doc(db, 'couples', coupleId, 'stateUnion', weekId), {
-    [`answers.${uid}.${questionIndex}`]: answer,
-  });
+  // Write the answer to the user's own entries doc — Firestore rules prevent
+  // partner from reading this until both have completed.
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  await setDoc(
+    entryRef,
+    {
+      [`answers.${questionIndex}`]: answer,
+      updatedAt: Date.now(),
+    },
+    { merge: true },
+  );
+  // Mirror the progress count on the parent doc so the partner can see
+  // "they've answered N/5" without seeing the answer text itself.
+  const parentRef = doc(db, 'couples', coupleId, 'stateUnion', weekId);
+  const entrySnap = await getDoc(entryRef);
+  const count = entrySnap.exists()
+    ? Object.values(((entrySnap.data() as StateUnionEntry).answers ?? {}))
+        .filter((s) => s && s.trim().length > 0).length
+    : 0;
+  await updateDoc(parentRef, { [`answeredCount.${uid}`]: count });
 }
 
 export async function markStateUnionCompleted(
@@ -82,8 +144,7 @@ export async function markStateUnionCompleted(
 
 export function answeredCount(suDoc: StateUnionDoc | null, uid: string): number {
   if (!suDoc) return 0;
-  const a = suDoc.answers?.[uid] ?? {};
-  return Object.values(a).filter((s) => s && s.trim().length > 0).length;
+  return suDoc.answeredCount?.[uid] ?? 0;
 }
 
 export function hasUserCompleted(suDoc: StateUnionDoc | null, uid: string): boolean {

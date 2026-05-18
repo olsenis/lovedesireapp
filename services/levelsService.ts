@@ -1,4 +1,4 @@
-import { doc, setDoc, onSnapshot, Unsubscribe, runTransaction } from 'firebase/firestore';
+import { doc, onSnapshot, Unsubscribe, runTransaction } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Couples earn points for shared interactions. Level is computed from cumulative points.
@@ -19,6 +19,23 @@ export const POINTS = {
   capsuleSealed: 8,
   sundayCheckin: 6,
 } as const;
+
+export type ActionKey = keyof typeof POINTS;
+
+// Daily caps for "gameable" actions — anything a user can delete+recreate to
+// farm points. Naturally-bounded actions (mood, questionAnswered, momentCaptured)
+// don't need caps because they're rate-limited by other features (daily ritual,
+// one question per day, etc.). Without these caps a user could spam-create
+// notes/flashes/sparks/capsules to grind levels.
+const DAILY_CAP_PER_ACTION: Partial<Record<ActionKey, number>> = {
+  sparkSent: 5,        // 5 sparks per day = 5 pts ceiling
+  noteSent: 3,         // 3 notes per day = 9 pts ceiling
+  flashSent: 3,        // 3 flashes per day = 6 pts ceiling
+  capsuleSealed: 1,    // 1 capsule per day = 8 pts ceiling
+  blueprintCompleted: 1, // once per day (also naturally rare)
+  pulseCompleted: 1,
+  sundayCheckin: 1,
+};
 
 export type LevelKey = 'spark' | 'glow' | 'warm' | 'bond' | 'eternal';
 
@@ -42,6 +59,9 @@ export const LEVELS: LevelTier[] = [
 export interface CoupleLevel {
   points: number;
   lastUpdated: number;
+  // dailyCounts[YYYY-MM-DD] = { actionKey: count } — only today's bucket kept,
+  // any other date is overwritten on next award (lazy cleanup keeps doc small).
+  dailyCounts?: Record<string, Partial<Record<ActionKey, number>>>;
 }
 
 export function getTier(points: number): LevelTier {
@@ -67,13 +87,37 @@ export function subscribeLevel(coupleId: string, onChange: (level: CoupleLevel) 
   });
 }
 
-// Atomic increment via transaction — multiple actions firing at once can't lose updates.
-export async function awardPoints(coupleId: string, amount: number): Promise<void> {
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Atomic award via transaction. Enforces daily cap per action, so users can't
+// farm by repeatedly delete+create on gameable actions.
+export async function awardPoints(coupleId: string, amount: number, actionKey: ActionKey): Promise<void> {
   if (amount <= 0) return;
   const ref = doc(db, 'couples', coupleId, 'meta', 'level');
+  const cap = DAILY_CAP_PER_ACTION[actionKey];
+  const today = todayKey();
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
-    const current = snap.exists() ? (snap.data() as CoupleLevel) : { points: 0, lastUpdated: 0 };
-    tx.set(ref, { points: current.points + amount, lastUpdated: Date.now() });
+    const current: CoupleLevel = snap.exists()
+      ? (snap.data() as CoupleLevel)
+      : { points: 0, lastUpdated: 0 };
+
+    // Cap check: how many of this action today already?
+    const todayCounts = current.dailyCounts?.[today] ?? {};
+    const todayCount = todayCounts[actionKey] ?? 0;
+    if (cap !== undefined && todayCount >= cap) return; // ceiling hit, skip award
+
+    // Lazy cleanup — only keep today's bucket
+    const nextCounts: CoupleLevel['dailyCounts'] = {
+      [today]: { ...todayCounts, [actionKey]: todayCount + 1 },
+    };
+
+    tx.set(ref, {
+      points: current.points + amount,
+      lastUpdated: Date.now(),
+      dailyCounts: nextCounts,
+    });
   });
 }
