@@ -260,11 +260,14 @@ Three prompts for expanding content — always use the right one for the categor
 - Activity Cards (entire feature)
 - Kinky + Horny moods (shown greyed with lock for free users)
 
-## App Store / Play Store deployment
+## Distribution strategy (decided May 2026)
+
+- **iOS:** App Store, age rating 17+. Standard EAS build + TestFlight + App Review.
+- **Android:** NOT on Google Play. Signed APK hosted on the marketing website (Vercel), users sideload after enabling "Install from this source". In-app update prompt compares running version to a JSON manifest hosted alongside the APK. Same uncompromised feature set as iOS — no split build, no content sanitization.
 
 ```bash
-npx eas build --platform ios
-npx eas build --platform android
+npx eas build --platform ios          # for App Store submission
+npx eas build --platform android      # produces APK for website hosting (NOT AAB)
 ```
 
 Bundle ID: `com.desire.app`. EAS profiles: `development`, `preview`, `production`.
