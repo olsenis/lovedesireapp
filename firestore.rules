@@ -59,12 +59,18 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.partner1Uid == request.auth.uid;
 
-      // Update: existing member, OR user is joining as partner2Uid for the first time
+      // Update: existing member, OR a non-member filling an empty partner slot.
+      // Both slots can be filled by a non-member because a disconnect can leave
+      // either slot empty (not just partner2).
       allow update: if request.auth != null && (
         isMemberOfCouple(coupleId) ||
         (
           resource.data.get('partner2Uid', null) == null &&
           request.resource.data.partner2Uid == request.auth.uid
+        ) ||
+        (
+          resource.data.get('partner1Uid', null) == null &&
+          request.resource.data.partner1Uid == request.auth.uid
         )
       );
 

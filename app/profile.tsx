@@ -378,11 +378,11 @@ export default function ProfileScreen() {
                 </View>
               </TouchableOpacity>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => profile?.inviteCode && setQrModal(true)} disabled={!profile?.inviteCode} accessibilityRole="button" accessibilityLabel="Show invite code QR">
+              <TouchableOpacity style={styles.row} onPress={() => couple?.inviteCode && setQrModal(true)} disabled={!couple?.inviteCode} accessibilityRole="button" accessibilityLabel="Show invite code QR">
                 <Text style={styles.rowLabel}>Your invite code</Text>
                 <View style={styles.rowRight}>
-                  <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
-                  {profile?.inviteCode ? <Text style={styles.rowChevron}>📷</Text> : null}
+                  <Text style={styles.inviteCode}>{couple?.inviteCode ?? '-'}</Text>
+                  {couple?.inviteCode ? <Text style={styles.rowChevron}>📷</Text> : null}
                 </View>
               </TouchableOpacity>
               <View style={styles.divider} />
@@ -398,11 +398,11 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              <TouchableOpacity style={styles.row} onPress={() => profile?.inviteCode && setQrModal(true)} disabled={!profile?.inviteCode} accessibilityRole="button" accessibilityLabel="Show invite code QR">
+              <TouchableOpacity style={styles.row} onPress={() => couple?.inviteCode && setQrModal(true)} disabled={!couple?.inviteCode} accessibilityRole="button" accessibilityLabel="Show invite code QR">
                 <Text style={styles.rowLabel}>Your invite code</Text>
                 <View style={styles.rowRight}>
-                  <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
-                  {profile?.inviteCode ? <Text style={styles.rowChevron}>📷</Text> : null}
+                  <Text style={styles.inviteCode}>{couple?.inviteCode ?? '-'}</Text>
+                  {couple?.inviteCode ? <Text style={styles.rowChevron}>📷</Text> : null}
                 </View>
               </TouchableOpacity>
               <View style={styles.divider} />
@@ -668,17 +668,17 @@ export default function ProfileScreen() {
           <View style={[styles.modal, { alignItems: 'center' }]}>
             <Text style={styles.modalTitle}>Your invite code</Text>
             <Text style={styles.modalHint}>Have your partner scan this with their Desire app.</Text>
-            {profile?.inviteCode ? (
+            {couple?.inviteCode ? (
               <View style={styles.qrWrap}>
                 <QRCode
-                  value={buildQRPayload(profile.inviteCode)}
+                  value={buildQRPayload(couple.inviteCode)}
                   size={220}
                   color={Colors.burgundy}
                   backgroundColor={Colors.white}
                 />
               </View>
             ) : null}
-            <Text style={styles.qrCode}>{profile?.inviteCode ?? '-'}</Text>
+            <Text style={styles.qrCode}>{couple?.inviteCode ?? '-'}</Text>
             <TouchableOpacity style={[styles.cancelBtn, { width: '100%', marginTop: Spacing.md }]} onPress={() => setQrModal(false)} accessibilityRole="button">
               <Text style={styles.cancelText}>Done</Text>
             </TouchableOpacity>

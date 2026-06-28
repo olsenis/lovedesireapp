@@ -8,6 +8,9 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { generateInviteCode } from './coupleService';
+
+const INVITE_TTL_MS = 7 * 86400000;
 
 export interface UserProfile {
   uid: string;
@@ -65,7 +68,11 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 export async function disconnectFromCouple(uid: string): Promise<void> {
-  // Remove from couple document first
+  // 1) Clear the leaving user's slot on the couple doc + rotate the invite
+  //    code so anyone who had the old code can no longer re-pair into the
+  //    couple. The remaining partner reads the new code from couple.inviteCode
+  //    (their own profile.inviteCode field becomes stale; profile screen now
+  //    sources from couple to avoid that drift).
   const userSnap = await getDoc(doc(db, 'users', uid));
   if (userSnap.exists()) {
     const profile = userSnap.data() as UserProfile;
@@ -74,15 +81,20 @@ export async function disconnectFromCouple(uid: string): Promise<void> {
       const coupleSnap = await getDoc(coupleRef);
       if (coupleSnap.exists()) {
         const couple = coupleSnap.data() as { partner1Uid?: string; partner2Uid?: string };
+        const newCode = generateInviteCode();
+        const baseUpdate = {
+          inviteCode: newCode,
+          inviteExpiresAt: Date.now() + INVITE_TTL_MS,
+        };
         if (couple.partner2Uid === uid) {
-          await updateDoc(coupleRef, { partner2Uid: deleteField() });
+          await updateDoc(coupleRef, { ...baseUpdate, partner2Uid: deleteField() });
         } else if (couple.partner1Uid === uid) {
-          await updateDoc(coupleRef, { partner1Uid: deleteField() });
+          await updateDoc(coupleRef, { ...baseUpdate, partner1Uid: deleteField() });
         }
       }
     }
   }
-  // Remove coupleId from user profile
+  // 2) Remove coupleId from user profile so they land back at /pairing.
   await updateDoc(doc(db, 'users', uid), {
     coupleId: deleteField(),
     inviteCode: deleteField(),

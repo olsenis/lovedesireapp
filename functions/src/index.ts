@@ -57,23 +57,36 @@ export const rateLimitedJoin = onCall(async (req) => {
   const coupleDoc = q.docs[0];
   const couple = coupleDoc.data();
 
-  // Validate
-  if (couple.inviteExpiresAt && couple.inviteExpiresAt < now && !couple.partner2Uid) {
-    return { joined: false, reason: 'expired' };
-  }
-  if (couple.partner2Uid && couple.partner2Uid !== uid) {
+  // Slot accounting — either slot may be empty (initial pairing, or one
+  // partner disconnected and the remaining partner is sharing the code for
+  // re-pair). Fill whichever slot is empty.
+  const slot1Filled = !!couple.partner1Uid;
+  const slot2Filled = !!couple.partner2Uid;
+
+  // Both slots filled by someone else → couple is full
+  if (slot1Filled && slot2Filled && couple.partner1Uid !== uid && couple.partner2Uid !== uid) {
     return { joined: false, reason: 'taken' };
   }
-  if (couple.partner1Uid === uid) {
+  // Already a member of this couple
+  if (couple.partner1Uid === uid || couple.partner2Uid === uid) {
     return { joined: false, reason: 'own' };
   }
+  // Expiry only matters before the first partner joins (couple is "open" for
+  // initial pairing). Once any partner is in, the code stays usable for
+  // re-pair scenarios after one disconnects, and there is no expiry.
+  if (couple.inviteExpiresAt && couple.inviteExpiresAt < now && !slot1Filled && !slot2Filled) {
+    return { joined: false, reason: 'expired' };
+  }
 
-  // Join + clear invite code
-  await coupleDoc.ref.update({
-    partner2Uid: uid,
-    inviteCode: '',
-    inviteExpiresAt: 0,
-  });
+  // Fill the empty slot — prefer partner2 to preserve original creator's
+  // partner1 position when this is the initial pairing.
+  const updates = slot2Filled ? { partner1Uid: uid } : { partner2Uid: uid };
+  // NOTE: we no longer clear inviteCode here. Clearing on first join broke
+  // every re-pair scenario after a disconnect because the code lookup would
+  // miss. The code now stays active throughout the couple's lifetime;
+  // disconnectFromCouple regenerates it so old codes can't be reused by
+  // anyone who only had the original code.
+  await coupleDoc.ref.update(updates);
 
   return { joined: true, coupleId: coupleDoc.id };
 });
