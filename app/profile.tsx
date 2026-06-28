@@ -42,6 +42,9 @@ export default function ProfileScreen() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deletePw, setDeletePw] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  const [disconnectModal, setDisconnectModal] = useState(false);
+  const [disconnectError, setDisconnectError] = useState('');
+  const [disconnecting, setDisconnecting] = useState(false);
   const [startDateModal, setStartDateModal] = useState(false);
   const [startDatePick, setStartDatePick] = useState<Date | null>(null);
   const [startDateError, setStartDateError] = useState('');
@@ -212,21 +215,30 @@ export default function ProfileScreen() {
     setStartDatePick(null);
   };
 
+  // Custom Modal instead of Alert.alert — Alert callbacks are unreliable, and
+  // we need loading/error feedback that Alert can't provide.
   const handleDisconnect = () => {
-    Alert.alert(
-      'Disconnect couple',
-      'This will unlink you from your partner. Your data stays but you will need to pair again.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Disconnect', style: 'destructive',
-          onPress: async () => {
-            if (!user) return;
-            await disconnectFromCouple(user.uid);
-          },
-        },
-      ]
-    );
+    setDisconnectError('');
+    setDisconnectModal(true);
+  };
+
+  const confirmDisconnect = async () => {
+    if (!user) return;
+    setDisconnectError('');
+    setDisconnecting(true);
+    try {
+      await disconnectFromCouple(user.uid);
+      setDisconnectModal(false);
+      // Navigate to tabs root so the unpaired-state UI renders fresh.
+      // The auth listener in _layout.tsx will also re-route based on the
+      // updated coupleId, but explicit navigation here makes the change
+      // visible immediately instead of after the next snapshot.
+      router.replace('/(tabs)');
+    } catch (e: any) {
+      setDisconnectError(e?.message ?? 'Could not disconnect. Try again.');
+    } finally {
+      setDisconnecting(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -622,6 +634,27 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleJoinCouple} disabled={pairLoading} accessibilityRole="button">
                 <Text style={styles.saveBtnText}>{pairLoading ? 'Connecting…' : 'Connect'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Disconnect couple */}
+      <Modal visible={disconnectModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Disconnect couple</Text>
+            <Text style={styles.modalHint}>
+              This will unlink you from {partner?.name ?? 'your partner'}. Your shared data stays for them, but you will need to pair again to reconnect.
+            </Text>
+            {disconnectError ? <Text style={styles.errorText}>{disconnectError}</Text> : null}
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setDisconnectModal(false)} disabled={disconnecting} accessibilityRole="button">
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={confirmDisconnect} disabled={disconnecting} accessibilityRole="button">
+                <Text style={styles.saveBtnText}>{disconnecting ? 'Disconnecting…' : 'Disconnect'}</Text>
               </TouchableOpacity>
             </View>
           </View>
