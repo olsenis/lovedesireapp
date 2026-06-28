@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../../hooks/useAuth';
 import { createCouple, joinCouple } from '../../services/coupleService';
 import { createUserProfile } from '../../services/authService';
+import { QRScannerModal, buildQRPayload } from '../../components/QRScannerModal';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
@@ -26,6 +28,7 @@ export default function PairingScreen() {
   const [loadingJoin, setLoadingJoin] = useState(false);
   const [joinError, setJoinError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => {
     if (!user || authLoading) return;
@@ -59,21 +62,16 @@ export default function PairingScreen() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleJoin = async () => {
-    if (partnerCode.trim().length !== 8) {
-      setJoinError('Please enter an 8-character code.');
-      return;
-    }
+  const joinWithCode = async (code: string) => {
     if (!user) return;
     setJoinError('');
     setLoadingJoin(true);
     try {
-      const couple = await joinCouple(partnerCode.trim().toUpperCase(), user.uid);
+      const couple = await joinCouple(code.trim().toUpperCase(), user.uid);
       if (!couple) {
         setJoinError('Code not found or couple is already full.');
         return;
       }
-      // Save coupleId to this user's profile
       await createUserProfile(user.uid, {
         name: profile?.name ?? '',
         photoURL: profile?.photoURL,
@@ -86,6 +84,20 @@ export default function PairingScreen() {
     } finally {
       setLoadingJoin(false);
     }
+  };
+
+  const handleJoin = async () => {
+    if (partnerCode.trim().length !== 8) {
+      setJoinError('Please enter an 8-character code.');
+      return;
+    }
+    await joinWithCode(partnerCode);
+  };
+
+  const handleScannedCode = async (code: string) => {
+    setScannerOpen(false);
+    setPartnerCode(code);
+    await joinWithCode(code);
   };
 
   const handleSkip = async () => {
@@ -107,12 +119,24 @@ export default function PairingScreen() {
         {loadingCreate ? (
           <ActivityIndicator color={Colors.burgundy} style={{ marginVertical: 16 }} />
         ) : (
-          <TouchableOpacity onPress={handleCopy} style={styles.codeRow} accessibilityRole="button">
-            <Text style={styles.code}>{inviteCode || '--------'}</Text>
-            <Text style={styles.copyHint}>{copied ? '✓ Copied!' : 'Tap to copy'}</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity onPress={handleCopy} style={styles.codeRow} accessibilityRole="button">
+              <Text style={styles.code}>{inviteCode || '--------'}</Text>
+              <Text style={styles.copyHint}>{copied ? '✓ Copied!' : 'Tap to copy'}</Text>
+            </TouchableOpacity>
+            {!!inviteCode && (
+              <View style={styles.qrWrap}>
+                <QRCode
+                  value={buildQRPayload(inviteCode)}
+                  size={150}
+                  color={Colors.burgundy}
+                  backgroundColor={Colors.white}
+                />
+              </View>
+            )}
+          </>
         )}
-        <Text style={styles.cardNote}>Share this code with your partner</Text>
+        <Text style={styles.cardNote}>Show the code or QR to your partner</Text>
       </View>
 
       <Text style={styles.or}>— or —</Text>
@@ -138,11 +162,20 @@ export default function PairingScreen() {
           variant="secondary"
           style={{ marginTop: Spacing.md }}
         />
+        <TouchableOpacity onPress={() => setScannerOpen(true)} style={styles.scanBtn} accessibilityRole="button" accessibilityLabel="Scan partner's QR code">
+          <Text style={styles.scanBtnText}>📷 Scan partner's QR instead</Text>
+        </TouchableOpacity>
       </View>
 
       <TouchableOpacity onPress={handleSkip} style={styles.skipButton} accessibilityRole="button">
         <Text style={styles.skipText}>Skip for now</Text>
       </TouchableOpacity>
+
+      <QRScannerModal
+        visible={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onCode={handleScannedCode}
+      />
     </View>
   );
 }
@@ -244,5 +277,23 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: 14,
     color: Colors.muted,
+  },
+  qrWrap: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  scanBtn: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    alignSelf: 'center',
+  },
+  scanBtnText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+    color: Colors.burgundy,
   },
 });

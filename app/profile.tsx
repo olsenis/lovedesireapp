@@ -6,6 +6,8 @@ import {
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
+import QRCode from 'react-native-qrcode-svg';
+import { QRScannerModal, buildQRPayload } from '../components/QRScannerModal';
 import { Image } from 'expo-image';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -45,6 +47,8 @@ export default function ProfileScreen() {
   const [disconnectModal, setDisconnectModal] = useState(false);
   const [disconnectError, setDisconnectError] = useState('');
   const [disconnecting, setDisconnecting] = useState(false);
+  const [qrModal, setQrModal] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [startDateModal, setStartDateModal] = useState(false);
   const [startDatePick, setStartDatePick] = useState<Date | null>(null);
   const [startDateError, setStartDateError] = useState('');
@@ -183,15 +187,13 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleJoinCouple = async () => {
-    if (partnerCode.trim().length !== 8) { setPairError('Enter an 8-character code.'); return; }
+  const joinCoupleWithCode = async (code: string) => {
     if (!user) return;
     setPairError('');
     setPairLoading(true);
     try {
-      // Disconnect from current couple first if needed
       if (profile?.coupleId) await disconnectFromCouple(user.uid);
-      const result = await joinCouple(partnerCode.trim().toUpperCase(), user.uid);
+      const result = await joinCouple(code.trim().toUpperCase(), user.uid);
       if (!result) { setPairError('Code not found or couple is already full.'); return; }
       await createUserProfile(user.uid, {
         name: profile?.name ?? '',
@@ -205,6 +207,17 @@ export default function ProfileScreen() {
     } finally {
       setPairLoading(false);
     }
+  };
+
+  const handleJoinCouple = async () => {
+    if (partnerCode.trim().length !== 8) { setPairError('Enter an 8-character code.'); return; }
+    await joinCoupleWithCode(partnerCode);
+  };
+
+  const handleScannedCode = async (code: string) => {
+    setScannerOpen(false);
+    setPartnerCode(code);
+    await joinCoupleWithCode(code);
   };
 
   const handleSaveStartDate = async () => {
@@ -365,10 +378,13 @@ export default function ProfileScreen() {
                 </View>
               </TouchableOpacity>
               <View style={styles.divider} />
-              <View style={styles.row}>
+              <TouchableOpacity style={styles.row} onPress={() => profile?.inviteCode && setQrModal(true)} disabled={!profile?.inviteCode} accessibilityRole="button" accessibilityLabel="Show invite code QR">
                 <Text style={styles.rowLabel}>Your invite code</Text>
-                <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
-              </View>
+                <View style={styles.rowRight}>
+                  <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
+                  {profile?.inviteCode ? <Text style={styles.rowChevron}>📷</Text> : null}
+                </View>
+              </TouchableOpacity>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }} accessibilityRole="button">
                 <Text style={styles.rowLabel}>Enter partner's code</Text>
@@ -382,10 +398,13 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              <View style={styles.row}>
+              <TouchableOpacity style={styles.row} onPress={() => profile?.inviteCode && setQrModal(true)} disabled={!profile?.inviteCode} accessibilityRole="button" accessibilityLabel="Show invite code QR">
                 <Text style={styles.rowLabel}>Your invite code</Text>
-                <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
-              </View>
+                <View style={styles.rowRight}>
+                  <Text style={styles.inviteCode}>{profile?.inviteCode ?? '-'}</Text>
+                  {profile?.inviteCode ? <Text style={styles.rowChevron}>📷</Text> : null}
+                </View>
+              </TouchableOpacity>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }} accessibilityRole="button">
                 <Text style={[styles.rowLabel, { color: Colors.burgundy }]}>Enter partner's code</Text>
@@ -627,6 +646,9 @@ export default function ProfileScreen() {
               autoCorrect={false}
               autoFocus
             />
+            <TouchableOpacity onPress={() => { setPairModal(false); setScannerOpen(true); }} style={styles.scanRow} accessibilityRole="button">
+              <Text style={styles.scanRowText}>📷 Scan partner's QR instead</Text>
+            </TouchableOpacity>
             {pairError ? <Text style={styles.errorText}>{pairError}</Text> : null}
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setPairModal(false)} accessibilityRole="button">
@@ -639,6 +661,37 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Show own QR for partner to scan */}
+      <Modal visible={qrModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modal, { alignItems: 'center' }]}>
+            <Text style={styles.modalTitle}>Your invite code</Text>
+            <Text style={styles.modalHint}>Have your partner scan this with their Desire app.</Text>
+            {profile?.inviteCode ? (
+              <View style={styles.qrWrap}>
+                <QRCode
+                  value={buildQRPayload(profile.inviteCode)}
+                  size={220}
+                  color={Colors.burgundy}
+                  backgroundColor={Colors.white}
+                />
+              </View>
+            ) : null}
+            <Text style={styles.qrCode}>{profile?.inviteCode ?? '-'}</Text>
+            <TouchableOpacity style={[styles.cancelBtn, { width: '100%', marginTop: Spacing.md }]} onPress={() => setQrModal(false)} accessibilityRole="button">
+              <Text style={styles.cancelText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Scan partner's QR */}
+      <QRScannerModal
+        visible={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onCode={handleScannedCode}
+      />
 
       {/* Disconnect couple */}
       <Modal visible={disconnectModal} transparent animationType="slide">
@@ -779,6 +832,10 @@ const styles = StyleSheet.create({
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   rowChevron: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.muted },
   inviteCode: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy, letterSpacing: 4 },
+  scanRow: { paddingVertical: Spacing.sm, alignItems: 'center' },
+  scanRowText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  qrWrap: { padding: Spacing.lg, backgroundColor: Colors.white, borderRadius: Radius.md, marginVertical: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  qrCode: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, letterSpacing: 6, marginTop: Spacing.sm },
   divider: { height: 1, backgroundColor: Colors.border, marginHorizontal: Spacing.lg },
   notifOn: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.success },
   notifOff: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },

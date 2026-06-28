@@ -64,6 +64,12 @@
           "cameraPermission": "Love Desire uses the camera so you can capture daily Moments, send Tease photos and videos, and add photos to Time Capsules.",
           "microphonePermission": "Love Desire uses the microphone so you can record voice notes in Tease and audio answers in Truth or Dare."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Love Desire uses the camera so you can scan your partner's invite QR code to pair instantly."
+        }
       ]
     ],
     "experiments": {
