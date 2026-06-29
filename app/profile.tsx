@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Modal, Alert, Platform, Switch,
+  TextInput, Modal, Alert, Platform, Switch, KeyboardAvoidingView,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -631,7 +631,10 @@ export default function ProfileScreen() {
 
       {/* Enter partner code */}
       <Modal visible={pairModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Connect with partner</Text>
             <Text style={styles.modalHint}>Enter your partner's 8-character invite code.</Text>
@@ -659,7 +662,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Show own QR for partner to scan */}
