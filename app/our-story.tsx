@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -17,6 +17,7 @@ import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 function formatYear(ts: number): string {
   return String(new Date(ts).getFullYear());
@@ -97,17 +98,12 @@ export default function OurStoryScreen() {
     setEditing(null);
   };
 
-  const handleDelete = (m: Milestone) => {
-    if (!coupleId) return;
-    const doDelete = async () => { await deleteMilestone(coupleId, m.id); };
-    if (Platform.OS === 'web') {
-      if (window.confirm('Delete this milestone?')) doDelete();
-    } else {
-      Alert.alert('Delete milestone', 'This cannot be undone.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: doDelete },
-      ]);
-    }
+  const [deleteConfirm, setDeleteConfirm] = useState<Milestone | null>(null);
+  const handleDelete = (m: Milestone) => setDeleteConfirm(m);
+  const confirmDelete = async () => {
+    if (!coupleId || !deleteConfirm) return;
+    await deleteMilestone(coupleId, deleteConfirm.id);
+    setDeleteConfirm(null);
   };
 
   return (
@@ -240,6 +236,16 @@ export default function OurStoryScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      <ConfirmModal
+        visible={!!deleteConfirm}
+        title="Delete milestone"
+        message="This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </View>
   );
 }

@@ -13,6 +13,7 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -93,15 +94,16 @@ export default function IntimacyTrackerScreen() {
   const recent = entries.slice(0, 5);
   const stats = getIntimacyStats(entries, uid);
 
-  const handleDelete = (entry: IntimacyEntry) => {
-    if (!coupleId) return;
-    Alert.alert('Delete entry?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteIntimacyEntry(coupleId, entry.id) },
-    ]);
+  const [deleteConfirm, setDeleteConfirm] = useState<IntimacyEntry | null>(null);
+  const handleDelete = (entry: IntimacyEntry) => setDeleteConfirm(entry);
+  const confirmDelete = async () => {
+    if (!coupleId || !deleteConfirm) return;
+    await deleteIntimacyEntry(coupleId, deleteConfirm.id);
+    setDeleteConfirm(null);
   };
 
   return (
+    <>
     <View style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
@@ -266,6 +268,17 @@ export default function IntimacyTrackerScreen() {
         }}
       />
     </View>
+
+    <ConfirmModal
+      visible={!!deleteConfirm}
+      title="Delete entry?"
+      message="This cannot be undone."
+      confirmLabel="Delete"
+      destructive
+      onConfirm={confirmDelete}
+      onCancel={() => setDeleteConfirm(null)}
+    />
+    </>
   );
 }
 

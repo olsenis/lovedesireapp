@@ -49,6 +49,8 @@ export default function ProfileScreen() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [qrModal, setQrModal] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [signOutModal, setSignOutModal] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [startDateModal, setStartDateModal] = useState(false);
   const [startDatePick, setStartDatePick] = useState<Date | null>(null);
   const [startDateError, setStartDateError] = useState('');
@@ -254,14 +256,17 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert('Sign out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out', style: 'destructive',
-        onPress: async () => { await logout(); router.replace('/(auth)/login'); },
-      },
-    ]);
+  const handleLogout = () => setSignOutModal(true);
+
+  const confirmSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await logout();
+      router.replace('/(auth)/login');
+    } finally {
+      setSigningOut(false);
+      setSignOutModal(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -695,6 +700,24 @@ export default function ProfileScreen() {
         onClose={() => setScannerOpen(false)}
         onCode={handleScannedCode}
       />
+
+      {/* Sign out */}
+      <Modal visible={signOutModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Sign out</Text>
+            <Text style={styles.modalHint}>You'll be signed out on this device.</Text>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setSignOutModal(false)} disabled={signingOut} accessibilityRole="button">
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={confirmSignOut} disabled={signingOut} accessibilityRole="button">
+                <Text style={styles.saveBtnText}>{signingOut ? 'Signing out…' : 'Sign out'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Disconnect couple */}
       <Modal visible={disconnectModal} transparent animationType="slide">

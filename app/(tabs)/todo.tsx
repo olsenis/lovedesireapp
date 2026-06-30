@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { Todo, TodoCategory, subscribeTodos, addTodo, toggleTodo, deleteTodo, acceptSuggestion, rejectSuggestion } from '../../services/todoService';
@@ -7,6 +7,7 @@ import { notifyPartner } from '../../services/notificationService';
 import { useCouple } from '../../hooks/useCouple';
 import { useHelp } from '../../hooks/useHelp';
 import { HelpModal } from '../../components/HelpModal';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { DATE_IDEAS } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -73,17 +74,13 @@ export default function TogetherScreen() {
     await toggleTodo(coupleId, todo.id, !todo.completed);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!coupleId) return;
-    const doDelete = async () => { await deleteTodo(coupleId, id); setSelectedTodo(null); };
-    if (Platform.OS === 'web') {
-      if (window.confirm('Remove this item?')) doDelete();
-    } else {
-      Alert.alert('Remove item', 'Are you sure?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: doDelete },
-      ]);
-    }
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const handleDelete = (id: string) => setDeleteId(id);
+  const confirmDelete = async () => {
+    if (!coupleId || !deleteId) return;
+    await deleteTodo(coupleId, deleteId);
+    setDeleteId(null);
+    setSelectedTodo(null);
   };
 
   const isActive = (t: Todo) => !t.status || t.status === 'active';
@@ -298,6 +295,16 @@ export default function TogetherScreen() {
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
+      />
+
+      <ConfirmModal
+        visible={!!deleteId}
+        title="Remove item"
+        message="Are you sure?"
+        confirmLabel="Remove"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
       />
     </View>
   );

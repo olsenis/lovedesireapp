@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -12,6 +12,7 @@ import {
   deleteJournalEntry,
 } from '../services/journalService';
 import { notifyPartner } from '../services/notificationService';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -48,6 +49,7 @@ export default function JournalScreen() {
   const [editing, setEditing] = useState<JournalEntry | null>(null);
   const [text, setText] = useState('');
   const [moodPick, setMoodPick] = useState<JournalEntry['mood'] | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<JournalEntry | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -90,17 +92,12 @@ export default function JournalScreen() {
     setShowCompose(false);
   };
 
-  const handleDelete = (entry: JournalEntry) => {
-    if (!coupleId) return;
-    const doDelete = async () => { await deleteJournalEntry(coupleId, entry.id); };
-    if (Platform.OS === 'web') {
-      if (window.confirm('Delete this entry?')) doDelete();
-    } else {
-      Alert.alert('Delete entry', 'This cannot be undone.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: doDelete },
-      ]);
-    }
+  const handleDelete = (entry: JournalEntry) => setDeleteConfirm(entry);
+
+  const confirmDelete = async () => {
+    if (!coupleId || !deleteConfirm) return;
+    await deleteJournalEntry(coupleId, deleteConfirm.id);
+    setDeleteConfirm(null);
   };
 
   return (
@@ -206,6 +203,16 @@ export default function JournalScreen() {
           </View>
         </View>
       </Modal>
+
+      <ConfirmModal
+        visible={!!deleteConfirm}
+        title="Delete entry"
+        message="This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </View>
   );
 }
