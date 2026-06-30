@@ -82,15 +82,25 @@ export async function disconnectFromCouple(uid: string): Promise<void> {
       if (coupleSnap.exists()) {
         const couple = coupleSnap.data() as { partner1Uid?: string; partner2Uid?: string };
         const newCode = generateInviteCode();
-        const baseUpdate = {
+        const baseUpdate: Record<string, unknown> = {
           inviteCode: newCode,
           inviteExpiresAt: Date.now() + INVITE_TTL_MS,
         };
+        // Slot match. If the user's uid doesn't match either partner slot,
+        // the doc is out of sync with the user profile (left over from an
+        // earlier failed disconnect or manual edit). Clear BOTH slots in
+        // that case — the user has profile.coupleId pointing here so they
+        // believe they belong, and we'd rather over-clear than leave the
+        // doc stuck thinking they're paired.
         if (couple.partner2Uid === uid) {
-          await updateDoc(coupleRef, { ...baseUpdate, partner2Uid: deleteField() });
+          baseUpdate.partner2Uid = deleteField();
         } else if (couple.partner1Uid === uid) {
-          await updateDoc(coupleRef, { ...baseUpdate, partner1Uid: deleteField() });
+          baseUpdate.partner1Uid = deleteField();
+        } else {
+          baseUpdate.partner1Uid = deleteField();
+          baseUpdate.partner2Uid = deleteField();
         }
+        await updateDoc(coupleRef, baseUpdate);
       }
     }
   }
