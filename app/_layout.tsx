@@ -62,8 +62,10 @@ export default function RootLayout() {
       router.replace('/(auth)/onboarding');
       return;
     }
-    // Onboarding tour is only meaningful after the couple is paired.
-    if (!coupleId) { router.replace('/(tabs)'); return; }
+    // No couple yet → route to pairing screen which auto-creates the couple
+    // doc + invite code. Routing here to /(tabs) instead used to skip the
+    // create flow entirely, leaving users with no invite code to share.
+    if (!coupleId) { router.replace('/(auth)/pairing'); return; }
     const ob = await getOnboardingState(uid);
     if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
     router.replace('/(tabs)');
