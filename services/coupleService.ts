@@ -57,24 +57,31 @@ export async function createCouple(ownerUid: string): Promise<Couple> {
   return couple;
 }
 
-export async function joinCouple(inviteCode: string, joinerUid: string): Promise<Couple | null> {
-  // Use rate-limited Cloud Function — prevents brute force attacks
+export interface JoinResult {
+  couple: Couple | null;
+  reason?: string; // 'own' | 'taken' | 'expired' | 'not_found' | undefined on success
+}
+
+export async function joinCouple(inviteCode: string, joinerUid: string): Promise<JoinResult> {
   const fn = httpsCallable<{ inviteCode: string }, { joined: boolean; coupleId?: string; reason?: string }>(
     functions,
     'rateLimitedJoin'
   );
   try {
     const result = await fn({ inviteCode });
-    if (!result.data.joined || !result.data.coupleId) return null;
-    // Fetch the joined couple
+    console.log('[joinCouple] rateLimitedJoin →', result.data);
+    if (!result.data.joined || !result.data.coupleId) {
+      return { couple: null, reason: result.data.reason ?? 'not_found' };
+    }
     const snap = await getDoc(doc(db, 'couples', result.data.coupleId));
-    if (!snap.exists()) return null;
-    return snap.data() as Couple;
+    if (!snap.exists()) return { couple: null, reason: 'not_found' };
+    return { couple: snap.data() as Couple };
   } catch (e: any) {
+    console.error('[joinCouple] error:', e);
     if (e?.code === 'functions/resource-exhausted') {
       throw new Error('Too many attempts. Please wait a moment and try again.');
     }
-    return null;
+    return { couple: null, reason: e?.message ?? 'unknown_error' };
   }
 }
 

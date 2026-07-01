@@ -196,16 +196,25 @@ export default function ProfileScreen() {
     try {
       if (profile?.coupleId) await disconnectFromCouple(user.uid);
       const result = await joinCouple(code.trim().toUpperCase(), user.uid);
-      if (!result) { setPairError('Code not found or couple is already full.'); return; }
+      if (!result.couple) {
+        const msg =
+          result.reason === 'own' ? "That's your own code. Share it with your partner instead." :
+          result.reason === 'taken' ? 'This couple is already full.' :
+          result.reason === 'expired' ? 'This invite code has expired.' :
+          result.reason === 'not_found' ? 'Code not found. Double-check the 8 characters.' :
+          `Could not join (reason: ${result.reason ?? 'unknown'})`;
+        setPairError(msg);
+        return;
+      }
       await createUserProfile(user.uid, {
         name: profile?.name ?? '',
-        coupleId: result.id,
-        inviteCode: result.inviteCode,
+        coupleId: result.couple.id,
+        inviteCode: result.couple.inviteCode,
       } as any);
       setPairModal(false);
       setPartnerCode('');
-    } catch {
-      setPairError('Something went wrong. Try again.');
+    } catch (e: any) {
+      setPairError(e?.message ?? 'Something went wrong. Try again.');
     } finally {
       setPairLoading(false);
     }

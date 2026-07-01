@@ -69,20 +69,26 @@ export default function PairingScreen() {
     setJoinError('');
     setLoadingJoin(true);
     try {
-      const couple = await joinCouple(code.trim().toUpperCase(), user.uid);
-      if (!couple) {
-        setJoinError('Code not found or couple is already full.');
+      const result = await joinCouple(code.trim().toUpperCase(), user.uid);
+      if (!result.couple) {
+        const msg =
+          result.reason === 'own' ? "That's your own code. Share it with your partner instead." :
+          result.reason === 'taken' ? 'This couple is already full.' :
+          result.reason === 'expired' ? 'This invite code has expired.' :
+          result.reason === 'not_found' ? 'Code not found. Double-check the 8 characters.' :
+          `Could not join (reason: ${result.reason ?? 'unknown'})`;
+        setJoinError(msg);
         return;
       }
       await createUserProfile(user.uid, {
         name: profile?.name ?? '',
         photoURL: profile?.photoURL,
-        coupleId: couple.id,
-        inviteCode: couple.inviteCode,
+        coupleId: result.couple.id,
+        inviteCode: result.couple.inviteCode,
       });
       router.replace('/(tabs)');
-    } catch {
-      setJoinError('Something went wrong. Please try again.');
+    } catch (e: any) {
+      setJoinError(e?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setLoadingJoin(false);
     }
