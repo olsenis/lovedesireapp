@@ -14,6 +14,8 @@ import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../../hooks/useAuth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../services/firebase';
 import { createCouple, joinCouple } from '../../services/coupleService';
 import { createUserProfile } from '../../services/authService';
 import { QRScannerModal, buildQRPayload } from '../../components/QRScannerModal';
@@ -34,15 +36,21 @@ export default function PairingScreen() {
 
   useEffect(() => {
     if (!user || authLoading) return;
-    // If user already has a couple, just show the existing code
-    if (profile?.inviteCode) {
-      setInviteCode(profile.inviteCode);
-      return;
-    }
-    if (profile?.coupleId) return; // paired but code not in profile, skip
-    const generate = async () => {
+    // Verify the couple doc still exists — profile.inviteCode can be stale
+    // if the couple was deleted (manual Firestore edit, admin cleanup, etc.)
+    // Trust the couple doc as source of truth, not profile.inviteCode.
+    const run = async () => {
       setLoadingCreate(true);
       try {
+        if (profile?.coupleId) {
+          const coupleSnap = await getDoc(doc(db, 'couples', profile.coupleId));
+          if (coupleSnap.exists()) {
+            const data = coupleSnap.data() as { inviteCode?: string };
+            setInviteCode(data.inviteCode ?? '');
+            return;
+          }
+          // profile.coupleId points to a deleted doc — fall through to generate fresh
+        }
         const couple = await createCouple(user.uid);
         setInviteCode(couple.inviteCode);
         await createUserProfile(user.uid, {
@@ -55,7 +63,7 @@ export default function PairingScreen() {
         setLoadingCreate(false);
       }
     };
-    generate();
+    run();
   }, [user, authLoading, profile?.coupleId]);
 
   const handleCopy = async () => {
