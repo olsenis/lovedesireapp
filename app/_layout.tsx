@@ -56,25 +56,31 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  // Expo Router strips group directories like "(auth)" from usePathname output,
+  // so /(auth)/pairing appears as /pairing at runtime. Use suffix matching to
+  // cover both dev and prod outputs safely.
+  const isOnPath = (currentPath: string | undefined, screen: 'onboarding' | 'pairing') =>
+    !!currentPath && (currentPath === `/${screen}` || currentPath.endsWith(`/${screen}`));
+
   const routeAfterConsent = async (uid: string, coupleId?: string, name?: string, currentPath?: string) => {
     // Legacy users could have an empty name from before validation existed.
     // Force them through the (auth)/onboarding screen which requires it.
     if (!name || name.trim() === '') {
-      if (currentPath !== '/(auth)/onboarding') router.replace('/(auth)/onboarding');
+      if (!isOnPath(currentPath, 'onboarding')) router.replace('/(auth)/onboarding');
       return;
     }
     // No couple yet → route to pairing screen which auto-creates the couple
     // doc + invite code. Routing here to /(tabs) instead used to skip the
     // create flow entirely, leaving users with no invite code to share.
     if (!coupleId) {
-      if (currentPath !== '/(auth)/pairing') router.replace('/(auth)/pairing');
+      if (!isOnPath(currentPath, 'pairing')) router.replace('/(auth)/pairing');
       return;
     }
     // Stay put while the user is still on the pairing screen — they need to
     // see their code and share it with their partner. Only auto-navigate
     // away from pairing when they explicitly Skip or after their partner
     // joins (both events trigger their own router.replace).
-    if (currentPath === '/(auth)/pairing') return;
+    if (isOnPath(currentPath, 'pairing')) return;
     const ob = await getOnboardingState(uid);
     if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
     router.replace('/(tabs)');
