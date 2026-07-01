@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
@@ -47,6 +47,7 @@ export default function RootLayout() {
   });
 
   const { user, profile, loading } = useAuth();
+  const pathname = usePathname();
   const [showConsent, setShowConsent] = useState(false);
 
   useEffect(() => {
@@ -55,17 +56,25 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  const routeAfterConsent = async (uid: string, coupleId?: string, name?: string) => {
+  const routeAfterConsent = async (uid: string, coupleId?: string, name?: string, currentPath?: string) => {
     // Legacy users could have an empty name from before validation existed.
     // Force them through the (auth)/onboarding screen which requires it.
     if (!name || name.trim() === '') {
-      router.replace('/(auth)/onboarding');
+      if (currentPath !== '/(auth)/onboarding') router.replace('/(auth)/onboarding');
       return;
     }
     // No couple yet → route to pairing screen which auto-creates the couple
     // doc + invite code. Routing here to /(tabs) instead used to skip the
     // create flow entirely, leaving users with no invite code to share.
-    if (!coupleId) { router.replace('/(auth)/pairing'); return; }
+    if (!coupleId) {
+      if (currentPath !== '/(auth)/pairing') router.replace('/(auth)/pairing');
+      return;
+    }
+    // Stay put while the user is still on the pairing screen — they need to
+    // see their code and share it with their partner. Only auto-navigate
+    // away from pairing when they explicitly Skip or after their partner
+    // joins (both events trigger their own router.replace).
+    if (currentPath === '/(auth)/pairing') return;
     const ob = await getOnboardingState(uid);
     if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
     router.replace('/(tabs)');
@@ -78,19 +87,19 @@ export default function RootLayout() {
         if (!consent?.confirmed) {
           setShowConsent(true);
         } else {
-          routeAfterConsent(user.uid, profile?.coupleId, profile?.name);
+          routeAfterConsent(user.uid, profile?.coupleId, profile?.name, pathname);
         }
       });
     } else {
       router.replace('/(auth)/login');
     }
-  }, [user, loading, profile?.coupleId, profile?.name]);
+  }, [user, loading, profile?.coupleId, profile?.name, pathname]);
 
   const handleConfirmConsent = async () => {
     if (!user) return;
     await confirmConsent(user.uid);
     setShowConsent(false);
-    routeAfterConsent(user.uid, profile?.coupleId, profile?.name);
+    routeAfterConsent(user.uid, profile?.coupleId, profile?.name, pathname);
   };
 
   const handleDeclineConsent = async () => {
