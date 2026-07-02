@@ -55,6 +55,13 @@ function pickDailyQuestions(date: string, coupleId: string, isLDR: boolean): Que
   return result;
 }
 
+// If any item's category isn't in the current CATEGORIES set, the doc was
+// written with a stale schema (e.g. after we consolidated 6 categories into 3
+// in July 2026). Regenerate rather than showing an empty screen.
+function hasStaleCategories(items: Question[]): boolean {
+  return items.some((q) => !CATEGORIES.includes(q.category));
+}
+
 export function subscribeDailyQuestions(
   coupleId: string,
   onChange: (doc: DailyQuestionDoc) => void,
@@ -65,7 +72,22 @@ export function subscribeDailyQuestions(
   const ref = doc(db, 'couples', coupleId, 'dailyQuestions', date);
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
-      onChange(snap.data() as DailyQuestionDoc);
+      const data = snap.data() as DailyQuestionDoc;
+      if (hasStaleCategories(data.items ?? [])) {
+        // Regenerate with current schema. Keep existing answers/discussed so
+        // any progress today isn't lost.
+        const items = pickDailyQuestions(date, coupleId, isLDR);
+        const migrated: DailyQuestionDoc = {
+          date,
+          items,
+          discussed: data.discussed ?? {},
+          answers: data.answers ?? {},
+        };
+        await setDoc(ref, migrated);
+        onChange(migrated);
+        return;
+      }
+      onChange(data);
     } else {
       const items = pickDailyQuestions(date, coupleId, isLDR);
       const newDoc: DailyQuestionDoc = { date, items, discussed: {}, answers: {} };

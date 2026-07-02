@@ -214,8 +214,11 @@ export default function QuestionsGameScreen() {
           );
         })}
 
-        {catItems.length === 0 && (
+        {catItems.length === 0 && dailyDoc === null && (
           <Text style={styles.loading}>Loading today's questions…</Text>
+        )}
+        {catItems.length === 0 && dailyDoc !== null && (
+          <Text style={styles.loading}>No questions in this category today. Try another one.</Text>
         )}
       </ScrollView>
 
