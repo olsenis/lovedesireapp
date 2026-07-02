@@ -175,7 +175,7 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 
 All static game content lives here — import from this file, never hardcode in screens:
 
-- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 403+ questions across Fun/Deep/Romantic/Spicy/Therapy/Fantasy. `Question` interface gained `format?: 'open' | 'binary' | 'scale'` + `options?: [string, string]` (May 2026). 15 binary + 15 scale variants in pool. Target 500+. See `memory/question_writer_prompt.md` for quality standards.
+- `QUESTIONS` + `QUESTION_CATEGORY_CONFIG` — 474 questions in 3 categories: Playful (87), Deep (241), Spicy (146). Consolidated from 6 → 3 in July 2026 to reduce cognitive load (old fun → playful; old romantic + therapy → deep; old fantasy → spicy). `Question` interface has `format?: 'open' | 'binary' | 'scale'` + `options?: [string, string]`. 15 binary + 15 scale variants in pool. See `memory/question_writer_prompt.md` for quality standards.
 - `DARES` + `DARE_LEVEL_CONFIG` — ~141 dares across Sweet (~45)/Flirty (~46)/Spicy (~50). Clear level separation: Sweet=cute/romantic, Flirty=sensual kissing/touch, Spicy=explicitly sexual/X-rated. Target 200+. See `memory/explicit_content_prompt.md`.
 - `TRUTHS` — 310 truths across Sweet(95)/Flirty(95)/Spicy(120). Sweet=emotional, Flirty=physical attraction, Spicy=explicitly sexual. See `memory/explicit_content_prompt.md`.
 - `DATE_IDEAS` — 130 date ideas (53 home + 39 out + 38 adventure + 28 with `virtual: true` for LDR). Rich 1-2 sentence descriptions.
@@ -191,7 +191,7 @@ All static game content lives here — import from this file, never hardcode in 
 
 ### Content generation prompts (`memory/`)
 Three prompts for expanding content — always use the right one for the category:
-- `memory/question_writer_prompt.md` — **PG / free tier**: Questions Fun/Deep/Romantic/Therapy, Truths Sweet/Flirty, Dares Sweet/Flirty, Daily Picks Sweet/Flirty
+- `memory/question_writer_prompt.md` — **PG / free tier**: Questions Playful/Deep, Truths Sweet/Flirty, Dares Sweet/Flirty, Daily Picks Sweet/Flirty
 - `memory/explicit_content_prompt.md` — **X-rated / paid tier**: Questions Spicy/Fantasy, Truths Spicy, Dares Spicy, Daily Picks Spicy/Sexual
 - `memory/fantasy_wishes_prompt.md` — **Fantasy Wishes only**: noun/gerund scenario phrases (NOT commands or questions), 4 categories: Sensual/Roleplay/Explicit/BDSM
 
@@ -238,7 +238,7 @@ Three prompts for expanding content — always use the right one for the categor
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only
 - Dare Wheel: Sweet + Flirty only
-- Questions Game: Fun, Deep, Romantic, Therapy only (including binary + scale variants in those categories)
+- Questions Game: Playful + Deep categories (including binary + scale variants)
 - Versus mode (full — uses partner's binary-question history)
 - Would You Rather: Playful + Romantic only
 - Daily Picks: Sweet + Flirty only
@@ -250,7 +250,7 @@ Three prompts for expanding content — always use the right one for the categor
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
 - Truth or Dare: Spicy level
 - Dare Wheel: Spicy level
-- Questions Game: Spicy + Fantasy categories
+- Questions Game: Spicy category (merged from old Spicy + Fantasy)
 - Would You Rather: Spicy level
 - Daily Picks: Spicy + Sexual categories
 - Fantasy Wishes (entire feature)

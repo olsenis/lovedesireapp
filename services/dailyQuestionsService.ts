@@ -38,7 +38,7 @@ function deterministicShuffle(pool: Question[], seedStr: string): Question[] {
   return arr;
 }
 
-const CATEGORIES: QuestionCategory[] = ['fun', 'deep', 'romantic', 'spicy', 'therapy', 'fantasy'];
+const CATEGORIES: QuestionCategory[] = ['playful', 'deep', 'spicy'];
 
 function pickDailyQuestions(date: string, coupleId: string, isLDR: boolean): Question[] {
   const result: Question[] = [];

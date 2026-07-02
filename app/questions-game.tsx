@@ -18,16 +18,16 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 
-const ALL_CATEGORIES: QuestionCategory[] = ['fun', 'deep', 'romantic', 'spicy', 'therapy', 'fantasy'];
+const ALL_CATEGORIES: QuestionCategory[] = ['playful', 'deep', 'spicy'];
 
 export default function QuestionsGameScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const help = useHelp('questions');
   const { isSubscribed } = useSubscription();
-  const PAID_CATEGORIES: QuestionCategory[] = ['spicy', 'fantasy'];
+  const PAID_CATEGORIES: QuestionCategory[] = ['spicy'];
 
-  const [category, setCategory] = useState<QuestionCategory>('romantic');
+  const [category, setCategory] = useState<QuestionCategory>('deep');
   const [dailyDoc, setDailyDoc] = useState<DailyQuestionDoc | null>(null);
   const [streak, setStreak] = useState<QuestionStreak>({ count: 0, lastDate: '' });
   const [drafts, setDrafts] = useState<Record<number, string>>({});
@@ -249,15 +249,16 @@ const styles = StyleSheet.create({
   streakWrap: { width: 60, alignItems: 'flex-end' },
   streak: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
 
-  catRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingVertical: Spacing.sm },
+  catRow: { flexDirection: 'row', paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingVertical: Spacing.sm },
   catBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 8, paddingHorizontal: Spacing.md,
+    flex: 1,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 10, paddingHorizontal: Spacing.md,
     borderRadius: Radius.full, backgroundColor: Colors.white,
     borderWidth: 1, borderColor: Colors.border,
   },
-  catEmoji: { fontSize: 16 },
-  catLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
+  catEmoji: { fontSize: 18 },
+  catLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
 
   content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.sm, gap: Spacing.md },
 
