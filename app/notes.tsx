@@ -68,7 +68,7 @@ function timeLabel(openAt: number): string {
 
 export default function NotesScreen() {
   const { user, profile } = useAuth();
-  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const isLDR = !!couple?.isLongDistance;
   const occasions: Occasion[] = isLDR ? [...OCCASIONS, ...LDR_OCCASIONS] : OCCASIONS;
   const [notes, setNotes] = useState<LoveNote[]>([]);
@@ -150,6 +150,17 @@ export default function NotesScreen() {
     return timeLabel(note.openAt);
   };
 
+  // What a locked incoming note should say. Condition-based notes have openAt
+  // pinned to year 9999 so timeLabel() would print nonsense like "355563d 2h".
+  const incomingLockLabel = (note: LoveNote): string => {
+    if (note.openCondition === 'sad') {
+      const emoji = note.triggerEmoji ?? '😢';
+      return `Unlocks when you feel ${emoji} ${MOOD_LABELS[emoji]}`;
+    }
+    if (note.openCondition === 'visit') return 'Unlocks on your next visit';
+    return timeLabel(note.openAt);
+  };
+
   const handleOpen = async (note: LoveNote) => {
     if (Date.now() < note.openAt) return;
     if (!profile?.coupleId) return;
@@ -205,7 +216,7 @@ export default function NotesScreen() {
 
         {forMe.length > 0 && (
           <>
-            <Text style={styles.groupLabel}>For you 💌</Text>
+            <Text style={styles.groupLabel}>From {partner?.name ?? 'your partner'} 💌</Text>
             {forMe.map((note) => {
               const canOpen = Date.now() >= note.openAt;
               return (
@@ -224,7 +235,7 @@ export default function NotesScreen() {
                       <Text style={styles.noteText}>{note.message}</Text>
                     ) : (
                       <>
-                        <Text style={styles.noteLockedText}>{canOpen ? 'Tap to open' : timeLabel(note.openAt)}</Text>
+                        <Text style={styles.noteLockedText}>{canOpen ? 'Tap to open' : incomingLockLabel(note)}</Text>
                         {!canOpen && <Text style={styles.noteTime}>A message is waiting for you</Text>}
                       </>
                     )}

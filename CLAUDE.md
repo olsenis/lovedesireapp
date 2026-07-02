@@ -81,7 +81,7 @@ app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
 app/                         Full-screen sub-screens
   dare.tsx                   Dare Wheel — Sweet / Flirty / Spicy spin
   roulette.tsx               Date Night Roulette — spin for a date idea
-  questions-game.tsx         Questions — 3/day per category, private answers, reveal when both answered, daily streak
+  questions-game.tsx         Questions — 3/day per category, private answers, reveal when both answered
   fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, 5 at a time
   truth-dare.tsx             Truth or Dare — real 2-phone multiplayer (picking/answering/done), audio answers
   would-you-rather.tsx       Would You Rather — simultaneous answer reveal, 3 levels, session persists
@@ -129,7 +129,6 @@ couples/{coupleId}/bingo/{month}     ActivityCardsSession — squares[], reveale
 couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(picking|answering|done), card{type,text,answer,audioURL,answeredBy,dareConfirmed[]}, scores, round, skipsUsed
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
-couples/{coupleId}/streaks/questions QuestionStreak — count, lastDate
 couples/{coupleId}/timeCapsules/{id} TimeCapsule metadata — sealedAt, openAt, sealedBy, sealedByName, opened, hasPhoto
 couples/{coupleId}/timeCapsules/{id}/sealed/data TimeCapsuleContent — message, photoURL? (rules: only readable by sealer or after openAt)
 couples/{coupleId}/stateUnion/{weekId} StateUnionDoc — weekId, startedAt, completedAt{uid:ts}, answeredCount{uid:n}
@@ -158,7 +157,7 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `storageService.ts` | `uploadProfilePhoto`, `uploadMemoryPhoto`, `uploadTruthDareAudio`, `uploadCapsulePhoto`, `uploadFlashMedia`, `uploadMomentPhoto` — Firebase Storage. Photos compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before upload. |
 | `helpService.ts` | `getHelpState`, `markFeatureSeen`, `setHelpEnabled`, `disableAllHelp`, `resetHelp` |
 | `dailyWishService.ts` | `subscribeDailyWishes`, `voteDailyWish`, `markAddToList`, `bothWantToAdd` |
-| `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `subscribeStreak`, `submitAnswer`, `checkAndUpdateStreak`, `bothAnswered`, `markDiscussed`, `bothDiscussed` |
+| `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `submitAnswer`, `bothAnswered`, `markDiscussed`, `bothDiscussed` |
 | `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR` |
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
@@ -207,7 +206,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 **WYR session persistence:** Session stored in Firestore — Back button and app exit do NOT reset the game. Push notification sent when you answer. Home screen nudge appears when partner answered but you haven't.
 
-**Questions Game reveal:** Both partners answer privately. Open-text uses TextInput. Binary uses two large buttons (q.options[0] | or | q.options[1]). Scale uses 1-5 chips with "1 = not at all · 5 = completely" hint. Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side. Daily streak (`couples/{coupleId}/streaks/questions`) increments when both answer on the same day. Streak shown as 🔥 N in header.
+**Questions Game reveal:** Both partners answer privately. Open-text uses TextInput. Binary uses two large buttons (q.options[0] | or | q.options[1]). Scale uses 1-5 chips with "1 = not at all · 5 = completely" hint. Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side.
 
 **Versus:** Pulls binary-format answers from last 45 days of `dailyQuestions`. Builds a 10-question shuffled quiz of items where partner has answered. Each card shows partner's actual answer + 1 decoy (the other binary option). Instant reveal with ✓/✗ after pick. Final score shown with gradient hero card. Empty state nudges to play more Questions first.
 

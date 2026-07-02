@@ -1,6 +1,8 @@
 # Desire — Launch Test Plan
 
-> Focused subset of the comprehensive [TEST_CHECKLIST.md](./TEST_CHECKLIST.md) for **every release**. ~65 tests, 4-6 hours with 2 phones. Catches ~80% of regressions.
+> Focused subset of the comprehensive [TEST_CHECKLIST.md](./TEST_CHECKLIST.md) for **every release**. ~62 tests, 4-6 hours with 2 phones. Catches ~80% of regressions.
+>
+> **Section 8 (Push notifications, 23 tests) is 📡 EAS-only** — run once after every EAS build, not during Expo Go / Vercel iteration. Add ~1h for that section on real devices.
 
 ## Setup
 - **Phone A** logged in as User A (Eva)
@@ -15,12 +17,13 @@
 - ⚠️ = error path / edge case
 - 💰 = paid-tier gate test
 - 🔒 = security verification
+- 📡 = **EAS-only** — real OS push notification, requires EAS build on physical device. Cannot be tested in Expo Go, Vercel web preview, or simulator/emulator. Push registration is deliberately skipped on web (see `app/_layout.tsx`).
 
 ## Feature name reference (test titles ↔ app UI)
 
 Use this if a test says one thing and the app calls it something else.
 
-- **Questions Game** — Discover → Questions Game. 3 categories: 😊 Playful (free), 💛 Deep (paid 🔒), 🔥 Spicy (paid 🔒). Answer privately, reveal when both done, daily streak.
+- **Questions Game** — Discover → Questions Game. 3 categories: 😊 Playful (free), 💛 Deep (paid 🔒), 🔥 Spicy (paid 🔒). Answer privately, reveal when both done.
 - **Tease** — Love hub → Tease. 24h ephemeral photos/videos/voice notes.
 - **Moments** — Love hub → Moments. BeReal-style daily photo ritual with reveal.
 - **Sunday Check-in** — Love hub → Sunday Check-in. 5-question weekly Gottman ritual.
@@ -88,7 +91,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 
 ---
 
-## 2. Core daily features (10 tests)
+## 2. Core daily features (8 tests)
 
 - [x] **Mood pick syncs to partner within 30s** 📱
   1. Phone A: Tap 😍 In love
@@ -99,30 +102,22 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   1. Phone A: Tap ❤️ Love you pill
   - **Expected:** Phone B home banner: "Eva sent you a spark · just now · ❤️ Love you" within 30s.
 
-- [ ] **Questions Game answer reveal when both done** 📱
+- [x] **Questions Game answer reveal when both done** 📱
   1. Both: Discover → Questions Game → pick Playful category (free — Deep and Spicy are 🔒 paid)
   2. Both: Type answer to question 1 → Send answer
   - **Expected:** Both screens reveal both answers side by side within 10s. Own answer in green box on left, partner's answer in green box on right.
 
-- [ ] **Daily streak bumps once when both answer** 📱
-  1. Both: Complete a Questions Game answer (above test) on day N
-  - **Expected:** Streak indicator on Questions Game header shows 🔥 1 (not 🔥 2). Repeat next day → 🔥 2.
-
-- [ ] **Moment photo capture + reveal when both posted** 📱
+- [x] **Moment photo capture + reveal when both posted** 📱
   1. Phone A: Open Moments → 📸 → take photo → upload
   2. Phone B: Open Moments
   3. Phone B: Take photo → upload
   - **Expected:** Phone B sees "Waiting for Eva..." until Phone A posted. After both: side-by-side reveal of both photos. Phone A receives nudge banner.
 
-- [ ] **Streak Moments bumps once per day**
-  1. After both submit Moment same day
-  - **Expected:** Streak count shows N (not N+N or N×2). Refreshing doesn't double-count.
-
-- [ ] **Love Note "Right now" arrives instantly** 📱
+- [x] **Love Note "Right now" arrives instantly** 📱
   1. Phone A: Notes → New → "Right now" → write "test" → Send
   - **Expected:** Phone B inbox shows the note within 30s. Tap to open shows message.
 
-- [ ] **Love Note edit + delete** ⚠️
+- [x] **Love Note edit + delete** ⚠️
   1. Phone A: Notes → tap own draft → ✏️ Edit → change text → Save
   - **Expected:** Note text updates immediately. Then tap 🗑️ → confirm → note removed from list.
 
@@ -273,26 +268,109 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 
 ---
 
-## 8. Push notifications (4 tests)
+## 8. Push notifications (18 tests — 📡 EAS-only)
 
-- [ ] **Spark push arrives within 30s on locked phone** 📱
-  1. Phone B: lock screen
-  2. Phone A: send any Spark
-  - **Expected:** Phone B receives push within 30s. Lock-screen banner shows "Eva sent you a spark ✨" + the message.
+> **Run this section ONCE after every EAS build, before submitting to TestFlight / hosting the APK.** All tests below require both phones to be running an EAS build (not Expo Go, not Vercel web). Push tokens register on first launch via `Notifications.getExpoPushTokenAsync()` — verify tokens exist in `users/{uid}.pushToken` in Firestore before starting.
 
-- [ ] **Question answered push arrives within 30s** 📱
-  1. Phone B: lock screen
-  2. Phone A: submit a Questions Game answer
-  - **Expected:** Phone B push: "Eva answered a question, your turn!" within 30s.
+### Pre-flight
+- [ ] **Both users have pushToken written to Firestore** 📡 📱 🔒
+  1. Fresh install both phones → sign in → grant notification permission → open Home once
+  2. Check Firebase console: `users/{A_uid}.pushToken` and `users/{B_uid}.pushToken` both exist and start with `ExponentPushToken[...]`
+  - **Expected:** Both tokens present. Without this, every test below silently no-ops.
 
-- [ ] **Deep link from push opens correct screen** 📱 ⚠️
-  1. Phone B: lock screen → receive Love Note push → tap notification
+### One test per trigger site (all 16 `notifyPartner` calls)
+- [ ] **Spark push** 📡 📱
+  1. Phone B: lock screen. Phone A: Home → ❤️ Love pill → send.
+  - **Expected:** Phone B lock-screen banner "Oli sent you love ❤️" + emoji/message within 30s.
+
+- [ ] **Mood push (Home)** 📡 📱
+  1. Phone B: lock screen. Phone A: Home → tap 😍 mood.
+  - **Expected:** Phone B push "New mood 💫" + "Oli is feeling 😍 In love".
+
+- [ ] **Mood push (Mood History)** 📡 📱
+  1. Phone B: lock screen. Phone A: Mood History → tap 🥰.
+  - **Expected:** Phone B push "New mood 💫" + label matches picked emoji.
+
+- [ ] **Love Note push** 📡 📱
+  1. Phone B: lock screen. Phone A: Notes → New → "Right now" → send.
+  - **Expected:** Phone B push "You have a love note 💌" + subtitle.
+
+- [ ] **Questions Game answer push** 📡 📱
+  1. Phone B: lock screen. Phone A: Questions Game → answer any question first.
+  - **Expected:** Phone B push "Questions 💬" + "Oli answered a question, your turn!". No push if Phone B was the one who answered first.
+
+- [ ] **Would You Rather answer push** 📡 📱
+  1. Phone B: lock screen. Phone A: WYR → tap A or B.
+  - **Expected:** Phone B push "Would You Rather 🤔" + "your turn!".
+
+- [ ] **Moments photo push** 📡 📱
+  1. Phone B: lock screen. Phone A: Moments → snap photo → upload.
+  - **Expected:** Phone B push "[A] captured today's moment 📸".
+
+- [ ] **Activity Cards flip push** 📡 📱 💰
+  1. Both premium. Phone B: lock screen. Phone A: Activity Cards → flip a card → send.
+  - **Expected:** Phone B push "Activity Cards 🃏" + activity name + "your turn!".
+
+- [ ] **Activity Cards marked-done push** 📡 📱 💰
+  1. Phone B: lock screen after A sent a card. Phone A: mark it done.
+  - **Expected:** Phone B push "Activity Cards ✓" + "your turn!".
+
+- [ ] **Activity Cards skip push** 📡 📱 💰
+  1. Phone B: lock screen after A sent a card. Phone A: skip.
+  - **Expected:** Phone B push "Activity Cards" + "skipped this one, your turn to pick again".
+
+- [ ] **30-Day Challenge day-done push** 📡 📱
+  1. Phone B: lock screen. Phone A: Challenge → mark today done.
+  - **Expected:** Phone B push "Challenge update ✓" + "marked day N done, your turn".
+
+- [ ] **Fantasy Wishes mutual match push** 📡 📱 💰
+  1. Both premium, at least one item already yes-voted by B. Phone B: lock screen. Phone A: vote yes on same item.
+  - **Expected:** Phone B push "New match ✨" + "shared fantasy wish".
+
+- [ ] **Time Capsule sealed push** 📡 📱
+  1. Phone B: lock screen. Phone A: Time Capsules → seal a new capsule.
+  - **Expected:** Phone B push "Time Capsule sealed 🕰️" + open date.
+
+- [ ] **Tease (Flash) push** 📡 📱
+  1. Phone B: lock screen. Phone A: Tease → send a flash.
+  - **Expected:** Phone B push (title/body per flash type).
+
+- [ ] **Intimacy Log push** 📡 📱 💰
+  1. Both premium. Phone B: lock screen. Phone A: log an intimate moment.
+  - **Expected:** Phone B push "Intimacy Log 💝" + "logged an intimate moment".
+
+- [ ] **Journal entry push** 📡 📱
+  1. Phone B: lock screen. Phone A: Journal → write + share.
+  - **Expected:** Phone B push per journal service.
+
+- [ ] **Together List add push** 📡 📱
+  1. Phone B: lock screen. Phone A: Together List → add new item.
+  - **Expected:** Phone B push per todo service.
+
+- [ ] **Sunday Check-in (State Union) push** 📡 📱
+  1. Phone B: lock screen. Phone A: Sunday Check-in → complete a session.
+  - **Expected:** Phone B push per state-union service.
+
+### System behaviour
+- [ ] **Deep link from push opens correct screen** 📡 📱 ⚠️
+  1. Phone B: locked → receive Love Note push → tap notification.
   - **Expected:** App opens directly to /notes (not just Home).
 
-- [ ] **Notification toggle OFF stops pushes** ⚠️
-  1. Phone B: Profile → toggle Push notifications OFF
-  2. Phone A: send a Spark
+- [ ] **Notification toggle OFF stops pushes** 📡 ⚠️
+  1. Phone B: Profile → toggle Push notifications OFF. Phone A: send a Spark.
   - **Expected:** Phone B receives nothing for 2+ minutes. Toggle back ON → next event arrives.
+
+- [ ] **Foreground behaviour: banner still shows when app is open** 📡 📱
+  1. Phone B: app open on Home. Phone A: send Spark.
+  - **Expected:** iOS/Android in-app banner slides down (per `setNotificationHandler` config in `_layout.tsx`).
+
+- [ ] **iOS: revoke permission in Settings → toggle in Profile reflects OFF** 📡 ⚠️
+  1. Phone B: iOS Settings → Desire → Notifications → OFF. Reopen app → Profile.
+  - **Expected:** Notifications row shows "Off" hint pointing to Settings.
+
+- [ ] **Second install on same account overwrites pushToken** 📡 ⚠️
+  1. Phone A signed in on device 1. Sign into same account on device 2.
+  - **Expected:** `users/{uid}.pushToken` now holds device 2 token. Pushes arrive on device 2, not device 1.
 
 ---
 
@@ -353,12 +431,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 
 ---
 
-## 12. Race conditions (3 tests)
-
-- [ ] **Simultaneous Questions Game final answer → streak bumps once** 📱 ⚠️
-  1. Both: have answered Q1, Q2 of category, Q3 ready
-  2. Both: tap "Send answer" on Q3 within 1 second of each other
-  - **Expected:** Streak count increases by exactly 1 (not 2). Refresh both phones → both show same count.
+## 12. Race conditions (2 tests)
 
 - [ ] **Both flip same Activity Card** 📱 💰 ⚠️
   1. Both (premium): Activity Cards → both tap card 8 within 1 second
@@ -367,7 +440,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 - [ ] **Both post Moment photo simultaneously** 📱 ⚠️
   1. Both: take Moment photo
   2. Both: tap Upload within 1 second of each other
-  - **Expected:** Both photos appear in today's grid. Streak bumps exactly once. No "waiting for partner" stuck state.
+  - **Expected:** Both photos appear in today's grid. No "waiting for partner" stuck state.
 
 ---
 

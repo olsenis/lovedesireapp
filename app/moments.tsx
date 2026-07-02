@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { MomentEntry, MomentStreak, subscribeMoments, submitMomentPhoto, subscribeMomentStreak } from '../services/momentService';
+import { MomentEntry, subscribeMoments, submitMomentPhoto } from '../services/momentService';
 import { uploadMomentPhoto } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
@@ -20,7 +20,6 @@ export default function MomentsScreen() {
   const partnerUid = partner?.uid ?? '';
 
   const [moments, setMoments] = useState<MomentEntry[]>([]);
-  const [streak, setStreak] = useState<MomentStreak>({ count: 0, lastDate: '' });
   const [uploading, setUploading] = useState(false);
   const [viewingMoment, setViewingMoment] = useState<MomentEntry | null>(null);
 
@@ -28,9 +27,7 @@ export default function MomentsScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    const u1 = subscribeMoments(coupleId, setMoments);
-    const u2 = subscribeMomentStreak(coupleId, setStreak);
-    return () => { u1(); u2(); };
+    return subscribeMoments(coupleId, setMoments);
   }, [coupleId]);
 
   const todayMoment = moments.find(m => m.date === today);
@@ -53,7 +50,7 @@ export default function MomentsScreen() {
       setUploading(true);
       try {
         const url = await uploadMomentPhoto(coupleId, uid, result.assets[0].uri);
-        await submitMomentPhoto(coupleId, uid, url, partnerUid);
+        await submitMomentPhoto(coupleId, uid, url);
         notifyPartner(
           coupleId, uid,
           `${profile?.name ?? 'Partner'} captured today's moment 📸`,
@@ -80,9 +77,7 @@ export default function MomentsScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Moments</Text>
-        <View style={styles.streakPill}>
-          <Text style={styles.streakText}>🔥 {streak.count}</Text>
-        </View>
+        <View style={{ width: 60 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -209,8 +204,6 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4, minWidth: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy },
-  streakPill: { backgroundColor: Colors.blush, borderRadius: Radius.full, paddingHorizontal: Spacing.sm, paddingVertical: 4, minWidth: 60, alignItems: 'center' },
-  streakText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
 
   content: { padding: Spacing.md, paddingBottom: 40 },
   sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, marginBottom: Spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },

@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, getDoc, onSnapshot, arrayUnion, runTransaction, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 
@@ -9,19 +9,8 @@ export interface DailyQuestionDoc {
   answers: Record<string, Record<string, string>>; // uid -> { "gi": answer }
 }
 
-export interface QuestionStreak {
-  count: number;
-  lastDate: string; // YYYY-MM-DD
-}
-
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function yesterdayKey(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
 }
 
 function deterministicShuffle(pool: Question[], seedStr: string): Question[] {
@@ -97,15 +86,6 @@ export function subscribeDailyQuestions(
   });
 }
 
-export function subscribeStreak(
-  coupleId: string,
-  onChange: (s: QuestionStreak) => void
-): Unsubscribe {
-  return onSnapshot(doc(db, 'couples', coupleId, 'streaks', 'questions'), (snap) => {
-    onChange(snap.exists() ? (snap.data() as QuestionStreak) : { count: 0, lastDate: '' });
-  });
-}
-
 export async function submitAnswer(
   coupleId: string,
   uid: string,
@@ -114,23 +94,6 @@ export async function submitAnswer(
 ): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
     [`answers.${uid}.${globalIndex}`]: answer,
-  });
-}
-
-// Streak bump uses a transaction so simultaneous submissions can't double-bump.
-export async function checkAndUpdateStreak(coupleId: string): Promise<void> {
-  const streakRef = doc(db, 'couples', coupleId, 'streaks', 'questions');
-  const today = todayKey();
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(streakRef);
-    if (!snap.exists()) {
-      tx.set(streakRef, { count: 1, lastDate: today });
-      return;
-    }
-    const streak = snap.data() as QuestionStreak;
-    if (streak.lastDate === today) return; // already bumped today by partner's submission
-    const newCount = streak.lastDate === yesterdayKey() ? streak.count + 1 : 1;
-    tx.set(streakRef, { count: newCount, lastDate: today });
   });
 }
 

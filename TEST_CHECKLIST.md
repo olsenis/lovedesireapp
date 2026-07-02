@@ -1096,7 +1096,7 @@ Timed/conditional letters with multiple unlock triggers.
 - [ ] **Write 'Right now' note delivers to partner instantly** 📱
   1. Phone A: Write → 'I love you' → confirm 'Right now' chip → Send 💌
   2. Phone B: open Love Notes within 10s
-  - **Expected:** Phone B receives push and shows 'For you 💌' blush card with ✉️ icon.
+  - **Expected:** Phone B receives push and shows 'From <A name> 💌' section with a blush card + ✉️ icon.
 
 - [ ] **Tonight at 8pm note shows correct lock countdown** 📱
   1. Phone A: Write → 'Read me tonight' → Tonight at 8pm → Send
@@ -1108,7 +1108,7 @@ Timed/conditional letters with multiple unlock triggers.
   2. Phone B: confirm note shows 🔒 with status
   3. Phone B: Home → set mood 😢
   4. Phone B: return to Love Notes
-  - **Expected:** Note surfaces in 'For you 💌' as ready; Phone A status changes to 'Opened ✓' when B opens.
+  - **Expected:** Locked label reads 'Unlocks when you feel 😢 Sad' (NOT a nonsense day-countdown). After B logs 😢, note surfaces in 'From <A name> 💌' as ready; Phone A status changes to 'Opened ✓' when B opens.
 
 - [ ] **Mood-trigger note ignores wrong mood** 📱 ⚠️
   1. Trigger 😢; Phone B sets 😊
@@ -1211,11 +1211,11 @@ Timed/conditional letters with multiple unlock triggers.
   - **Expected:** Alert 'Camera access needed'.
 
 ### Moments (app/moments.tsx)
-BeReal-style daily photo ritual. Atomic streak transactions.
+BeReal-style daily photo ritual.
 
 - [ ] **Empty state prompt before either photo** 📱
   1. Fresh day, neither posted
-  - **Expected:** White prompt 📸 'Capture today's moment' + 'Take photo' button; streak '🔥 0'.
+  - **Expected:** White prompt 📸 'Capture today's moment' + 'Take photo' button.
 
 - [ ] **Take photo flow on Phone A shows waiting state** 📱
   1. Phone A: Take photo → snap → accept → upload
@@ -1232,18 +1232,6 @@ BeReal-style daily photo ritual. Atomic streak transactions.
 - [ ] **Reveal card shows side-by-side photos** 📱
   1. Both submit
   - **Expected:** 220px reveal card: left mine, right partner, names overlay.
-
-- [ ] **Streak bumps to 1 on first both-photo day** 📱
-  1. Fresh couple, both submit day 1
-  - **Expected:** Streak '🔥 0' → '🔥 1' the moment B's transaction commits.
-
-- [ ] **Streak resets if a day is missed** ⚠️ 📱
-  1. Day 1 streak 🔥 5; skip day 2; both submit day 3
-  - **Expected:** Streak becomes 🔥 1.
-
-- [ ] **Simultaneous submit does not double-bump streak** 📱 ⚠️
-  1. Fresh day; both tap within 1 second
-  - **Expected:** Streak bumps exactly once.
 
 - [ ] **Past moments grid renders 2x2 pairs by date**
   1. Several days completed
@@ -1762,15 +1750,7 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   1. Phone B answers first
   - **Expected:** Phone A sees '<B> already answered, your turn!'.
 
-### Questions Game — Streak & Push
-
-- [ ] **Streak shows in header after both answer day 1** 📱
-  1. Both answer matching Q day 1
-  - **Expected:** '🔥 1' both phones.
-
-- [ ] **Streak increments next day** 📱
-  1. Day 2 both answer again
-  - **Expected:** '🔥 2'.
+### Questions Game — Push
 
 - [ ] **Push notification sent when first to answer** 📱
   1. Phone A answers first
@@ -1779,10 +1759,6 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
 - [ ] **No notification when answering second** 📱 ⚠️
   1. Phone B answered first; Phone A answers
   - **Expected:** Phone B receives NO push.
-
-- [ ] **No streak hidden when count is 0**
-  1. Brand-new couple
-  - **Expected:** No fire emoji in header.
 
 ### Versus — Pool Loading & Empty State (app/versus.tsx)
 
@@ -3957,12 +3933,12 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   - **Expected:** Only A's tap registers; B's tap is no-op; no duplicate writes; revealedBy holds exactly A's uid.
 
 - [ ] **Both partners answer last Question of the day simultaneously** 📱 ⚠️
-  1. Both phones on Q3 of Romantic; coordinate to tap Send within 1s
-  - **Expected:** Both answers persisted; streak increments by exactly 1; reveal shows both answers.
+  1. Both phones on Q3 of Playful; coordinate to tap Send within 1s
+  - **Expected:** Both answers persisted; reveal shows both answers.
 
 - [ ] **Both partners post Moment photo simultaneously** 📱 ⚠️
   1. Both at 'Take photo' prompt; both snap + accept within the same second
-  - **Expected:** Both photos upload; reveal card shows both; streak bumps exactly once.
+  - **Expected:** Both photos upload; reveal card shows both.
 
 - [ ] **Both partners create the same Activity Cards deck on same date** 📱 ⚠️ 💰
   1. Fresh couple, no existing deck; both open Activity Cards within 1s

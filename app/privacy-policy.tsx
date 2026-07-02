@@ -39,7 +39,7 @@ export default function PrivacyPolicyScreen() {
         </Section>
 
         <Section title="3. How we use your data">
-          {`Your data is used exclusively to provide the features of the app:\n\n• To connect you with your partner and sync shared content in real time\n• To send notifications to your partner on your behalf (e.g. when you log a mood or send a spark)\n• To show countdowns, streaks, and history within the app\n• To personalise your experience (e.g. using your birthday to display your partner's countdown)\n\nWe do not use your data for advertising, profiling, or any purpose beyond operating the app.`}
+          {`Your data is used exclusively to provide the features of the app:\n\n• To connect you with your partner and sync shared content in real time\n• To send notifications to your partner on your behalf (e.g. when you log a mood or send a spark)\n• To show countdowns and history within the app\n• To personalise your experience (e.g. using your birthday to display your partner's countdown)\n\nWe do not use your data for advertising, profiling, or any purpose beyond operating the app.`}
         </Section>
 
         <Section title="4. Who can see your data">

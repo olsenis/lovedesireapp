@@ -6,9 +6,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { QUESTION_CATEGORY_CONFIG, QuestionCategory } from '../constants/content';
 import {
-  DailyQuestionDoc, QuestionStreak,
-  subscribeDailyQuestions, subscribeStreak,
-  submitAnswer, checkAndUpdateStreak, bothAnswered,
+  DailyQuestionDoc,
+  subscribeDailyQuestions,
+  submitAnswer, bothAnswered,
 } from '../services/dailyQuestionsService';
 import { notifyPartner } from '../services/notificationService';
 import { useSubscription } from '../hooks/useSubscription';
@@ -32,7 +32,6 @@ export default function QuestionsGameScreen() {
 
   const [category, setCategory] = useState<QuestionCategory>('playful');
   const [dailyDoc, setDailyDoc] = useState<DailyQuestionDoc | null>(null);
-  const [streak, setStreak] = useState<QuestionStreak>({ count: 0, lastDate: '' });
   const [drafts, setDrafts] = useState<Record<number, string>>({});
 
   const coupleId = profile?.coupleId;
@@ -42,9 +41,7 @@ export default function QuestionsGameScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    const u1 = subscribeDailyQuestions(coupleId, setDailyDoc, { isLDR: !!couple?.isLongDistance });
-    const u2 = subscribeStreak(coupleId, setStreak);
-    return () => { u1(); u2(); };
+    return subscribeDailyQuestions(coupleId, setDailyDoc, { isLDR: !!couple?.isLongDistance });
   }, [coupleId, couple?.isLongDistance]);
 
   const catItems = (dailyDoc?.items ?? [])
@@ -66,9 +63,7 @@ export default function QuestionsGameScreen() {
     setDrafts(d => { const n = { ...d }; delete n[gi]; return n; });
 
     const partnerAlreadyAnswered = !!(partnerId && dailyDoc.answers?.[partnerId]?.[String(gi)]);
-    if (partnerAlreadyAnswered) {
-      checkAndUpdateStreak(coupleId);
-    } else {
+    if (!partnerAlreadyAnswered) {
       notifyPartner(coupleId, uid, 'Questions 💬', `${profile?.name ?? 'Your partner'} answered a question, your turn!`);
     }
   };
@@ -82,11 +77,7 @@ export default function QuestionsGameScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Questions</Text>
-        <View style={styles.streakWrap}>
-          {streak.count > 0 && (
-            <Text style={styles.streak}>🔥 {streak.count}</Text>
-          )}
-        </View>
+        <View style={{ width: 60 }} />
       </View>
 
       {/* Category tabs */}
@@ -233,7 +224,6 @@ export default function QuestionsGameScreen() {
           "Both partners see the same 3 questions each day",
           "Type your answer and send it, your partner can't see it yet",
           "When your partner also answers, both answers are revealed",
-          "Answer every day to build your streak 🔥",
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
@@ -252,8 +242,6 @@ const styles = StyleSheet.create({
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
-  streakWrap: { width: 60, alignItems: 'flex-end' },
-  streak: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
 
   catRow: { flexDirection: 'row', paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingVertical: Spacing.sm },
   catBtn: {
