@@ -16,6 +16,17 @@
 - 💰 = paid-tier gate test
 - 🔒 = security verification
 
+## Feature name reference (test titles ↔ app UI)
+
+Use this if a test says one thing and the app calls it something else.
+
+- **Questions Game** — Discover → Questions Game. 3 categories: 😊 Playful (free), 💛 Deep (free), 🔥 Spicy (paid). Answer privately, reveal when both done, daily streak.
+- **Tease** — Love hub → Tease. 24h ephemeral photos/videos/voice notes.
+- **Moments** — Love hub → Moments. BeReal-style daily photo ritual with reveal.
+- **Sunday Check-in** — Love hub → Sunday Check-in. 5-question weekly Gottman ritual.
+- **Hita Pulse** — Love hub → Relationship Pulse. 10-question private satisfaction quiz.
+- **Together List** — bottom tab (may be hidden depending on layout) or Love hub → Together List.
+
 ---
 
 ## 1. Auth + Pairing (4 tests)
@@ -54,13 +65,13 @@
   1. Phone A: Tap ❤️ Love you pill
   - **Expected:** Phone B home banner: "Eva sent you a spark · just now · ❤️ Love you" within 30s.
 
-- [ ] **Daily Question answer reveal when both done** 📱
-  1. Both: Open Questions Game → pick same category
-  2. Both: Type answer to question 1 → Send
-  - **Expected:** Both screens reveal both answers side by side within 10s.
+- [ ] **Questions Game answer reveal when both done** 📱
+  1. Both: Discover → Questions Game → pick same category (Playful, Deep, or Spicy 💰)
+  2. Both: Type answer to question 1 → Send answer
+  - **Expected:** Both screens reveal both answers side by side within 10s. Own answer in green box on left, partner's answer in green box on right.
 
 - [ ] **Daily streak bumps once when both answer** 📱
-  1. Both: Complete daily question (above test) on day N
+  1. Both: Complete a Questions Game answer (above test) on day N
   - **Expected:** Streak indicator on Questions Game header shows 🔥 1 (not 🔥 2). Repeat next day → 🔥 2.
 
 - [ ] **Moment photo capture + reveal when both posted** 📱
@@ -102,11 +113,11 @@
   - **Expected:** Both phones move through picking/answering/done phases in sync. Score increments correctly on truth-answered.
 
 - [ ] **Questions Game binary format** 📱
-  1. Both: Navigate to a binary daily question (e.g., "Beach or Mountains?")
-  - **Expected:** Both see two large buttons "Beach" and "Mountains". Tap → answer locks in. Both partners answered → reveal shows both choices side by side.
+  1. Both: Discover → Questions Game → cycle through categories until a binary question appears (e.g., "Beach or Mountains?", "Morning or night?")
+  - **Expected:** Both see two large buttons (e.g. "Beach" and "Mountains"). Tap → answer locks in. Both partners answered → reveal shows both choices side by side.
 
 - [ ] **Questions Game scale format** 📱
-  1. Both: Find a scale question (e.g., "How adventurous are you feeling?")
+  1. Both: Discover → Questions Game → cycle through categories until a scale question appears (e.g., "How adventurous are you feeling?", "How safe do you feel sharing something hard with me?")
   - **Expected:** Both see 1-5 row with "1=not at all · 5=completely" hint. Tap → submit → reveal shows both scores.
 
 - [ ] **Versus mode end-to-end** 📱
@@ -199,6 +210,10 @@
 - [ ] **Free user → Spicy Truth → upgrade gate** 💰
   1. Phone B (non-premium): Truth or Dare → tap Spicy level
   - **Expected:** Navigates to /upgrade screen. Cannot bypass.
+
+- [ ] **Free user → Spicy Questions → upgrade gate** 💰
+  1. Phone B (non-premium): Discover → Questions Game → tap 🔥 Spicy chip
+  - **Expected:** Chip shows 🔒 lock. Tap → navigates to /upgrade. Playful and Deep remain accessible.
 
 - [ ] **Free user → Fantasy Wishes → upgrade gate** 💰
   1. Phone B (non-premium): Love hub → Fantasy Wishes
@@ -349,11 +364,11 @@
 - ✅ Push notification reliability
 - ✅ Race conditions for known concurrent paths
 
-**Total: 57 tests**
+**Total: 58 tests**
 - 📱 Two-phone: ~30
 - 🌍 LDR: 4
 - ⚠️ Edge cases: ~18
-- 💰 Paid-gate: 9
+- 💰 Paid-gate: 10
 - 🔒 Security: 8
 
 **Estimated time: 4-6 hours with 2 phones, single tester.**
