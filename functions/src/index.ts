@@ -22,7 +22,14 @@ const storage = admin.storage().bucket();
 const RATE_PER_MINUTE = 5;
 const RATE_PER_HOUR = 20;
 
-export const rateLimitedJoin = onCall(async (req) => {
+// invoker: 'public' allows the Cloud Run infrastructure (2nd gen callable
+// functions run on Cloud Run under the hood) to accept requests without a
+// Google-issued IAM token. Firebase Auth is still enforced inside the
+// function via req.auth — the httpsCallable client attaches the Firebase
+// ID token which we validate below. Without invoker:'public' every request
+// gets rejected at the Cloud Run edge with "empty Authorization header",
+// which is what surfaced as the "internal" error in the client.
+export const rateLimitedJoin = onCall({ invoker: 'public' }, async (req) => {
   if (!req.auth) {
     throw new HttpsError('unauthenticated', 'Sign in first.');
   }
