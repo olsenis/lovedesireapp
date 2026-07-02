@@ -84,16 +84,19 @@ export default function RootLayout() {
       }
       return;
     }
-    // Stay put while the user is still on the pairing screen — they need to
-    // see their code and share it with their partner.
-    if (isOnPath(currentPath, 'pairing')) return;
-    // Also stay put on profile — user might be there deliberately (sign out,
-    // change password, view settings). Only route away from unclear starting
-    // paths (root/login/register/tabs entry).
-    if (isEscapeHatch) return;
-    const ob = await getOnboardingState(uid);
-    if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
-    router.replace('/(tabs)');
+    // User is signed in and setup is complete. Only force navigation if
+    // they're stuck on an auth screen (login/register — they shouldn't be
+    // there while authenticated). Any other path means they navigated to
+    // it deliberately (Discover, Love, a game, a modal screen) — never
+    // yank them off it, that's what caused the "Discover bounces to Home"
+    // bug where every tab switch re-fired router.replace('/(tabs)').
+    const stuckOnAuth = ['login', 'register'].some((s) => isOnPath(currentPath, s));
+    if (stuckOnAuth) {
+      const ob = await getOnboardingState(uid);
+      if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
+      router.replace('/(tabs)');
+    }
+    // Otherwise: user is on a legitimate authenticated screen. Do nothing.
   };
 
   useEffect(() => {

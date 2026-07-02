@@ -20,23 +20,23 @@
 
 ## 1. Auth + Pairing (4 tests)
 
-- [ ] **Register with 18+ consent → routed to onboarding**
+- [x] **Register with 18+ consent → routed to onboarding**
   1. Phone A: Launch app fresh, tap "Create one"
   2. Enter new email + password (×2)
   3. Tap 18+ checkbox so it fills burgundy
   4. Tap "Create Account"
   - **Expected:** Loading spinner, then "Welcome!" name+photo screen.
 
-- [ ] **Login with verified email succeeds**
+- [x] **Login with verified email succeeds**
   1. Phone A: Sign out, then enter credentials
   - **Expected:** Lands on Home with mood picker visible.
 
-- [ ] **Invite code flow connects both phones** 📱
+- [x] **Invite code flow connects both phones** 📱
   1. Phone A: Profile → Get invite code → copy 8-char code
   2. Phone B: Enter code in pairing screen → tap Join
   - **Expected:** Both phones show paired state within 5s. Phone A sees Phone B's name in couple card. Phone B sees Phone A's name.
 
-- [ ] **Disconnect couple removes pairing both sides** 📱
+- [x] **Disconnect couple removes pairing both sides** 📱
   1. Phone A: Profile → Disconnect from partner
   2. Confirm in modal
   - **Expected:** Phone A returns to pairing screen. Phone B's home shows "Connect with partner" prompt within 10s.
@@ -45,12 +45,12 @@
 
 ## 2. Core daily features (10 tests)
 
-- [ ] **Mood pick syncs to partner within 30s** 📱
+- [x] **Mood pick syncs to partner within 30s** 📱
   1. Phone A: Tap 😍 In love
   2. Phone B: Pull-to-refresh Home
   - **Expected:** Phone B partner card shows 😍 In love label.
 
-- [ ] **Spark pill sends + nudges partner** 📱
+- [x] **Spark pill sends + nudges partner** 📱
   1. Phone A: Tap ❤️ Love you pill
   - **Expected:** Phone B home banner: "Eva sent you a spark · just now · ❤️ Love you" within 30s.
 
