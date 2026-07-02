@@ -59,28 +59,38 @@ export default function RootLayout() {
   // Expo Router strips group directories like "(auth)" from usePathname output,
   // so /(auth)/pairing appears as /pairing at runtime. Use suffix matching to
   // cover both dev and prod outputs safely.
-  const isOnPath = (currentPath: string | undefined, screen: 'onboarding' | 'pairing') =>
+  const isOnPath = (currentPath: string | undefined, screen: string) =>
     !!currentPath && (currentPath === `/${screen}` || currentPath.endsWith(`/${screen}`));
 
   const routeAfterConsent = async (uid: string, coupleId?: string, name?: string, currentPath?: string) => {
+    // Screens the user is allowed to visit even without a complete setup —
+    // Profile is critical because it holds Sign out and Delete account. Never
+    // yank them off it, or they get stuck with no way to log out.
+    const isEscapeHatch = isOnPath(currentPath, 'profile');
+
     // Legacy users could have an empty name from before validation existed.
     // Force them through the (auth)/onboarding screen which requires it.
     if (!name || name.trim() === '') {
-      if (!isOnPath(currentPath, 'onboarding')) router.replace('/(auth)/onboarding');
+      if (!isOnPath(currentPath, 'onboarding') && !isEscapeHatch) {
+        router.replace('/(auth)/onboarding');
+      }
       return;
     }
     // No couple yet → route to pairing screen which auto-creates the couple
-    // doc + invite code. Routing here to /(tabs) instead used to skip the
-    // create flow entirely, leaving users with no invite code to share.
+    // doc + invite code.
     if (!coupleId) {
-      if (!isOnPath(currentPath, 'pairing')) router.replace('/(auth)/pairing');
+      if (!isOnPath(currentPath, 'pairing') && !isEscapeHatch) {
+        router.replace('/(auth)/pairing');
+      }
       return;
     }
     // Stay put while the user is still on the pairing screen — they need to
-    // see their code and share it with their partner. Only auto-navigate
-    // away from pairing when they explicitly Skip or after their partner
-    // joins (both events trigger their own router.replace).
+    // see their code and share it with their partner.
     if (isOnPath(currentPath, 'pairing')) return;
+    // Also stay put on profile — user might be there deliberately (sign out,
+    // change password, view settings). Only route away from unclear starting
+    // paths (root/login/register/tabs entry).
+    if (isEscapeHatch) return;
     const ob = await getOnboardingState(uid);
     if (!ob?.completed) { router.replace('/onboarding-tour' as any); return; }
     router.replace('/(tabs)');
