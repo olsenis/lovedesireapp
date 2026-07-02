@@ -107,7 +107,12 @@ export default function RootLayout() {
         }
       });
     } else {
-      router.replace('/(auth)/login');
+      // Only bounce to /login if the user is somewhere they shouldn't be while
+      // unsigned. Register + terms + privacy have to stay reachable, otherwise
+      // every keystroke re-fires this effect and yanks the user off the form.
+      const publicAuthPaths = ['login', 'register', 'terms-of-service', 'privacy-policy'];
+      const onPublicPath = publicAuthPaths.some((s) => isOnPath(pathname, s));
+      if (!onPublicPath) router.replace('/(auth)/login');
     }
   }, [user, loading, profile?.coupleId, profile?.name, pathname]);
 
