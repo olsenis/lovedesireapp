@@ -18,6 +18,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { createCouple, joinCouple } from '../../services/coupleService';
 import { createUserProfile } from '../../services/authService';
+import { getOnboardingState } from '../../services/onboardingService';
 import { QRScannerModal, buildQRPayload } from '../../components/QRScannerModal';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -72,6 +73,20 @@ export default function PairingScreen() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // First-time users get routed to the onboarding tour once pairing succeeds.
+  // Returning users (tour already completed) skip straight to the tabs. Also
+  // used by the Skip button so users who bail out still see the tour if it's
+  // their first time.
+  const routeAfterPair = async () => {
+    if (!user) { router.replace('/(tabs)'); return; }
+    try {
+      const ob = await getOnboardingState(user.uid);
+      router.replace(ob?.completed ? '/(tabs)' : ('/onboarding-tour' as any));
+    } catch {
+      router.replace('/(tabs)');
+    }
+  };
+
   const joinWithCode = async (code: string) => {
     if (!user) return;
     setJoinError('');
@@ -94,7 +109,7 @@ export default function PairingScreen() {
         coupleId: result.couple.id,
         inviteCode: result.couple.inviteCode,
       });
-      router.replace('/(tabs)');
+      await routeAfterPair();
     } catch (e: any) {
       setJoinError(e?.message ?? 'Something went wrong. Please try again.');
     } finally {
@@ -121,7 +136,7 @@ export default function PairingScreen() {
     if (loadingCreate) {
       await new Promise((r) => setTimeout(r, 2500));
     }
-    router.replace('/(tabs)');
+    await routeAfterPair();
   };
 
   return (
