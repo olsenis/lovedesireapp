@@ -27,6 +27,40 @@ Use this if a test says one thing and the app calls it something else.
 - **Hita Pulse** — Love hub → Relationship Pulse. 10-question private satisfaction quiz.
 - **Together List** — bottom tab (may be hidden depending on layout) or Love hub → Together List.
 
+## Free vs Paid tier summary (verify on non-premium account)
+
+Use this table to confirm every gated surface hits `/upgrade` when a free-tier
+user taps it. Paid-gate tests below cover the most important ones; this table
+is the complete reference.
+
+### FREE (no lock, works for all users)
+**Games:** Truth or Dare Sweet + Flirty, Dare Wheel Sweet + Flirty,
+Questions Game **Playful**, Versus mode (full), Would You Rather Playful +
+Romantic, Date Night Roulette (full)
+
+**Connection:** Mood (except Kinky/Horny), Spark, Love Notes, Moments, Tease,
+Journal, Time Capsules, Calendar, Countdowns, Flirt Reminders, Sunday Check-in,
+Together List
+
+**Insights:** Love Language Quiz, Relationship Pulse (with trend chart),
+Our Story, Year-in-Review, 30-Day Challenge Reconnect + Spark
+
+**Daily Picks:** Sweet + Flirty categories
+
+### PAID (locked with 🔒 icon, tap sends to /upgrade)
+**Games:** Truth or Dare Spicy level, Dare Wheel Spicy level, Questions Game
+**Deep + Spicy** categories, Would You Rather Spicy level, Activity Cards
+(entire feature), Fantasy Wishes (entire feature)
+
+**Intimacy:** Erotic Blueprint (entire feature), Sensate Focus (entire
+feature), Intimacy Log (opt-in from Profile — free but hidden by default)
+
+**Daily Picks:** Spicy + Sexual categories
+
+**Mood:** 😈 Kinky, 🥵 Horny emojis (last two on the picker)
+
+**Programs:** 30-Day Challenge Fire + Desire programs
+
 ---
 
 ## 1. Auth + Pairing (4 tests)

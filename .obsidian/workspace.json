@@ -185,6 +185,7 @@
   },
   "active": "0255eef4100f69c1",
   "lastOpenFiles": [
+    "TEST_LAUNCH.md.tmp.35180.bb2dc4b0cb98",
     "TEST_LAUNCH.md.tmp.35180.a508126433e5",
     "TEST_LAUNCH.md.tmp.35180.127c071c2deb",
     "TEST_LAUNCH.md.tmp.35180.b64ab63ff06e",
@@ -194,7 +195,6 @@
     "CLAUDE.md.tmp.35180.8b35d0db9b14",
     "app/questions-game.tsx.tmp.35180.add24cfa4ecd",
     "app/questions-game.tsx.tmp.35180.c22194b722ef",
-    "services/dailyQuestionsService.ts.tmp.35180.c9a7aace6f22",
-    "TEST_LAUNCH.md.tmp.35180.9b96074a0a05"
+    "services/dailyQuestionsService.ts.tmp.35180.c9a7aace6f22"
   ]
 }
