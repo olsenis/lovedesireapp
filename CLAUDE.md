@@ -238,7 +238,7 @@ Three prompts for expanding content — always use the right one for the categor
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only
 - Dare Wheel: Sweet + Flirty only
-- Questions Game: Playful + Deep categories (including binary + scale variants)
+- Questions Game: Playful category only (binary + scale variants included)
 - Versus mode (full — uses partner's binary-question history)
 - Would You Rather: Playful + Romantic only
 - Daily Picks: Sweet + Flirty only
@@ -250,7 +250,7 @@ Three prompts for expanding content — always use the right one for the categor
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
 - Truth or Dare: Spicy level
 - Dare Wheel: Spicy level
-- Questions Game: Spicy category (merged from old Spicy + Fantasy)
+- Questions Game: Deep + Spicy categories (Deep = vulnerable/romantic/growth; Spicy = sensual/fantasy)
 - Would You Rather: Spicy level
 - Daily Picks: Spicy + Sexual categories
 - Fantasy Wishes (entire feature)

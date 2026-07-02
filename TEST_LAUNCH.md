@@ -20,7 +20,7 @@
 
 Use this if a test says one thing and the app calls it something else.
 
-- **Questions Game** — Discover → Questions Game. 3 categories: 😊 Playful (free), 💛 Deep (free), 🔥 Spicy (paid). Answer privately, reveal when both done, daily streak.
+- **Questions Game** — Discover → Questions Game. 3 categories: 😊 Playful (free), 💛 Deep (paid 🔒), 🔥 Spicy (paid 🔒). Answer privately, reveal when both done, daily streak.
 - **Tease** — Love hub → Tease. 24h ephemeral photos/videos/voice notes.
 - **Moments** — Love hub → Moments. BeReal-style daily photo ritual with reveal.
 - **Sunday Check-in** — Love hub → Sunday Check-in. 5-question weekly Gottman ritual.
@@ -66,7 +66,7 @@ Use this if a test says one thing and the app calls it something else.
   - **Expected:** Phone B home banner: "Eva sent you a spark · just now · ❤️ Love you" within 30s.
 
 - [ ] **Questions Game answer reveal when both done** 📱
-  1. Both: Discover → Questions Game → pick same category (Playful, Deep, or Spicy 💰)
+  1. Both: Discover → Questions Game → pick Playful category (free — Deep and Spicy are 🔒 paid)
   2. Both: Type answer to question 1 → Send answer
   - **Expected:** Both screens reveal both answers side by side within 10s. Own answer in green box on left, partner's answer in green box on right.
 
@@ -113,12 +113,12 @@ Use this if a test says one thing and the app calls it something else.
   - **Expected:** Both phones move through picking/answering/done phases in sync. Score increments correctly on truth-answered.
 
 - [ ] **Questions Game binary format** 📱
-  1. Both: Discover → Questions Game → cycle through categories until a binary question appears (e.g., "Beach or Mountains?", "Morning or night?")
+  1. Both: Discover → Questions Game → stay on Playful (or unlock Deep/Spicy) → cycle through today's 3 questions until a binary one appears (e.g., "Beach or Mountains?", "Morning or night?")
   - **Expected:** Both see two large buttons (e.g. "Beach" and "Mountains"). Tap → answer locks in. Both partners answered → reveal shows both choices side by side.
 
-- [ ] **Questions Game scale format** 📱
-  1. Both: Discover → Questions Game → cycle through categories until a scale question appears (e.g., "How adventurous are you feeling?", "How safe do you feel sharing something hard with me?")
-  - **Expected:** Both see 1-5 row with "1=not at all · 5=completely" hint. Tap → submit → reveal shows both scores.
+- [ ] **Questions Game scale format** 📱 💰
+  1. Both: Unlock premium → Questions Game → Deep chip → scan today's 3 for a scale-format question (e.g., "How safe do you feel sharing something hard with me?", "How adventurous are you feeling?")
+  - **Expected:** Both see 1-5 row with "1=not at all · 5=completely" hint. Tap → submit → reveal shows both scores. Scale prompts are almost all in Deep + Spicy so this test currently requires premium.
 
 - [ ] **Versus mode end-to-end** 📱
   1. Phone B: Open Versus
@@ -211,9 +211,13 @@ Use this if a test says one thing and the app calls it something else.
   1. Phone B (non-premium): Truth or Dare → tap Spicy level
   - **Expected:** Navigates to /upgrade screen. Cannot bypass.
 
+- [ ] **Free user → Deep Questions → upgrade gate** 💰
+  1. Phone B (non-premium): Discover → Questions Game → tap 💛 Deep chip
+  - **Expected:** Chip shows 🔒 lock. Tap → navigates to /upgrade.
+
 - [ ] **Free user → Spicy Questions → upgrade gate** 💰
   1. Phone B (non-premium): Discover → Questions Game → tap 🔥 Spicy chip
-  - **Expected:** Chip shows 🔒 lock. Tap → navigates to /upgrade. Playful and Deep remain accessible.
+  - **Expected:** Chip shows 🔒 lock. Tap → navigates to /upgrade. Playful remains accessible as the free taste.
 
 - [ ] **Free user → Fantasy Wishes → upgrade gate** 💰
   1. Phone B (non-premium): Love hub → Fantasy Wishes
@@ -364,11 +368,11 @@ Use this if a test says one thing and the app calls it something else.
 - ✅ Push notification reliability
 - ✅ Race conditions for known concurrent paths
 
-**Total: 58 tests**
+**Total: 59 tests**
 - 📱 Two-phone: ~30
 - 🌍 LDR: 4
 - ⚠️ Edge cases: ~18
-- 💰 Paid-gate: 10
+- 💰 Paid-gate: 11
 - 🔒 Security: 8
 
 **Estimated time: 4-6 hours with 2 phones, single tester.**

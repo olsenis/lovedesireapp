@@ -25,9 +25,12 @@ export default function QuestionsGameScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const help = useHelp('questions');
   const { isSubscribed } = useSubscription();
-  const PAID_CATEGORIES: QuestionCategory[] = ['spicy'];
+  // Playful is the free-tier taste. Deep + Spicy sit behind the paywall —
+  // playful alone is enough to see the reveal mechanic; the meaningful and
+  // intimate categories drive conversion.
+  const PAID_CATEGORIES: QuestionCategory[] = ['deep', 'spicy'];
 
-  const [category, setCategory] = useState<QuestionCategory>('deep');
+  const [category, setCategory] = useState<QuestionCategory>('playful');
   const [dailyDoc, setDailyDoc] = useState<DailyQuestionDoc | null>(null);
   const [streak, setStreak] = useState<QuestionStreak>({ count: 0, lastDate: '' });
   const [drafts, setDrafts] = useState<Record<number, string>>({});
