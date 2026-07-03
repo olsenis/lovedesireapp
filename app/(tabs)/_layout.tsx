@@ -49,7 +49,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="love"
         options={{
-          title: 'Love',
+          title: 'Us',
           tabBarIcon: ({ focused }) => <TabIcon symbol="💝" focused={focused} />,
         }}
       />

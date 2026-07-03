@@ -6,31 +6,28 @@ import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
-const TOGETHER = [
-  { emoji: '✅', title: 'Together List',      subtitle: 'Shared to-do list, daily life, dates, intimacy & goals', route: '/todo',      bg: '#F1F8E9', paid: false },
+// Rituals — the recurring rhythm of shared attention. Daily/weekly cadence,
+// mutual reveal, mostly free tier. This is the emotional pull of the app.
+const RITUALS = [
+  { emoji: '🌅', title: 'Sunday Check-in',   subtitle: '5-question weekly ritual, answer privately, reveal together', route: '/state-union', bg: '#FFF0F3', paid: false },
+  { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',                 route: '/moments',   bg: '#FFF9C4', paid: false },
+  { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',      route: '/notes',     bg: '#FCE4EC', paid: false },
+  { emoji: '📓', title: 'Journal',           subtitle: 'Shared space for thoughts, reflections, and gratitude',       route: '/journal',   bg: '#FCE4EC', paid: false },
+  { emoji: '🕰️', title: 'Time Capsules',     subtitle: 'Seal a memory now, open it years from today',                route: '/time-capsules', bg: '#FFF3E0', paid: false },
 ];
 
-const INTIMACY = [
+// Nurture — intimate exploration. Mostly paid tier, deeper commitment.
+const NURTURE = [
   { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Log and reflect on your intimate moments',               route: '/intimacy-tracker', bg: '#FFF0F3', paid: true },
   { emoji: '🧬', title: 'Erotic Blueprint',  subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true },
   { emoji: '🫁', title: 'Sensate Focus',     subtitle: 'Guided touch sessions, rekindling through presence',      route: '/sensate',   bg: '#E8F5E9', paid: true },
 ];
 
-const CONNECTION = [
-  { emoji: '📓', title: 'Journal',           subtitle: 'Shared space for thoughts, reflections, and gratitude',  route: '/journal',   bg: '#FCE4EC', paid: false },
-  { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',  route: '/notes',     bg: '#FCE4EC', paid: false },
-  { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',            route: '/moments',   bg: '#FFF9C4', paid: false },
-  { emoji: '⏳', title: 'Countdowns',        subtitle: 'Important dates & anniversaries',                        route: '/countdown', bg: '#E8F5E9', paid: false },
-  { emoji: '📅', title: 'Calendar',          subtitle: 'Month view of all your shared dates',                    route: '/calendar',  bg: '#FCE4EC', paid: false },
-  { emoji: '🔔', title: 'Flirt Reminders',   subtitle: 'Daily nudges to keep the spark alive',                   route: '/reminders', bg: '#F3E5F5', paid: false },
-];
-
-const INSIGHTS = [
-  { emoji: '📖', title: 'Our Story',         subtitle: 'Timeline of your milestones, met to married and beyond',  route: '/our-story',  bg: '#FFF0F3', paid: false },
-  { emoji: '🕰️', title: 'Time Capsules',     subtitle: 'Seal a memory now, open it years from today',            route: '/time-capsules', bg: '#FFF3E0', paid: false },
-  { emoji: '🌅', title: 'Sunday Check-in',   subtitle: '5-question weekly ritual, answer privately, reveal together', route: '/state-union', bg: '#FFF0F3', paid: false },
+// Discover Yourselves — quiz-based identity + shared history. One-time
+// or occasional revisit, not daily.
+const DISCOVER = [
+  { emoji: '📖', title: 'Our Story',         subtitle: 'Timeline of your milestones, met to married and beyond', route: '/our-story',  bg: '#FFF0F3', paid: false },
   { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',      bg: '#E3F2FD', paid: false },
-  { emoji: '🌡️', title: 'Relationship Pulse', subtitle: 'Private check-in on how things are going',              route: '/hita',      bg: '#FFF3E0', paid: false },
 ];
 
 function FeatureCard({
@@ -59,23 +56,20 @@ export default function LoveScreen() {
   const { isSubscribed } = useSubscription();
   const { profile } = useAuth();
   const intimacyLogEnabled = profile?.features?.intimacyLog ?? false;
-  const intimacy = INTIMACY.filter(f => f.route !== '/intimacy-tracker' || intimacyLogEnabled);
+  const nurture = NURTURE.filter(f => f.route !== '/intimacy-tracker' || intimacyLogEnabled);
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Love</Text>
-      <Text style={styles.subtitle}>Connection, intimacy & insights</Text>
+      <Text style={styles.title}>Us</Text>
+      <Text style={styles.subtitle}>Your rhythm together</Text>
 
-      <Text style={styles.sectionLabel}>Together</Text>
-      {TOGETHER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      <Text style={styles.sectionLabel}>Rituals</Text>
+      {RITUALS.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
-      <Text style={styles.sectionLabel}>Intimacy</Text>
-      {intimacy.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      <Text style={styles.sectionLabel}>Nurture</Text>
+      {nurture.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
-      <Text style={styles.sectionLabel}>Connection</Text>
-      {CONNECTION.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
-
-      <Text style={styles.sectionLabel}>Insights</Text>
-      {INSIGHTS.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      <Text style={styles.sectionLabel}>Discover yourselves</Text>
+      {DISCOVER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
     </ScrollView>
   );
 }

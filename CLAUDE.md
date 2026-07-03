@@ -73,10 +73,10 @@ app/(auth)/                  Unauthenticated flow (Stack)
   pairing.tsx                Invite code generation & entry
 
 app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
-  index.tsx                  Home — mood, partner card, "Waiting for you" nudges, Daily Picks
-  todo.tsx                   Together List — shared todos (Daily Life / Date Ideas / Intimacy / Goals)
-  discover.tsx               Together hub — Games + Challenges
-  love.tsx                   Love hub — Intimacy / Connection / Insights
+  index.tsx                  Home — mood, partner card, "Waiting for you" nudges, Your List (Together), Daily Picks
+  todo.tsx                   Together List — shared todos (Daily Life / Date Ideas / Intimacy / Goals). Not on tab bar; surfaced via Home 'Your List' card.
+  discover.tsx               Discover hub — Games + Challenges
+  love.tsx                   Us hub — Rituals / Nurture / Discover yourselves. Renamed from 'Love' July 2026. Utility screens (Calendar, Countdown, Reminders, Relationship Pulse) moved to Profile > Reminders & tools.
 
 app/                         Full-screen sub-screens
   dare.tsx                   Dare Wheel — Sweet / Flirty / Spicy spin

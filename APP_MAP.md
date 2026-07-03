@@ -14,10 +14,11 @@ Living overview of every feature, content pool size, and connection between feat
 │
 ├─ (tabs) ─── bottom bar (3 visible + hidden Together List)
 │  ├─ Home     🏠  mood picker, sparks, "Waiting for you" nudges,
-│  │              Daily Picks ribbon, tonight's ritual
+│  │              Your List card, Games & Rituals, tonight's ritual
 │  ├─ Discover ✨  hub of interactive games
-│  ├─ Love     💝  hub of connection + intimacy + insights
-│  └─ Together List 📝  reachable via Love hub, not on tab bar
+│  ├─ Us       💝  Rituals / Nurture / Discover yourselves
+│  │              (was 'Love' with 15 items — trimmed to 10, renamed July 2026)
+│  └─ Together List 📝  reachable via Home "Your List" card, not on tab bar
 │
 └─ Full-screen features (30 screens)
    ├─ Games / interactive

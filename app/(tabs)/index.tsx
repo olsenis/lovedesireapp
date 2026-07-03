@@ -803,6 +803,37 @@ export default function HomeScreen() {
         </>
       )}
 
+      {/* ─── YOUR LIST ─── surfaced from Us tab (which used to hide it) so it's
+           always one tap away. Shows current active count + hint when partner
+           has queued suggestions. */}
+      {isConnected && (() => {
+        const activeTodos = todos.filter((t) => !t.completed && t.status !== 'rejected' && t.status !== 'pending');
+        const partnerSuggestions = todos.filter((t) => t.status === 'pending' && t.createdBy !== uid).length;
+        return (
+          <>
+            <View style={styles.sectionDivider}>
+              <View style={styles.sectionLine} />
+              <Text style={styles.sectionLabel}>Your List</Text>
+              <View style={styles.sectionLine} />
+            </View>
+            <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/todo' as any)} activeOpacity={0.85} accessibilityRole="button">
+              <Text style={styles.gameEmoji}>✅</Text>
+              <View style={styles.gameText}>
+                <Text style={styles.gameTitle}>Together List</Text>
+                <Text style={styles.gameSub}>
+                  {partnerSuggestions > 0
+                    ? `${partnerSuggestions} suggestion${partnerSuggestions === 1 ? '' : 's'} waiting · ${activeTodos.length} open`
+                    : activeTodos.length === 0
+                    ? 'Add something you want to do together'
+                    : `${activeTodos.length} open · daily life, dates, intimacy, goals`}
+                </Text>
+              </View>
+              <Text style={styles.gameArrow}>›</Text>
+            </TouchableOpacity>
+          </>
+        );
+      })()}
+
       {/* ─── GAMES & RITUALS ─── */}
       <View style={styles.sectionDivider}>
         <View style={styles.sectionLine} />

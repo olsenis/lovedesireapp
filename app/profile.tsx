@@ -555,6 +555,44 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Reminders & tools — utility screens that used to live on the Us tab.
+            Moved here July 2026 so the Us tab could focus on emotional rituals
+            rather than admin. These are reachable but don't clutter the fun. */}
+        <Text style={styles.sectionLabel}>Reminders & tools</Text>
+        <View style={styles.card}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/calendar' as any)} accessibilityRole="button">
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>📅 Calendar</Text>
+              <Text style={styles.rowHint}>Month view of shared dates and countdowns</Text>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/countdown' as any)} accessibilityRole="button">
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>⏳ Countdowns</Text>
+              <Text style={styles.rowHint}>Important dates and anniversaries</Text>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/reminders' as any)} accessibilityRole="button">
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>🔔 Flirt Reminders</Text>
+              <Text style={styles.rowHint}>Daily nudges to keep the spark alive</Text>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/hita' as any)} accessibilityRole="button">
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>🌡️ Relationship Pulse</Text>
+              <Text style={styles.rowHint}>Private check-in on how things are going</Text>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Year in Review */}
         {couple?.partner2Uid && (
           <TouchableOpacity
