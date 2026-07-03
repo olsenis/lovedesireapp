@@ -152,12 +152,12 @@ export default function NotesScreen() {
 
   // What a locked incoming note should say. Condition-based notes have openAt
   // pinned to year 9999 so timeLabel() would print nonsense like "355563d 2h".
+  // Recipient must NOT see the trigger emoji — would kill the surprise and
+  // let them fake the mood to unlock. Sender's status line still shows the
+  // specific trigger since they wrote the note.
   const incomingLockLabel = (note: LoveNote): string => {
-    if (note.openCondition === 'sad') {
-      const emoji = note.triggerEmoji ?? '😢';
-      return `Unlocks when you feel ${emoji} ${MOOD_LABELS[emoji]}`;
-    }
-    if (note.openCondition === 'visit') return 'Unlocks on your next visit';
+    if (note.openCondition === 'sad')   return 'Sealed for the right moment';
+    if (note.openCondition === 'visit') return 'Sealed until you meet again';
     return timeLabel(note.openAt);
   };
 

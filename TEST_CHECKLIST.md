@@ -1108,7 +1108,7 @@ Timed/conditional letters with multiple unlock triggers.
   2. Phone B: confirm note shows 🔒 with status
   3. Phone B: Home → set mood 😢
   4. Phone B: return to Love Notes
-  - **Expected:** Locked label reads 'Unlocks when you feel 😢 Sad' (NOT a nonsense day-countdown). After B logs 😢, note surfaces in 'From <A name> 💌' as ready; Phone A status changes to 'Opened ✓' when B opens.
+  - **Expected:** Phone B locked label reads 'Sealed for the right moment' (NOT a day-countdown, and NOT revealing the trigger emoji — B must not be able to fake the mood). Phone A's own status still shows the specific trigger 'Unlocks when partner feels 😢 Sad' since A wrote it. After B logs 😢, note surfaces in 'From <A name> 💌' as ready; Phone A status changes to 'Opened ✓' when B opens.
 
 - [ ] **Mood-trigger note ignores wrong mood** 📱 ⚠️
   1. Trigger 😢; Phone B sets 😊
