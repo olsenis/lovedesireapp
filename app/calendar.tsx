@@ -19,7 +19,7 @@ const MONTH_NAMES = [
 // inline the bare logic for display in calendar (kept simple for MVP)
 function buildAutoDates(partnerName: string, partnerBirthday?: string): { label: string; emoji: string; mmdd: string }[] {
   const auto = [
-    { label: 'Valentínusardagur', emoji: '💝', mmdd: '02-14' },
+    { label: "Valentine's Day", emoji: '💝', mmdd: '02-14' },
   ];
   if (partnerBirthday) {
     const parts = partnerBirthday.split('.');

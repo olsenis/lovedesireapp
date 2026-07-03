@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, arrayUnion, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, arrayUnion, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type FWVote = 'yes' | 'maybe' | 'no';
@@ -39,6 +39,31 @@ export function isFWMatch(item: FantasyWishesItem, uid1: string, uid2: string): 
 export async function markFWAddToList(coupleId: string, uid: string, itemId: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
     addToList: arrayUnion(uid),
+  });
+}
+
+// Atomic version of the "I want to add this to Together List" mark.
+// Reads the addToList array inside a transaction, adds the caller's uid if
+// missing, and returns completedNow=true ONLY for the caller whose write made
+// the pair complete. Prevents the race where both partners press within the
+// same second, each reads a snapshot where only their own uid is missing, and
+// neither writes the todo — same pattern already used in dailyWishService.
+export async function markFWAddToListAtomic(
+  coupleId: string,
+  uid: string,
+  partnerId: string | undefined,
+  itemId: string,
+): Promise<{ completedNow: boolean }> {
+  const ref = doc(db, 'couples', coupleId, 'fantasyWishes', itemId);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return { completedNow: false };
+    const data = snap.data() as FantasyWishesItem;
+    const currentList = data.addToList ?? [];
+    if (currentList.includes(uid)) return { completedNow: false }; // Idempotent
+    const newList = [...currentList, uid];
+    tx.update(ref, { addToList: newList });
+    return { completedNow: !!partnerId && newList.includes(partnerId) };
   });
 }
 

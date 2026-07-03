@@ -8,7 +8,7 @@ import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToList, fwBothWantToAdd } from '../services/fantasyWishesService';
+import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_PRESETS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -91,13 +91,14 @@ export default function FantasyWishesScreen() {
 
   const handleAddToTogether = async (item: FantasyWishesItem) => {
     if (!coupleId || !user) return;
-    const alreadyPressed = (item.addToList ?? []).includes(uid);
-    if (alreadyPressed) return;
-    const partnerAlreadyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
+    if ((item.addToList ?? []).includes(uid)) return; // fast-path idempotency
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await markFWAddToList(coupleId, uid, item.id);
-    // Only add todo if partner already pressed (we're second → add once)
-    if (partnerAlreadyPressed) {
+    // Atomic: reads addToList + writes + reports completedNow inside a
+    // single transaction. Prevents the race where both partners press within
+    // the same tick, each sees a stale snapshot without the other's uid, and
+    // neither branch creates the todo.
+    const { completedNow } = await markFWAddToListAtomic(coupleId, uid, partnerId, item.id);
+    if (completedNow) {
       await addTodo(coupleId, item.text, 'intimacy', uid, 'fantasy-wishes');
     }
   };

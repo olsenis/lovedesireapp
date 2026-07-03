@@ -24,6 +24,9 @@ export interface UserProfile {
   birthday?: string; // DD.MM format, no year
   timezone?: string; // IANA tz like "Europe/Reykjavik" — used for LDR partner clock
   loveLanguage?: 'words' | 'acts' | 'gifts' | 'time' | 'touch'; // top result from Love Language quiz
+  // Set server-side by the RevenueCat webhook (pending, see CLAUDE.md). Client
+  // writes are blocked by firestore.rules — read-only from the app.
+  isPremium?: boolean;
   features?: {
     intimacyLog?: boolean;
     explicitContent?: boolean; // paid users can disable explicit content

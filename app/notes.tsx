@@ -86,6 +86,17 @@ export default function NotesScreen() {
     return subscribeNotes(profile.coupleId, setNotes);
   }, [profile?.coupleId]);
 
+  // If the couple toggles LDR off while the composer was left with an LDR
+  // occasion selected (e.g. 'When I arrive'), the current occasion is no
+  // longer in the list. Snap back to the safe default so the picker row
+  // doesn't render as "nothing selected" and Send doesn't fire an LDR-only
+  // note for a non-LDR couple.
+  useEffect(() => {
+    if (!occasions.some((o) => o.label === occasion)) {
+      setOccasion(OCCASIONS[0].label);
+    }
+  }, [isLDR, occasion, occasions]);
+
   const resetComposer = () => {
     setMessage('');
     setOccasion(OCCASIONS[0].label);
@@ -158,8 +169,11 @@ export default function NotesScreen() {
     setOpenedNote(note);
   };
 
-  const myNotes = notes.filter((n) => n.fromUid === user?.uid);
-  const forMeAll = notes.filter((n) => n.fromUid !== user?.uid);
+  // Guard against user still loading — otherwise n.fromUid === undefined is
+  // false for every note, and n.fromUid !== undefined is true for every note,
+  // so the recipient section briefly renders every note including own ones.
+  const myNotes = user ? notes.filter((n) => n.fromUid === user.uid) : [];
+  const forMeAll = user ? notes.filter((n) => n.fromUid !== user.uid) : [];
   const isStash = (n: LoveNote) => n.openCondition === 'missing' || n.openCondition === 'sleepless';
   const isSecret = (n: LoveNote) => n.openCondition === 'sad' || n.openCondition === 'visit';
   const forMeStash = forMeAll.filter((n) => isStash(n) && !n.opened);

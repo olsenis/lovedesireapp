@@ -20,7 +20,7 @@ export interface SubscriptionState {
 
 export function useSubscription(): SubscriptionState {
   const { profile, loading } = useAuth();
-  const isPremium = (profile as any)?.isPremium === true;
+  const isPremium = profile?.isPremium === true;
 
   return {
     isSubscribed: isPremium,

@@ -1986,6 +1986,11 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. Phone A: tap twice
   - **Expected:** Second tap no-op.
 
+- [ ] **Both partners press Add simultaneously → todo appears exactly once** 📱 ⚠️ 💰
+  1. Both phones (premium): open Fantasy Wishes on the same mutual match
+  2. Both: coordinate to tap '+ Add to Together List' within 1 second of each other
+  - **Expected:** addToList holds both uids; Together List has exactly one new todo under Intimacy. Regression check: pre-July-2026 the two clients would each see a snapshot without the other's uid, both would skip the todo write, and no todo would land. Fixed by markFWAddToListAtomic transaction.
+
 ### Fantasy Wishes — add custom
 
 - [ ] **Add custom wish appears for both partners** 💰 📱
@@ -2906,6 +2911,15 @@ Long-distance toggle and the suite of features it unlocks.
 - [ ] **LDR occasions are hidden when LDR is off**
   1. LDR OFF → Notes → Write
   - **Expected:** Only 4 base occasions.
+
+- [ ] **Toggling LDR off while an LDR occasion is selected snaps back to safe default** ⚠️
+  1. LDR ON → Notes → Write → pick 'When I arrive' occasion
+  2. Leave the composer open, go to Profile → toggle LDR OFF, return to Notes composer
+  - **Expected:** Selected occasion resets to 'Right now'. Regression check: previously 'When I arrive' stayed selected in state even though the chip was gone from the row, and Send fired an LDR-only 'visit' note for a non-LDR couple.
+
+- [ ] **Notes render doesn't briefly show own notes under 'From partner' during auth load** ⚠️
+  1. Kill app, relaunch, immediately navigate to Notes before profile loads (throttle network to slow-3G to reproduce)
+  - **Expected:** No flicker of own notes in 'From partner' section. The recipient list stays empty until user is defined. Regression check: pre-fix `n.fromUid !== undefined` was true for every note, so every note briefly appeared as 'from partner'.
 
 - [ ] **'When I arrive' note auto-unlocks on next visit date** 🌍 📱
   1. LDR on; Next visit today; Phone A writes 'I missed you' (When I arrive) → Phone B kill+relaunch + Home
