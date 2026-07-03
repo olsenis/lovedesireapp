@@ -74,7 +74,7 @@ app/(auth)/                  Unauthenticated flow (Stack)
 
 app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
   index.tsx                  Home — mood, partner card, "Waiting for you" nudges, Daily Picks
-  todo.tsx                   Together List — shared todos (Daily Life / Date Ideas / Intimacy / Fantasy / Goals)
+  todo.tsx                   Together List — shared todos (Daily Life / Date Ideas / Intimacy / Goals)
   discover.tsx               Together hub — Games + Challenges
   love.tsx                   Love hub — Intimacy / Connection / Insights
 
@@ -142,7 +142,7 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `firebase.ts` | `auth`, `db`, `storage` |
 | `authService.ts` | `register`, `login`, `logout`, `getUserProfile`, `createUserProfile`, `disconnectFromCouple` |
 | `coupleService.ts` | `createCouple`, `joinCouple`, `getCouple`, `setCoupleStartDate` |
-| `todoService.ts` | `subscribeTodos`, `addTodo`, `toggleTodo`, `deleteTodo` — category: daily/dates/intimacy/fantasy/goals |
+| `todoService.ts` | `subscribeTodos`, `addTodo`, `toggleTodo`, `deleteTodo` — category: daily/dates/intimacy/goals (legacy `fantasy` category from before July 2026 is normalised to `intimacy` at read time) |
 | `moodService.ts` | `setMood`, `getTodaysMood`, `subscribeToMoods` |
 | `noteService.ts` | `subscribeNotes`, `createNote`, `openNote` |
 | `reminderService.ts` | `subscribeReminders`, `addReminder`, `toggleReminder`, `deleteReminder`, `scheduleReminderNotifications`, `cancelReminderNotifications` |

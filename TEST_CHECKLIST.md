@@ -971,11 +971,16 @@ Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
 
 - [ ] **Filter chips render and behave**
   1. Tap each chip
-  - **Expected:** Tapped chip burgundy; list filters.
+  - **Expected:** 5 chips total — All, Daily Life 🏠, Date Ideas 💑, Intimacy 🔥, Goals 🌟. NO Fantasy chip (cut July 2026). Tapped chip burgundy; list filters.
 
 - [ ] **All chip resets filter**
   1. Tap All
   - **Expected:** All active todos.
+
+- [ ] **Legacy 'fantasy' todo surfaces under Intimacy** ⚠️
+  1. Couple has a todo doc in Firestore with `category: 'fantasy'` (from before July 2026 cut)
+  2. Open Together List → tap Intimacy filter
+  - **Expected:** Legacy todo appears under Intimacy. Firestore doc is NOT rewritten; the normalisation happens in `subscribeTodos`. Never appears twice, never vanishes.
 
 - [ ] **Add a simple Daily Life todo**
   1. +Add → 'Buy groceries' → Daily Life → toggle off → Add →
@@ -990,7 +995,7 @@ Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
   - **Expected:** Reopens with toggle OFF.
 
 - [ ] **Category selection updates highlight**
-  1. Tap Intimacy then Fantasy
+  1. Tap Intimacy then Goals
   - **Expected:** Only one chip highlighted.
 
 - [ ] **Direct add real-time syncs to partner** 📱
@@ -1709,16 +1714,16 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
 ### Questions Game — Category Tabs & Daily Pool (app/questions-game.tsx)
 
 - [ ] **Same 3 questions appear on both phones for current category** 📱
-  1. Phone A Romantic; Phone B Romantic
+  1. Phone A Playful; Phone B Playful
   - **Expected:** Same 3 in same order; progress '0/3 answered today'.
 
-- [ ] **Spicy category locked for free user** 💰
-  1. Free → Spicy tab
+- [ ] **Deep category locked for free user** 💰
+  1. Free → 💛 Deep tab
   - **Expected:** /upgrade; '🔒' suffix.
 
-- [ ] **Fantasy category locked for free user** 💰
-  1. Free → Fantasy tab
-  - **Expected:** /upgrade.
+- [ ] **Spicy category locked for free user** 💰
+  1. Free → 🔥 Spicy tab
+  - **Expected:** /upgrade; '🔒' suffix.
 
 - [ ] **LDR-tagged questions appear only when isLongDistance=true** 🌍
   1. Set LDR; reopen
@@ -1965,7 +1970,7 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 
 - [ ] **Second partner confirms — wish lands in Together List exactly once** 💰 📱
   1. Phone B: tap to confirm
-  - **Expected:** Both phones '✓ Added'; Fantasy todo appears once.
+  - **Expected:** Both phones '✓ Added'; new todo appears once under Intimacy category (Fantasy Wishes routes to Intimacy after July 2026 Fantasy-chip cut).
 
 - [ ] **Idempotent — tapping add twice does nothing extra** ⚠️ 💰
   1. Phone A: tap twice

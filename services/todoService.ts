@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-export type TodoCategory = 'daily' | 'dates' | 'intimacy' | 'goals' | 'fantasy';
+export type TodoCategory = 'daily' | 'dates' | 'intimacy' | 'goals';
 
 export type TodoSource = 'manual' | 'daily-picks' | 'fantasy-wishes' | 'roulette';
 
@@ -35,7 +35,14 @@ export function subscribeTodos(coupleId: string, onChange: (todos: Todo[]) => vo
     orderBy('createdAt', 'desc')
   );
   return onSnapshot(q, (snap) => {
-    const todos = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Todo));
+    const todos = snap.docs.map((d) => {
+      const data = d.data() as Record<string, unknown>;
+      // Legacy 'fantasy' category was cut July 2026 — surface old docs under
+      // intimacy so they don't vanish. Firestore data isn't rewritten; only
+      // the client-facing view is normalised.
+      if (data.category === 'fantasy') data.category = 'intimacy';
+      return { id: d.id, ...data } as Todo;
+    });
     onChange(todos);
   });
 }
