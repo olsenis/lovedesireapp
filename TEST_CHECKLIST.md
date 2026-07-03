@@ -1103,12 +1103,12 @@ Timed/conditional letters with multiple unlock triggers.
   2. Phone B: Love Notes
   - **Expected:** Locked card 🔒 'Opens in Xh Ym' counting down to 20:00.
 
-- [ ] **Mood-trigger note unlocks when partner logs matching mood** 📱
+- [ ] **Mood-trigger note stays fully hidden from recipient until unlock** 📱
   1. Phone A: Write → 'When you're feeling...' → 😢 Sad → Send
-  2. Phone B: confirm note shows 🔒 with status
+  2. Phone B: open Love Notes
   3. Phone B: Home → set mood 😢
   4. Phone B: return to Love Notes
-  - **Expected:** Phone B locked label reads 'Sealed for the right moment' (NOT a day-countdown, and NOT revealing the trigger emoji — B must not be able to fake the mood). Phone A's own status still shows the specific trigger 'Unlocks when partner feels 😢 Sad' since A wrote it. After B logs 😢, note surfaces in 'From <A name> 💌' as ready; Phone A status changes to 'Opened ✓' when B opens.
+  - **Expected:** In step 2, note is INVISIBLE to Phone B — no locked card, no hint that it exists (whole point is surprise; if B saw a lock they could fake the mood). Phone A's own 'Notes you wrote' section still shows the note with status 'Unlocks when partner feels 😢 Sad'. In step 4, note pops into 'From <A name> 💌' as ready to open ('Tap to open'). Phone A status changes to 'Opened ✓' when B opens.
 
 - [ ] **Mood-trigger note ignores wrong mood** 📱 ⚠️
   1. Trigger 😢; Phone B sets 😊
@@ -2886,9 +2886,9 @@ Long-distance toggle and the suite of features it unlocks.
   1. Phone A after sending stash note
   - **Expected:** Status 'In partner's Open When... stash'.
 
-- [ ] **Visit note status before date arrives** 🌍 📱
+- [ ] **Visit note stays hidden from recipient until visit day** 🌍 📱
   1. Next visit 7 days; write When I arrive
-  - **Expected:** 'Unlocks on your next visit'.
+  - **Expected:** Sender's own 'Notes you wrote' shows 'Unlocks on your next visit'. Recipient's Love Notes: note is INVISIBLE (surprise). Pops in as ready on visit day.
 
 - [ ] **Editing a stash note's condition saves correctly** 🌍 ⚠️ 📱
   1. Tap 'When you miss me' → change to 'When you can't sleep'
