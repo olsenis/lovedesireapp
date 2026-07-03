@@ -87,24 +87,35 @@ export async function markDayComplete(coupleId: string, uid: string, day: number
   });
 }
 
-// Veto skips the current day for both partners automatically
-export async function vetoDay(coupleId: string, uid: string, state: ChallengeState): Promise<void> {
-  const used = state.vetoesUsed[uid] ?? 0;
-  if (used >= MAX_VETOES) return;
+// Veto skips the current day for both partners automatically.
+// Uses a transaction so a partner mid-completion doesn't get their write
+// silently overwritten by our stale-state spread, and so double-veto in the
+// same tick doesn't debit the vetoesUsed counter twice.
+export async function vetoDay(coupleId: string, uid: string, _state: ChallengeState): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'challenge', 'active');
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const current = snap.data() as ChallengeState;
+    const used = current.vetoesUsed[uid] ?? 0;
+    if (used >= MAX_VETOES) return;
 
-  const day = state.currentDay;
-  const updatedBy = { ...state.completedBy, [day]: [uid, `veto:${uid}`] };
-  const newCompleted = !state.completedDays.includes(day)
-    ? [...state.completedDays, day]
-    : state.completedDays;
-  const nextDay = Math.min(day + 1, 30);
+    const day = current.currentDay;
+    // Overwriting completedBy[day] is the intended semantic — veto forces the
+    // day complete for both regardless of prior progress.
+    const updatedBy = { ...current.completedBy, [day]: [uid, `veto:${uid}`] };
+    const newCompleted = !current.completedDays.includes(day)
+      ? [...current.completedDays, day]
+      : current.completedDays;
+    const nextDay = Math.min(day + 1, 30);
 
-  await updateDoc(doc(db, 'couples', coupleId, 'challenge', 'active'), {
-    completedBy: updatedBy,
-    completedDays: newCompleted,
-    currentDay: nextDay,
-    [`customTasks.${day}`]: '🎲 Free day, just have sex however you like.',
-    [`vetoesUsed.${uid}`]: used + 1,
+    tx.update(ref, {
+      completedBy: updatedBy,
+      completedDays: newCompleted,
+      currentDay: nextDay,
+      [`customTasks.${day}`]: '🎲 Free day, just have sex however you like.',
+      [`vetoesUsed.${uid}`]: used + 1,
+    });
   });
 }
 

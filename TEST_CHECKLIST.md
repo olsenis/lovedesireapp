@@ -2344,7 +2344,7 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
   1. Answer 4 → Back → reopen
   - **Expected:** Restarts at 1 of 10.
 
-### Relationship Pulse (Hita) (app/hita.tsx)
+### Relationship Pulse (app/pulse.tsx)
 
 - [ ] **Golden path: rate all 10 areas and see pulse score**
   1. Rate all 10 → See my pulse

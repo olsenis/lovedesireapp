@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { subscribeTimeCapsules, sealTimeCapsule, markCapsuleOpened, isUnlocked, getCapsuleContent, TimeCapsule, TimeCapsuleContent } from '../services/timeCapsuleService';
-import { uploadCapsulePhoto } from '../services/storageService';
+import { uploadCapsulePhoto, UploadTooLargeError } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { useHelp } from '../hooks/useHelp';
@@ -95,8 +95,11 @@ export default function TimeCapsulesScreen() {
       setMessage('');
       setPhotoUri(null);
       setOpenDate(null);
-    } catch (e) {
-      Alert.alert('Could not seal the capsule. Try again.');
+    } catch (err) {
+      const msg = err instanceof UploadTooLargeError
+        ? `Photo is too large (${Math.round(err.actualBytes / 1024 / 1024)} MB after compression). Please pick a smaller photo.`
+        : 'Could not seal the capsule. Try again.';
+      Alert.alert(msg);
     } finally {
       setSealing(false);
     }

@@ -2,6 +2,27 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { storage } from './firebase';
 
+// Hard upload ceilings enforced AFTER compression / on raw blob. These are
+// safety nets — compressImage() usually keeps photos under 2MB, but if
+// manipulation fails on an unsupported format we fall back to the original
+// URI, and a modern phone photo can be 15-30MB. Without a ceiling here, a
+// paying user could DOS the couple's Storage bucket with a single tap.
+const MAX_PHOTO_BYTES  =  5 * 1024 * 1024;  //   5 MB
+const MAX_VIDEO_BYTES  = 60 * 1024 * 1024;  //  60 MB (~30s 1080p)
+const MAX_AUDIO_BYTES  = 10 * 1024 * 1024;  //  10 MB (~10 min m4a)
+
+export class UploadTooLargeError extends Error {
+  constructor(public actualBytes: number, public maxBytes: number, public kind: string) {
+    super(`${kind} is ${Math.round(actualBytes / 1024 / 1024)} MB, max ${Math.round(maxBytes / 1024 / 1024)} MB`);
+    this.name = 'UploadTooLargeError';
+  }
+}
+
+function assertUnderLimit(blob: Blob, kind: 'photo' | 'video' | 'audio'): void {
+  const limit = kind === 'photo' ? MAX_PHOTO_BYTES : kind === 'video' ? MAX_VIDEO_BYTES : MAX_AUDIO_BYTES;
+  if (blob.size > limit) throw new UploadTooLargeError(blob.size, limit, kind);
+}
+
 // Compress an image at the URI to max 1920px wide + JPEG quality 0.7.
 // At scale this cuts photo bandwidth ~5-10× vs raw camera output (10MB → 1-2MB).
 // Returns a new URI pointing to the compressed file in the OS temp dir.
@@ -23,6 +44,7 @@ export async function uploadProfilePhoto(uid: string, uri: string): Promise<stri
   const compressed = await compressImage(uri);
   const response = await fetch(compressed);
   const blob = await response.blob();
+  assertUnderLimit(blob, 'photo');
   const storageRef = ref(storage, `users/${uid}/profile.jpg`);
   await uploadBytes(storageRef, blob);
   return await getDownloadURL(storageRef);
@@ -34,6 +56,7 @@ export async function uploadProfilePhoto(uid: string, uri: string): Promise<stri
 export async function uploadTruthDareAudio(coupleId: string, uid: string, round: number, uri: string): Promise<string> {
   const response = await fetch(uri);
   const blob = await response.blob();
+  assertUnderLimit(blob, 'audio');
   const storageRef = ref(storage, `couples/${coupleId}/truthDare/${round}_${uid}.m4a`);
   await uploadBytes(storageRef, blob);
   return await getDownloadURL(storageRef);
@@ -43,6 +66,7 @@ export async function uploadMomentPhoto(coupleId: string, uid: string, uri: stri
   const compressed = await compressImage(uri);
   const response = await fetch(compressed);
   const blob = await response.blob();
+  assertUnderLimit(blob, 'photo');
   const date = new Date().toISOString().slice(0, 10);
   const storageRef = ref(storage, `couples/${coupleId}/moments/${date}_${uid}.jpg`);
   await uploadBytes(storageRef, blob);
@@ -53,6 +77,7 @@ export async function uploadCapsulePhoto(coupleId: string, uid: string, uri: str
   const compressed = await compressImage(uri);
   const response = await fetch(compressed);
   const blob = await response.blob();
+  assertUnderLimit(blob, 'photo');
   const storageRef = ref(storage, `couples/${coupleId}/timeCapsules/${Date.now()}_${uid}.jpg`);
   await uploadBytes(storageRef, blob);
   return await getDownloadURL(storageRef);
@@ -68,6 +93,7 @@ export async function uploadFlashMedia(
   const sourceUri = type === 'photo' ? await compressImage(uri) : uri;
   const response = await fetch(sourceUri);
   const blob = await response.blob();
+  assertUnderLimit(blob, type === 'photo' ? 'photo' : type === 'video' ? 'video' : 'audio');
   const ext = type === 'video' ? 'mp4' : type === 'voice' ? 'm4a' : 'jpg';
   const filename = `${Date.now()}_${uid}.${ext}`;
   const storageRef = ref(storage, `couples/${coupleId}/flashes/${filename}`);

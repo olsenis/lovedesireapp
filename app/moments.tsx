@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { MomentEntry, subscribeMoments, submitMomentPhoto } from '../services/momentService';
-import { uploadMomentPhoto } from '../services/storageService';
+import { uploadMomentPhoto, UploadTooLargeError } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -56,8 +56,11 @@ export default function MomentsScreen() {
           `${profile?.name ?? 'Partner'} captured today's moment 📸`,
           'Take yours to reveal both photos'
         ).catch(() => {});
-      } catch {
-        Alert.alert('Upload failed', 'Please try again.');
+      } catch (err) {
+        const msg = err instanceof UploadTooLargeError
+          ? `Photo is too large after compression (${Math.round(err.actualBytes / 1024 / 1024)} MB). Please try a smaller photo.`
+          : 'Please try again.';
+        Alert.alert('Upload failed', msg);
       } finally {
         setUploading(false);
       }

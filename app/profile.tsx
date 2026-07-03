@@ -15,7 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
 import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
-import { uploadProfilePhoto } from '../services/storageService';
+import { uploadProfilePhoto, UploadTooLargeError } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
@@ -149,8 +149,12 @@ export default function ProfileScreen() {
       try {
         const downloadURL = await uploadProfilePhoto(user.uid, result.assets[0].uri);
         await createUserProfile(user.uid, { photoURL: downloadURL } as any);
-      } catch (e) {
-        console.error('Photo upload failed:', e);
+      } catch (err) {
+        console.error('Photo upload failed:', err);
+        const msg = err instanceof UploadTooLargeError
+          ? `Photo is too large after compression (${Math.round(err.actualBytes / 1024 / 1024)} MB). Please pick a smaller photo.`
+          : 'Could not upload your photo. Please try again.';
+        Alert.alert('Upload failed', msg);
       } finally {
         setUploadingPhoto(false);
       }
@@ -584,7 +588,7 @@ export default function ProfileScreen() {
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => router.push('/hita' as any)} accessibilityRole="button">
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/pulse' as any)} accessibilityRole="button">
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>🌡️ Relationship Pulse</Text>
               <Text style={styles.rowHint}>Private check-in on how things are going</Text>

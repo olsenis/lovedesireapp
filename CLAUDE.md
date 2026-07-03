@@ -95,7 +95,7 @@ app/                         Full-screen sub-screens
   countdown.tsx              Countdowns — important dates & anniversaries
   reminders.tsx              Flirt Reminders — local scheduled notifications
   quiz.tsx                   Love Language Quiz — 10-question result
-  hita.tsx                   Relationship Pulse — private 10-question satisfaction tracker
+  pulse.tsx                  Relationship Pulse — private 10-question satisfaction tracker
   daily-wishes.tsx           Daily Picks — 5/day per category (Sweet/Flirty/Spicy)
   time-capsules.tsx          Time Capsules — seal a message/photo to open at a future date (1y/5y/10y or custom)
   versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
@@ -302,5 +302,4 @@ Bundle ID: `com.desire.app`. EAS profiles: `development`, `preview`, `production
 - Photo upload (memories) — no size limits enforced
 - RevenueCat subscription — payment provider not yet integrated
 - Host Privacy Policy + Terms of Service at public URL for store submission
-- Blueprint privacy — `users/{uid}/private/blueprint` needs security rules.
-- Challenge `completedBy` — no transaction, could race under concurrent writes.
+- Accessibility sweep — many TouchableOpacity elements lack `accessibilityLabel` / `accessibilityRole`. Real App Store review concern.

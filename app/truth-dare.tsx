@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, Easing, Alert } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
@@ -19,7 +19,7 @@ import {
   playCard, nextTurn, resetTruthDare, submitTruthAnswer,
   confirmDare, skipCard,
 } from '../services/truthDareService';
-import { uploadTruthDareAudio } from '../services/storageService';
+import { uploadTruthDareAudio, UploadTooLargeError } from '../services/storageService';
 import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -184,6 +184,11 @@ export default function TruthDareScreen() {
       await submitTruthAnswer(coupleId, uid, '', audioURL);
       setRecordingUri(null);
       setAnswerMode('write');
+    } catch (err) {
+      const msg = err instanceof UploadTooLargeError
+        ? `Recording is too long (${Math.round(err.actualBytes / 1024 / 1024)} MB, max ${Math.round(err.maxBytes / 1024 / 1024)} MB). Try a shorter answer.`
+        : 'Could not upload your answer. Try again.';
+      Alert.alert('Upload failed', msg);
     } finally {
       setIsUploading(false);
     }

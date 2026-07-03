@@ -63,7 +63,7 @@ function FlashVoice({ uri, large = false }: { uri: string; large?: boolean }) {
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { FlashEntry, subscribeFlashes, sendFlash, markFlashViewed, formatCountdown } from '../services/flashService';
-import { uploadFlashMedia } from '../services/storageService';
+import { uploadFlashMedia, UploadTooLargeError } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -198,8 +198,11 @@ export default function FlashesScreen() {
       setShowCompose(false);
       setSelectedUri(null);
       setCaption('');
-    } catch {
-      Alert.alert('Upload failed', 'Please try again.');
+    } catch (err) {
+      const msg = err instanceof UploadTooLargeError
+        ? `Your ${err.kind} is too large (${Math.round(err.actualBytes / 1024 / 1024)} MB, max ${Math.round(err.maxBytes / 1024 / 1024)} MB). Try a shorter clip.`
+        : 'Please try again.';
+      Alert.alert('Upload failed', msg);
     } finally {
       setSending(false);
     }
