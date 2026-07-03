@@ -1431,6 +1431,16 @@ Date-driven features: month calendar, countdown lists, sealed time capsules, rel
   1. Tap photo → cancel
   - **Expected:** Dashed box still says '📷 Add a photo'.
 
+- [ ] **Partner CANNOT bypass openAt to peek at sealed content** 🔒 ⚠️ 📱
+  1. Phone A: seal a 1-year capsule with message 'secret 42'
+  2. Phone B: open Firestore devtools → try to update `couples/{id}/timeCapsules/{capsuleId}` setting `openAt: 0`
+  3. Phone B: read `couples/{id}/timeCapsules/{capsuleId}/sealed/data`
+  - **Expected:** Step 2's update REJECTED by rules — openAt is immutable after create. Step 3 read stays denied because openAt still points to +1y. The 'sealed until X' promise cannot be defeated by a custom client.
+
+- [ ] **Sealer CAN flip `opened` to true after openAt passes** ⚠️
+  1. Sealer opens a ready capsule → tap Open
+  - **Expected:** `opened` field flips to true. Only mutable field on the metadata doc.
+
 - [ ] **Storage upload failure shows error and stays in modal** ⚠️
   1. Airplane mode → photo → date → Seal
   - **Expected:** Alert 'Could not seal the capsule. Try again.'
@@ -2412,6 +2422,16 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
   - **Expected:** Multi-line; min height 110.
 
 ### Sunday Check-in — sync, reveal, rules
+
+- [ ] **Firestore entry stores answers as a nested map, NOT dot-notation literals** 🔒 ⚠️
+  1. Phone A: Sunday Check-in → answer Q1, Save
+  2. Inspect Firestore: `couples/{id}/stateUnion/{weekId}/entries/{uidA}`
+  - **Expected:** Doc has `answers: { "0": "..." }` (nested map). NOT `answers.0: "..."` as a literal top-level field name with a dot in it. Bug regression check: setDoc({merge:true}) with dot-notation keys creates literal fields; feature only works if the write uses a nested object. If broken, progress count stays at 0/5 and reveal never fires.
+
+- [ ] **Partner CANNOT spoof completedAt to unlock my draft** 🔒 ⚠️ 📱
+  1. Phone A: Sunday Check-in → answer Q1, Save, DO NOT finish
+  2. Phone B: open Firestore devtools → try to write `completedAt: { <B_uid>: 123, <A_uid>: 456 }` to `couples/{id}/stateUnion/{weekId}`
+  - **Expected:** Firestore rules reject the update — Phone B may only add/modify its OWN uid key inside completedAt. Cannot inject Phone A's key. Partner draft answers stay unreadable.
 
 - [ ] **Phase 2 progress count updates live from partner** 📱
   1. Phone A finishes; Phone B answers 3 of 5
@@ -3630,6 +3650,18 @@ System-level behaviors that span multiple features.
   1. openAt +60s; wait → Phone B opens
   - **Expected:** Content loads.
 
+### Firebase Storage security rules
+
+- [ ] **Only self can read arbitrary users/{uid}/ paths (profile.jpg is public exception)** 🔒 ⚠️
+  1. User A uploads a private file at `users/{A_uid}/private/secret.txt` (via debug tool)
+  2. User B (not partner) tries `storage.ref('users/{A_uid}/private/secret.txt').getDownloadURL()`
+  - **Expected:** Denied. Only `users/{uid}/profile.jpg` is publicly readable by any authenticated user; every other path under users/{uid}/ is self-only. Regression check for the pre-July-2026 rule that allowed any authenticated read of any `users/{uid}/**` path.
+
+- [ ] **Profile photo still readable across couple** 📱
+  1. Phone A uploads profile.jpg
+  2. Phone B loads Phone A's profile
+  - **Expected:** Photo renders — the profile.jpg exception in storage rules preserves the partner-view flow.
+
 ### Firestore security rules - Sunday Check-in entries
 
 - [ ] **Cannot peek at partner's draft answers** ⚠️ 📱
@@ -3661,6 +3693,12 @@ System-level behaviors that span multiple features.
 - [ ] **Both partners deleted → couple data fully wiped** 📱 ⚠️
   1. Both delete sequentially
   - **Expected:** Couple doc + subcollections + Storage prefix all removed.
+
+- [ ] **All couple subcollections purged on final delete — no orphan writes survive** 🔒 ⚠️
+  1. Populate a couple with data across every service (journal entry, time capsule with sealed content, Sunday check-in with entries, milestones)
+  2. Both partners delete account sequentially
+  3. Query Firestore for `couples/{coupleId}/journal`, `couples/{coupleId}/timeCapsules`, `couples/{coupleId}/timeCapsules/{id}/sealed`, `couples/{coupleId}/stateUnion`, `couples/{coupleId}/stateUnion/{weekId}/entries`, `couples/{coupleId}/milestones`
+  - **Expected:** Every path returns empty. Regression check for GDPR audit — pre-fix these 4 subcollections + 2 nested were silently skipped and left user data on disk. Sealed time-capsule content and Gottman check-in answers must not survive.
 
 - [ ] **Profile photo removed from Storage on delete**
   1. Had photo; delete account

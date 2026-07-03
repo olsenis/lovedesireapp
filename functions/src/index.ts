@@ -156,30 +156,62 @@ export const deleteUserCascade = auth.user().onDelete(async (user) => {
   console.log(`Cascade delete complete for ${uid}`);
 });
 
+// Batches deletes of a plain doc collection, 400 per commit (Firestore limit is 500 including
+// the transaction itself, 400 leaves headroom).
+async function batchDeleteDocs(docs: FirebaseFirestore.QueryDocumentSnapshot[]): Promise<void> {
+  const batches: FirebaseFirestore.WriteBatch[] = [];
+  let batch = db.batch();
+  let count = 0;
+  for (const d of docs) {
+    batch.delete(d.ref);
+    count++;
+    if (count >= 400) {
+      batches.push(batch);
+      batch = db.batch();
+      count = 0;
+    }
+  }
+  if (count > 0) batches.push(batch);
+  await Promise.all(batches.map((b) => b.commit()));
+}
+
+// Firestore batch delete doesn't recurse into subcollections. For each parent doc under
+// couples/{coupleId}/{parent}/, walk its named nested subcollection and delete those first.
+// Used for timeCapsules/{id}/sealed and stateUnion/{weekId}/entries — both hold private
+// content that would otherwise survive GDPR erasure.
+async function deleteNestedSubcollection(coupleId: string, parent: string, nested: string): Promise<void> {
+  const parentSnap = await db.collection(`couples/${coupleId}/${parent}`).get();
+  for (const p of parentSnap.docs) {
+    const nestedSnap = await p.ref.collection(nested).get();
+    if (nestedSnap.empty) continue;
+    await batchDeleteDocs(nestedSnap.docs);
+  }
+}
+
 async function deleteCoupleData(coupleId: string): Promise<void> {
-  // Delete all subcollections under this couple
+  // Delete all subcollections under this couple. Every path a service writes to
+  // must be in this list — otherwise data survives GDPR erasure.
+  // Grep verified against services/ writes on 2026-07-03.
   const subcollections = [
     'todos', 'moods', 'memories', 'notes', 'wishlist', 'fantasy', 'fantasyWishes',
     'reminders', 'dates', 'challenge', 'blueprints', 'wyr', 'bingo', 'truthDare',
     'dailyWishes', 'dailyQuestions', 'streaks', 'sensate', 'flashes', 'moments',
     'sparks', 'pulse', 'intimacyLog', 'dateRatings',
+    // Added 2026-07-03 (Bug #2 in the GDPR audit) — these were writing docs
+    // that survived the cascade before.
+    'journal', 'timeCapsules', 'stateUnion', 'milestones',
   ];
+
+  // Nested subcollections FIRST so their parent docs still exist during the walk.
+  // timeCapsules/{id}/sealed holds the message + photoURL (advertised as sealed).
+  // stateUnion/{weekId}/entries/{uid} holds the per-user Gottman check-in answers.
+  await deleteNestedSubcollection(coupleId, 'timeCapsules', 'sealed');
+  await deleteNestedSubcollection(coupleId, 'stateUnion', 'entries');
+
   for (const sub of subcollections) {
     const snap = await db.collection(`couples/${coupleId}/${sub}`).get();
-    const batches: FirebaseFirestore.WriteBatch[] = [];
-    let batch = db.batch();
-    let count = 0;
-    snap.docs.forEach((d) => {
-      batch.delete(d.ref);
-      count++;
-      if (count >= 400) {
-        batches.push(batch);
-        batch = db.batch();
-        count = 0;
-      }
-    });
-    if (count > 0) batches.push(batch);
-    await Promise.all(batches.map((b) => b.commit()));
+    if (snap.empty) continue;
+    await batchDeleteDocs(snap.docs);
   }
 
   // Delete storage files under couples/{coupleId}/

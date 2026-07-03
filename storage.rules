@@ -12,11 +12,18 @@ service firebase.storage {
     }
 
     // ── User profile photos ───────────────────────────────────────────────────
-    // Only the user can write their own photo; any authenticated user can read
-    // (needed so partner can see profile photo)
-    match /users/{uid}/{allPaths=**} {
+    // profile.jpg is intentionally readable by any authenticated user so partner
+    // can see it (Firebase Storage rules can't do partner-only reads without a
+    // Firestore lookup that requires setup, and profile photos aren't sensitive
+    // enough to warrant that cost). Everything else under users/{uid}/ is
+    // strictly self-only — closes the leak where a future feature dumping
+    // sensitive files under users/{uid}/ would inherit the loose read rule.
+    match /users/{uid}/profile.jpg {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
     // ── Couple shared storage ─────────────────────────────────────────────────

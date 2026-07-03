@@ -92,8 +92,20 @@ service cloud.firestore {
         allow read: if isMemberOfCouple(coupleId);
         allow create: if isMemberOfCouple(coupleId)
           && request.resource.data.sealedBy == request.auth.uid;
+        // Time-lock immutability: sealedBy, openAt, sealedAt, hasPhoto MUST NOT
+        // change after create. Without this, either partner could set openAt
+        // back to 0 and defeat the sealed-content read gate at /sealed/{doc}.
+        // The only mutable field is `opened` (bool flip on unlock), and only
+        // the sealer flips it.
         allow update: if isMemberOfCouple(coupleId)
-          && request.resource.data.sealedBy == resource.data.sealedBy;
+          && request.resource.data.sealedBy == resource.data.sealedBy
+          && request.resource.data.openAt   == resource.data.openAt
+          && request.resource.data.sealedAt == resource.data.sealedAt
+          && request.resource.data.get('hasPhoto', false) == resource.data.get('hasPhoto', false)
+          && (
+            request.resource.data.get('opened', false) == resource.data.get('opened', false)
+            || request.auth.uid == resource.data.sealedBy
+          );
         allow delete: if isMemberOfCouple(coupleId)
           && resource.data.sealedBy == request.auth.uid;
 
@@ -120,7 +132,28 @@ service cloud.firestore {
       // both partners have completed. Prevents real-time peek at partner's draft.
       match /stateUnion/{weekId} {
         allow read: if isMemberOfCouple(coupleId);
-        allow create, update: if isMemberOfCouple(coupleId);
+        // Create is unrestricted for members — initial ensureStateUnionDoc()
+        // writes {weekId, startedAt, completedAt: {}, answeredCount: {}}.
+        allow create: if isMemberOfCouple(coupleId);
+        // Update: prevent spoofing partner's completedAt / answeredCount to
+        // unlock the /entries/{userId} read gate below. Only the requesting
+        // uid's own key inside completedAt / answeredCount may be added or
+        // changed. Other top-level fields (weekId, startedAt) stay locked.
+        allow update: if isMemberOfCouple(coupleId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['completedAt', 'answeredCount'])
+          && (
+            !('completedAt' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('completedAt', {})
+                 .diff(resource.data.get('completedAt', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          )
+          && (
+            !('answeredCount' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('answeredCount', {})
+                 .diff(resource.data.get('answeredCount', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          );
         allow delete: if false;
 
         match /entries/{userId} {

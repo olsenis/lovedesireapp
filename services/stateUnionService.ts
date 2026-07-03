@@ -112,11 +112,16 @@ export async function submitStateUnionAnswer(
 ): Promise<void> {
   // Write the answer to the user's own entries doc — Firestore rules prevent
   // partner from reading this until both have completed.
+  // NOTE: setDoc({merge: true}) treats dot-notation keys as literal field names
+  // (unlike updateDoc which parses them as field paths). Use a nested object so
+  // merge deep-merges into `answers` instead of creating a literal 'answers.0'
+  // top-level field. Downstream code reads `data.answers[i]` and would see
+  // `undefined` on every read otherwise.
   const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
   await setDoc(
     entryRef,
     {
-      [`answers.${questionIndex}`]: answer,
+      answers: { [questionIndex]: answer },
       updatedAt: Date.now(),
     },
     { merge: true },
