@@ -259,9 +259,28 @@ Three prompts for expanding content — always use the right one for the categor
 - Activity Cards (entire feature)
 - Kinky + Horny moods (shown greyed with lock for free users)
 
+## Age gate + explicit-content consent
+
+Apple's rating ceiling is 17+; the user-facing attestation is **18+** (matches
+legal age of majority + adult content laws). Two paths, both required:
+
+1. **Register:** [app/(auth)/register.tsx](app/(auth)/register.tsx) has an
+   `ageConfirmed` checkbox that must be checked before `Create Account` is
+   enabled. `confirmConsent(uid)` runs immediately after auth account
+   creation and writes `users/{uid}/private/consent` with a timestamp.
+
+2. **Post-login modal:** [app/_layout.tsx](app/_layout.tsx) runs
+   `getConsent(uid)` on every authenticated launch. If the doc is missing
+   (existing pre-consent users or corrupted state), a full-screen consent
+   modal blocks all navigation. Decline path deletes the Firebase Auth user
+   so no bypass is possible by signing back in.
+
+Legal defensibility: timestamp is stored per-user in Firestore, not just
+device-local, so we have a per-account audit trail if ever required.
+
 ## Distribution strategy (decided May 2026)
 
-- **iOS:** App Store, age rating 17+. Standard EAS build + TestFlight + App Review.
+- **iOS:** App Store, age rating 17+ (Apple ceiling). In-app attestation is 18+. Standard EAS build + TestFlight + App Review.
 - **Android:** NOT on Google Play. Signed APK hosted on the marketing website (Vercel), users sideload after enabling "Install from this source". In-app update prompt compares running version to a JSON manifest hosted alongside the APK. Same uncompromised feature set as iOS — no split build, no content sanitization.
 
 ```bash
@@ -282,7 +301,6 @@ Bundle ID: `com.desire.app`. EAS profiles: `development`, `preview`, `production
 - Push notifications — only works on real devices, needs EAS build
 - Photo upload (memories) — no size limits enforced
 - RevenueCat subscription — payment provider not yet integrated
-- Age gate — 17+ confirmation on first launch not yet implemented
 - Host Privacy Policy + Terms of Service at public URL for store submission
 - Blueprint privacy — `users/{uid}/private/blueprint` needs security rules.
 - Challenge `completedBy` — no transaction, could race under concurrent writes.

@@ -66,14 +66,29 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 
 ---
 
-## 1. Auth + Pairing (4 tests)
+## 1. Auth + Pairing (7 tests)
 
 - [x] **Register with 18+ consent → routed to onboarding**
   1. Phone A: Launch app fresh, tap "Create one"
   2. Enter new email + password (×2)
   3. Tap 18+ checkbox so it fills burgundy
   4. Tap "Create Account"
-  - **Expected:** Loading spinner, then "Welcome!" name+photo screen.
+  - **Expected:** Loading spinner, then "Welcome!" name+photo screen. Firestore: `users/{uid}/private/consent` exists with `confirmed: true` + `confirmedAt` timestamp.
+
+- [ ] **Register with 18+ checkbox unchecked keeps Create Account disabled** ⚠️
+  1. Phone A: Fresh register, fill email + password, do NOT check 18+ box
+  - **Expected:** Create Account button stays disabled. No auth account is created. No consent doc written.
+
+- [ ] **Post-login consent modal fires for legacy account without consent doc** ⚠️
+  1. Delete `users/{uid}/private/consent` in Firestore devtools for an existing account
+  2. Sign out, sign back in
+  - **Expected:** Full-screen 18+ consent modal blocks all navigation. Home is unreachable until Confirm or Decline. Terms of Service and Privacy Policy links inside the paragraph are tappable and open the correct screens; back returns to the modal.
+
+- [ ] **Decline path deletes the auth user (no bypass by signing back in)** 🔒 ⚠️
+  1. Sign in with a fresh account, get to the consent modal
+  2. Tap "I am under 18 — Exit"
+  3. Try to sign back in with the same credentials
+  - **Expected:** Sign-in fails with "user not found". No Firestore consent doc exists. Re-registration requires fresh 18+ attestation.
 
 - [x] **Login with verified email succeeds**
   1. Phone A: Sign out, then enter credentials

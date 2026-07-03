@@ -193,15 +193,23 @@ export default function RootLayout() {
             Desire is a couples intimacy app for adults. It contains content of a sexual and intimate nature, including explicit material in the premium tier.
           </Text>
           <Text style={consentStyles.body}>
-            By continuing, you confirm that you are at least 18 years old and agree to our Terms of Service and Privacy Policy.
+            By continuing, you confirm that you are at least 18 years old and agree to our{' '}
+            <Text style={consentStyles.link} onPress={() => router.push('/terms-of-service' as any)}>
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text style={consentStyles.link} onPress={() => router.push('/privacy-policy' as any)}>
+              Privacy Policy
+            </Text>
+            .
           </Text>
           <Text style={consentStyles.body}>
             You can turn off explicit content at any time in Settings.
           </Text>
-          <TouchableOpacity style={consentStyles.confirmBtn} onPress={handleConfirmConsent} activeOpacity={0.85} accessibilityRole="button">
+          <TouchableOpacity style={consentStyles.confirmBtn} onPress={handleConfirmConsent} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="I confirm I am 18 years or older and want to continue">
             <Text style={consentStyles.confirmBtnText}>I confirm I am 18+ — Continue →</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={consentStyles.declineBtn} onPress={handleDeclineConsent} activeOpacity={0.8} accessibilityRole="button">
+          <TouchableOpacity style={consentStyles.declineBtn} onPress={handleDeclineConsent} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="I am under 18. Exit the app and delete this account.">
             <Text style={consentStyles.declineBtnText}>I am under 18 — Exit</Text>
           </TouchableOpacity>
         </View>
@@ -227,4 +235,10 @@ const consentStyles = StyleSheet.create({
   confirmBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   declineBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
   declineBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+  // Underlined, burgundy, inline within the paragraph. Apple's App Store review
+  // guidelines expect ToS + Privacy Policy to be TAPPABLE within the consent
+  // screen, not just referenced by name — otherwise the attestation is treated
+  // as insufficient. Rendering as a nested <Text> inside the body <Text> is
+  // React Native's supported pattern for inline-clickable text.
+  link: { fontFamily: Fonts.bodyBold, color: Colors.burgundy, textDecorationLine: 'underline' },
 });
