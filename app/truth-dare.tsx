@@ -253,7 +253,7 @@ export default function TruthDareScreen() {
       return (
         <View style={styles.screen}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
             <Text style={styles.title}>Truth or Dare</Text>
             <View style={{ width: 60 }} />
           </View>
@@ -292,7 +292,7 @@ export default function TruthDareScreen() {
       return (
         <View style={styles.screen}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
             <Text style={styles.title}>Solo Dare</Text>
             <View style={{ width: 60 }} />
           </View>
@@ -363,7 +363,7 @@ export default function TruthDareScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Multiplayer Round</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -413,9 +413,9 @@ export default function TruthDareScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Truth or Dare</Text>
-        <TouchableOpacity onPress={handleReset} style={styles.resetBtn} accessibilityRole="button"><Text style={styles.resetBtnText}>↺ New</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleReset} style={styles.resetBtn} accessibilityRole="button" accessibilityLabel="Reset game"><Text style={styles.resetBtnText}>↺ New</Text></TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>

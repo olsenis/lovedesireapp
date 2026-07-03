@@ -116,7 +116,7 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>30-Day Challenge</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -129,7 +129,7 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>30-Day Challenge</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -199,7 +199,7 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleReset} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          <TouchableOpacity onPress={handleReset} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Review Days</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -226,7 +226,7 @@ export default function ChallengeScreen() {
                 </View>
                 <Text style={styles.dayText}>{displayText}</Text>
                 {myEditsLeft > 0 && (
-                  <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn} accessibilityRole="button">
+                  <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Edit day">
                     <Text style={styles.editBtnText}>✏️</Text>
                   </TouchableOpacity>
                 )}
@@ -283,9 +283,9 @@ export default function ChallengeScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>30-Day Challenge</Text>
-        <TouchableOpacity onPress={handleReset} accessibilityRole="button"><Text style={styles.resetBtn}>Reset</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleReset} accessibilityRole="button" accessibilityHint="Cannot be undone"><Text style={styles.resetBtn}>Reset</Text></TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>

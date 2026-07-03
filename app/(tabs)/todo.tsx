@@ -271,7 +271,7 @@ export default function TogetherScreen() {
                         {selectedTodo.completed ? '↩ Mark as undone' : '✓ Mark as done'}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.detailDeleteBtn} onPress={() => handleDelete(selectedTodo.id)} activeOpacity={0.85} accessibilityRole="button">
+                    <TouchableOpacity style={styles.detailDeleteBtn} onPress={() => handleDelete(selectedTodo.id)} activeOpacity={0.85} accessibilityRole="button" accessibilityHint="Cannot be undone">
                       <Text style={styles.detailDeleteText}>Remove</Text>
                     </TouchableOpacity>
                   </View>

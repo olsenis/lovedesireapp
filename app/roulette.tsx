@@ -101,7 +101,7 @@ export default function RouletteScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Date Night</Text>
@@ -171,7 +171,7 @@ export default function RouletteScreen() {
             <Text style={styles.resultDesc}>{result.description}</Text>
             <View style={styles.resultFooter}>
               <Text style={styles.resultType}>{TYPE_LABELS[result.type]}</Text>
-              <TouchableOpacity onPress={spin} accessibilityRole="button">
+              <TouchableOpacity onPress={spin} accessibilityRole="button" accessibilityLabel="Spin again">
                 <Text style={styles.reroll}>Try again ↻</Text>
               </TouchableOpacity>
             </View>

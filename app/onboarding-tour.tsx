@@ -132,7 +132,7 @@ export default function OnboardingTourScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={goBack} disabled={step === 0} style={styles.headerBtn} accessibilityRole="button">
+        <TouchableOpacity onPress={goBack} disabled={step === 0} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={[styles.headerBtnText, step === 0 && { opacity: 0.3 }]}>‹</Text>
         </TouchableOpacity>
         <View style={styles.progressBar}>

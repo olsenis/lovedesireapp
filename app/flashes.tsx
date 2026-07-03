@@ -313,7 +313,7 @@ export default function FlashesScreen() {
             <Text style={[styles.sectionLabel, { marginTop: Spacing.lg }]}>You sent</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {sent.map(flash => (
-                <TouchableOpacity key={flash.id} style={styles.sentThumb} onPress={() => setViewingFlash(flash)} accessibilityRole="button">
+                <TouchableOpacity key={flash.id} style={styles.sentThumb} onPress={() => setViewingFlash(flash)} accessibilityRole="button" accessibilityLabel="View sent tease">
                   {flash.mediaType === 'photo' ? (
                     <Image source={{ uri: flash.mediaURL }} style={styles.sentMedia} contentFit="cover" />
                   ) : flash.mediaType === 'voice' ? (

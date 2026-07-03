@@ -103,7 +103,7 @@ export default function JournalScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Journal</Text>
@@ -149,7 +149,7 @@ export default function JournalScreen() {
                   <TouchableOpacity onPress={() => openCompose(entry)} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Text style={styles.cardActionText}>✎ Edit</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(entry)} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={() => handleDelete(entry)} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityHint="Cannot be undone">
                     <Text style={[styles.cardActionText, styles.cardActionDelete]}>✕ Delete</Text>
                   </TouchableOpacity>
                 </View>

@@ -156,17 +156,17 @@ export default function FantasyWishesScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Fantasy Wishes</Text>
         <View style={{ flexDirection: 'row', gap: Spacing.md }}>
           {items.length > 0 && (
-            <TouchableOpacity onPress={handleReset} disabled={resetting} accessibilityRole="button">
+            <TouchableOpacity onPress={handleReset} disabled={resetting} accessibilityRole="button" accessibilityLabel="Reset wishes" accessibilityHint="Cannot be undone">
               <Text style={styles.resetBtn}>{resetting ? '…' : '↺'}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => setShowAdd(true)} accessibilityRole="button">
+          <TouchableOpacity onPress={() => setShowAdd(true)} accessibilityRole="button" accessibilityLabel="Add wish">
             <Text style={styles.addBtn}>+ Add</Text>
           </TouchableOpacity>
         </View>

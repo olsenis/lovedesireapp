@@ -409,7 +409,7 @@ export default function ProfileScreen() {
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
               <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={handleDisconnect} accessibilityRole="button">
+              <TouchableOpacity style={styles.row} onPress={handleDisconnect} accessibilityRole="button" accessibilityHint="Cannot be undone">
                 <Text style={[styles.rowLabel, { color: Colors.error }]}>Disconnect couple</Text>
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
@@ -630,7 +630,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {/* Delete account */}
-        <TouchableOpacity style={styles.deleteAccountBtn} onPress={() => { setDeleteError(''); setDeletePw(''); setDeleteModal(true); }} activeOpacity={0.8} accessibilityRole="button">
+        <TouchableOpacity style={styles.deleteAccountBtn} onPress={() => { setDeleteError(''); setDeletePw(''); setDeleteModal(true); }} activeOpacity={0.8} accessibilityRole="button" accessibilityHint="Cannot be undone">
           <Text style={styles.deleteAccountText}>Delete account</Text>
         </TouchableOpacity>
 
@@ -783,7 +783,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setDisconnectModal(false)} disabled={disconnecting} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={confirmDisconnect} disabled={disconnecting} accessibilityRole="button">
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={confirmDisconnect} disabled={disconnecting} accessibilityRole="button" accessibilityHint="Cannot be undone">
                 <Text style={styles.saveBtnText}>{disconnecting ? 'Disconnecting…' : 'Disconnect'}</Text>
               </TouchableOpacity>
             </View>
@@ -806,7 +806,7 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeleteModal(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={handleDeleteAccount} disabled={saving} accessibilityRole="button">
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: Colors.error }]} onPress={handleDeleteAccount} disabled={saving} accessibilityRole="button" accessibilityHint="Cannot be undone">
                 <Text style={styles.saveBtnText}>{saving ? 'Deleting…' : 'Delete'}</Text>
               </TouchableOpacity>
             </View>

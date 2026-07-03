@@ -107,7 +107,7 @@ export default function IntimacyTrackerScreen() {
     <View style={styles.screen}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Intimacy Log</Text>
@@ -245,7 +245,7 @@ export default function IntimacyTrackerScreen() {
                   style={[styles.saveBtn, { backgroundColor: Colors.error, marginTop: Spacing.md }]}
                   onPress={() => { setSelectedEntry(null); handleDelete(selectedEntry); }}
                   activeOpacity={0.85}
-                 accessibilityRole="button">
+                 accessibilityRole="button" accessibilityHint="Cannot be undone">
                   <Text style={styles.saveBtnText}>Delete entry</Text>
                 </TouchableOpacity>
               </ScrollView>
@@ -500,7 +500,7 @@ function DetailSheet({
             <Text style={styles.sheetSection}>Overall rating <Text style={styles.optional}>optional</Text></Text>
             <View style={styles.starsRow}>
               {[1,2,3,4,5].map(s => (
-                <TouchableOpacity key={s} onPress={() => setRating(rating === s ? 0 : s)} activeOpacity={0.8} accessibilityRole="button">
+                <TouchableOpacity key={s} onPress={() => setRating(rating === s ? 0 : s)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`Rate ${s} star${s === 1 ? '' : 's'}`}>
                   <Text style={styles.star}>{s <= rating ? '★' : '☆'}</Text>
                 </TouchableOpacity>
               ))}

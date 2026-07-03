@@ -190,7 +190,7 @@ export default function NotesScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
+        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Love Notes</Text>
@@ -412,7 +412,7 @@ export default function NotesScreen() {
                 <TouchableOpacity style={styles.cancelBtn} onPress={() => setDeleteConfirm(null)} accessibilityRole="button">
                   <Text style={styles.cancelText}>Keep it</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.sendBtn, { backgroundColor: '#C62828' }]} onPress={confirmDelete} accessibilityRole="button">
+                <TouchableOpacity style={[styles.sendBtn, { backgroundColor: '#C62828' }]} onPress={confirmDelete} accessibilityRole="button" accessibilityHint="Cannot be undone">
                   <Text style={styles.sendText}>Delete</Text>
                 </TouchableOpacity>
               </View>

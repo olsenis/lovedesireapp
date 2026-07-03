@@ -603,7 +603,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.avatarNameLight}>{profile?.name}</Text>
               {myTimezone && <Text style={styles.tzClock}>{myTimezone}</Text>}
-              <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7} accessibilityRole="button">
+              <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Mood history">
                 <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
               </TouchableOpacity>
             </View>
@@ -738,7 +738,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
             {!isSubscribed && ADULT_MOODS.map((emoji) => (
-              <TouchableOpacity key={emoji} style={[styles.moodBtn, { opacity: 0.4 }]} onPress={() => router.push('/upgrade' as any)} activeOpacity={0.7} accessibilityRole="button">
+              <TouchableOpacity key={emoji} style={[styles.moodBtn, { opacity: 0.4 }]} onPress={() => router.push('/upgrade' as any)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Locked mood, upgrade to unlock">
                 <Text style={styles.moodEmoji}>{emoji}</Text>
                 <Text style={styles.moodLabel}>🔒</Text>
               </TouchableOpacity>
