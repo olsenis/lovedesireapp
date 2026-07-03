@@ -58,7 +58,7 @@ Our Story, Year-in-Review, 30-Day Challenge Reconnect + Spark
 **Intimacy:** Erotic Blueprint (entire feature), Sensate Focus (entire
 feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 
-**Daily Picks:** Spicy + Sexual categories
+**Daily Picks:** Spicy category (previously Spicy + Sexual, merged July 2026)
 
 **Mood:** 😈 Kinky, 🥵 Horny emojis (last two on the picker)
 
@@ -121,7 +121,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   1. Phone A: Notes → tap own draft → ✏️ Edit → change text → Save
   - **Expected:** Note text updates immediately. Then tap 🗑️ → confirm → note removed from list.
 
-- [ ] **"When you're sad" note unlocks on partner mood pick** 📱
+- [x] **"When you're sad" note unlocks on partner mood pick** 📱
   1. Phone A: Notes → "When you're feeling..." → pick 😢 → write "you are loved" → Send
   2. Phone B: Home → tap 😢 mood
   - **Expected:** Phone B receives nudge "A note unlocked from Eva" within 30s. Open shows the message.

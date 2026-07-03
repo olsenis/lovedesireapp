@@ -96,7 +96,7 @@ app/                         Full-screen sub-screens
   reminders.tsx              Flirt Reminders — local scheduled notifications
   quiz.tsx                   Love Language Quiz — 10-question result
   hita.tsx                   Relationship Pulse — private 10-question satisfaction tracker
-  daily-wishes.tsx           Daily Picks — 5/day per category (Sweet/Flirty/Spicy/Sexual)
+  daily-wishes.tsx           Daily Picks — 5/day per category (Sweet/Flirty/Spicy)
   time-capsules.tsx          Time Capsules — seal a message/photo to open at a future date (1y/5y/10y or custom)
   versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
   wishlist.tsx               Shared Wishlist (legacy — not in main nav)
@@ -186,12 +186,12 @@ All static game content lives here — import from this file, never hardcode in 
 - `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 4 programs x 30 tasks
 - `WYR_QUESTIONS` + `WYR_LEVEL_CONFIG` — 90 Would You Rather questions (Playful/Romantic/Spicy)
 - `BINGO_ACTIVITIES` + `BINGO_REWARDS` — 55 activities + 10 rewards for Intimacy Bingo
-- `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 239 items for Daily Picks (Sweet/Flirty/Spicy/Sexual). Target 300+. See `memory/explicit_content_prompt.md` for Spicy/Sexual.
+- `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 224 items for Daily Picks in 3 categories (Sweet 60 + Flirty 60 + Spicy 104). Old 'sexual' category merged into 'spicy' July 2026. `sx()` factory still exists in content.ts but now emits `category: 'spicy'` with `sx-` id prefix so the diff stays small. See `memory/explicit_content_prompt.md` for Spicy.
 
 ### Content generation prompts (`memory/`)
 Three prompts for expanding content — always use the right one for the category:
 - `memory/question_writer_prompt.md` — **PG / free tier**: Questions Playful/Deep, Truths Sweet/Flirty, Dares Sweet/Flirty, Daily Picks Sweet/Flirty
-- `memory/explicit_content_prompt.md` — **X-rated / paid tier**: Questions Spicy/Fantasy, Truths Spicy, Dares Spicy, Daily Picks Spicy/Sexual
+- `memory/explicit_content_prompt.md` — **X-rated / paid tier**: Questions Spicy/Fantasy, Truths Spicy, Dares Spicy, Daily Picks Spicy
 - `memory/fantasy_wishes_prompt.md` — **Fantasy Wishes only**: noun/gerund scenario phrases (NOT commands or questions), 4 categories: Sensual/Roleplay/Explicit/BDSM
 
 ### Design system (`/constants`)
@@ -251,7 +251,7 @@ Three prompts for expanding content — always use the right one for the categor
 - Dare Wheel: Spicy level
 - Questions Game: Deep + Spicy categories (Deep = vulnerable/romantic/growth; Spicy = sensual/fantasy)
 - Would You Rather: Spicy level
-- Daily Picks: Spicy + Sexual categories
+- Daily Picks: Spicy category
 - Fantasy Wishes (entire feature)
 - Erotic Blueprint (entire feature)
 - Sensate Focus (entire feature)

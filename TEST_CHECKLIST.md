@@ -1985,7 +1985,15 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 
 - [ ] **Golden path — open shows 5 sweet items + progress**
   1. Fresh today open Daily Picks
-  - **Expected:** 4 tabs (Sweet active); progress 0/5; 5 wish cards with ✓/✗.
+  - **Expected:** 3 tabs — Sweet, Flirty, Spicy 🔒 (Spicy shows lock for non-premium). Sweet active; progress 0/5; 5 wish cards with ✓/✗.
+
+- [ ] **Non-premium tap on Spicy tab routes to /upgrade** 💰
+  1. Non-premium user taps 🔥 Spicy tab
+  - **Expected:** Immediately routes to /upgrade; Spicy content never renders. Sweet + Flirty stay openable.
+
+- [ ] **Stale doc from pre-merge (4 categories, 20 items) auto-regenerates** ⚠️
+  1. Any user who opened Daily Picks before July 2026 merge → open today
+  - **Expected:** subscribeDailyWishes detects items.length !== 15 or contains 'sexual' category → writes fresh 15-item doc with Sweet/Flirty/Spicy. No crash, no empty screen.
 
 - [ ] **Both partners see same 5 picks (deterministic)** 📱
   1. Phone A note 5 Sweet; Phone B same tab
@@ -2017,10 +2025,10 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 
 - [ ] **Both partners tap Add — exactly one todo created in correct category** 📱
   1. Both confirm on Sweet match
-  - **Expected:** Date Ideas todo exactly once (sweet→dates / sexual→fantasy / flirty/spicy→intimacy).
+  - **Expected:** Todo added exactly once. Category mapping: sweet→dates, flirty/spicy→intimacy.
 
 - [ ] **Race — both partners tap Add simultaneously, todo once** ⚠️ 📱 💰
-  1. Both tap within 1s on Sexual match
+  1. Both tap within 1s on a Spicy match
   - **Expected:** Transaction serializes; one todo.
 
 ### Daily Picks — All Matches modal
@@ -3268,11 +3276,11 @@ Profile screen controls, payment paywall, help system, legal viewers.
 
 - [ ] **Toggle off hides spicy content**
   1. Toggle OFF → Daily Picks / Questions / etc.
-  - **Expected:** Spicy/Sexual tabs hidden/filtered.
+  - **Expected:** Spicy tab hidden/filtered across features.
 
 - [ ] **Toggle on restores spicy content**
   1. Toggle ON → Daily Picks
-  - **Expected:** Spicy/Sexual tabs reappear (paid gating still applies).
+  - **Expected:** Spicy tab reappears (paid gating still applies).
 
 - [ ] **Toggle persists across sessions**
   1. Toggle OFF → sign out/in
@@ -3838,7 +3846,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
 - [ ] **Explicit content toggle OFF hides Spicy across all surfaces simultaneously**
   1. Profile → Explicit content toggle OFF
   2. Open Daily Picks, Questions Game, Truth or Dare, Would You Rather, Dare Wheel
-  - **Expected:** Spicy/Sexual tabs/levels hidden or grey-locked everywhere consistently; no leaks.
+  - **Expected:** Spicy tabs/levels hidden or grey-locked everywhere consistently; no leaks.
 
 ### State transitions and account lifecycle
 

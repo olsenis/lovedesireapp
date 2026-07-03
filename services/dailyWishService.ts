@@ -29,15 +29,24 @@ function deterministicShuffle(pool: DailyWishItem[], seedStr: string): DailyWish
   return arr;
 }
 
+const CATEGORIES: DailyWishCategory[] = ['sweet', 'flirty', 'spicy'];
+const EXPECTED_ITEM_COUNT = CATEGORIES.length * 5; // 3 cats × 5 picks
+
 function pickDailyItems(date: string, coupleId: string): DailyWishItem[] {
-  const categories: DailyWishCategory[] = ['sweet', 'flirty', 'spicy', 'sexual'];
   const result: DailyWishItem[] = [];
-  for (const cat of categories) {
+  for (const cat of CATEGORIES) {
     const pool = DAILY_WISH_ITEMS.filter((i) => i.category === cat);
     const shuffled = deterministicShuffle(pool, date + coupleId + cat);
     result.push(...shuffled.slice(0, 5));
   }
   return result;
+}
+
+// Doc is stale if item count doesn't match current schema (was 20 for 4 cats,
+// now 15 for 3 cats) or if any item still carries the removed 'sexual' category.
+function isStaleDoc(items: DailyWishItem[]): boolean {
+  if (items.length !== EXPECTED_ITEM_COUNT) return true;
+  return items.some((i) => !CATEGORIES.includes(i.category));
 }
 
 export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWishDoc) => void): Unsubscribe {
@@ -46,7 +55,10 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
       const existing = snap.data() as DailyWishDoc;
-      if (existing.items.length < 20) {
+      if (isStaleDoc(existing.items)) {
+        // Regenerate with current schema. Preserve any votes/addToList so
+        // progress today isn't lost — indices realign since categories changed
+        // so old votes on the removed 'sexual' items get dropped naturally.
         const items = pickDailyItems(date, coupleId);
         const migrated: DailyWishDoc = { date, items, votes: {}, addToList: {} };
         await setDoc(ref, migrated);

@@ -12,15 +12,18 @@ import { addTodo } from '../services/todoService';
 import { DAILY_WISH_CATEGORY_CONFIG, DailyWishCategory } from '../constants/content';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-const CATEGORIES: DailyWishCategory[] = ['sweet', 'flirty', 'spicy', 'sexual'];
+const CATEGORIES: DailyWishCategory[] = ['sweet', 'flirty', 'spicy'];
+const PAID_CATEGORIES: DailyWishCategory[] = ['spicy'];
 
 export default function DailyWishesScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed } = useSubscription();
   const [dailyDoc, setDailyDoc] = useState<DailyWishDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCat, setSelectedCat] = useState<DailyWishCategory>('sweet');
@@ -58,9 +61,7 @@ export default function DailyWishesScreen() {
     const { completedNow } = await markAddToListAtomic(coupleId, uid, partnerId, globalIndex);
     if (completedNow) {
       const item = dailyDoc.items[globalIndex];
-      const cat = item.category === 'sweet' ? 'dates'
-        : item.category === 'sexual' ? 'fantasy'
-        : 'intimacy';
+      const cat = item.category === 'sweet' ? 'dates' : 'intimacy';
       await addTodo(coupleId, item.text, cat, uid, 'daily-picks');
     }
   };
@@ -119,16 +120,22 @@ export default function DailyWishesScreen() {
         {CATEGORIES.map((cat) => {
           const c = DAILY_WISH_CATEGORY_CONFIG[cat];
           const active = selectedCat === cat;
+          const locked = PAID_CATEGORIES.includes(cat) && !isSubscribed;
           return (
             <TouchableOpacity
               key={cat}
               style={[styles.catTab, active && { backgroundColor: c.color }]}
-              onPress={() => { setSelectedCat(cat); scrollRef.current?.scrollTo({ y: 0, animated: false }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (locked) { router.push('/upgrade' as any); return; }
+                setSelectedCat(cat);
+                scrollRef.current?.scrollTo({ y: 0, animated: false });
+              }}
               activeOpacity={0.8}
              accessibilityRole="button">
               <Text style={styles.catTabEmoji}>{c.emoji}</Text>
               <Text style={[styles.catTabLabel, active && { color: c.textColor, fontFamily: Fonts.bodyBold }]}>
-                {c.label}
+                {c.label}{locked ? ' 🔒' : ''}
               </Text>
             </TouchableOpacity>
           );

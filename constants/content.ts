@@ -1881,7 +1881,7 @@ export const BINGO_REWARDS: string[] = [
 
 // ─── DAILY WISHES ─────────────────────────────────────────────────────────────
 
-export type DailyWishCategory = 'sweet' | 'flirty' | 'spicy' | 'sexual';
+export type DailyWishCategory = 'sweet' | 'flirty' | 'spicy';
 
 export interface DailyWishItem {
   id: string;
@@ -1893,7 +1893,6 @@ export const DAILY_WISH_CATEGORY_CONFIG: Record<DailyWishCategory, { label: stri
   sweet:   { label: 'Sweet',   emoji: '🌸', color: '#FCE4EC', textColor: '#880E4F' },
   flirty:  { label: 'Flirty',  emoji: '😏', color: '#F3E5F5', textColor: '#6A1B9A' },
   spicy:   { label: 'Spicy',   emoji: '🔥', color: '#FFCCBC', textColor: '#BF360C' },
-  sexual:  { label: 'Sexual',  emoji: '💋', color: '#FFEBEE', textColor: '#C62828' },
 };
 
 // ─── FANTASY WISHES (merged Wishlist + Fantasy) ───────────────────────────────
@@ -2327,7 +2326,10 @@ export const FANTASY_WISHES_PRESETS: FantasyWishesItem[] = [
 const sw = (text: string): DailyWishItem => ({ id: `sw-${text.slice(0,20)}`, text, category: 'sweet' });
 const fl = (text: string): DailyWishItem => ({ id: `fl-${text.slice(0,20)}`, text, category: 'flirty' });
 const sp = (text: string): DailyWishItem => ({ id: `sp-${text.slice(0,20)}`, text, category: 'spicy' });
-const sx = (text: string): DailyWishItem => ({ id: `sx-${text.slice(0,20)}`, text, category: 'sexual' });
+// sx (old 'sexual') was merged into spicy in July 2026 — items that used sx
+// now go through sp() but keep an 'sx-' id prefix so old Firestore matches
+// don't collide with existing sp-prefixed ids.
+const sx = (text: string): DailyWishItem => ({ id: `sx-${text.slice(0,20)}`, text, category: 'spicy' });
 
 export const DAILY_WISH_ITEMS: DailyWishItem[] = [
   // ── Sweet ────────────────────────────────────────────────────────────────
