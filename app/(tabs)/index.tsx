@@ -813,7 +813,7 @@ export default function HomeScreen() {
           <>
             <View style={styles.sectionDivider}>
               <View style={styles.sectionLine} />
-              <Text style={styles.sectionLabel}>Your List</Text>
+              <Text style={styles.sectionLabel}>Together List</Text>
               <View style={styles.sectionLine} />
             </View>
             <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/todo' as any)} activeOpacity={0.85} accessibilityRole="button">
@@ -834,10 +834,15 @@ export default function HomeScreen() {
         );
       })()}
 
-      {/* ─── GAMES & RITUALS ─── */}
+      {/* ─── TONIGHT'S PICKS ─── curated launchpad, 3 highest-fun games.
+           Discover tab holds the full menu (WYR, Roulette, Bingo, Challenge,
+           etc.). Home duplicating the full list dilutes the "tonight's pick"
+           signal — kept lean with Daily Picks (best daily rhythm), Truth or
+           Dare (highest-rated interaction), and Fantasy Wishes (paid premium
+           showcase). "See all games" links to Discover for everything else. */}
       <View style={styles.sectionDivider}>
         <View style={styles.sectionLine} />
-        <Text style={styles.sectionLabel}>Games & Rituals</Text>
+        <Text style={styles.sectionLabel}>Tonight's Picks</Text>
         <View style={styles.sectionLine} />
       </View>
 
@@ -846,24 +851,6 @@ export default function HomeScreen() {
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Daily Picks</Text>
           <Text style={styles.gameSub}>5 new picks today · vote privately</Text>
-        </View>
-        <Text style={styles.gameArrow}>›</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/roulette' as any)} activeOpacity={0.85} accessibilityRole="button">
-        <Text style={styles.gameEmoji}>🎲</Text>
-        <View style={styles.gameText}>
-          <Text style={styles.gameTitle}>Date Roulette</Text>
-          <Text style={styles.gameSub}>Spin for tonight's date</Text>
-        </View>
-        <Text style={styles.gameArrow}>›</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/would-you-rather' as any)} activeOpacity={0.85} accessibilityRole="button">
-        <Text style={styles.gameEmoji}>🤔</Text>
-        <View style={styles.gameText}>
-          <Text style={styles.gameTitle}>Would You Rather</Text>
-          <Text style={styles.gameSub}>3 levels · take turns</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
@@ -884,6 +871,10 @@ export default function HomeScreen() {
           <Text style={styles.gameSub}>Double-blind voting {!isSubscribed && '· 🔒'}</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.seeAllGamesRow} onPress={() => router.push('/(tabs)/discover' as any)} activeOpacity={0.7} accessibilityRole="button">
+        <Text style={styles.seeAllGamesText}>See all games →</Text>
       </TouchableOpacity>
 
       {/* Waiting for you nudges */}
@@ -974,6 +965,8 @@ const styles = StyleSheet.create({
   gameTitle: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.burgundy, fontWeight: '500' },
   gameSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 1 },
   gameArrow: { fontFamily: Fonts.body, fontSize: 18, color: Colors.muted },
+  seeAllGamesRow: { alignItems: 'center', paddingVertical: Spacing.sm, marginTop: 2, marginBottom: Spacing.sm },
+  seeAllGamesText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.5 },
   name: { fontFamily: Fonts.heading, fontSize: 34, color: Colors.burgundy, lineHeight: 38, marginTop: 2 },
   signOutBtn: { paddingTop: 6 },
   signOut: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },

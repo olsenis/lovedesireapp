@@ -30,6 +30,18 @@ const DISCOVER = [
   { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',      bg: '#E3F2FD', paid: false },
 ];
 
+// Same divider shape as Home ("─── LABEL ───") so the two hubs share a visual
+// language and section changes read as sibling rhythm rather than drift.
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <View style={styles.sectionDivider}>
+      <View style={styles.sectionLine} />
+      <Text style={styles.sectionLabel}>{label}</Text>
+      <View style={styles.sectionLine} />
+    </View>
+  );
+}
+
 function FeatureCard({
   emoji, title, subtitle, route, bg, paid, isSubscribed,
 }: {
@@ -62,13 +74,13 @@ export default function LoveScreen() {
       <Text style={styles.title}>Us</Text>
       <Text style={styles.subtitle}>Your rhythm together</Text>
 
-      <Text style={styles.sectionLabel}>Rituals</Text>
+      <SectionDivider label="Rituals" />
       {RITUALS.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
-      <Text style={styles.sectionLabel}>Nurture</Text>
+      <SectionDivider label="Nurture" />
       {nurture.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
 
-      <Text style={styles.sectionLabel}>Discover yourselves</Text>
+      <SectionDivider label="Discover yourselves" />
       {DISCOVER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
     </ScrollView>
   );
@@ -79,10 +91,11 @@ const styles = StyleSheet.create({
   container: { paddingTop: 60, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl },
   title: { fontFamily: Fonts.heading, fontSize: 40, color: Colors.burgundy },
   subtitle: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, marginBottom: Spacing.lg },
-  sectionLabel: {
-    fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted,
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: Spacing.sm, marginTop: Spacing.md,
-  },
+  // Shared with Home's Tonight's Picks / Tonight's Ritual dividers so hub
+  // transitions read as the same visual language.
+  sectionDivider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: Spacing.lg, marginBottom: Spacing.md },
+  sectionLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, letterSpacing: 2.5, textTransform: 'uppercase' },
   card: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: Radius.xl, padding: Spacing.lg,
