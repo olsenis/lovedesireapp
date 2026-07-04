@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { Todo, TodoCategory, subscribeTodos, addTodo, toggleTodo, deleteTodo, acceptSuggestion, rejectSuggestion } from '../../services/todoService';
@@ -236,10 +236,18 @@ export default function TogetherScreen() {
         </View>
       </Modal>
 
-      {/* Item detail modal */}
+      {/* Item detail modal.
+          Two dismiss paths added July 2026:
+            1. Tap on the dimmed backdrop above the sheet (Pressable on overlay).
+               Inner sheet swallows the press so tapping inside doesn't close.
+            2. Explicit "Close" text button at the bottom for accessibility +
+               users who don't reach the backdrop area.
+          Previously the sheet had only Mark as done / Remove — users who
+          wanted to just review the item and back out had no non-destructive
+          exit and were forced to take an action they didn't want. */}
       <Modal visible={!!selectedTodo} transparent animationType="slide" onRequestClose={() => setSelectedTodo(null)}>
-        <View style={styles.detailOverlay}>
-          <View style={styles.detailModal}>
+        <Pressable style={styles.detailOverlay} onPress={() => setSelectedTodo(null)}>
+          <Pressable style={styles.detailModal} onPress={() => { /* swallow — don't close when tapping inside the sheet */ }}>
             <View style={styles.detailHandle} />
             {selectedTodo && (() => {
               const cat = CATEGORIES.find(c => c.key === selectedTodo.category) ?? CATEGORIES[0];
@@ -274,12 +282,15 @@ export default function TogetherScreen() {
                     <TouchableOpacity style={styles.detailDeleteBtn} onPress={() => handleDelete(selectedTodo.id)} activeOpacity={0.85} accessibilityRole="button" accessibilityHint="Cannot be undone">
                       <Text style={styles.detailDeleteText}>Remove</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity style={styles.detailCloseBtn} onPress={() => setSelectedTodo(null)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Close">
+                      <Text style={styles.detailCloseText}>Close</Text>
+                    </TouchableOpacity>
                   </View>
                 </>
               );
             })()}
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       <HelpModal
@@ -419,6 +430,8 @@ const styles = StyleSheet.create({
   detailBtnTextDone: { color: Colors.muted },
   detailDeleteBtn: { paddingVertical: Spacing.sm, alignItems: 'center' },
   detailDeleteText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.error },
+  detailCloseBtn: { paddingVertical: Spacing.xs, alignItems: 'center' },
+  detailCloseText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
   check: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: Colors.rose, alignItems: 'center', justifyContent: 'center' },
   checkDone: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   checkMark: { color: Colors.cream, fontSize: 14, fontFamily: Fonts.bodyBold },
