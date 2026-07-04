@@ -76,7 +76,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   4. Tap "Create Account"
   - **Expected:** Loading spinner, then "Welcome!" name+photo screen. Firestore: `users/{uid}/private/consent` exists with `confirmed: true` + `confirmedAt` timestamp.
 
-- [ ] **Register with 18+ checkbox unchecked keeps Create Account disabled** ⚠️
+- [x] **Register with 18+ checkbox unchecked keeps Create Account disabled** ⚠️
   1. Phone A: Fresh register, fill email + password, do NOT check 18+ box
   - **Expected:** Create Account button stays disabled. No auth account is created. No consent doc written.
 
@@ -94,6 +94,12 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 - [x] **Login with verified email succeeds**
   1. Phone A: Sign out, then enter credentials
   - **Expected:** Lands on Home with mood picker visible.
+
+- [ ] **Re-login of fully-paired user goes straight to Home, NOT onboarding/pairing** ⚠️
+  1. Phone A: Confirm you have a name set and are paired with a partner
+  2. Phone A: Profile → Sign out
+  3. Phone A: Sign back in with the same credentials
+  - **Expected:** Lands DIRECTLY on Home. Should NOT see the "What's your name?" onboarding screen, and should NOT see the "Connect with partner" pairing screen. If "Skip for now" would reveal that you're actually already paired with the correct partner name, that means the routing fired against stale profile data — regression check for the useAuth loading-reset fix (July 2026).
 
 - [x] **Invite code flow connects both phones** 📱
   1. Phone A: Profile → Get invite code → copy 8-char code
