@@ -101,10 +101,18 @@ export function subscribeActivityCards(
 // Keep old name
 export const subscribeBingo = subscribeActivityCards;
 
-export async function usePass(coupleId: string, uid: string, session: ActivityCardsSession): Promise<void> {
-  const current = session.passes?.[uid] ?? 0;
-  await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
-    [`passes.${uid}`]: current + 1,
+// Transaction so rapid double-tap on Pass doesn't debit the same current
+// snapshot twice — both reads would see the same `current` and both writes
+// would set current+1, effectively giving the user a free extra pass.
+export async function usePass(coupleId: string, uid: string, _session: ActivityCardsSession): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'bingo', monthKey());
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const live = snap.data() as ActivityCardsSession;
+    const current = live.passes?.[uid] ?? 0;
+    if (current >= MAX_PASSES) return;
+    tx.update(ref, { [`passes.${uid}`]: current + 1 });
   });
 }
 
@@ -141,17 +149,26 @@ export async function uncompleteCard(coupleId: string, index: number): Promise<v
   });
 }
 
+// Same double-tap race guard as usePass — transaction reads live counter so
+// the same tap can't debit twice.
 export async function skipReceivedCard(
   coupleId: string,
   uid: string,
-  session: ActivityCardsSession,
+  _session: ActivityCardsSession,
   nextTurnUid: string
 ): Promise<void> {
-  const current = session.receiverPasses?.[uid] ?? 0;
-  await updateDoc(doc(db, 'couples', coupleId, 'bingo', monthKey()), {
-    pendingCard: null,
-    turnUid: nextTurnUid,
-    [`receiverPasses.${uid}`]: current + 1,
+  const ref = doc(db, 'couples', coupleId, 'bingo', monthKey());
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const live = snap.data() as ActivityCardsSession;
+    const current = live.receiverPasses?.[uid] ?? 0;
+    if (current >= MAX_RECEIVER_PASSES) return;
+    tx.update(ref, {
+      pendingCard: null,
+      turnUid: nextTurnUid,
+      [`receiverPasses.${uid}`]: current + 1,
+    });
   });
 }
 

@@ -197,7 +197,7 @@ export default function ActivityCardsScreen() {
             <TouchableOpacity style={styles.acceptBtn} onPress={handleMarkDone} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.acceptBtnText}>✓ We did it!</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.captureBtn} onPress={() => { handleMarkDone(); router.push('/moments' as any); }} activeOpacity={0.85} accessibilityRole="button">
+            <TouchableOpacity style={styles.captureBtn} onPress={async () => { await handleMarkDone(); router.push('/moments' as any); }} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.captureBtnText}>📸 We did it — capture this moment</Text>
             </TouchableOpacity>
             {receiverPassesLeft > 0 ? (

@@ -301,9 +301,9 @@ Calls rateLimitedJoin Cloud Function. Input auto-uppercases and clamps to 8.
   1. On the pairing screen tap 'Skip for now'
   - **Expected:** App routes to Home tab. Most partner-dependent UI shows empty/disabled.
 
-- [ ] **Skip while code is still generating** ⚠️
-  1. Reach the pairing screen and immediately tap 'Skip for now' before the spinner finishes
-  - **Expected:** Skip waits ~2.5 seconds for couple creation to finish, then navigates to Home.
+- [ ] **Skip awaits the actual createCouple promise, not a fixed timeout** ⚠️
+  1. Throttle network to slow-3G. Reach the pairing screen and immediately tap 'Skip for now' before the spinner finishes (create should take >2.5s).
+  - **Expected:** Skip button awaits the real in-flight createCouple promise (via useRef) — user only navigates once the couple doc is written. Home shows the created invite code, not empty state. Regression check: pre-fix a fixed `setTimeout(2500)` sometimes routed the user off before the write completed on slow networks, stranding them without a couple doc.
 
 - [ ] **Skipped user can return and pair later** 📱
   1. Skip pairing on Phone 1, land on Home
@@ -1844,6 +1844,12 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   1. Pick wrong
   - **Expected:** Red ✗; correct green ✓; reveal text.
 
+- [ ] **Question with drifted options is silently dropped from pool, not shown as "correct = stale answer"** ⚠️
+  1. Partner answered "Beach" on a binary question weeks ago
+  2. Content is edited so the question's options are now ["Mountains", "Desert"]
+  3. Open Versus
+  - **Expected:** That question does not appear in the round. It is silently filtered out of the pool. Regression check: pre-fix versusService would use "Beach" as the "correct" answer with a decoy from the current options, showing the user a stale answer as if it were the truth.
+
 - [ ] **Cannot re-tap after revealing** ⚠️
   1. Pick → revealed → tap options
   - **Expected:** Disabled.
@@ -1960,8 +1966,12 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   - **Expected:** Card green ✓; turn flips back to A; Phone A push '✓'.
 
 - [ ] **Capture moment — marks done AND routes to /moments** 📱 💰
-  1. Phone B: '📸 We did it — capture this moment'
-  - **Expected:** Card done + navigates to /moments.
+  1. Phone B: '📸 We did it — capture this moment' on airplane mode (Firestore write will fail)
+  - **Expected:** Alert or stays on card since markCardDone rejected; NOT silently navigates to /moments while the card stays uncompleted. Regression check: pre-fix the onPress didn't await handleMarkDone, so users could end up on /moments thinking the card was marked done while Firestore write actually failed.
+
+- [ ] **Rapid double-tap on Pass does not give an extra pass** 📱 ⚠️ 💰
+  1. Both premium. Phone A: on picker turn with 2 passes → tap Pass twice within 200ms
+  - **Expected:** Passes counter drops from 2 → 1 (not 0). Regression check: pre-fix usePass read `session.passes[uid]` from local snapshot and wrote current+1; two rapid taps both read 2 and both wrote 3, effectively debiting one pass while the user got two card swaps. Same guard now applies to skipReceivedCard.
 
 - [ ] **Skip received card uses receiver pass (max 1)** 📱 💰
   1. First skip then second received card
@@ -3594,6 +3604,10 @@ System-level behaviors that span multiple features.
   1. Phone B Profile toggle OFF; Phone A sends Love Note
   - **Expected:** No push on Phone B.
 
+- [ ] **Rapid same-title notifications from same sender are rate-limited (10s cooldown)** 📱 ⚠️
+  1. Phone A: fire the same notification title 5 times within 10 seconds (e.g. flip 5 activity cards in quick succession → each fires "Activity Cards 🃏 · your turn!")
+  - **Expected:** Phone B receives ONE push, not five. Second push arrives only after 10s have passed since the first. Regression check: pre-fix there was no client-side rate limit; partners could receive 4-5 pushes per second during a rapid interaction burst.
+
 - [ ] **Partner with OS-level notifications denied shows guidance**
   1. iOS Settings → Off; reopen → Profile
   - **Expected:** 'Off' label + hint.
@@ -3697,6 +3711,26 @@ System-level behaviors that span multiple features.
 - [ ] **Either partner can delete a shared item** 📱
   1. A creates wishlist item; B deletes
   - **Expected:** Removed both phones.
+
+- [ ] **Partner CANNOT spoof answer for other partner in Questions Game via dot-path** 🔒 ⚠️
+  1. Phone A: Firestore devtools → try to write `updateDoc(dailyQuestions/{today}, { ['answers.' + B_uid + '.7']: 'yes' })`
+  - **Expected:** Rejected by rules. Regression check: pre-fix the wildcard couple-subcollection rule only guarded top-level identity fields and didn't check nested `answers` map keys, so a malicious client could forge partner's answer and trigger a fake mutual reveal. Rule now requires `answers` diff to hasOnly the caller's own uid (empty reset also allowed).
+
+- [ ] **Partner CANNOT spoof vote for other partner in Daily Picks via dot-path** 🔒 ⚠️
+  1. Phone A: Firestore devtools → try `updateDoc(dailyWishes/{today}, { ['votes.' + B_uid + '.3']: 'yes' })`
+  - **Expected:** Rejected. Same nested-map protection blocks it. Would otherwise forge a mutual match and land a fake todo on the Together List.
+
+- [ ] **Partner CANNOT spoof discussed marker for other partner in Questions Game** 🔒 ⚠️
+  1. Phone A: try `updateDoc(dailyQuestions/{today}, { ['discussed.' + B_uid]: arrayUnion(3) })`
+  - **Expected:** Rejected.
+
+- [ ] **Own answer/vote/discussed writes still succeed after nested-map lockdown** ⚠️
+  1. Phone A: submit an answer via the app UI (normal flow, no devtools)
+  - **Expected:** Write succeeds. Regression check: the rule must not overreach and block legitimate first-party writes.
+
+- [ ] **Full reset writes (e.g. nextWYRQuestion clearing answers) still pass rules** ⚠️
+  1. Both partners answer a WYR question. Either tap "Next question" so `answers: {}` writes.
+  - **Expected:** Write succeeds. Rule allows empty-map writes (size == 0) so game state machines still work.
 
 ### Firestore security rules - Time Capsules content gate
 

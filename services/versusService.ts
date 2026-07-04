@@ -34,6 +34,11 @@ export async function loadVersusPool(
       if (qItem.format !== 'binary' || !qItem.options) return;
       const partnerAns = partnerAnswers[String(gi)];
       if (!partnerAns) return;
+      // Guard against schema drift: if the question's options have changed
+      // since the partner answered (edited in content.ts), the stored answer
+      // may no longer match either option. Skip these rather than showing a
+      // stale answer as the "correct" one.
+      if (!qItem.options.includes(partnerAns)) return;
       const decoy = qItem.options[0] === partnerAns ? qItem.options[1] : qItem.options[0];
       // Shuffle the two options so the right answer isn't always first
       const options = Math.random() < 0.5 ? [partnerAns, decoy] : [decoy, partnerAns];

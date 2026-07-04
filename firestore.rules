@@ -182,14 +182,50 @@ service cloud.firestore {
           && (!('loggedBy'  in request.resource.data) || request.resource.data.loggedBy  == request.auth.uid)
           && (!('sealedBy'  in request.resource.data) || request.resource.data.sealedBy  == request.auth.uid)
           && (!('uid'       in request.resource.data) || request.resource.data.uid       == request.auth.uid);
-        // Updates: identity fields are immutable once set
+        // Updates: identity fields are immutable once set. Additionally, any
+        // subcollection doc that carries a nested map keyed by uid — the
+        // classic `answers` (Questions Game, WYR), `votes` (Daily Picks,
+        // Fantasy Wishes), `discussed` (Questions Game) — is protected against
+        // dot-path spoofing. Without this guard, a malicious client could send
+        // `updateDoc(ref, { ['answers.' + partnerUid + '.7']: 'yes' })` and
+        // forge partner's answer to trigger a fake reveal / fake match. The
+        // stateUnion rules above already do this on parent-level completedAt;
+        // this covers the couple-level game docs universally.
+        //
+        // Two legitimate patterns must survive:
+        //  1. Caller writes to their own uid key only (submitAnswer, voteDailyWish).
+        //  2. Caller clears the whole map for a reset (nextWYRQuestion, startWYR).
+        // Both are allowed. Everything else is blocked.
+        //
+        // `scores` is deliberately NOT locked down — Truth or Dare's picker
+        // legitimately awards a point to the challenged partner, so a caller
+        // writing partner's score key is expected. Score inflation is a
+        // gamification concern, not a data-integrity or privacy concern.
         allow update: if request.auth != null
           && isMemberOfCouple(coupleId)
           && (!('fromUid'   in resource.data) || request.resource.data.fromUid   == resource.data.fromUid)
           && (!('createdBy' in resource.data) || request.resource.data.createdBy == resource.data.createdBy)
           && (!('loggedBy'  in resource.data) || request.resource.data.loggedBy  == resource.data.loggedBy)
           && (!('sealedBy'  in resource.data) || request.resource.data.sealedBy  == resource.data.sealedBy)
-          && (!('uid'       in resource.data) || request.resource.data.uid       == resource.data.uid);
+          && (!('uid'       in resource.data) || request.resource.data.uid       == resource.data.uid)
+          && (
+            !('answers' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('answers', {}).size() == 0
+            || request.resource.data.get('answers', {}).diff(resource.data.get('answers', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          )
+          && (
+            !('votes' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('votes', {}).size() == 0
+            || request.resource.data.get('votes', {}).diff(resource.data.get('votes', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          )
+          && (
+            !('discussed' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('discussed', {}).size() == 0
+            || request.resource.data.get('discussed', {}).diff(resource.data.get('discussed', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          );
         allow delete: if request.auth != null && isMemberOfCouple(coupleId);
       }
     }

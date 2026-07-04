@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,11 @@ export default function PairingScreen() {
   const [joinError, setJoinError] = useState('');
   const [copied, setCopied] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  // The in-flight createCouple promise (or verify-existing promise). Skip
+  // button awaits this so slow networks don't route the user off the pairing
+  // screen while the couple doc is still being written. Previously we slept
+  // 2.5s which either wasted time or wasn't enough on bad networks.
+  const createPromiseRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     if (!user || authLoading) return;
@@ -64,7 +69,7 @@ export default function PairingScreen() {
         setLoadingCreate(false);
       }
     };
-    run();
+    createPromiseRef.current = run();
   }, [user, authLoading, profile?.coupleId]);
 
   const handleCopy = async () => {
@@ -132,9 +137,14 @@ export default function PairingScreen() {
   };
 
   const handleSkip = async () => {
-    // Wait for couple creation to finish before navigating
-    if (loadingCreate) {
-      await new Promise((r) => setTimeout(r, 2500));
+    // Await the actual createCouple promise instead of a fixed setTimeout —
+    // slow networks used to skip past the write and leave the user tabbed
+    // in without a couple doc committed yet.
+    try {
+      if (createPromiseRef.current) await createPromiseRef.current;
+    } catch {
+      // If the create failed we still route — the user hit Skip deliberately
+      // and blocking them would strand them here.
     }
     await routeAfterPair();
   };

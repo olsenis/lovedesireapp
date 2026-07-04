@@ -62,6 +62,11 @@ export default function QuestionsGameScreen() {
     await submitAnswer(coupleId, uid, gi, value);
     setDrafts(d => { const n = { ...d }; delete n[gi]; return n; });
 
+    // Race note: both partners answering within the same tick may see stale
+    // `dailyDoc` snapshots where the other hasn't landed yet, so both may
+    // fire the "your turn!" push. Client-side rate limit in notificationService
+    // suppresses the duplicate. Full fix would move this to a Firestore trigger
+    // Cloud Function that sees atomic state; documented for post-launch.
     const partnerAlreadyAnswered = !!(partnerId && dailyDoc.answers?.[partnerId]?.[String(gi)]);
     if (!partnerAlreadyAnswered) {
       notifyPartner(coupleId, uid, 'Questions 💬', `${profile?.name ?? 'Your partner'} answered a question, your turn!`);
