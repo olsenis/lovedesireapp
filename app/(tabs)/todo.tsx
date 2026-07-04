@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Pressable } from 'react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, Animated, PanResponder } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { Todo, TodoCategory, subscribeTodos, addTodo, toggleTodo, deleteTodo, acceptSuggestion, rejectSuggestion } from '../../services/todoService';
@@ -31,6 +31,51 @@ export default function TogetherScreen() {
   const [newCat, setNewCat] = useState<TodoCategory>('daily');
   const [newAsSuggestion, setNewAsSuggestion] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+
+  // Drag-to-dismiss for the item detail sheet. Threshold: 100px OR >0.5 velocity.
+  // Only vertical downward drag triggers dismiss; horizontal / upward drags are
+  // ignored so scrolling inside the sheet still works and buttons stay tappable.
+  const detailTranslateY = useRef(new Animated.Value(0)).current;
+  const closeDetail = () => {
+    Animated.timing(detailTranslateY, {
+      toValue: 600,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => {
+      detailTranslateY.setValue(0);
+      setSelectedTodo(null);
+    });
+  };
+  const detailPan = useMemo(
+    () =>
+      PanResponder.create({
+        // Don't claim the touch on start — buttons inside must remain tappable.
+        onStartShouldSetPanResponder: () => false,
+        // Only claim once the user has moved vertically enough to look like a drag.
+        onMoveShouldSetPanResponder: (_, g) => g.dy > 5 && Math.abs(g.dy) > Math.abs(g.dx),
+        onPanResponderMove: (_, g) => {
+          if (g.dy > 0) detailTranslateY.setValue(g.dy);
+        },
+        onPanResponderRelease: (_, g) => {
+          if (g.dy > 100 || g.vy > 0.5) {
+            closeDetail();
+          } else {
+            Animated.spring(detailTranslateY, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 60,
+              friction: 8,
+            }).start();
+          }
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(detailTranslateY, { toValue: 0, useNativeDriver: true }).start();
+        },
+      }),
+    // detailTranslateY is a ref, safe to leave off deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -237,17 +282,23 @@ export default function TogetherScreen() {
       </Modal>
 
       {/* Item detail modal.
-          Two dismiss paths added July 2026:
-            1. Tap on the dimmed backdrop above the sheet (Pressable on overlay).
-               Inner sheet swallows the press so tapping inside doesn't close.
-            2. Explicit "Close" text button at the bottom for accessibility +
-               users who don't reach the backdrop area.
+          Three dismiss paths (added July 2026):
+            1. Drag the sheet down past ~100px (or fling with vy > 0.5) —
+               feels native-mobile, honours the visual drag handle at the top.
+            2. Tap the dimmed backdrop above the sheet.
+            3. Explicit "Close" button in the actions row (screen-reader path).
           Previously the sheet had only Mark as done / Remove — users who
           wanted to just review the item and back out had no non-destructive
           exit and were forced to take an action they didn't want. */}
-      <Modal visible={!!selectedTodo} transparent animationType="slide" onRequestClose={() => setSelectedTodo(null)}>
-        <Pressable style={styles.detailOverlay} onPress={() => setSelectedTodo(null)}>
-          <Pressable style={styles.detailModal} onPress={() => { /* swallow — don't close when tapping inside the sheet */ }}>
+      <Modal visible={!!selectedTodo} transparent animationType="slide" onRequestClose={closeDetail}>
+        <Pressable style={styles.detailOverlay} onPress={closeDetail}>
+          <Animated.View
+            style={[styles.detailModal, { transform: [{ translateY: detailTranslateY }] }]}
+            {...detailPan.panHandlers}
+            // Swallow taps that land on empty sheet area so the backdrop's
+            // onPress doesn't fire when the user taps inside the sheet.
+            onStartShouldSetResponder={() => true}
+          >
             <View style={styles.detailHandle} />
             {selectedTodo && (() => {
               const cat = CATEGORIES.find(c => c.key === selectedTodo.category) ?? CATEGORIES[0];
@@ -282,14 +333,14 @@ export default function TogetherScreen() {
                     <TouchableOpacity style={styles.detailDeleteBtn} onPress={() => handleDelete(selectedTodo.id)} activeOpacity={0.85} accessibilityRole="button" accessibilityHint="Cannot be undone">
                       <Text style={styles.detailDeleteText}>Remove</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.detailCloseBtn} onPress={() => setSelectedTodo(null)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Close">
+                    <TouchableOpacity style={styles.detailCloseBtn} onPress={closeDetail} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Close">
                       <Text style={styles.detailCloseText}>Close</Text>
                     </TouchableOpacity>
                   </View>
                 </>
               );
             })()}
-          </Pressable>
+          </Animated.View>
         </Pressable>
       </Modal>
 
