@@ -103,7 +103,7 @@ export default function QuestionsGameScreen() {
         {/* Progress */}
         <View style={[styles.progress, { borderLeftColor: cfg.color }]}>
           <Text style={styles.progressText}>
-            {answeredCount}/3 answered today · {cfg.emoji} {cfg.label}
+            {answeredCount}/{catItems.length || 3} answered today · {cfg.emoji} {cfg.label}
           </Text>
         </View>
 

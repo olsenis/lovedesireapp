@@ -24,11 +24,11 @@
 Use this if a test says one thing and the app calls it something else.
 
 - **Questions Game** — Discover → Questions Game. 3 categories: 😊 Playful (free), 💛 Deep (paid 🔒), 🔥 Spicy (paid 🔒). Answer privately, reveal when both done.
-- **Tease** — Love hub → Tease. 24h ephemeral photos/videos/voice notes.
-- **Moments** — Love hub → Moments. BeReal-style daily photo ritual with reveal.
-- **Sunday Check-in** — Love hub → Sunday Check-in. 5-question weekly Gottman ritual.
-- **Hita Pulse** — Love hub → Relationship Pulse. 10-question private satisfaction quiz.
-- **Together List** — bottom tab (may be hidden depending on layout) or Love hub → Together List.
+- **Tease** — Us tab → Rituals section is where daily ritual features live; Tease is a Quick action on Home + reachable via Flashes route. 24h ephemeral photos/videos/voice notes.
+- **Moments** — Us tab → Rituals section → Moments. BeReal-style daily photo ritual with reveal.
+- **Sunday Check-in** — Us tab → Rituals section → Sunday Check-in. 5-question weekly Gottman ritual.
+- **Relationship Pulse** — Profile → Reminders & tools → Relationship Pulse. Route is `/pulse` (renamed from `/hita` July 2026). 10-question private satisfaction quiz.
+- **Together List** — Home → "Together List" section (surfaced there instead of hidden). Also reachable from `/todo` route directly. Not on tab bar (`href: null`).
 
 ## Free vs Paid tier summary (verify on non-premium account)
 
@@ -37,23 +37,24 @@ user taps it. Paid-gate tests below cover the most important ones; this table
 is the complete reference.
 
 ### FREE (no lock, works for all users)
-**Games:** Truth or Dare Sweet + Flirty, Dare Wheel Sweet + Flirty,
-Questions Game **Playful**, Versus mode (full), Would You Rather Playful +
-Romantic, Date Night Roulette (full)
+**Games:** Truth or Dare Sweet + Flirty, Questions Game **Playful**, Versus
+mode (full), Would You Rather Playful + Romantic, Date Night Roulette (full).
+Note: Dare Wheel was folded into Truth or Dare — no separate route.
 
-**Connection:** Mood (except Kinky/Horny), Spark, Love Notes, Moments, Tease,
-Journal, Time Capsules, Calendar, Countdowns, Flirt Reminders, Sunday Check-in,
-Together List
+**Rituals + Async (Us tab / Home / Profile):** Mood (except Kinky/Horny),
+Spark, Love Notes, Moments, Tease, Journal, Time Capsules, Sunday Check-in,
+Together List (via Home). Utility screens moved to Profile → Reminders &
+tools: Calendar, Countdowns, Flirt Reminders, Relationship Pulse.
 
-**Insights:** Love Language Quiz, Relationship Pulse (with trend chart),
-Our Story, Year-in-Review, 30-Day Challenge Reconnect + Spark
+**Insights:** Love Language Quiz, Relationship Pulse (with trend chart —
+now in Profile), Our Story, Year-in-Review, 30-Day Challenge Reconnect + Spark
 
 **Daily Picks:** Sweet + Flirty categories
 
 ### PAID (locked with 🔒 icon, tap sends to /upgrade)
-**Games:** Truth or Dare Spicy level, Dare Wheel Spicy level, Questions Game
-**Deep + Spicy** categories, Would You Rather Spicy level, Activity Cards
-(entire feature), Fantasy Wishes (entire feature)
+**Games:** Truth or Dare Spicy level, Questions Game **Deep + Spicy**
+categories, Would You Rather Spicy level, Activity Cards (entire feature),
+Fantasy Wishes (entire feature)
 
 **Intimacy:** Erotic Blueprint (entire feature), Sensate Focus (entire
 feature), Intimacy Log (opt-in from Profile — free but hidden by default)
@@ -182,10 +183,6 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   1. Both (premium): Fantasy Wishes → vote same item with ❤️ yes
   - **Expected:** Item moves to Matches section on both phones. Other votes never visible (double-blind).
 
-- [ ] **Dare Wheel spin lands on a card** ⚠️
-  1. Phone A: Discover → Dare Wheel → pick Flirty → tap Spin
-  - **Expected:** Wheel animates ~3s then lands on a dare card. Tap "Done" to spin again.
-
 ---
 
 ## 4. Intimacy + Insights (5 tests)
@@ -203,10 +200,10 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   2. Phone A: Return to Home
   - **Expected:** Result shows primary love language. Home card shows "💬 Your love language tip" with daily rotation.
 
-- [ ] **Hita Pulse 10-Q + history + trend chart**
-  1. Phone A: Hita → answer all 10 → See my pulse
+- [ ] **Relationship Pulse 10-Q + history + trend chart**
+  1. Phone A: Profile → Reminders & tools → Relationship Pulse → answer all 10 → See my pulse
   2. Tap History tab
-  - **Expected:** Single result first time. Take twice more (~3 entries) → trend chart appears with vertical bars. Trend label shows "stable / improving / declining".
+  - **Expected:** Single result first time. Take twice more (~3 entries) → trend chart appears with vertical bars. Trend label shows "stable / improving / declining". Route is `/pulse` (renamed from `/hita`).
 
 - [ ] **Sunday Check-in dual completion reveal** 📱
   1. Both: Sunday Check-in → answer all 5 → Finish
@@ -264,7 +261,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   - **Expected:** Chip shows 🔒 lock. Tap → navigates to /upgrade. Playful remains accessible as the free taste.
 
 - [ ] **Free user → Fantasy Wishes → upgrade gate** 💰
-  1. Phone B (non-premium): Love hub → Fantasy Wishes
+  1. Phone B (non-premium): Discover → Fantasy Wishes (also reachable via Home "Tonight's Picks")
   - **Expected:** Hits /upgrade. No data loaded.
 
 - [ ] **Free user → Kinky/Horny mood → upgrade gate** 💰

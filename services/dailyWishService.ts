@@ -56,11 +56,21 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
     if (snap.exists()) {
       const existing = snap.data() as DailyWishDoc;
       if (isStaleDoc(existing.items)) {
-        // Regenerate with current schema. Preserve any votes/addToList so
-        // progress today isn't lost — indices realign since categories changed
-        // so old votes on the removed 'sexual' items get dropped naturally.
+        // Regenerate with current schema. Preserve existing votes/addToList
+        // as-is — safer than wiping them under partner races (comment said
+        // preserve, but the code was overwriting {}). Sweet + Flirty pools
+        // did not change so those indices still map to the same items. Only
+        // Spicy indices point to different items post-merge; the worst that
+        // happens is a "you voted yes" showing for an item that changed —
+        // user can override with a fresh vote. Wiping meant total data loss
+        // for both partners on the migration day.
         const items = pickDailyItems(date, coupleId);
-        const migrated: DailyWishDoc = { date, items, votes: {}, addToList: {} };
+        const migrated: DailyWishDoc = {
+          date,
+          items,
+          votes: existing.votes ?? {},
+          addToList: existing.addToList ?? {},
+        };
         await setDoc(ref, migrated);
         onChange(migrated);
       } else {

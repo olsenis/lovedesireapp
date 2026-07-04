@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, arrayUnion, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type FWVote = 'yes' | 'maybe' | 'no';
@@ -34,12 +34,6 @@ export async function voteOnFantasyWish(coupleId: string, itemId: string, uid: s
 
 export function isFWMatch(item: FantasyWishesItem, uid1: string, uid2: string): boolean {
   return item.votes[uid1] === 'yes' && item.votes[uid2] === 'yes';
-}
-
-export async function markFWAddToList(coupleId: string, uid: string, itemId: string): Promise<void> {
-  await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
-    addToList: arrayUnion(uid),
-  });
 }
 
 // Atomic version of the "I want to add this to Together List" mark.

@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { BINGO_ACTIVITIES } from '../constants/content';
 
@@ -68,13 +68,29 @@ export function subscribeActivityCards(
         onChange(data as ActivityCardsSession);
       }
     } else {
+      // Both partners could hit this branch simultaneously on first-open of
+      // the month — each writes a session with their own starterUid, second
+      // write clobbers the first. Wrap in a transaction that only writes if
+      // the doc is still non-existent inside the tx. If the other partner
+      // won the race, we re-read via onSnapshot and use their session.
       const squares = generateCard(month + coupleId + '0');
       const newSession: ActivityCardsSession = {
         month, squares, revealed: [], revealedBy: {},
         turnUid: starterUid, resetCount: 0, passes: {}, receiverPasses: {}, completed: [], pendingCard: null,
       };
-      await setDoc(ref, newSession);
-      onChange(newSession);
+      try {
+        const winnerSession = await runTransaction(db, async (tx) => {
+          const fresh = await tx.get(ref);
+          if (fresh.exists()) return fresh.data() as ActivityCardsSession;
+          tx.set(ref, newSession);
+          return newSession;
+        });
+        onChange(winnerSession);
+      } catch {
+        // Transaction retry limit hit — snapshot will fire again with the
+        // partner's write, so we just fall through and let the next tick
+        // deliver the session.
+      }
     }
   }, (error) => {
     console.error('ActivityCards subscription error:', error);
@@ -163,8 +179,3 @@ export async function resetActivityCards(
   });
 }
 
-// Legacy exports (unused but kept to avoid import errors elsewhere)
-export const resetBingo = resetActivityCards;
-export const checkBingoSquare = async () => {};
-export const uncheckBingoSquare = async () => {};
-export const hasBingo = () => false;

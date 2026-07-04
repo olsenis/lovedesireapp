@@ -43,19 +43,27 @@ export async function activateChallenge(coupleId: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'challenge', 'active'), { phase: 'active' });
 }
 
-// Edit a day's task during setup phase
+// Edit a day's task during setup phase. Uses a transaction so two rapid
+// edits (partner and me clicking the same day) don't both see the same
+// stale `editsUsed` and cause the counter to under-count.
 export async function editTask(
   coupleId: string,
   day: number,
   uid: string,
   text: string,
-  state: ChallengeState
+  _state: ChallengeState
 ): Promise<void> {
-  const used = state.editsUsed[uid] ?? 0;
-  if (used >= MAX_EDITS) return;
-  await updateDoc(doc(db, 'couples', coupleId, 'challenge', 'active'), {
-    [`customTasks.${day}`]: text,
-    [`editsUsed.${uid}`]: used + 1,
+  const ref = doc(db, 'couples', coupleId, 'challenge', 'active');
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const current = snap.data() as ChallengeState;
+    const used = current.editsUsed[uid] ?? 0;
+    if (used >= MAX_EDITS) return;
+    tx.update(ref, {
+      [`customTasks.${day}`]: text,
+      [`editsUsed.${uid}`]: used + 1,
+    });
   });
 }
 

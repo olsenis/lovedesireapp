@@ -45,14 +45,26 @@ export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer
   });
 }
 
-export async function nextWYRQuestion(coupleId: string, session: WYRSession, uids: [string, string]): Promise<void> {
-  const matched = session.answers[uids[0]] === session.answers[uids[1]];
-  await updateDoc(doc(db, 'couples', coupleId, 'wyr', 'active'), {
-    questionIndex: session.questionIndex + 1,
-    answers: {},
-    revealed: false,
-    'score.total': session.score.total + 1,
-    'score.match': session.score.match + (matched ? 1 : 0),
+// Transaction so two rapid "Next question" taps (partner and me at reveal
+// time) don't both read questionIndex=N and both write N+1, or both add 1
+// to score.total from the same stale snapshot.
+export async function nextWYRQuestion(coupleId: string, _session: WYRSession, uids: [string, string]): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'wyr', 'active');
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const live = snap.data() as WYRSession;
+    // Idempotency guard: if answers already cleared by the other partner, this
+    // is a duplicate advance — no-op.
+    if (Object.keys(live.answers ?? {}).length === 0) return;
+    const matched = live.answers[uids[0]] === live.answers[uids[1]];
+    tx.update(ref, {
+      questionIndex: live.questionIndex + 1,
+      answers: {},
+      revealed: false,
+      'score.total': live.score.total + 1,
+      'score.match': live.score.match + (matched ? 1 : 0),
+    });
   });
 }
 

@@ -31,7 +31,10 @@ export default function VersusScreen() {
   const partnerName = partner?.name ?? 'your partner';
 
   useEffect(() => {
-    if (!coupleId || !partnerUid) return;
+    if (!coupleId) return;
+    // Unpaired user: skip pool fetch and show empty state instead of stuck
+    // "Building your match..." spinner forever.
+    if (!partnerUid) { setStatus('empty'); return; }
     loadVersusPool(coupleId, uid, partnerUid, 10)
       .then((items) => {
         setPool(items);

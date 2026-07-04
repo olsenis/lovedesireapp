@@ -1,4 +1,4 @@
-import { doc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
 export interface StageProgress {
@@ -27,15 +27,25 @@ export function subscribeSensateProgress(
   });
 }
 
-export async function completeStage(coupleId: string, stageId: 1 | 2 | 3, current: SensateProgress): Promise<void> {
+// Uses a transaction so a concurrent completion of a DIFFERENT stage by the
+// partner isn't overwritten by our whole-doc setDoc. Previously the pattern
+// was: read local snapshot → spread → write full doc. If partner completed
+// stage 2 at the same instant we completed stage 1, our write would clobber
+// their stage 2 update because our snapshot didn't yet have it.
+export async function completeStage(coupleId: string, stageId: 1 | 2 | 3, _current: SensateProgress): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'sensate', 'progress');
   const key = `stage${stageId}` as keyof SensateProgress;
   const today = new Date().toISOString().slice(0, 10);
-  const updated: SensateProgress = {
-    ...current,
-    [key]: {
-      count: current[key].count + 1,
-      lastDate: today,
-    },
-  };
-  await setDoc(doc(db, 'couples', coupleId, 'sensate', 'progress'), updated);
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const live: SensateProgress = snap.exists() ? (snap.data() as SensateProgress) : empty();
+    const next: SensateProgress = {
+      ...live,
+      [key]: {
+        count: live[key].count + 1,
+        lastDate: today,
+      },
+    };
+    tx.set(ref, next);
+  });
 }

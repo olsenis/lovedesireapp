@@ -76,11 +76,15 @@ export default function StateUnionScreen() {
     return subscribeStateUnionEntry(coupleId, weekId, partnerId, setPartnerEntry);
   }, [coupleId, partnerId, both, weekId]);
 
-  // Sync the draft with the saved answer when navigating between questions
+  // Sync the draft with the saved answer when navigating between questions.
+  // Depends on `step` only — depending on `myEntry` too would wipe in-progress
+  // typing every time the Firestore snapshot arrives (e.g. after our own
+  // submit for the previous question fires the listener).
   useEffect(() => {
     const saved = myEntry?.answers?.[String(step)] ?? '';
     setDraftAnswer(saved);
-  }, [step, myEntry]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const handleSaveAndNext = async () => {
     if (!coupleId || !draftAnswer.trim()) return;

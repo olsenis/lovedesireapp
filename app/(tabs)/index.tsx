@@ -255,8 +255,12 @@ export default function HomeScreen() {
     // Challenge: partner marked today but user hasn't
     if (challengeState?.phase === 'active' && partnerId) {
     const day = challengeState.currentDay;
-    const iMarked = (challengeState.completedBy[day] ?? []).some(id => id === uid);
-    const partnerMarked = (challengeState.completedBy[day] ?? []).some(id => id === partnerId || id.startsWith('veto:'));
+    // completedBy entries can be a plain uid (marked done) or `veto:<uid>` (vetoed).
+    // Match strictly by partnerId so the user doesn't see "your turn" when THEY
+    // vetoed the day themselves — previously `id.startsWith('veto:')` matched
+    // any veto regardless of author.
+    const iMarked = (challengeState.completedBy[day] ?? []).some(id => id === uid || id === `veto:${uid}`);
+    const partnerMarked = (challengeState.completedBy[day] ?? []).some(id => id === partnerId || id === `veto:${partnerId}`);
     if (partnerMarked && !iMarked) {
       const cfg = challengeState.program ? CHALLENGE_PROGRAM_CONFIG[challengeState.program] : null;
       list.push({

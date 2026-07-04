@@ -62,12 +62,11 @@ export async function unlockMoodNotes(coupleId: string, uid: string, emoji: Mood
     const noteEmoji: MoodEmoji = (data.triggerEmoji as MoodEmoji) ?? '😢';
     return noteEmoji === emoji;
   });
-  await Promise.all(toUnlock.map((d) => updateDoc(d.ref, { openAt: Date.now() })));
-}
-
-// Legacy alias — same behavior as unlockMoodNotes('😢', ...). Kept for any old callers.
-export async function unlockSadNotes(coupleId: string, uid: string): Promise<void> {
-  return unlockMoodNotes(coupleId, uid, '😢');
+  // Individual updates can throw "no such document" if the sender deletes a
+  // note between our getDocs read and the update. That's benign — the note
+  // is gone, no unlock needed. Swallow per-item errors so one missing note
+  // doesn't take down the whole unlock batch and break the mood-pick flow.
+  await Promise.all(toUnlock.map((d) => updateDoc(d.ref, { openAt: Date.now() }).catch(() => {})));
 }
 
 // Called when the next visit date has arrived — unlocks any pending visit-condition notes from partner
@@ -79,8 +78,9 @@ export async function unlockVisitNotes(coupleId: string, uid: string): Promise<v
   );
   const snap = await getDocs(q);
   const toUnlock = snap.docs.filter(d => d.data().fromUid !== uid);
+  // Swallow per-item errors — same reason as unlockMoodNotes above.
   await Promise.all(toUnlock.map(d =>
-    updateDoc(d.ref, { openAt: Date.now() })
+    updateDoc(d.ref, { openAt: Date.now() }).catch(() => {})
   ));
 }
 

@@ -16,13 +16,13 @@
 
 ## Table of contents
 1. [Auth + Onboarding + Pairing](#1-auth--onboarding--pairing)
-2. [Home tabs (Home / Discover / Love / Together List)](#2-home-tabs-home--discover--love--together-list)
+2. [Home tabs (Home / Discover / Us + Together List surfaced on Home)](#2-home-tabs-home--discover--us--together-list-surfaced-on-home)
 3. [Love Notes + Tease + Moments + Journal](#3-love-notes--tease--moments--journal)
 4. [Calendar + Countdowns + Time Capsules + Our Story + Year-in-Review](#4-calendar--countdowns--time-capsules--our-story--year-in-review)
 5. [Truth or Dare + Questions Game + Versus + WYR](#5-truth-or-dare--questions-game--versus--wyr)
-6. [Activity Cards + Fantasy Wishes + Daily Picks + Dare Wheel + Roulette](#6-activity-cards--fantasy-wishes--daily-picks--dare-wheel--roulette)
+6. [Activity Cards + Fantasy Wishes + Daily Picks + Roulette](#6-activity-cards--fantasy-wishes--daily-picks--roulette)
 7. [Blueprint + Sensate + Intimacy Log](#7-blueprint--sensate--intimacy-log)
-8. [Love Language + Hita Pulse + Sunday Check-in + Mood History](#8-love-language--hita-pulse--sunday-check-in--mood-history)
+8. [Love Language + Relationship Pulse + Sunday Check-in + Mood History](#8-love-language--relationship-pulse--sunday-check-in--mood-history)
 9. [30-Day Challenge + Flirt Reminders](#9-30-day-challenge--flirt-reminders)
 10. [LDR mode (cross-feature)](#10-ldr-mode-cross-feature)
 11. [Profile + Settings + Upgrade + Help + Legal](#11-profile--settings--upgrade--help--legal)
@@ -466,28 +466,28 @@ Calls rateLimitedJoin Cloud Function. Input auto-uppercases and clamps to 8.
 
 ---
 
-## 2. Home tabs (Home / Discover / Love / Together List)
-Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
+## 2. Home tabs (Home / Discover / Us + Together List surfaced on Home)
+Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). Together List `href: null` in _layout, surfaced as a Home card.
 
 ### Tab navigation bar (app/(tabs)/_layout.tsx)
 
 - [ ] **Three tabs render with icons and labels**
   1. Sign in on Phone A
   2. Look at the bottom of the screen
-  - **Expected:** Three tabs visible: Home (🏠), Discover (✨), Love (💝). Together List tab is NOT shown.
+  - **Expected:** Three tabs visible: Home (🏠), Discover (✨), Us (💝). Together List tab is NOT shown.
 
 - [ ] **Switch between tabs preserves scroll position per tab**
-  1. From Home, scroll down to the Games & Rituals section
+  1. From Home, scroll down to the "Tonight's Picks" section
   2. Tap Discover tab, scroll down
-  3. Tap Love tab, then Home tab again
+  3. Tap Us tab, then Home tab again
   - **Expected:** Each tab retains its own scroll position.
 
-- [ ] **Together List is reachable but not via tab bar**
-  1. Tap Home tab and look at bottom tab bar
-  - **Expected:** No 'Together List' tab button visible.
+- [ ] **Together List is reachable via Home card (not tab bar)**
+  1. Tap Home tab and look for "Together List" section between Quick and Tonight's Picks
+  - **Expected:** Together List section renders with a card showing active count or partner suggestions. Tap navigates to /todo. No 'Together List' tab button visible on bottom bar.
 
 - [ ] **Active tab tint matches burgundy**
-  1. Tap Home, Discover, Love
+  1. Tap Home, Discover, Us
   - **Expected:** Active tab tinted burgundy; inactive muted grey.
 
 ### Home loading + greeting + hero (app/(tabs)/index.tsx)
@@ -719,9 +719,25 @@ Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
   1. Tap Love → Cancel
   - **Expected:** Sheet dismisses.
 
-- [ ] **All five game rows render**
-  1. Scroll to Games & Rituals
-  - **Expected:** Daily Picks, Date Roulette, Would You Rather, Truth or Dare, Fantasy Wishes.
+### Together List card on Home (new July 2026 surface)
+
+- [ ] **Together List Home card renders with active count subtitle**
+  1. Add 3 non-completed todos via /todo
+  2. Return to Home
+  - **Expected:** Between "Quick" and "Tonight's Picks" sections, a section labelled "Together List" (uppercase divider) with a card. Subtitle reads "3 open · daily life, dates, intimacy, goals". Tap navigates to /todo.
+
+- [ ] **Together List Home card empty-state subtitle**
+  1. Fresh couple, no todos
+  - **Expected:** Card subtitle reads "Add something you want to do together". Still tappable.
+
+- [ ] **Together List Home card highlights partner suggestions** 📱
+  1. Phone B: /todo → Add → toggle Send as suggestion → Send
+  2. Phone A: return to Home
+  - **Expected:** Phone A's card subtitle reads "1 suggestion waiting · N open" (or "2 suggestions waiting" if plural). Tap navigates to /todo showing the pending row for accept/decline.
+
+- [ ] **Tonight's Picks section renders exactly 3 rows + "See all games →" link**
+  1. Scroll to Tonight's Picks (renamed from "Games & Rituals" July 2026)
+  - **Expected:** Daily Picks · Truth or Dare · Fantasy Wishes rows visible, in that order. NO Date Roulette / Would You Rather rows on Home. Below the last row: "See all games →" tappable link that navigates to /(tabs)/discover. Regression check: previously this section had 5 rows duplicating the Discover tab menu.
 
 - [ ] **Daily Picks row navigates**
   1. Tap Daily Picks
@@ -735,9 +751,9 @@ Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
   1. Premium views row
   - **Expected:** Plain subtitle.
 
-- [ ] **All five rows push correct routes**
-  1. Tap each
-  - **Expected:** Correct routes.
+- [ ] **All 3 rows push correct routes + See all games link works**
+  1. Tap each of the 3 rows, then See all games
+  - **Expected:** Daily Picks → /daily-wishes, Truth or Dare → /truth-dare, Fantasy Wishes → /fantasy-wishes (or /upgrade if free-tier). See all games link → /(tabs)/discover.
 
 ### Waiting for you — challenge / notes / daily
 
@@ -752,6 +768,11 @@ Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
 - [ ] **Veto counts as 'marked' for nudge** 📱 ⚠️
   1. Phone B vetoes Day 1
   - **Expected:** Same nudge appears.
+
+- [ ] **Own veto does NOT show "partner marked it" nudge on Home** ⚠️
+  1. Phone A vetoes today's Challenge day from `/challenge`
+  2. Phone A: return to Home
+  - **Expected:** No "Partner marked it, your turn ✓" nudge for Phone A. Nudge only fires when the OTHER partner marked/vetoed. Regression check: pre-fix, `id.startsWith('veto:')` matched any veto author, so users saw the nudge for their own veto.
 
 - [ ] **Single ready note shows singular copy** 📱
   1. Phone B sends note unlocking in 1min; wait
@@ -901,6 +922,10 @@ Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
   1. Tap Discover
   - **Expected:** GAMES: Questions Game, Versus, Truth or Dare, WYR, Activity Cards, Fantasy Wishes.
 
+- [ ] **Questions Game subtitle shows current 3-category list, not legacy 6** ⚠️
+  1. Tap Discover → look at Questions Game card subtitle
+  - **Expected:** Subtitle reads "Playful, Deep and Spicy · answer privately, reveal together". Regression check: pre-fix the subtitle still said "Fun, Deep, Romantic, Spicy, Therapy & Fantasy" — six category names that no longer exist. Users would tap in expecting them and be confused.
+
 - [ ] **Free games show › arrow**
   1. Look at free 4
   - **Expected:** Right shows '›'.
@@ -929,39 +954,39 @@ Bottom tab bar with three tabs (Home/Discover/Love); Together List hidden.
   1. Tap
   - **Expected:** /roulette.
 
-### Love hub
+### Us hub (was "Love hub" pre-July 2026)
 
-- [ ] **Together List card renders and navigates**
-  1. Tap Love → Together List
-  - **Expected:** /todo.
+- [ ] **Us tab title and subtitle**
+  1. Tap Us tab
+  - **Expected:** Title reads "Us" (not "Love"). Subtitle reads "Your rhythm together". Three sections in order: RITUALS · NURTURE · DISCOVER YOURSELVES. Together List is NOT here (moved to Home).
 
-- [ ] **Intimacy Log hidden behind feature flag**
-  1. features.intimacyLog = false
-  - **Expected:** Section omits Intimacy Log.
+- [ ] **Rituals section renders 5 cards**
+  1. Scroll to RITUALS
+  - **Expected:** Sunday Check-in · Moments · Love Notes · Journal · Time Capsules. Tap each navigates to /state-union · /moments · /notes · /journal · /time-capsules.
 
-- [ ] **Intimacy Log appears when flag enabled**
-  1. features.intimacyLog = true
-  - **Expected:** Section lists Intimacy Log first.
+- [ ] **Nurture section — Intimacy Log hidden behind feature flag**
+  1. `features.intimacyLog = false`
+  - **Expected:** NURTURE section omits Intimacy Log; shows only Erotic Blueprint + Sensate Focus.
 
-- [ ] **All intimacy cards locked for free user** 💰
-  1. Free user views section
+- [ ] **Nurture section — Intimacy Log appears when flag enabled**
+  1. `features.intimacyLog = true`
+  - **Expected:** NURTURE section lists Intimacy Log first, then Blueprint + Sensate.
+
+- [ ] **All Nurture cards locked for free user** 💰
+  1. Free user views NURTURE section
   - **Expected:** Each card shows 🔒; tap → /upgrade.
 
-- [ ] **Cards unlock for premium** 💰
-  1. Premium taps each
+- [ ] **Nurture cards unlock for premium** 💰
+  1. Premium taps each Nurture card
   - **Expected:** Navigates to /intimacy-tracker, /blueprint, /sensate.
 
-- [ ] **All 6 connection cards render and navigate**
-  1. Open CONNECTION
-  - **Expected:** Journal, Love Notes, Moments, Countdowns, Calendar, Flirt Reminders.
+- [ ] **Discover yourselves section renders 2 cards**
+  1. Scroll to DISCOVER YOURSELVES
+  - **Expected:** Our Story + Love Language, in that order. Time Capsules and Sunday Check-in NOT here (moved to Rituals). Relationship Pulse NOT here (moved to Profile). No CONNECTION or INSIGHTS section — those labels were retired July 2026.
 
-- [ ] **Tap each connection card lands correctly**
-  1. Tap through all 6
-  - **Expected:** Each navigates correctly.
-
-- [ ] **All 5 insight cards render and navigate**
-  1. Open INSIGHTS
-  - **Expected:** Our Story, Time Capsules, Sunday Check-in, Love Language, Relationship Pulse.
+- [ ] **Utility screens reachable via Profile > Reminders & tools**
+  1. Profile → scroll to "Reminders & tools" section
+  - **Expected:** Calendar, Countdowns, Flirt Reminders, Relationship Pulse rows all present, each navigates to its route. These are NOT on the Us tab anymore.
 
 ### Together List
 
@@ -1217,6 +1242,10 @@ Timed/conditional letters with multiple unlock triggers.
 
 ### Moments (app/moments.tsx)
 BeReal-style daily photo ritual.
+
+- [ ] **No 🔥 streak counter renders anywhere in header** 🔒 ⚠️
+  1. Open Moments
+  - **Expected:** Header has back button + "Moments" title + empty 60px spacer (no streak pill). Regression check: pre-July-2026 there was a "🔥 N" pill top-right. Vision-doc rule: no gamification of intimacy. If any 🔥 emoji appears next to a number in the Moments header, this test fails.
 
 - [ ] **Empty state prompt before either photo** 📱
   1. Fresh day, neither posted
@@ -1723,6 +1752,14 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
 
 ### Questions Game — Category Tabs & Daily Pool (app/questions-game.tsx)
 
+- [ ] **No 🔥 streak counter renders anywhere in header** 🔒 ⚠️
+  1. Open Questions Game
+  - **Expected:** Header has back button + "Questions" title + 60px empty spacer. No 🔥 N pill top-right. Same regression rule as Moments.
+
+- [ ] **Progress counter matches actual category size, not hardcoded /3** ⚠️
+  1. Open Questions Game on an LDR-tagged pool where an item might be filtered out
+  - **Expected:** Progress reads "answeredCount/actualCount answered today" — the denominator matches `catItems.length`, not a hardcoded 3. Regression check: pre-fix the ratio was hardcoded `/3` so a filter that dropped a question showed nonsense like "0/3" with only 2 questions rendered.
+
 - [ ] **Same 3 questions appear on both phones for current category** 📱
   1. Phone A Playful; Phone B Playful
   - **Expected:** Same 3 in same order; progress '0/3 answered today'.
@@ -1780,6 +1817,10 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
 - [ ] **Empty state when partner has no binary history**
   1. New couple
   - **Expected:** 🤔 'Not enough answers yet' + 'Go to Questions →'.
+
+- [ ] **Unpaired user hits empty state, not infinite spinner** ⚠️
+  1. Sign in on Phone A, DO NOT join a couple, navigate to /versus directly
+  - **Expected:** Immediately shows empty state ("Not enough answers yet" or similar), NOT stuck on "Building your match..." spinner. Regression check: pre-fix the effect early-returned on missing partnerUid without ever setting status, leaving the loading screen forever.
 
 - [ ] **Loading state appears briefly during pool fetch**
   1. Open Versus
@@ -1877,7 +1918,7 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
 
 ---
 
-## 6. Activity Cards + Fantasy Wishes + Daily Picks + Dare Wheel + Roulette
+## 6. Activity Cards + Fantasy Wishes + Daily Picks + Roulette
 Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks, date roulette spinner.
 
 ### Activity Cards — first session + grid (app/bingo.tsx)
@@ -1893,6 +1934,10 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 - [ ] **Help modal shows on first visit, dismisses for good**
   1. Reset help → open → dismiss → re-enter
   - **Expected:** First visit modal; not on second.
+
+- [ ] **Simultaneous first-open of the month writes ONE session, not two** 📱 ⚠️ 💰
+  1. Fresh month (or delete the month's `bingo/{YYYY-MM}` doc). Both partners open Activity Cards within 1 second of each other.
+  - **Expected:** Firestore ends up with exactly one session doc for the month. Both phones converge on the same 25 squares and the same starter. Regression check: pre-fix, the else branch in `subscribeActivityCards` did a raw `setDoc` from inside onSnapshot, so both partners would race and one would clobber the other's session including turnUid and passes.
 
 ### Activity Cards — picker flow
 
@@ -2011,9 +2056,10 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. Non-premium user taps 🔥 Spicy tab
   - **Expected:** Immediately routes to /upgrade; Spicy content never renders. Sweet + Flirty stay openable.
 
-- [ ] **Stale doc from pre-merge (4 categories, 20 items) auto-regenerates** ⚠️
-  1. Any user who opened Daily Picks before July 2026 merge → open today
-  - **Expected:** subscribeDailyWishes detects items.length !== 15 or contains 'sexual' category → writes fresh 15-item doc with Sweet/Flirty/Spicy. No crash, no empty screen.
+- [ ] **Stale doc from pre-merge (4 categories, 20 items) auto-regenerates AND preserves votes** 🔒 ⚠️
+  1. Manually create a `couples/{id}/dailyWishes/{today}` doc with 20 items (4 old categories, includes 'sexual') and add some votes: `votes: { <uidA>: { "0": "yes", "5": "yes" }, <uidB>: { "0": "yes" } }`
+  2. Phone A opens Daily Picks
+  - **Expected:** subscribeDailyWishes detects `items.length !== 15` or a `'sexual'` category → writes fresh 15-item doc BUT preserves the existing `votes` and `addToList` maps. Match at index 0 (mutual yes on Sweet #0) still shows. Regression check: pre-fix, migration wrote `{ votes: {}, addToList: {} }` from inside onSnapshot, wiping both partners' progress the moment either partner refreshed after the schema bump.
 
 - [ ] **Both partners see same 5 picks (deterministic)** 📱
   1. Phone A note 5 Sweet; Phone B same tab
@@ -2182,6 +2228,11 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
   1. Phone A: complete Stage 1 → Mark session complete; go back
   - **Expected:** Stage 1 shows '✓ 1×' on both phones.
 
+- [ ] **Partner completing DIFFERENT stage at same instant doesn't clobber my write** 📱 ⚠️ 💰
+  1. Phone A: complete Stage 1 → tap Mark complete
+  2. Phone B: complete Stage 2 → tap Mark complete within 1s of A
+  - **Expected:** Both counts persist (Stage 1: ✓ 1×, Stage 2: ✓ 1×). Regression check: pre-fix completeStage used spread-then-setDoc from a stale local snapshot, so whichever partner wrote second would overwrite the other stage's update.
+
 - [ ] **Stage 3 (Flow) has no timer but can be marked complete**
   1. Tap Stage 3
   - **Expected:** No timer; Mark complete available immediately.
@@ -2315,7 +2366,7 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
 
 ---
 
-## 8. Love Language + Hita Pulse + Sunday Check-in + Mood History
+## 8. Love Language + Relationship Pulse + Sunday Check-in + Mood History
 Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-in, mood timeline.
 
 ### Love Language Quiz (app/quiz.tsx)
@@ -2425,6 +2476,11 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
 - [ ] **Multiline input keeps focus and scrolls**
   1. Type 5 lines
   - **Expected:** Multi-line; min height 110.
+
+- [ ] **In-progress typing survives a Firestore snapshot arrival** ⚠️
+  1. Phone A: Sunday Check-in → answer Q1, Save → Q2 → start typing "I feel like we…"
+  2. While typing, a snapshot arrives (e.g. Phone B just completed a Q1 submit that echoes through the parent doc)
+  - **Expected:** Draft text stays exactly what user typed. Regression check: pre-fix, the sync effect depended on `myEntry`, so any snapshot arrival while composing wiped the draft to the last-saved value. Effect now depends on `step` only.
 
 ### Sunday Check-in — sync, reveal, rules
 
@@ -2948,7 +3004,7 @@ Long-distance toggle and the suite of features it unlocks.
   - **Expected:** No LDR phrasing visible.
 
 - [ ] **LDR on: LDR-tagged questions are mixed in daily picks** 🌍
-  1. LDR ON → cycle Deep/Romantic multiple days
+  1. LDR ON → cycle Deep/Playful multiple days (Romantic category was merged into Deep in July 2026 consolidation)
   - **Expected:** At least one LDR-flavored question.
 
 - [ ] **Both partners see same LDR-mixed daily questions** 🌍 📱
@@ -3902,7 +3958,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
 
 - [ ] **Explicit content toggle OFF hides Spicy across all surfaces simultaneously**
   1. Profile → Explicit content toggle OFF
-  2. Open Daily Picks, Questions Game, Truth or Dare, Would You Rather, Dare Wheel
+  2. Open Daily Picks, Questions Game, Truth or Dare, Would You Rather (Dare Wheel removed)
   - **Expected:** Spicy tabs/levels hidden or grey-locked everywhere consistently; no leaks.
 
 ### State transitions and account lifecycle

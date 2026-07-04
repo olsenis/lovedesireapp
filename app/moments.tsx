@@ -14,10 +14,14 @@ import { Spacing, Radius, Shadow } from '../constants/spacing';
 
 export default function MomentsScreen() {
   const { user, profile } = useAuth();
-  const { partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
+  const { couple, partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
-  const partnerUid = partner?.uid ?? '';
+  // Derive partner uid from couple doc, not partner.uid — legacy user docs
+  // pre-dating the `uid` field write in authService.register have partner.uid
+  // as empty string, which would key photos lookups against '' and permanently
+  // block the reveal card. couple.partner{1,2}Uid is authoritative.
+  const partnerUid = couple?.partner1Uid === uid ? couple?.partner2Uid ?? '' : couple?.partner1Uid ?? '';
 
   const [moments, setMoments] = useState<MomentEntry[]>([]);
   const [uploading, setUploading] = useState(false);
