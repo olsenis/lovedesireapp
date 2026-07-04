@@ -14,11 +14,12 @@ Living overview of every feature, content pool size, and connection between feat
 │
 ├─ (tabs) ─── bottom bar (3 visible + hidden Together List)
 │  ├─ Home     🏠  mood picker, sparks, "Waiting for you" nudges,
-│  │              Your List card, Games & Rituals, tonight's ritual
+│  │              Together List card, Tonight's Picks (3 curated),
+│  │              tonight's ritual, "See all games →" link to Discover
 │  ├─ Discover ✨  hub of interactive games
 │  ├─ Us       💝  Rituals / Nurture / Discover yourselves
 │  │              (was 'Love' with 15 items — trimmed to 10, renamed July 2026)
-│  └─ Together List 📝  reachable via Home "Your List" card, not on tab bar
+│  └─ Together List 📝  reachable via Home "Together List" card, not on tab bar
 │
 └─ Full-screen features (30 screens)
    ├─ Games / interactive
@@ -26,37 +27,36 @@ Living overview of every feature, content pool size, and connection between feat
    │  ├─ daily-wishes       Discover ("Daily Picks")
    │  ├─ versus             Discover
    │  ├─ would-you-rather   Discover
-   │  ├─ truth-dare         Discover
+   │  ├─ truth-dare         Discover (Solo Dare + 2-phone multiplayer; ex-Dare Wheel folded in)
    │  ├─ bingo              Discover ("Activity Cards", paid)
    │  ├─ challenge          Discover ("30-Day Challenge")
-   │  ├─ fantasy-wishes     Love (paid)
-   │  ├─ roulette           Discover ("Date Night Roulette")
-   │  └─ dare               Discover ("Dare Wheel")
+   │  ├─ fantasy-wishes     Us (paid)
+   │  └─ roulette           Discover ("Date Night Roulette")
    │
-   ├─ Intimacy
-   │  ├─ blueprint          Love ("Erotic Blueprint", paid)
-   │  ├─ sensate            Love ("Sensate Focus", paid)
-   │  └─ intimacy-tracker   Love ("Intimacy Log", opt-in)
+   ├─ Nurture (Us tab)
+   │  ├─ blueprint          Us ("Erotic Blueprint", paid)
+   │  ├─ sensate            Us ("Sensate Focus", paid)
+   │  └─ intimacy-tracker   Us ("Intimacy Log", opt-in)
    │
    ├─ Messages / async
-   │  ├─ notes              Love ("Love Notes")
-   │  ├─ moments            Love (BeReal-style)
-   │  ├─ flashes            Love ("Tease")
-   │  ├─ time-capsules      Love
-   │  └─ journal            Love
+   │  ├─ notes              Us > Rituals ("Love Notes")
+   │  ├─ moments            Us > Rituals (BeReal-style)
+   │  ├─ flashes            Home Quick tile ("Tease")
+   │  ├─ time-capsules      Us > Rituals
+   │  └─ journal            Us > Rituals
    │
    ├─ Insights
-   │  ├─ quiz               Love ("Love Language Quiz")
-   │  ├─ hita               Love ("Relationship Pulse")
-   │  ├─ state-union        Love ("Sunday Check-in")
-   │  ├─ our-story          Love
-   │  └─ year-in-review     Love
+   │  ├─ quiz               Us > Discover yourselves ("Love Language Quiz")
+   │  ├─ pulse              Profile > Reminders & tools ("Relationship Pulse", route /pulse — renamed from /hita)
+   │  ├─ state-union        Us > Rituals ("Sunday Check-in")
+   │  ├─ our-story          Us > Discover yourselves
+   │  └─ year-in-review     Profile shortcut
    │
    └─ Utility
       ├─ mood-history       Home  (tap mood)
-      ├─ calendar           Love
-      ├─ countdown          Love
-      ├─ reminders          Love ("Flirt Reminders")
+      ├─ calendar           Profile > Reminders & tools
+      ├─ countdown          Profile > Reminders & tools
+      ├─ reminders          Profile > Reminders & tools ("Flirt Reminders")
       ├─ profile
       └─ upgrade
 ```
@@ -79,8 +79,7 @@ Categories:
 | Daily Picks | Daily voting + Together List seed | Mixed (Sweet + Flirty free, Spicy paid) | **224** (Sw 60 · Fl 60 · Sp 104) | 4/5 | 4/5 | Real payoff (feeds Together List). Post-merge to 3 cats. |
 | Versus | Guessing quiz | Free | Uses binary answers from Questions Game (last 45d) | 4/5 | 3/5 | No own pool — parasitic on Questions Game. Empty until you play Questions. |
 | Would You Rather | Simultaneous reveal | Mixed (Playful + Romantic free, Spicy paid) | **191** (Pl 70 · Rm 60 · Sp 61) | 4/5 | 3/5 | Same DNA as Questions binary format. Some overlap. |
-| Truth or Dare | Multiplayer state machine + audio | Mixed (Sweet + Flirty free, Spicy paid) | Truths **311** (Sw 95 · Fl 95 · Sp 121) + Dares **189** (Sw 45 · Fl 46 · Sp 98) | **5/5** | **5/5** | Deepest interaction. Audio + skip system + score. |
-| Dare Wheel | Spin animation | Mixed | Uses same DARES (189) | 3/5 | 3/5 | Very overlap with Truth or Dare's dare pool. Redundancy candidate. |
+| Truth or Dare | Multiplayer state machine + audio + Solo Dare mode | Mixed (Sweet + Flirty free, Spicy paid) | Truths **311** (Sw 95 · Fl 95 · Sp 121) + Dares **189** (Sw 45 · Fl 46 · Sp 98) | **5/5** | **5/5** | Deepest interaction. Audio + skip system + score. Solo Dare (ex-Dare Wheel) folded in July 2026. |
 | Activity Cards | Turn-based reveal grid | Paid | Activities **55** + Rewards **10** | 4/5 | 4/5 | Passes system + 3-state cards is a strong pattern. Paid-only limits reach. |
 | 30-Day Challenge | Guided daily program | Mixed (Reconnect + Spark free, Fire + Desire paid) | 4 programs × 30 tasks = **120** | 3/5 | 3/5 | Commitment feature; low return once done. Edit/veto system is clever. |
 | Fantasy Wishes | Explicit double-blind voting | Paid | **394** presets | 4/5 | 4/5 | Biggest content pool. No user-facing categories. |
@@ -143,9 +142,9 @@ Categories:
 
    Questions Game ──► Versus (parasitic — reads binary answers)
 
-   Truth or Dare ──► shares DARES pool with Dare Wheel
+   Truth or Dare (Solo mode) ──► same DARES pool as multiplayer
 
-   Fantasy Wishes match ──► Together List (Intimacy)
+   Fantasy Wishes match ──► Together List (Intimacy category)
 
    Blueprint result ──► Blueprint Compatibility view
 ```
@@ -156,15 +155,16 @@ Categories:
 
 Ranked by strength of case.
 
-### Strong candidates
+### Done
 
-1. **Dare Wheel → cut, fold into Truth or Dare**
-   - Both draw from the same 189-dare pool
-   - Truth or Dare already offers "dare" as one of two options per turn
-   - Dare Wheel is a single-tap novelty; Truth or Dare has multi-round depth
-   - **Recommendation:** Remove Dare Wheel from Discover. Users who want just-dares can pick Dare in TorD.
+1. **Dare Wheel → cut, folded into Truth or Dare** ✅ Done July 2026
+   - The old dare.tsx route was removed. Truth or Dare gained a Solo Dare mode
+     that draws from the same DARES pool. Users get the single-tap novelty
+     inside the deeper multi-round game surface.
 
-2. **Journal → cut or fold into Love Notes**
+### Strong candidates (open)
+
+1. **Journal → cut or fold into Love Notes**
    - Both are "write a message that lives in the shared space"
    - Notes has a stronger hook (timed/mood-gated/visit unlock)
    - Journal has no unlock condition — just a running log
@@ -200,16 +200,21 @@ Ranked by strength of case.
 
 **Why big can work here:**
 - Different couples want different rituals (mood-focused vs game-focused vs journaling)
-- Hub structure (Discover / Love / Home) breaks it into digestible chunks
+- Hub structure (Home / Discover / Us) breaks it into digestible chunks
 - Content-driven features (Questions / Daily Picks / TorD) age well — more items = more play
 - Paid tier gates the heaviest surfaces (Fantasy Wishes, Blueprint, Sensate, Activity Cards) so free-tier surface stays leaner
 
-**Where it hurts:**
-- **Discover tab risks feeling like a game store** — 10 games there. New users may get paralysis. Consider a "recommended tonight" pick + collapsible full list.
-- **Love hub has 15+ entries** — same risk. Some (Countdown, Calendar, Reminders) could collapse behind "Reminders & dates" section.
-- **Onboarding tour has a lot to introduce.** Consider showing only the 5 most-used features on tour and letting others be discovered organically.
+**Where the July 2026 restructure helped:**
+- ✅ Us tab trimmed from 15 items → 10 (Rituals / Nurture / Discover yourselves)
+- ✅ Utility screens (Calendar, Countdowns, Flirt Reminders, Relationship Pulse) moved to Profile > Reminders & tools
+- ✅ Home Tonight's Picks curated to 3 games + "See all games →" link (was 5 rows duplicating Discover)
+- ✅ Together List surfaced on Home as a dedicated card (was orphan on old Love tab)
 
-**Verdict:** Not too much *in the code* — the features exist and work. But too much *to surface at once*. Solving this is a hub-design problem (fewer cards on Discover/Love, better "tonight's pick" curation) rather than a "cut features" problem.
+**Where it still hurts:**
+- **Discover tab has 8 destinations** (6 games + 2 challenges). Manageable but at the edge.
+- **Onboarding tour has a lot to introduce.** Consider showing only the 5 most-used features on tour.
+
+**Verdict:** Post-restructure, this is now roughly right. Not too much in the code, not too much on-surface. Further trimming candidates are documented above but the "feature store" feeling is mostly gone.
 
 ## Content-pool health check
 

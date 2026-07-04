@@ -30,11 +30,14 @@ Games and challenges for the two of you.
 #### Games
 | Feature | What it does |
 |---------|-------------|
-| 🎲 **Dare Wheel** | Spin for one dare — Sweet / Flirty / Spicy. 90 dares total |
-| 💬 **Questions Game** | Card game where both answer. 6 categories, 120 questions (Fun, Deep, Romantic, Spicy, Therapy, Fantasy) |
-| 🃏 **Truth or Dare Together** | Turn-based 2-player game. Choose Truth or Dare each round |
-| ✨ **Fantasy Match** | Double-blind — rate 60 fantasy scenarios privately. Only mutual Yes is ever revealed |
-| 🌹 **Shared Wishlist** | Same double-blind system for 60 shared experience wishes |
+| 🎯 **Truth or Dare** | Turn-based 2-phone multiplayer + Solo Dare mode. Truths **311** + Dares **189** across Sweet / Flirty / Spicy |
+| 💬 **Questions Game** | 3/day per category, private answers, reveal when both answered. **474** questions across Playful (free), Deep and Spicy (paid) |
+| 🆚 **Versus** | Guess your partner's binary answers from Questions Game history |
+| 🤔 **Would You Rather** | Simultaneous answer reveal. **191** questions across Playful / Romantic / Spicy |
+| 🃏 **Activity Cards** | 25 face-down cards per month. Turn-based reveal with passes system |
+| ✨ **Fantasy Wishes** | Explicit double-blind voting on **394** presets. Only mutual Yes ever surfaces |
+| 🌹 **Daily Picks** | 5 new picks per day per category. Mutual Yes → adds to Together List |
+| 🎰 **Date Night Roulette** | Spin for one of **130** date ideas (home / out / adventure, LDR virtual filter) |
 
 #### Challenges
 | Feature | What it does |

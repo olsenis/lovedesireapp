@@ -1625,7 +1625,7 @@ Date-driven features: month calendar, countdown lists, sealed time capsules, rel
 ## 5. Truth or Dare + Questions Game + Versus + WYR
 Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would You Rather.
 
-### Truth or Dare — Mode Picker & Solo Dare Wheel (app/truth-dare.tsx)
+### Truth or Dare — Mode Picker & Solo Dare Spin (app/truth-dare.tsx)
 
 - [ ] **Mode picker shows two distinct paths**
   1. Open Truth or Dare

@@ -79,7 +79,7 @@ app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
   love.tsx                   Us hub — Rituals / Nurture / Discover yourselves. Renamed from 'Love' July 2026. Utility screens (Calendar, Countdown, Reminders, Relationship Pulse) moved to Profile > Reminders & tools.
 
 app/                         Full-screen sub-screens
-  dare.tsx                   Dare Wheel — Sweet / Flirty / Spicy spin
+  (dare.tsx removed July 2026 — Dare Wheel folded into Truth or Dare Solo mode)
   roulette.tsx               Date Night Roulette — spin for a date idea
   questions-game.tsx         Questions — 3/day per category, private answers, reveal when both answered
   fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, 5 at a time
@@ -99,8 +99,7 @@ app/                         Full-screen sub-screens
   daily-wishes.tsx           Daily Picks — 5/day per category (Sweet/Flirty/Spicy)
   time-capsules.tsx          Time Capsules — seal a message/photo to open at a future date (1y/5y/10y or custom)
   versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
-  wishlist.tsx               Shared Wishlist (legacy — not in main nav)
-  fantasy.tsx                Fantasy Match (legacy — replaced by fantasy-wishes.tsx)
+  (wishlist.tsx and fantasy.tsx removed — legacy features replaced by fantasy-wishes.tsx / dailyWishes)
 ```
 
 ### Firebase / Firestore data model
@@ -146,8 +145,6 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `moodService.ts` | `setMood`, `getTodaysMood`, `subscribeToMoods` |
 | `noteService.ts` | `subscribeNotes`, `createNote`, `openNote` |
 | `reminderService.ts` | `subscribeReminders`, `addReminder`, `toggleReminder`, `deleteReminder`, `scheduleReminderNotifications`, `cancelReminderNotifications` |
-| `wishlistService.ts` | `subscribeWishlist`, `addWishlistItem`, `voteOnWish`, `isMatch` |
-| `fantasyService.ts` | `subscribeFantasy`, `addFantasyItem`, `voteOnFantasy`, `isFantasyMatch` |
 | `fantasyWishesService.ts` | `subscribeFantasyWishes`, `addFantasyWishesItem`, `voteOnFantasyWish`, `isFWMatch`, `markFWAddToList`, `clearAndReloadFantasyWishes` |
 | `challengeService.ts` | `subscribeChallenge`, `startChallenge`, `activateChallenge`, `editTask`, `markDayComplete`, `vetoDay`, `resetChallenge` |
 | `blueprintService.ts` | `subscribeCoupleBlueprints`, `saveBlueprintResult` |
@@ -235,8 +232,7 @@ Three prompts for expanding content — always use the right one for the categor
 **Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Admin emails hardcoded for testing. Production will use RevenueCat. `isPremium: boolean` field on user Firestore doc also grants access.
 
 ### Free tier (store-safe)
-- Truth or Dare: Sweet + Flirty only
-- Dare Wheel: Sweet + Flirty only
+- Truth or Dare: Sweet + Flirty only (includes Solo Dare mode — the old Dare Wheel folded in)
 - Questions Game: Playful category only (binary + scale variants included)
 - Versus mode (full — uses partner's binary-question history)
 - Would You Rather: Playful + Romantic only
@@ -247,8 +243,7 @@ Three prompts for expanding content — always use the right one for the categor
 - 30-Day Challenge: Reconnect + Spark programs only
 
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
-- Truth or Dare: Spicy level
-- Dare Wheel: Spicy level
+- Truth or Dare: Spicy level (both multiplayer round AND Solo Dare)
 - Questions Game: Deep + Spicy categories (Deep = vulnerable/romantic/growth; Spicy = sensual/fantasy)
 - Would You Rather: Spicy level
 - Daily Picks: Spicy category
