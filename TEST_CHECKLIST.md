@@ -358,8 +358,8 @@ Calls rateLimitedJoin Cloud Function. Input auto-uppercases and clamps to 8.
   - **Expected:** Mood grid omits 😈 and 🥵 entirely for free users.
 
 - [ ] **Adult moods available for paid tier** 💰
-  1. On a premium / admin email account reach step 5
-  2. Inspect available moods
+  1. Grant premium to a QA account by setting `users/{uid}.isPremium: true` in Firebase Console (admin email hardcode was removed — see useSubscription.ts)
+  2. Sign in on that account and open the mood picker
   - **Expected:** All moods including 😈 and 🥵 appear.
 
 - [ ] **Tour only shows once per user** ⚠️
@@ -4309,7 +4309,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   - **Expected:** Exactly one deck doc; both phones see identical 25 cards.
 
 - [ ] **Solo user (skipped pairing) does not crash partner-dependent screens** ⚠️
-  1. Skip pairing; navigate to Home, Discover, Love, Together List, Notes
+  1. Skip pairing; navigate to Home, Discover, Us, Notes (Together List via Home card)
   - **Expected:** Each screen shows 'Connect with partner' style empty state; no crash; no NPE on missing partner.
 
 - [ ] **Versus empty state — partner has zero binary answers** ⚠️ 📱
