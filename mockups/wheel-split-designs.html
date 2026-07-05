@@ -150,19 +150,26 @@
     border: 3px solid rgba(255,248,240,0.7);
     box-shadow: 0 12px 24px rgba(0,0,0,0.12);
     position: relative;
-    transition: transform 1.2s cubic-bezier(0.15, 0.7, 0.3, 1);
+    transition: transform 1.4s cubic-bezier(0.15, 0.7, 0.3, 1);
   }
+  /* Only Surprise spins. Direct Truth/Dare taps don't rotate the wheel
+     — pre-determined outcome + theatrical spin was fake theater. */
   .wheel-inner.spinning-truth {
-    transform: rotate(1170deg); /* 3 full + 90° to land Truth (left) at top */
+    transform: rotate(1170deg);
   }
   .wheel-inner.spinning-dare {
-    transform: rotate(1350deg); /* 3 full + 270° to land Dare (right) at top */
+    transform: rotate(1350deg);
   }
-  /* After 1.4s reset to origin so the next spin animates from 0 again.
-     No transition on reset so it doesn't visually unwind. */
   .wheel-inner.reset {
     transition: none;
     transform: rotate(0deg);
+  }
+  /* Direct-tap feedback: brief scale pulse on the tapped half, no rotation */
+  .half.tapped { animation: tapPulse 0.25s ease-out; }
+  @keyframes tapPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(0.93); }
+    100% { transform: scale(1); }
   }
 
   /* ── Design 1: Bold Halves ───────────────────────────────────── */
@@ -290,6 +297,9 @@
   .design-3 .arc-emoji-truth { left: 40px; }
   .design-3 .arc-emoji-dare { right: 40px; }
   /* Center Spin button stays outside rotating wheel-inner */
+  /* Design 3's center is now the Surprise trigger — big prominent 🎲 button
+     that IS the "spin for random" action. Direct Truth/Dare taps on the
+     halves still work, but the center button becomes the theatrical spin. */
   .design-3 .center-spin {
     position: absolute;
     top: 50%;
@@ -303,10 +313,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 28px;
-    font-style: italic;
-    font-weight: 600;
+    font-size: 44px;
     box-shadow: 0 8px 16px rgba(136,14,79,0.4);
     z-index: 15;
     cursor: pointer;
@@ -316,15 +323,6 @@
   }
   .design-3 .center-spin:hover { transform: translate(-50%, -50%) scale(1.05); }
   .design-3 .center-spin:active { transform: translate(-50%, -50%) scale(0.95); }
-  /* In Design 3 the user first picks a half (highlights) then taps Spin */
-  .design-3 .half.selected::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 3px solid var(--burgundy);
-    pointer-events: none;
-    z-index: 2;
-  }
 
   /* ── Result card ─────────────────────────────────────────────── */
   .result {
@@ -389,10 +387,11 @@
 <body>
 
 <h1>Truth or Dare · Wheel Split Designs</h1>
-<p class="subtitle">Behavior C: theatrical spin, deterministic outcome</p>
+<p class="subtitle">Behavior D: direct taps are instant, only Surprise actually spins</p>
 <p class="instruction">
-  Click <strong>Truth</strong> or <strong>Dare</strong> on any design.
-  Wheel spins ~1.2s and always lands on your choice. Result card appears below.
+  <strong>Truth</strong> or <strong>Dare</strong> tap = instant result (brief pulse feedback, no rotation).
+  <strong>Surprise</strong> = real wheel spin — outcome genuinely random.
+  <br>Spin only when the wheel has something to decide.
 </p>
 
 <div class="designs">
@@ -414,18 +413,18 @@
         <div class="pointer"></div>
         <div class="wheel">
           <div class="wheel-inner" id="d1-inner">
-            <div class="half half-truth" onclick="spin(1, 'truth')">
+            <div class="half half-truth" onclick="pick(1, 'truth', event)">
               <div class="half-emoji">💭</div>
               <div class="half-label">Truth</div>
             </div>
-            <div class="half half-dare" onclick="spin(1, 'dare')">
+            <div class="half half-dare" onclick="pick(1, 'dare', event)">
               <div class="half-emoji">🎯</div>
               <div class="half-label">Dare</div>
             </div>
           </div>
         </div>
       </div>
-      <div class="surprise" onclick="spin(1, Math.random() < 0.5 ? 'truth' : 'dare')">or Surprise me 🎲</div>
+      <div class="surprise" onclick="surprise(1)">or Surprise me 🎲</div>
       <div class="result" id="d1-result">
         <div class="result-eyebrow" id="d1-eyebrow">Your dare</div>
         <div class="result-text" id="d1-text">...</div>
@@ -433,8 +432,9 @@
     </div>
     <div class="design-title">1. Bold Halves</div>
     <div class="design-desc">
-      Halves rotate visually during spin. Since halves ARE the wheel,
-      it's natural for them to spin. Always lands upright.
+      Tap a half = <strong>instant</strong> result with brief pulse feedback.
+      No rotation, no wait. Surprise link below triggers real spin.
+      <br><br>Cleanest, most direct.
     </div>
   </div>
 
@@ -455,11 +455,11 @@
         <div class="pointer"></div>
         <div class="wheel">
           <div class="wheel-inner" id="d2-inner">
-            <div class="half half-truth" onclick="spin(2, 'truth')">
+            <div class="half half-truth" onclick="pick(2, 'truth', event)">
               <div class="half-emoji">💭</div>
               <div class="half-label">Truth</div>
             </div>
-            <div class="half half-dare" onclick="spin(2, 'dare')">
+            <div class="half half-dare" onclick="pick(2, 'dare', event)">
               <div class="half-emoji">🎯</div>
               <div class="half-label">Dare</div>
             </div>
@@ -470,7 +470,7 @@
           </div>
         </div>
       </div>
-      <div class="surprise" onclick="spin(2, Math.random() < 0.5 ? 'truth' : 'dare')">or Surprise me 🎲</div>
+      <div class="surprise" onclick="surprise(2)">or Surprise me 🎲</div>
       <div class="result" id="d2-result">
         <div class="result-eyebrow" id="d2-eyebrow">Your dare</div>
         <div class="result-text" id="d2-text">...</div>
@@ -478,8 +478,9 @@
     </div>
     <div class="design-title">2. Halves + Center Anchor</div>
     <div class="design-desc">
-      Halves rotate but center intensity anchor stays pinned.
-      Level always visible even during spin.
+      Same instant-tap logic. The small center circle shows current intensity
+      (Sweet / Flirty / Spicy) always. Level context stays visible without
+      an extra label above the wheel.
     </div>
   </div>
 
@@ -500,28 +501,29 @@
         <div class="pointer"></div>
         <div class="wheel">
           <div class="wheel-inner" id="d3-inner">
-            <div class="half half-truth" id="d3-truth" onclick="select(3, 'truth')">
+            <div class="half half-truth" onclick="pick(3, 'truth', event)">
               <div class="arc-label arc-label-truth">Truth</div>
               <div class="arc-emoji arc-emoji-truth">💭</div>
             </div>
-            <div class="half half-dare" id="d3-dare" onclick="select(3, 'dare')">
+            <div class="half half-dare" onclick="pick(3, 'dare', event)">
               <div class="arc-label arc-label-dare">Dare</div>
               <div class="arc-emoji arc-emoji-dare">🎯</div>
             </div>
           </div>
-          <div class="center-spin" onclick="spinRoulette(3)">Spin</div>
+          <div class="center-spin" onclick="surprise(3)" title="Surprise me — random">🎲</div>
         </div>
       </div>
-      <div class="surprise" onclick="spin(3, Math.random() < 0.5 ? 'truth' : 'dare')">or Surprise me 🎲</div>
       <div class="result" id="d3-result">
         <div class="result-eyebrow" id="d3-eyebrow">Your dare</div>
         <div class="result-text" id="d3-text">...</div>
       </div>
     </div>
-    <div class="design-title">3. Roulette Style</div>
+    <div class="design-title">3. Big Surprise Center</div>
     <div class="design-desc">
-      Two-step: pick a half (highlights burgundy), then tap center Spin.
-      Traditional wheel-of-fortune feel with explicit spin ritual.
+      Halves are still direct-tap for Truth / Dare. Center 🎲 button is the
+      <strong>prominent Surprise trigger</strong> — spins the wheel for real random.
+      <br><br>Elevates Surprise to equal visual prominence with Truth/Dare
+      instead of being a small link below. Good if you expect Surprise use to be common.
     </div>
   </div>
 
@@ -549,58 +551,61 @@
   const selected = { 3: null };
   const busy = { 1: false, 2: false, 3: false };
 
-  function spin(designId, kind) {
-    if (busy[designId]) return;
-    busy[designId] = true;
-
-    const inner = document.getElementById(`d${designId}-inner`);
+  function showResult(designId, kind) {
     const result = document.getElementById(`d${designId}-result`);
     const eyebrow = document.getElementById(`d${designId}-eyebrow`);
     const text = document.getElementById(`d${designId}-text`);
+    const pool = kind === 'truth' ? truths : dares;
+    eyebrow.textContent = kind === 'truth' ? 'Your truth' : 'Your dare';
+    text.textContent = pool[Math.floor(Math.random() * pool.length)];
+    result.classList.add('visible');
+  }
 
-    // hide previous result
+  // Direct tap on Truth or Dare = instant result, brief pulse feedback, NO spin.
+  function pick(designId, kind, ev) {
+    if (busy[designId]) return;
+    busy[designId] = true;
+    const result = document.getElementById(`d${designId}-result`);
     result.classList.remove('visible');
 
-    // reset transform without transition, then apply spin class next frame
+    // pulse the tapped half
+    const halfEl = ev && ev.currentTarget;
+    if (halfEl) {
+      halfEl.classList.remove('tapped');
+      void halfEl.offsetWidth;
+      halfEl.classList.add('tapped');
+    }
+
+    // result appears just after the pulse settles
+    setTimeout(() => {
+      showResult(designId, kind);
+      busy[designId] = false;
+    }, 260);
+  }
+
+  // Surprise = real random spin. Wheel rotates; kind is genuinely unknown to the user.
+  function surprise(designId) {
+    if (busy[designId]) return;
+    busy[designId] = true;
+
+    const kind = Math.random() < 0.5 ? 'truth' : 'dare';
+    const inner = document.getElementById(`d${designId}-inner`);
+    const result = document.getElementById(`d${designId}-result`);
+    result.classList.remove('visible');
+
     inner.classList.remove('spinning-truth', 'spinning-dare', 'reset');
     inner.classList.add('reset');
-    // Force reflow so the reset takes effect before we add the spin class
     void inner.offsetWidth;
     inner.classList.remove('reset');
 
-    // Trigger spin
     requestAnimationFrame(() => {
       inner.classList.add(kind === 'truth' ? 'spinning-truth' : 'spinning-dare');
     });
 
-    // Show result after animation
     setTimeout(() => {
-      const pool = kind === 'truth' ? truths : dares;
-      eyebrow.textContent = kind === 'truth' ? 'Your truth' : 'Your dare';
-      text.textContent = pool[Math.floor(Math.random() * pool.length)];
-      result.classList.add('visible');
+      showResult(designId, kind);
       busy[designId] = false;
-    }, 1250);
-  }
-
-  function select(designId, kind) {
-    if (busy[designId]) return;
-    selected[designId] = kind;
-    const truthEl = document.getElementById(`d${designId}-truth`);
-    const dareEl = document.getElementById(`d${designId}-dare`);
-    truthEl.classList.toggle('selected', kind === 'truth');
-    dareEl.classList.toggle('selected', kind === 'dare');
-  }
-
-  function spinRoulette(designId) {
-    if (!selected[designId]) {
-      alert('Pick Truth or Dare first (tap a half)');
-      return;
-    }
-    spin(designId, selected[designId]);
-    selected[designId] = null;
-    document.getElementById(`d${designId}-truth`).classList.remove('selected');
-    document.getElementById(`d${designId}-dare`).classList.remove('selected');
+    }, 1450);
   }
 </script>
 
