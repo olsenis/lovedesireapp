@@ -2,6 +2,8 @@
 
 > Focused subset of the comprehensive [TEST_CHECKLIST.md](./TEST_CHECKLIST.md) for **every release**. ~62 tests, 4-6 hours with 2 phones. Catches ~80% of regressions.
 >
+> **Section 0 (Pre-launch content review) runs ONCE before App Store submission** — full read-through of every content pool (~2400 items). Budget 4-6h over two sittings.
+>
 > **Section 8 (Push notifications, 23 tests) is 📡 EAS-only** — run once after every EAS build, not during Expo Go / Vercel iteration. Add ~1h for that section on real devices.
 
 ## Setup
@@ -67,6 +69,91 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 
 ---
 
+## 0. Pre-launch content review (one-shot before App Store submission)
+
+Every content pool must be read end-to-end before shipping. You are looking for:
+
+- **Spelling / grammar errors** (the fastest to catch, most embarrassing to miss)
+- **Awkward phrasing** — anything that reads clinical, cringe, or "translated from another language"
+- **Tone drift within a level** — a "Sweet" item that's actually spicy, a "Deep" question that's actually playful. Level integrity matters.
+- **Tier appropriateness** — Sweet / Flirty / Playful / Playful (Deep) must be App Store safe (no explicit sexual content). Spicy / Fantasy Wishes / Sexual pools can be X-rated per prompts.
+- **English-only rule** (CLAUDE.md) — no Icelandic drift, no accented characters that shouldn't be there
+- **No em dashes** (—) in any UI string — use commas instead
+- **Duplicates** — same phrasing appearing twice in the same pool
+- **Length** — anything over ~140 chars will overflow UI cards on smaller phones
+
+For each pool, tick the box only after reading every item. If you find one drift issue, log the fix and re-read only that section on the follow-up commit.
+
+### Content pools
+
+- [ ] **Questions Game** — [constants/content.ts:QUESTIONS](constants/content.ts) · 474 items
+  - Playful (87) · free tier · [must be App Store safe]
+  - Deep (241) · paid tier · [vulnerable / romantic / growth; not explicit]
+  - Spicy (146) · paid tier · [explicit permitted per explicit_content_prompt.md]
+
+- [ ] **Dares** — [constants/content.ts:DARES](constants/content.ts) · 189 items
+  - Sweet (45) · free tier · [physical action, cute/romantic]
+  - Flirty (46) · free tier · [sensual kissing/touch, App Store safe]
+  - Spicy (98) · paid tier · [explicitly sexual, X-rated allowed]
+  - Verify: every dare is a physical action ("do X"), never a verbal one ("say X" / "describe X").
+
+- [ ] **Truths** — [constants/content.ts:TRUTHS](constants/content.ts) · 311 items
+  - Sweet (95) · free tier · [emotional, App Store safe]
+  - Flirty (95) · free tier · [physical attraction, App Store safe]
+  - Spicy (121) · paid tier · [explicitly sexual, X-rated allowed]
+
+- [ ] **Would You Rather** — [constants/content.ts:WYR_QUESTIONS](constants/content.ts) · 191 items
+  - Playful (70) · free tier
+  - Romantic (60) · free tier
+  - Spicy (61) · paid tier
+
+- [ ] **Daily Picks** — [constants/content.ts:DAILY_WISH_ITEMS](constants/content.ts) · 224 items
+  - Sweet (60) · free tier
+  - Flirty (60) · free tier
+  - Spicy (104) · paid tier · [merged from old Spicy + Sexual, July 2026]
+
+- [ ] **Fantasy Wishes** — [constants/content.ts:FANTASY_WISHES_PRESETS](constants/content.ts) · 394 items · paid tier only
+  - Verify: noun/gerund phrases, not commands ("Kiss for 30 seconds") or questions ("What if we...?"). Prompt: memory/fantasy_wishes_prompt.md.
+  - Categories: Sensual / Roleplay / Explicit / BDSM
+
+- [ ] **Date Ideas** — [constants/content.ts:DATE_IDEAS](constants/content.ts) · 130 items
+  - Home (~53) · Out (~39) · Adventure (~38) · Virtual for LDR (~28)
+  - Each has a title + 1-2 sentence description. Both must read well.
+
+- [ ] **30-Day Challenge tasks** — [constants/content.ts:CHALLENGE_PROGRAMS](constants/content.ts) · 120 items
+  - 4 programs × 30 days: Reconnect (free) · Spark (free) · Fire (paid) · Desire (paid, 18+)
+
+- [ ] **Activity Cards** — [constants/content.ts:BINGO_ACTIVITIES + BINGO_REWARDS](constants/content.ts) · 55 + 10 items · paid tier
+
+- [ ] **Blueprint Quiz** — [constants/content.ts:BLUEPRINT_QUESTIONS + BLUEPRINT_COMPATIBILITY](constants/content.ts) · 15 questions + 25 pair compatibility entries · paid tier
+
+- [ ] **Love Language Quiz** — [constants/content.ts:QUIZ_QUESTIONS + LOVE_LANGUAGE_LABELS](constants/content.ts) · 10 questions + 5 labels · free tier
+
+- [ ] **Sunday Check-in questions** — [services/stateUnionService.ts:STATE_UNION_QUESTIONS](services/stateUnionService.ts) · 5 questions · free tier
+
+- [ ] **Sensate Focus prompts** — [constants/content.ts (SENSATE prompt data)](constants/content.ts) · 3 stages of rotating prompts · paid tier
+
+- [ ] **Preset onboarding-tour copy** — [app/onboarding-tour.tsx](app/onboarding-tour.tsx) · every screen's copy read in order
+  - First impression of the app after pairing — one of the highest-value read-throughs.
+
+- [ ] **Preset home nudge subtitles** — [app/(tabs)/index.tsx nudges memo (~line 250-500)](app/(tabs)/index.tsx) · 30+ conditional subtitle strings
+  - These fire opportunistically. Grep for the memo body and read every subtitle template.
+
+- [ ] **Preset Love Language daily tip rotation** — [app/(tabs)/index.tsx getLanguageTip (~line 76-111)](app/(tabs)/index.tsx) · 5 languages × ~7 tips each
+
+### Sweep tests (run once after content pass is done)
+
+- [ ] **Grep for em dashes across all content files** — `Grep(pattern: "—")` in `constants/` and `services/` returns zero user-facing hits
+- [ ] **Grep for Icelandic characters** — `Grep(pattern: "[áéíóúýþæðöÁÉÍÓÚÝÞÆÐÖ]")` in `app/**/*.tsx` and `constants/` returns zero user-facing hits (privacy-policy / terms may be exempt if intentional)
+- [ ] **Grep for legacy category names** — `Grep(pattern: "'sexual'|'fantasy'|Romantic|Therapy")` in `constants/content.ts` returns zero hits (all migrations complete)
+
+### Notes
+
+- Prompts for generating consistent content live in `memory/question_writer_prompt.md`, `memory/explicit_content_prompt.md`, and `memory/fantasy_wishes_prompt.md`. Use them for any additions during this review.
+- Rough total: ~2400 items to read. Budget ~4-6 hours over two sittings. Don't try to power through in one — tone fatigue leads to false positives.
+
+---
+
 ## 1. Auth + Pairing (7 tests)
 
 - [x] **Register with 18+ consent → routed to onboarding**
@@ -80,12 +167,12 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   1. Phone A: Fresh register, fill email + password, do NOT check 18+ box
   - **Expected:** Create Account button stays disabled. No auth account is created. No consent doc written.
 
-- [ ] **Post-login consent modal fires for legacy account without consent doc** ⚠️
+- [x] **Post-login consent modal fires for legacy account without consent doc** ⚠️
   1. Delete `users/{uid}/private/consent` in Firestore devtools for an existing account
   2. Sign out, sign back in
   - **Expected:** Full-screen 18+ consent modal blocks all navigation. Home is unreachable until Confirm or Decline. Terms of Service and Privacy Policy links inside the paragraph are tappable and open the correct screens; back returns to the modal.
 
-- [ ] **Decline path deletes the auth user (no bypass by signing back in)** 🔒 ⚠️
+- [x] **Decline path deletes the auth user (no bypass by signing back in)** 🔒 ⚠️
   1. Sign in with a fresh account, get to the consent modal
   2. Tap "I am under 18 — Exit"
   3. Try to sign back in with the same credentials
@@ -95,7 +182,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   1. Phone A: Sign out, then enter credentials
   - **Expected:** Lands on Home with mood picker visible.
 
-- [ ] **Re-login of fully-paired user goes straight to Home, NOT onboarding/pairing** ⚠️
+- [x] **Re-login of fully-paired user goes straight to Home, NOT onboarding/pairing** ⚠️
   1. Phone A: Confirm you have a name set and are paired with a partner
   2. Phone A: Profile → Sign out
   3. Phone A: Sign back in with the same credentials
@@ -148,7 +235,7 @@ feature), Intimacy Log (opt-in from Profile — free but hidden by default)
   2. Phone B: Home → tap 😢 mood
   - **Expected:** Phone B receives nudge "A note unlocked from Eva" within 30s. Open shows the message.
 
-- [ ] **Daily Picks mutual match adds to Together List** 📱
+- [x] **Daily Picks mutual match adds to Together List** 📱
   1. Both: Open Daily Picks → both tap ❤️ on same item in same category
   - **Expected:** Match modal appears on both phones. Tap "Add to list" → item appears under correct Together List category.
 
