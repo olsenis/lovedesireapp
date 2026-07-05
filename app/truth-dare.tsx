@@ -253,10 +253,12 @@ export default function TruthDareScreen() {
     setSoloResult({ kind, text: pickRandom(pool).text });
   };
 
-  // Surprise = actual spin. Outcome is genuinely random from mixed pool,
-  // wheel rotates 3+ turns ending at the chosen half's top-of-wheel position
-  // so the visual matches the result (Truth left half lands under pointer if
-  // Truth won, etc.).
+  // Surprise = actual spin. Outcome is genuinely random from the mixed pool,
+  // wheel rotates exactly 4 full turns and lands back at 0° so labels stay
+  // upright. Earlier version landed at 90°/270° to indicate the winner via
+  // wheel position, but that left Truth/Dare labels rotated sideways at rest,
+  // which looked silly. Result card is what announces the winner; the spin
+  // is purely anticipation/drama.
   const handleSurprise = () => {
     if (soloSpinning) return;
     if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
@@ -273,12 +275,9 @@ export default function TruthDareScreen() {
     setSoloResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // 3 full rotations + 90° lands Truth (left half) at top under the pointer,
-    // + 270° lands Dare (right half) at top.
-    const targetDeg = picked.kind === 'truth' ? 1170 : 1350;
     soloSpinAnim.setValue(0);
     Animated.timing(soloSpinAnim, {
-      toValue: targetDeg,
+      toValue: 1440, // 4 full turns — ends at 0° so labels rest upright
       duration: 1600,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,

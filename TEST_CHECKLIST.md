@@ -1642,9 +1642,9 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   2. Tap the right (Dare) half
   - **Expected:** Same pulse feedback. Eyebrow reads "Your dare"; text from DARES pool.
 
-- [ ] **"Surprise me 🎲" link spins the wheel and lands on random pool** ⚠️
+- [ ] **"Surprise me 🎲" link spins the wheel and returns to origin, result revealed in card** ⚠️
   1. Tap "or Surprise me 🎲" link below the wheel
-  - **Expected:** Wheel rotates 3+ full turns (~1.6s) and lands with either Truth half or Dare half at the top under the pointer. Result card appears matching the landed half. Repeat 4-5 times and confirm both kinds show up (~50/50 weighted by pool size).
+  - **Expected:** Wheel rotates exactly 4 full turns (~1.6s) and ends with Truth back on the left and Dare back on the right (starting orientation). Labels are upright, not rotated sideways. Result card announces "Your truth" or "Your dare" — the winner is communicated by the card, not by wheel position. Repeat 4-5 times and confirm both kinds show up.
 
 - [ ] **Center anchor stays static during Surprise spin** ⚠️
   1. Tap Surprise
