@@ -373,7 +373,6 @@ export default function TruthDareScreen() {
                 Rotation only happens on Surprise; direct taps pulse the half. */}
             <View style={styles.wheelWrap}>
               <View style={styles.wheelHalo} pointerEvents="none" />
-              <View style={styles.wheelPointer} pointerEvents="none" />
               <Animated.View style={[styles.wheelSplit, { transform: [{ rotate: soloSpinRotate }] }]}>
                 <Animated.View style={{ flex: 1, transform: [{ scale: truthPulse }] }}>
                   <TouchableOpacity
@@ -935,14 +934,6 @@ const styles = StyleSheet.create({
   // ── Design 2 wheel: split halves + floating center anchor ──────────────────
   wheelWrap: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.lg },
   wheelHalo: { position: 'absolute', width: 276, height: 276, borderRadius: 138, backgroundColor: Colors.rose, opacity: 0.18 },
-  wheelPointer: {
-    position: 'absolute', top: -6, zIndex: 5,
-    width: 0, height: 0,
-    borderLeftWidth: 10, borderRightWidth: 10, borderTopWidth: 18,
-    borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: Colors.burgundy,
-    shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6,
-    elevation: 6,
-  },
   // The rotating layer: two tappable halves clipped inside a circular container.
   wheelSplit: {
     width: 240, height: 240, borderRadius: 120,

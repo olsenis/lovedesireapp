@@ -1633,7 +1633,7 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
 
 - [ ] **"Together Right Here" wheel is visually split into Truth (left) and Dare (right)** ⚠️
   1. Tap the ONE PHONE card
-  - **Expected:** Wheel shows two clearly tinted halves — Truth on the left (soft lavender, 💭 emoji + "Truth" label), Dare on the right (warm coral, 🎯 emoji + "Dare" label). A small center anchor circle shows current intensity ("Level · Flirty"). Pointer at top. Regression check: pre-Design-2 this was a chip row above a rose-tinted circular wheel.
+  - **Expected:** Wheel shows two clearly tinted halves — Truth on the left (soft lavender, 💭 emoji + "Truth" label), Dare on the right (warm coral, 🎯 emoji + "Dare" label). A small center anchor circle shows current intensity ("Level · Flirty"). No pointer arrow at the top — winner is announced via the result card, so the pointer would be pointing at nothing meaningful. Regression check: pre-Design-2 this was a chip row above a rose-tinted circular wheel.
 
 - [ ] **Tap a half = instant result with brief scale pulse (NO wheel rotation)**
   1. Tap the left (Truth) half
