@@ -12,8 +12,8 @@
     --cream: #FFF8F0;
     --muted: #9E7B84;
     --border: #F0D5DC;
-    --truth-tint: #F3E5F5;   /* soft lavender */
-    --dare-tint: #FFCCBC;    /* warm coral */
+    --truth-tint: #F3E5F5;
+    --dare-tint: #FFCCBC;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -34,8 +34,18 @@
     text-align: center;
     color: var(--muted);
     font-style: italic;
-    margin-bottom: 40px;
+    margin-bottom: 8px;
     font-size: 14px;
+  }
+  .instruction {
+    text-align: center;
+    color: var(--burgundy);
+    font-size: 13px;
+    background: rgba(255,255,255,0.7);
+    padding: 10px 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 0 auto 40px;
   }
 
   .designs {
@@ -46,7 +56,6 @@
     margin: 0 auto;
   }
 
-  /* ── Phone frame ─────────────────────────────────────────────── */
   .phone {
     background: var(--cream);
     border: 14px solid #1a1a1a;
@@ -72,7 +81,6 @@
     flex: 1;
   }
 
-  /* ── Intensity pills (shared across all 3) ───────────────────── */
   .pills {
     display: flex;
     gap: 8px;
@@ -100,7 +108,6 @@
     border-color: var(--border);
   }
 
-  /* ── Wheel container (shared) ────────────────────────────────── */
   .wheel-container {
     display: flex;
     justify-content: center;
@@ -133,14 +140,32 @@
     filter: drop-shadow(0 4px 4px rgba(136,14,79,0.3));
   }
 
-  /* ── Design 1: Bold Halves with big labels ───────────────────── */
-  .design-1 .wheel {
-    display: flex;
+  /* ── Spin animation (shared) ─────────────────────────────────── */
+  .wheel-inner {
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
     overflow: hidden;
+    display: flex;
     border: 3px solid rgba(255,248,240,0.7);
     box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    position: relative;
+    transition: transform 1.2s cubic-bezier(0.15, 0.7, 0.3, 1);
   }
+  .wheel-inner.spinning-truth {
+    transform: rotate(1170deg); /* 3 full + 90° to land Truth (left) at top */
+  }
+  .wheel-inner.spinning-dare {
+    transform: rotate(1350deg); /* 3 full + 270° to land Dare (right) at top */
+  }
+  /* After 1.4s reset to origin so the next spin animates from 0 again.
+     No transition on reset so it doesn't visually unwind. */
+  .wheel-inner.reset {
+    transition: none;
+    transform: rotate(0deg);
+  }
+
+  /* ── Design 1: Bold Halves ───────────────────────────────────── */
   .design-1 .half {
     flex: 1;
     display: flex;
@@ -151,7 +176,7 @@
     cursor: pointer;
     transition: transform 0.15s;
   }
-  .design-1 .half:hover { transform: scale(0.97); }
+  .design-1 .half:hover { filter: brightness(1.05); }
   .design-1 .half-truth {
     background: linear-gradient(135deg, var(--truth-tint), #E1BEE7);
     border-right: 1px solid rgba(0,0,0,0.06);
@@ -167,24 +192,8 @@
     font-weight: 600;
     font-style: italic;
   }
-  .design-1 .surprise {
-    text-align: center;
-    color: var(--muted);
-    font-size: 13px;
-    margin-top: 4px;
-    text-decoration: underline dotted;
-    cursor: pointer;
-  }
 
-  /* ── Design 2: Halves with center Sweet/Flirty/Spicy anchor ─── */
-  .design-2 .wheel {
-    display: flex;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid rgba(255,248,240,0.7);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
-    position: relative;
-  }
+  /* ── Design 2: Halves + Center Anchor ────────────────────────── */
   .design-2 .half {
     flex: 1;
     display: flex;
@@ -209,6 +218,7 @@
     color: var(--burgundy);
     font-weight: 600;
   }
+  /* Center anchor stays outside the rotating wheel-inner so it doesn't spin */
   .design-2 .center-anchor {
     position: absolute;
     top: 50%;
@@ -223,8 +233,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 5;
+    z-index: 15;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    pointer-events: none;
   }
   .design-2 .center-label {
     font-size: 9px;
@@ -240,15 +251,7 @@
     font-weight: 600;
   }
 
-  /* ── Design 3: Curved labels + traditional Spin center ───────── */
-  .design-3 .wheel {
-    display: flex;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid rgba(255,248,240,0.7);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
-    position: relative;
-  }
+  /* ── Design 3: Roulette Style ────────────────────────────────── */
   .design-3 .half {
     flex: 1;
     position: relative;
@@ -286,6 +289,7 @@
   }
   .design-3 .arc-emoji-truth { left: 40px; }
   .design-3 .arc-emoji-dare { right: 40px; }
+  /* Center Spin button stays outside rotating wheel-inner */
   .design-3 .center-spin {
     position: absolute;
     top: 50%;
@@ -304,12 +308,66 @@
     font-style: italic;
     font-weight: 600;
     box-shadow: 0 8px 16px rgba(136,14,79,0.4);
-    z-index: 5;
+    z-index: 15;
     cursor: pointer;
     border: 4px solid var(--cream);
+    transition: transform 0.15s;
+    user-select: none;
+  }
+  .design-3 .center-spin:hover { transform: translate(-50%, -50%) scale(1.05); }
+  .design-3 .center-spin:active { transform: translate(-50%, -50%) scale(0.95); }
+  /* In Design 3 the user first picks a half (highlights) then taps Spin */
+  .design-3 .half.selected::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 3px solid var(--burgundy);
+    pointer-events: none;
+    z-index: 2;
   }
 
-  /* ── Design notes ────────────────────────────────────────────── */
+  /* ── Result card ─────────────────────────────────────────────── */
+  .result {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 12px;
+    min-height: 90px;
+    display: none;
+    animation: fadeIn 0.3s ease-out;
+  }
+  .result.visible { display: block; }
+  .result-eyebrow {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--burgundy);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .result-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--burgundy);
+    font-style: italic;
+    text-align: center;
+    line-height: 1.4;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .surprise {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 4px;
+    text-decoration: underline dotted;
+    cursor: pointer;
+  }
+
   .design-title {
     text-align: center;
     font-family: 'Cormorant Garamond', serif;
@@ -331,13 +389,15 @@
 <body>
 
 <h1>Truth or Dare · Wheel Split Designs</h1>
-<p class="subtitle">Three variations on splitting the wheel into Truth (left) and Dare (right)</p>
+<p class="subtitle">Behavior C: theatrical spin, deterministic outcome</p>
+<p class="instruction">
+  Click <strong>Truth</strong> or <strong>Dare</strong> on any design.
+  Wheel spins ~1.2s and always lands on your choice. Result card appears below.
+</p>
 
 <div class="designs">
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- DESIGN 1: Bold Halves with big centered labels              -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════ DESIGN 1: Bold Halves ═══════════ -->
   <div class="design-1">
     <div class="phone">
       <div class="phone-header">
@@ -353,29 +413,32 @@
         <div class="halo"></div>
         <div class="pointer"></div>
         <div class="wheel">
-          <div class="half half-truth">
-            <div class="half-emoji">💭</div>
-            <div class="half-label">Truth</div>
-          </div>
-          <div class="half half-dare">
-            <div class="half-emoji">🎯</div>
-            <div class="half-label">Dare</div>
+          <div class="wheel-inner" id="d1-inner">
+            <div class="half half-truth" onclick="spin(1, 'truth')">
+              <div class="half-emoji">💭</div>
+              <div class="half-label">Truth</div>
+            </div>
+            <div class="half half-dare" onclick="spin(1, 'dare')">
+              <div class="half-emoji">🎯</div>
+              <div class="half-label">Dare</div>
+            </div>
           </div>
         </div>
       </div>
-      <div class="surprise">or Surprise me 🎲</div>
+      <div class="surprise" onclick="spin(1, Math.random() < 0.5 ? 'truth' : 'dare')">or Surprise me 🎲</div>
+      <div class="result" id="d1-result">
+        <div class="result-eyebrow" id="d1-eyebrow">Your dare</div>
+        <div class="result-text" id="d1-text">...</div>
+      </div>
     </div>
     <div class="design-title">1. Bold Halves</div>
     <div class="design-desc">
-      Wheel is <strong>50/50 vertical split</strong>. Big emoji + serif label on each side.
-      Tap a half = "spin for this type". <strong>No center button</strong>. Surprise as small link below.
-      <br><br>Most direct. Cleanest use of space. But loses the "Spin" verbal cue.
+      Halves rotate visually during spin. Since halves ARE the wheel,
+      it's natural for them to spin. Always lands upright.
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- DESIGN 2: Halves with center Sweet/Flirty/Spicy anchor      -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════ DESIGN 2: Halves + Center Anchor ═══════════ -->
   <div class="design-2">
     <div class="phone">
       <div class="phone-header">
@@ -391,13 +454,15 @@
         <div class="halo"></div>
         <div class="pointer"></div>
         <div class="wheel">
-          <div class="half half-truth">
-            <div class="half-emoji">💭</div>
-            <div class="half-label">Truth</div>
-          </div>
-          <div class="half half-dare">
-            <div class="half-emoji">🎯</div>
-            <div class="half-label">Dare</div>
+          <div class="wheel-inner" id="d2-inner">
+            <div class="half half-truth" onclick="spin(2, 'truth')">
+              <div class="half-emoji">💭</div>
+              <div class="half-label">Truth</div>
+            </div>
+            <div class="half half-dare" onclick="spin(2, 'dare')">
+              <div class="half-emoji">🎯</div>
+              <div class="half-label">Dare</div>
+            </div>
           </div>
           <div class="center-anchor">
             <div class="center-label">Level</div>
@@ -405,19 +470,20 @@
           </div>
         </div>
       </div>
-      <div class="surprise">or Surprise me 🎲</div>
+      <div class="surprise" onclick="spin(2, Math.random() < 0.5 ? 'truth' : 'dare')">or Surprise me 🎲</div>
+      <div class="result" id="d2-result">
+        <div class="result-eyebrow" id="d2-eyebrow">Your dare</div>
+        <div class="result-text" id="d2-text">...</div>
+      </div>
     </div>
     <div class="design-title">2. Halves + Center Anchor</div>
     <div class="design-desc">
-      Same split as #1 but with a <strong>small center pill</strong> showing current intensity.
-      Reinforces which level you're playing at, always visible. Tap a half to spin.
-      <br><br>Extra visual info. Trade-off: center circle competes with halves for attention.
+      Halves rotate but center intensity anchor stays pinned.
+      Level always visible even during spin.
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- DESIGN 3: Curved labels + traditional Spin center           -->
-  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- ═══════════ DESIGN 3: Roulette Style ═══════════ -->
   <div class="design-3">
     <div class="phone">
       <div class="phone-header">
@@ -433,34 +499,110 @@
         <div class="halo"></div>
         <div class="pointer"></div>
         <div class="wheel">
-          <div class="half half-truth">
-            <div class="arc-label arc-label-truth">Truth</div>
-            <div class="arc-emoji arc-emoji-truth">💭</div>
+          <div class="wheel-inner" id="d3-inner">
+            <div class="half half-truth" id="d3-truth" onclick="select(3, 'truth')">
+              <div class="arc-label arc-label-truth">Truth</div>
+              <div class="arc-emoji arc-emoji-truth">💭</div>
+            </div>
+            <div class="half half-dare" id="d3-dare" onclick="select(3, 'dare')">
+              <div class="arc-label arc-label-dare">Dare</div>
+              <div class="arc-emoji arc-emoji-dare">🎯</div>
+            </div>
           </div>
-          <div class="half half-dare">
-            <div class="arc-label arc-label-dare">Dare</div>
-            <div class="arc-emoji arc-emoji-dare">🎯</div>
-          </div>
-          <div class="center-spin">Spin</div>
+          <div class="center-spin" onclick="spinRoulette(3)">Spin</div>
         </div>
       </div>
-      <div class="surprise">or Surprise me 🎲</div>
+      <div class="surprise" onclick="spin(3, Math.random() < 0.5 ? 'truth' : 'dare')">or Surprise me 🎲</div>
+      <div class="result" id="d3-result">
+        <div class="result-eyebrow" id="d3-eyebrow">Your dare</div>
+        <div class="result-text" id="d3-text">...</div>
+      </div>
     </div>
     <div class="design-title">3. Roulette Style</div>
     <div class="design-desc">
-      Split halves with <strong>curved labels along the arc</strong> (rotated). Center still has the
-      classic <strong>burgundy Spin button</strong>. User picks a half by tapping, then taps Spin center.
-      <br><br>Most "traditional wheel" feel. Extra two-step interaction, but preserves the Spin ritual.
+      Two-step: pick a half (highlights burgundy), then tap center Spin.
+      Traditional wheel-of-fortune feel with explicit spin ritual.
     </div>
   </div>
 
 </div>
 
 <div style="max-width: 800px; margin: 60px auto 20px; padding: 20px; background: rgba(255,255,255,0.6); border-radius: 12px; text-align: center; color: #555; font-size: 13px; line-height: 1.6;">
-  <strong style="color: var(--burgundy);">How to use this mockup:</strong><br>
-  Open in a browser · Compare visual balance, tap targets, and clarity ·
-  Pick one number and I'll implement it in React Native.
+  <strong style="color: var(--burgundy);">How to use:</strong>
+  Click Truth or Dare on any design to feel the spin.
+  Pick a number 1-3 for React Native implementation.
 </div>
+
+<script>
+  const truths = [
+    "What's a way I've changed you for the better?",
+    "When did you first know you were falling for me?",
+    "What's something you love about us that we never say out loud?",
+    "What's a fear you have about us you've never told me?",
+  ];
+  const dares = [
+    "Kiss me for 30 seconds without breaking eye contact",
+    "Whisper the sexiest thing I ever did to you",
+    "Take off one piece of clothing while I watch",
+    "Give me a slow neck kiss for a full minute",
+  ];
+  const selected = { 3: null };
+  const busy = { 1: false, 2: false, 3: false };
+
+  function spin(designId, kind) {
+    if (busy[designId]) return;
+    busy[designId] = true;
+
+    const inner = document.getElementById(`d${designId}-inner`);
+    const result = document.getElementById(`d${designId}-result`);
+    const eyebrow = document.getElementById(`d${designId}-eyebrow`);
+    const text = document.getElementById(`d${designId}-text`);
+
+    // hide previous result
+    result.classList.remove('visible');
+
+    // reset transform without transition, then apply spin class next frame
+    inner.classList.remove('spinning-truth', 'spinning-dare', 'reset');
+    inner.classList.add('reset');
+    // Force reflow so the reset takes effect before we add the spin class
+    void inner.offsetWidth;
+    inner.classList.remove('reset');
+
+    // Trigger spin
+    requestAnimationFrame(() => {
+      inner.classList.add(kind === 'truth' ? 'spinning-truth' : 'spinning-dare');
+    });
+
+    // Show result after animation
+    setTimeout(() => {
+      const pool = kind === 'truth' ? truths : dares;
+      eyebrow.textContent = kind === 'truth' ? 'Your truth' : 'Your dare';
+      text.textContent = pool[Math.floor(Math.random() * pool.length)];
+      result.classList.add('visible');
+      busy[designId] = false;
+    }, 1250);
+  }
+
+  function select(designId, kind) {
+    if (busy[designId]) return;
+    selected[designId] = kind;
+    const truthEl = document.getElementById(`d${designId}-truth`);
+    const dareEl = document.getElementById(`d${designId}-dare`);
+    truthEl.classList.toggle('selected', kind === 'truth');
+    dareEl.classList.toggle('selected', kind === 'dare');
+  }
+
+  function spinRoulette(designId) {
+    if (!selected[designId]) {
+      alert('Pick Truth or Dare first (tap a half)');
+      return;
+    }
+    spin(designId, selected[designId]);
+    selected[designId] = null;
+    document.getElementById(`d${designId}-truth`).classList.remove('selected');
+    document.getElementById(`d${designId}-dare`).classList.remove('selected');
+  }
+</script>
 
 </body>
 </html>
