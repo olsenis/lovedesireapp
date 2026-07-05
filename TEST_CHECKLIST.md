@@ -1631,25 +1631,38 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   1. Open Truth or Dare
   - **Expected:** Eyebrow 'TONIGHT'; two cards. Card 1 badge 'ONE PHONE', title 'Together Right Here', CTA 'Spin →'. Card 2 badge 'TWO PHONES', title 'Wherever You Are', CTA 'Begin →'. Regression check: pre-July-2026 the labels were 'Solo Dare' + 'Multiplayer Round' which read as single-player / gamer-speak.
 
-- [ ] **"Together Right Here" wheel spins Truth / Dare / Surprise from selected pool**
-  1. Tap the ONE PHONE card → default type chip is "Dare 🎯" → Spin
-  - **Expected:** Wheel rotates 1440°; result eyebrow reads "Your dare"; text pulled from DARES at current level.
+- [ ] **"Together Right Here" wheel is visually split into Truth (left) and Dare (right)** ⚠️
+  1. Tap the ONE PHONE card
+  - **Expected:** Wheel shows two clearly tinted halves — Truth on the left (soft lavender, 💭 emoji + "Truth" label), Dare on the right (warm coral, 🎯 emoji + "Dare" label). A small center anchor circle shows current intensity ("Level · Flirty"). Pointer at top. Regression check: pre-Design-2 this was a chip row above a rose-tinted circular wheel.
 
-  2. Tap "Truth 💭" chip → Spin
-  - **Expected:** Result eyebrow reads "Your truth"; text from TRUTHS pool.
+- [ ] **Tap a half = instant result with brief scale pulse (NO wheel rotation)**
+  1. Tap the left (Truth) half
+  - **Expected:** Half briefly scales down to ~0.93 then back to 1.0 (light haptic). Result card appears below with eyebrow "Your truth" + text from TRUTHS at current level. Wheel does NOT rotate. Regression check: Behavior D — direct taps skip rotation because the outcome is already known; only Surprise spins.
 
-  3. Tap "Surprise 🎲" chip → Spin
-  - **Expected:** Result eyebrow is either "Your truth" or "Your dare" — random pick from the combined pool. Spin again and see the label vary.
+  2. Tap the right (Dare) half
+  - **Expected:** Same pulse feedback. Eyebrow reads "Your dare"; text from DARES pool.
 
-  4. Regression check: pre-July-2026 this mode was dare-only (pool = DARES only). If Truth/Surprise chip produce a dare-only result, the branch in handleSoloSpin regressed.
+- [ ] **"Surprise me 🎲" link spins the wheel and lands on random pool** ⚠️
+  1. Tap "or Surprise me 🎲" link below the wheel
+  - **Expected:** Wheel rotates 3+ full turns (~1.6s) and lands with either Truth half or Dare half at the top under the pointer. Result card appears matching the landed half. Repeat 4-5 times and confirm both kinds show up (~50/50 weighted by pool size).
+
+- [ ] **Center anchor stays static during Surprise spin** ⚠️
+  1. Tap Surprise
+  - **Expected:** While the two halves rotate together, the small center circle ("Level · Flirty") stays pinned in place and readable throughout the spin. It does NOT rotate.
+
+- [ ] **Center anchor updates when intensity changes**
+  1. With Sweet selected in pills above, center anchor should read "Sweet"
+  2. Tap Flirty pill → center anchor updates to "Flirty"
+  3. Tap Spicy pill (premium) → center anchor updates to "Spicy" (or routes to /upgrade if free)
+  - **Expected:** Anchor value tracks the pill selection immediately.
 
 - [ ] **"Together Right Here" Spicy level locked for free user** 💰
-  1. Free user → ONE PHONE card → Spicy
-  - **Expected:** /upgrade. Applies whether type chip is Truth, Dare, or Surprise.
+  1. Free user → ONE PHONE card → tap Spicy pill
+  - **Expected:** /upgrade. Halves + Surprise link stay non-functional while on Spicy without premium (or route to /upgrade on tap).
 
-- [ ] **Wheel double-tap spin ignored while spinning** ⚠️
-  1. Spin → immediately Spin again
-  - **Expected:** Second tap ignored.
+- [ ] **Double-tap during Surprise spin is ignored** ⚠️
+  1. Tap Surprise → immediately tap Surprise (or a half) again
+  - **Expected:** Second tap ignored. Halves are `disabled={soloSpinning}` while spinning.
 
 - [ ] **Back from wheel screen returns to mode picker**
   1. ONE PHONE card → ‹ Back

@@ -40,15 +40,20 @@ export default function TruthDareScreen() {
   // Mode picker — 'picker' (default) | 'solo' (single-phone wheel) | 'multi' (level select for multiplayer)
   const [mode, setMode] = useState<'picker' | 'solo' | 'multi'>('picker');
 
-  // "Together Right Here" single-phone spin state (merged from old Dare Wheel
-  // in July 2026, then expanded from dare-only to Truth or Dare or Surprise in
-  // July 2026 so the mode matches the feature name — before that the wheel
-  // only pulled from DARES, ignoring TRUTHS entirely).
+  // "Together Right Here" single-phone state. Design 2 (July 2026):
+  //   - Wheel is visually split into Truth (left half) and Dare (right half)
+  //   - Center anchor shows current intensity (Sweet / Flirty / Spicy)
+  //   - Direct tap on a half = instant result (brief scale pulse), no rotation
+  //   - Surprise link below wheel = actual spin (outcome genuinely random)
+  // Behavior D was the deciding insight: theatrical spin on a predetermined
+  // choice is fake theater. Only Surprise spins because only Surprise has
+  // an outcome the user doesn't already know.
   const [soloLevel, setSoloLevel] = useState<DareLevel>('flirty');
-  const [soloType, setSoloType] = useState<'truth' | 'dare' | 'surprise'>('dare');
   const [soloResult, setSoloResult] = useState<{ kind: 'truth' | 'dare'; text: string } | null>(null);
   const [soloSpinning, setSoloSpinning] = useState(false);
   const soloSpinAnim = useRef(new Animated.Value(0)).current;
+  const truthPulse = useRef(new Animated.Value(1)).current;
+  const darePulse = useRef(new Animated.Value(1)).current;
 
   // Local card drawn before sending
   const [drawnCard, setDrawnCard] = useState<{ type: 'truth' | 'dare'; text: string } | null>(null);
@@ -230,46 +235,63 @@ export default function TruthDareScreen() {
     await resetTruthDare(coupleId);
   };
 
-  // Single-phone spin. Pool depends on soloType: truth → TRUTHS only,
-  // dare → DARES only, surprise → both pools mixed (weighted by their
-  // natural size, no bias).
-  const handleSoloSpin = () => {
+  // Direct tap on a half. No wheel rotation — user knows what they picked,
+  // spin animation would be fake theater. Brief scale pulse feedback + result.
+  const handleSoloTap = (kind: 'truth' | 'dare') => {
     if (soloSpinning) return;
     if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const pulseVal = kind === 'truth' ? truthPulse : darePulse;
+    Animated.sequence([
+      Animated.timing(pulseVal, { toValue: 0.93, duration: 100, useNativeDriver: true }),
+      Animated.timing(pulseVal, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+    const pool = kind === 'truth'
+      ? TRUTHS.filter(t => t.level === soloLevel)
+      : DARES.filter(d => d.level === soloLevel);
+    if (pool.length === 0) return;
+    setSoloResult({ kind, text: pickRandom(pool).text });
+  };
+
+  // Surprise = actual spin. Outcome is genuinely random from mixed pool,
+  // wheel rotates 3+ turns ending at the chosen half's top-of-wheel position
+  // so the visual matches the result (Truth left half lands under pointer if
+  // Truth won, etc.).
+  const handleSurprise = () => {
+    if (soloSpinning) return;
+    if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
+    const truthPool = TRUTHS.filter(t => t.level === soloLevel);
+    const darePool = DARES.filter(d => d.level === soloLevel);
+    const mixed = [
+      ...truthPool.map(t => ({ kind: 'truth' as const, text: t.text })),
+      ...darePool.map(d => ({ kind: 'dare' as const, text: d.text })),
+    ];
+    if (mixed.length === 0) return;
+    const picked = pickRandom(mixed);
+
     setSoloSpinning(true);
     setSoloResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // 3 full rotations + 90° lands Truth (left half) at top under the pointer,
+    // + 270° lands Dare (right half) at top.
+    const targetDeg = picked.kind === 'truth' ? 1170 : 1350;
     soloSpinAnim.setValue(0);
     Animated.timing(soloSpinAnim, {
-      toValue: 1, duration: 1800, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+      toValue: targetDeg,
+      duration: 1600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
     }).start(() => {
-      const truthPool = TRUTHS.filter(t => t.level === soloLevel);
-      const darePool = DARES.filter(d => d.level === soloLevel);
-      let kind: 'truth' | 'dare';
-      let text: string;
-      if (soloType === 'truth') {
-        if (truthPool.length === 0) { setSoloSpinning(false); return; }
-        kind = 'truth';
-        text = pickRandom(truthPool).text;
-      } else if (soloType === 'dare') {
-        if (darePool.length === 0) { setSoloSpinning(false); return; }
-        kind = 'dare';
-        text = pickRandom(darePool).text;
-      } else {
-        // Surprise: mix both pools then pick one item — natural sizes weight
-        // themselves, no manual coin flip needed.
-        const mixed = [...truthPool.map(t => ({ kind: 'truth' as const, text: t.text })), ...darePool.map(d => ({ kind: 'dare' as const, text: d.text }))];
-        if (mixed.length === 0) { setSoloSpinning(false); return; }
-        const picked = pickRandom(mixed);
-        kind = picked.kind;
-        text = picked.text;
-      }
-      setSoloResult({ kind, text });
+      setSoloResult({ kind: picked.kind, text: picked.text });
       setSoloSpinning(false);
     });
   };
 
-  const soloSpinRotate = soloSpinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '1440deg'] });
+  // soloSpinAnim carries the target rotation in degrees directly (not 0..1).
+  // Interpolation range 0..3600 maps 1:1 to '0deg'..'3600deg' so any spin
+  // amount within that range animates correctly.
+  const soloSpinRotate = soloSpinAnim.interpolate({ inputRange: [0, 3600], outputRange: ['0deg', '3600deg'] });
 
   // ── Lobby (no active game) ────────────────────────────────────────────────────
   if (!loading && (!session || session.round === 0)) {
@@ -345,60 +367,61 @@ export default function TruthDareScreen() {
               })}
             </View>
 
-            <View style={styles.soloLevels}>
-              {([
-                { key: 'truth', label: 'Truth 💭' },
-                { key: 'dare', label: 'Dare 🎯' },
-                { key: 'surprise', label: 'Surprise 🎲' },
-              ] as const).map(t => {
-                const active = soloType === t.key;
-                return (
-                  <TouchableOpacity
-                    key={t.key}
-                    style={[styles.soloLevelPill, active && styles.soloLevelPillActive]}
-                    onPress={() => setSoloType(t.key)}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Spin for ${t.key}`}
-                  >
-                    <Text style={[styles.soloLevelText, active && styles.soloLevelTextActive]}>{t.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
+            {/* Wheel — Design 2. Two tappable halves (Truth left, Dare right)
+                clipped inside a circular container. Center anchor floats above
+                the rotating layer showing the current intensity so level
+                context is visible during play, not just in the picker above.
+                Rotation only happens on Surprise; direct taps pulse the half. */}
             <View style={styles.wheelWrap}>
               <View style={styles.wheelHalo} pointerEvents="none" />
-              <View style={styles.wheelOuterRing} pointerEvents="none" />
               <View style={styles.wheelPointer} pointerEvents="none" />
-              <Animated.View style={[styles.wheel, { transform: [{ rotate: soloSpinRotate }] }]}>
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
-                  <View
-                    key={deg}
-                    style={[
-                      styles.wheelHeartWrap,
-                      // -86 matches the 14% wheel scale-down. Was -100 when wheel radius was 120.
-                      { transform: [{ rotate: `${deg}deg` }, { translateY: -86 }, { rotate: `${-deg}deg` }] },
-                    ]}
-                    pointerEvents="none"
+              <Animated.View style={[styles.wheelSplit, { transform: [{ rotate: soloSpinRotate }] }]}>
+                <Animated.View style={{ flex: 1, transform: [{ scale: truthPulse }] }}>
+                  <TouchableOpacity
+                    style={styles.wheelHalfTruth}
+                    onPress={() => handleSoloTap('truth')}
+                    disabled={soloSpinning}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pick Truth"
                   >
-                    <Text style={styles.wheelHeart}>♥</Text>
-                  </View>
-                ))}
+                    <Text style={styles.wheelHalfEmoji}>💭</Text>
+                    <Text style={styles.wheelHalfLabel}>Truth</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+                <Animated.View style={{ flex: 1, transform: [{ scale: darePulse }] }}>
+                  <TouchableOpacity
+                    style={styles.wheelHalfDare}
+                    onPress={() => handleSoloTap('dare')}
+                    disabled={soloSpinning}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Pick Dare"
+                  >
+                    <Text style={styles.wheelHalfEmoji}>🎯</Text>
+                    <Text style={styles.wheelHalfLabel}>Dare</Text>
+                  </TouchableOpacity>
+                </Animated.View>
               </Animated.View>
-              <View style={styles.wheelInnerRing} pointerEvents="none" />
-              <TouchableOpacity
-                style={[styles.wheelCenterBtn, soloSpinning && { opacity: 0.65 }]}
-                onPress={handleSoloSpin}
-                disabled={soloSpinning}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel="Spin the wheel"
-              >
-                <Text style={styles.wheelCenterLabel}>Spin</Text>
-                <Text style={styles.wheelCenterMark}>✦</Text>
-              </TouchableOpacity>
+              {/* Center anchor — sits outside the rotating layer so it doesn't
+                  spin. Shows current intensity. Non-interactive; users switch
+                  level via the pills above. */}
+              <View style={styles.wheelCenterAnchor} pointerEvents="none">
+                <Text style={styles.wheelCenterAnchorLabel}>Level</Text>
+                <Text style={styles.wheelCenterAnchorValue}>{DARE_LEVEL_CONFIG[soloLevel].label}</Text>
+              </View>
             </View>
+
+            <TouchableOpacity
+              style={styles.surpriseLink}
+              onPress={handleSurprise}
+              disabled={soloSpinning}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Surprise me — spin the wheel for a random Truth or Dare"
+            >
+              <Text style={styles.surpriseLinkText}>or Surprise me 🎲</Text>
+            </TouchableOpacity>
 
             {soloResult && !soloSpinning && (
               <View style={styles.soloResult}>
@@ -910,61 +933,69 @@ const styles = StyleSheet.create({
   soloLevelPillLocked: { opacity: 0.4 },
   soloLevelText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.5 },
   soloLevelTextActive: { color: '#fff' },
-  // Wheel scaled ~14% smaller (July 2026) so intensity + type pill rows +
-  // wheel + result card all fit on one screen without scrolling on typical
-  // 6" phones. Kept all the ring/halo/heart proportions in the same ratio.
-  wheelWrap: { width: 240, height: 240, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.md },
-  wheelHalo: { position: 'absolute', width: 256, height: 256, borderRadius: 128, backgroundColor: Colors.rose, opacity: 0.18 },
-  wheelOuterRing: {
-    position: 'absolute', width: 226, height: 226, borderRadius: 113,
-    borderWidth: 1, borderColor: 'rgba(136,14,79,0.2)',
-  },
+  // ── Design 2 wheel: split halves + floating center anchor ──────────────────
+  wheelWrap: { width: 260, height: 260, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.lg },
+  wheelHalo: { position: 'absolute', width: 276, height: 276, borderRadius: 138, backgroundColor: Colors.rose, opacity: 0.18 },
   wheelPointer: {
-    position: 'absolute', top: -2, zIndex: 5,
+    position: 'absolute', top: -6, zIndex: 5,
     width: 0, height: 0,
-    borderLeftWidth: 12, borderRightWidth: 12, borderTopWidth: 22,
+    borderLeftWidth: 10, borderRightWidth: 10, borderTopWidth: 18,
     borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: Colors.burgundy,
     shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6,
     elevation: 6,
   },
-  wheel: {
-    width: 208, height: 208, borderRadius: 104,
-    backgroundColor: Colors.rose,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 4, borderColor: 'rgba(255,248,240,0.55)',
+  // The rotating layer: two tappable halves clipped inside a circular container.
+  wheelSplit: {
+    width: 240, height: 240, borderRadius: 120,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    borderWidth: 3, borderColor: 'rgba(255,248,240,0.7)',
     ...Shadow.md,
   },
-  wheelHeartWrap: {
-    position: 'absolute',
-    width: 28, height: 28,
-    top: '50%', left: '50%',
-    marginTop: -14, marginLeft: -14,
+  wheelHalfTruth: {
+    flex: 1,
+    backgroundColor: '#F3E5F5', // soft lavender
     alignItems: 'center', justifyContent: 'center',
+    padding: 20,
+    borderRightWidth: 1, borderRightColor: 'rgba(0,0,0,0.06)',
   },
-  wheelHeart: {
-    fontSize: 20,
-    color: 'rgba(136,14,79,0.4)',
-    lineHeight: 22,
+  wheelHalfDare: {
+    flex: 1,
+    backgroundColor: '#FFCCBC', // warm coral
+    alignItems: 'center', justifyContent: 'center',
+    padding: 20,
   },
-  wheelInnerRing: {
+  wheelHalfEmoji: { fontSize: 36, marginBottom: 4 },
+  wheelHalfLabel: { fontFamily: Fonts.headingItalic, fontSize: 22, color: Colors.burgundy, fontWeight: '600' },
+  // Center anchor floats above the rotating layer (position: absolute, higher
+  // zIndex). Stays static during spin so level context is always readable.
+  wheelCenterAnchor: {
     position: 'absolute',
-    width: 148, height: 148, borderRadius: 74,
+    width: 84, height: 84, borderRadius: 42,
     backgroundColor: Colors.cream,
-    borderWidth: 1, borderColor: 'rgba(136,14,79,0.18)',
-    zIndex: 2,
-  },
-  wheelCenterBtn: {
-    position: 'absolute',
-    width: 108, height: 108, borderRadius: 54,
-    backgroundColor: Colors.burgundy,
-    borderWidth: 4, borderColor: Colors.cream,
+    borderWidth: 3, borderColor: Colors.border,
     alignItems: 'center', justifyContent: 'center',
-    zIndex: 3,
-    shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.42, shadowRadius: 14,
-    elevation: 10,
+    zIndex: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8,
+    elevation: 4,
   },
-  wheelCenterLabel: { fontFamily: Fonts.headingItalic, fontSize: 28, color: Colors.cream, letterSpacing: 1.5, lineHeight: 32 },
-  wheelCenterMark: { fontSize: 10, color: 'rgba(255,248,240,0.55)', marginTop: 2 },
+  wheelCenterAnchorLabel: {
+    fontFamily: Fonts.bodyBold, fontSize: 8, letterSpacing: 2,
+    color: Colors.muted, textTransform: 'uppercase',
+  },
+  wheelCenterAnchorValue: {
+    fontFamily: Fonts.headingItalic, fontSize: 18,
+    color: Colors.burgundy, marginTop: 2,
+  },
+  surpriseLink: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    marginTop: -Spacing.sm,
+  },
+  surpriseLinkText: {
+    fontFamily: Fonts.body, fontSize: 14, color: Colors.muted,
+    textDecorationLine: 'underline', textDecorationStyle: 'dotted',
+  },
 
   soloResult: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', width: '100%', ...Shadow.sm, marginTop: Spacing.md },
   soloResultEyebrow: { fontFamily: Fonts.body, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: Colors.burgundy, marginBottom: Spacing.sm },
