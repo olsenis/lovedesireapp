@@ -40,9 +40,13 @@ export default function TruthDareScreen() {
   // Mode picker — 'picker' (default) | 'solo' (single-phone wheel) | 'multi' (level select for multiplayer)
   const [mode, setMode] = useState<'picker' | 'solo' | 'multi'>('picker');
 
-  // Solo Dare state (merged from old Dare Wheel)
+  // "Together Right Here" single-phone spin state (merged from old Dare Wheel
+  // in July 2026, then expanded from dare-only to Truth or Dare or Surprise in
+  // July 2026 so the mode matches the feature name — before that the wheel
+  // only pulled from DARES, ignoring TRUTHS entirely).
   const [soloLevel, setSoloLevel] = useState<DareLevel>('flirty');
-  const [soloDare, setSoloDare] = useState<string | null>(null);
+  const [soloType, setSoloType] = useState<'truth' | 'dare' | 'surprise'>('dare');
+  const [soloResult, setSoloResult] = useState<{ kind: 'truth' | 'dare'; text: string } | null>(null);
   const [soloSpinning, setSoloSpinning] = useState(false);
   const soloSpinAnim = useRef(new Animated.Value(0)).current;
 
@@ -226,20 +230,41 @@ export default function TruthDareScreen() {
     await resetTruthDare(coupleId);
   };
 
-  // Solo Dare wheel spin (single-phone, no Firestore)
+  // Single-phone spin. Pool depends on soloType: truth → TRUTHS only,
+  // dare → DARES only, surprise → both pools mixed (weighted by their
+  // natural size, no bias).
   const handleSoloSpin = () => {
     if (soloSpinning) return;
     if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
     setSoloSpinning(true);
-    setSoloDare(null);
+    setSoloResult(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     soloSpinAnim.setValue(0);
     Animated.timing(soloSpinAnim, {
       toValue: 1, duration: 1800, easing: Easing.out(Easing.cubic), useNativeDriver: true,
     }).start(() => {
-      const pool = DARES.filter(d => d.level === soloLevel);
-      if (pool.length === 0) { setSoloSpinning(false); return; }
-      setSoloDare(pickRandom(pool).text);
+      const truthPool = TRUTHS.filter(t => t.level === soloLevel);
+      const darePool = DARES.filter(d => d.level === soloLevel);
+      let kind: 'truth' | 'dare';
+      let text: string;
+      if (soloType === 'truth') {
+        if (truthPool.length === 0) { setSoloSpinning(false); return; }
+        kind = 'truth';
+        text = pickRandom(truthPool).text;
+      } else if (soloType === 'dare') {
+        if (darePool.length === 0) { setSoloSpinning(false); return; }
+        kind = 'dare';
+        text = pickRandom(darePool).text;
+      } else {
+        // Surprise: mix both pools then pick one item — natural sizes weight
+        // themselves, no manual coin flip needed.
+        const mixed = [...truthPool.map(t => ({ kind: 'truth' as const, text: t.text })), ...darePool.map(d => ({ kind: 'dare' as const, text: d.text }))];
+        if (mixed.length === 0) { setSoloSpinning(false); return; }
+        const picked = pickRandom(mixed);
+        kind = picked.kind;
+        text = picked.text;
+      }
+      setSoloResult({ kind, text });
       setSoloSpinning(false);
     });
   };
@@ -316,6 +341,29 @@ export default function TruthDareScreen() {
               })}
             </View>
 
+            <Text style={styles.soloEyebrow}>What are you spinning for?</Text>
+            <View style={styles.soloLevels}>
+              {([
+                { key: 'truth', label: 'Truth 💭' },
+                { key: 'dare', label: 'Dare 🎯' },
+                { key: 'surprise', label: 'Surprise 🎲' },
+              ] as const).map(t => {
+                const active = soloType === t.key;
+                return (
+                  <TouchableOpacity
+                    key={t.key}
+                    style={[styles.soloLevelPill, active && styles.soloLevelPillActive]}
+                    onPress={() => setSoloType(t.key)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Spin for ${t.key}`}
+                  >
+                    <Text style={[styles.soloLevelText, active && styles.soloLevelTextActive]}>{t.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
             <View style={styles.wheelWrap}>
               <View style={styles.wheelHalo} pointerEvents="none" />
               <View style={styles.wheelOuterRing} pointerEvents="none" />
@@ -348,10 +396,10 @@ export default function TruthDareScreen() {
               </TouchableOpacity>
             </View>
 
-            {soloDare && !soloSpinning && (
+            {soloResult && !soloSpinning && (
               <View style={styles.soloResult}>
-                <Text style={styles.soloResultEyebrow}>Your dare</Text>
-                <Text style={styles.soloResultText}>{soloDare}</Text>
+                <Text style={styles.soloResultEyebrow}>{soloResult.kind === 'truth' ? 'Your truth' : 'Your dare'}</Text>
+                <Text style={styles.soloResultText}>{soloResult.text}</Text>
               </View>
             )}
           </ScrollView>

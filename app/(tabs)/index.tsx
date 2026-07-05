@@ -863,7 +863,7 @@ export default function HomeScreen() {
         <Text style={styles.gameEmoji}>🎯</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Truth or Dare</Text>
-          <Text style={styles.gameSub}>2-phone multiplayer</Text>
+          <Text style={styles.gameSub}>Two ways to play, one phone or two</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>

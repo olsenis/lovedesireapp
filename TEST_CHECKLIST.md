@@ -1631,13 +1631,21 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   1. Open Truth or Dare
   - **Expected:** Eyebrow 'TONIGHT'; two cards. Card 1 badge 'ONE PHONE', title 'Together Right Here', CTA 'Spin →'. Card 2 badge 'TWO PHONES', title 'Wherever You Are', CTA 'Begin →'. Regression check: pre-July-2026 the labels were 'Solo Dare' + 'Multiplayer Round' which read as single-player / gamer-speak.
 
-- [ ] **"Together Right Here" wheel spins and reveals a dare**
-  1. Tap the ONE PHONE card → Spin → wait 1.8s
-  - **Expected:** Wheel rotates 1440°; dare card from Flirty pool.
+- [ ] **"Together Right Here" wheel spins Truth / Dare / Surprise from selected pool**
+  1. Tap the ONE PHONE card → default type chip is "Dare 🎯" → Spin
+  - **Expected:** Wheel rotates 1440°; result eyebrow reads "Your dare"; text pulled from DARES at current level.
+
+  2. Tap "Truth 💭" chip → Spin
+  - **Expected:** Result eyebrow reads "Your truth"; text from TRUTHS pool.
+
+  3. Tap "Surprise 🎲" chip → Spin
+  - **Expected:** Result eyebrow is either "Your truth" or "Your dare" — random pick from the combined pool. Spin again and see the label vary.
+
+  4. Regression check: pre-July-2026 this mode was dare-only (pool = DARES only). If Truth/Surprise chip produce a dare-only result, the branch in handleSoloSpin regressed.
 
 - [ ] **"Together Right Here" Spicy level locked for free user** 💰
   1. Free user → ONE PHONE card → Spicy
-  - **Expected:** /upgrade.
+  - **Expected:** /upgrade. Applies whether type chip is Truth, Dare, or Surprise.
 
 - [ ] **Wheel double-tap spin ignored while spinning** ⚠️
   1. Spin → immediately Spin again
