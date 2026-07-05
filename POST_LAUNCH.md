@@ -72,6 +72,106 @@ If any two of these signal "yes", enrich top-15 items handwritten (2-3h). Ship. 
 
 ---
 
+## LDR distance banner on Home (raised July 2026)
+
+### What
+
+City-based distance calculation shown on the Home screen for LDR couples.
+Not GPS — user picks their city from a small type-ahead once, we store the
+coordinates, and compute km with a haversine formula on the client.
+
+Example banner:
+
+```
+Reykjavík ⟷ New York
+3,584 km apart, choosing each other every day
+```
+
+Emotional wrapper with 5 rotating variations of the second line:
+
+- "3,584 km apart, choosing each other every day"
+- "The space between us doesn't measure how we feel"
+- "An ocean between us, still hearts aligned"
+- "Wherever you are, that's where home is"
+- "Different time zones, same heart"
+
+### Where the data lives
+
+Add two fields to `UserProfile`:
+
+```typescript
+city?: string;              // e.g. "Reykjavík"
+cityCoords?: [number, number]; // [lat, lng]
+```
+
+Cities dataset embedded as `constants/cities.ts` (~200 world cities, ~50 KB).
+Selection persists once; nothing streams live.
+
+### Trigger conditions
+
+Banner is visible ONLY when:
+1. `couple.isLongDistance === true`
+2. Both partners have `cityCoords` set
+3. Cities are not the same (if same → different banner: "Same city, right now")
+
+### Why deferred
+
+1. **Not a launch differentiator.** Existing LDR features (partner timezone
+   clock, next visit countdown, pre/post-visit rotating tips, care package
+   reminder) already carry the emotional load of "we're connected despite
+   distance." Adding km numbers is icing, not cake.
+
+2. **Content coverage matters more.** Same authoring rule as the enhanced
+   item view: a nice-to-have feature doesn't move subscription conversion
+   or reduce churn. Better to launch clean and add flourishes based on
+   post-launch analytics.
+
+3. **City dataset choice needs care.** 200 cities is enough for coverage
+   but leaves smaller places out ("what if my partner lives in Selfoss?").
+   Type-ahead + fallback to nearest city + user-typed override is the right
+   pattern, but that's more design than 2h.
+
+4. **User rejected GPS route.** GPS-based version was proposed and shut
+   down (privacy + App Store review risk). The city-based path is the
+   accepted compromise but stands better on its own once we're not
+   racing launch.
+
+### Decision criteria for revisiting
+
+Revisit if any of these hit post-launch:
+
+- **LDR user segment > 20% of active couples** — the feature earns
+  investment if a meaningful share of couples are actually LDR.
+- **Retention gap between LDR and co-located couples** — LDR churn higher
+  than co-located suggests the LDR narrative isn't strong enough; distance
+  banner could help.
+- **Users complain in reviews** about missing "distance-aware" feel —
+  concrete signal from real usage.
+
+If none of those hit within 3 months of launch, park indefinitely.
+
+### Open design questions (deferred with the feature)
+
+- **Copy voice** — pure info ("3,584 km apart") vs. poetic ("choosing each
+  other every day"). Draft picked the combined form (info line + italic
+  poetic line).
+- **Same message for both partners on the same day?** Yes — sync via
+  date-seeded rotation so both phones show identical text.
+- **Units** — km always, no user preference. Simpler and internationally
+  readable.
+- **Placement** — above the partner hero card or beneath the timezone
+  pills. Home layout will have moved by revisit time; decide then.
+
+### Effort estimate (for revisit)
+
+- Cities dataset embedded: **30 min**
+- Profile field + type-ahead: **30 min**
+- Haversine + banner: **30 min**
+- Copy variations + date-seeded rotation: **15 min**
+- **Total: ~1.5-2h**
+
+---
+
 ## Template for future entries
 
 ```
