@@ -322,7 +322,10 @@ export default function TruthDareScreen() {
             <View style={{ width: 60 }} />
           </View>
           <ScrollView contentContainerStyle={styles.soloWrap}>
-            <Text style={styles.soloEyebrow}>Choose intensity</Text>
+            {/* Two pill rows without section labels — the emoji + burgundy-when-
+                active design is self-explanatory. Cutting the "CHOOSE INTENSITY"
+                and "WHAT ARE YOU SPINNING FOR?" labels saves ~60px vertical so
+                the wheel + result card fit on one screen without scrolling. */}
             <View style={styles.soloLevels}>
               {LEVELS.map(level => {
                 const c = DARE_LEVEL_CONFIG[level];
@@ -334,14 +337,14 @@ export default function TruthDareScreen() {
                     style={[styles.soloLevelPill, active && styles.soloLevelPillActive, locked && styles.soloLevelPillLocked]}
                     onPress={() => locked ? router.push('/upgrade' as any) : setSoloLevel(level)}
                     activeOpacity={0.8}
-                   accessibilityRole="button">
+                    accessibilityRole="button"
+                    accessibilityLabel={`Intensity: ${c.label}${locked ? ', premium' : ''}`}>
                     <Text style={[styles.soloLevelText, active && styles.soloLevelTextActive]}>{locked ? '🔒 ' : ''}{c.label}</Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            <Text style={styles.soloEyebrow}>What are you spinning for?</Text>
             <View style={styles.soloLevels}>
               {([
                 { key: 'truth', label: 'Truth 💭' },
@@ -374,7 +377,8 @@ export default function TruthDareScreen() {
                     key={deg}
                     style={[
                       styles.wheelHeartWrap,
-                      { transform: [{ rotate: `${deg}deg` }, { translateY: -100 }, { rotate: `${-deg}deg` }] },
+                      // -86 matches the 14% wheel scale-down. Was -100 when wheel radius was 120.
+                      { transform: [{ rotate: `${deg}deg` }, { translateY: -86 }, { rotate: `${-deg}deg` }] },
                     ]}
                     pointerEvents="none"
                   >
@@ -899,18 +903,20 @@ const styles = StyleSheet.create({
   modeOr: { fontFamily: Fonts.headingItalic, fontSize: 16, color: Colors.muted, textAlign: 'center', marginVertical: 4 },
 
   // ── Solo dare ────────────────────────────────────────────────────────────────
-  soloWrap: { padding: Spacing.lg, gap: Spacing.md, alignItems: 'center' },
-  soloEyebrow: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, letterSpacing: 3, textTransform: 'uppercase', marginTop: Spacing.md, alignSelf: 'center' },
-  soloLevels: { flexDirection: 'row', gap: 8, marginBottom: Spacing.md, width: '100%' },
+  soloWrap: { padding: Spacing.lg, gap: Spacing.sm, alignItems: 'center' },
+  soloLevels: { flexDirection: 'row', gap: 8, width: '100%' },
   soloLevelPill: { flex: 1, backgroundColor: '#fff', borderRadius: 99, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
   soloLevelPillActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   soloLevelPillLocked: { opacity: 0.4 },
   soloLevelText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.5 },
   soloLevelTextActive: { color: '#fff' },
-  wheelWrap: { width: 280, height: 280, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.xl },
-  wheelHalo: { position: 'absolute', width: 296, height: 296, borderRadius: 148, backgroundColor: Colors.rose, opacity: 0.18 },
+  // Wheel scaled ~14% smaller (July 2026) so intensity + type pill rows +
+  // wheel + result card all fit on one screen without scrolling on typical
+  // 6" phones. Kept all the ring/halo/heart proportions in the same ratio.
+  wheelWrap: { width: 240, height: 240, alignItems: 'center', justifyContent: 'center', position: 'relative', marginVertical: Spacing.md },
+  wheelHalo: { position: 'absolute', width: 256, height: 256, borderRadius: 128, backgroundColor: Colors.rose, opacity: 0.18 },
   wheelOuterRing: {
-    position: 'absolute', width: 262, height: 262, borderRadius: 131,
+    position: 'absolute', width: 226, height: 226, borderRadius: 113,
     borderWidth: 1, borderColor: 'rgba(136,14,79,0.2)',
   },
   wheelPointer: {
@@ -922,7 +928,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   wheel: {
-    width: 240, height: 240, borderRadius: 120,
+    width: 208, height: 208, borderRadius: 104,
     backgroundColor: Colors.rose,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 4, borderColor: 'rgba(255,248,240,0.55)',
@@ -936,20 +942,20 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   wheelHeart: {
-    fontSize: 22,
+    fontSize: 20,
     color: 'rgba(136,14,79,0.4)',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   wheelInnerRing: {
     position: 'absolute',
-    width: 170, height: 170, borderRadius: 85,
+    width: 148, height: 148, borderRadius: 74,
     backgroundColor: Colors.cream,
     borderWidth: 1, borderColor: 'rgba(136,14,79,0.18)',
     zIndex: 2,
   },
   wheelCenterBtn: {
     position: 'absolute',
-    width: 124, height: 124, borderRadius: 62,
+    width: 108, height: 108, borderRadius: 54,
     backgroundColor: Colors.burgundy,
     borderWidth: 4, borderColor: Colors.cream,
     alignItems: 'center', justifyContent: 'center',
@@ -957,7 +963,7 @@ const styles = StyleSheet.create({
     shadowColor: Colors.burgundy, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.42, shadowRadius: 14,
     elevation: 10,
   },
-  wheelCenterLabel: { fontFamily: Fonts.headingItalic, fontSize: 32, color: Colors.cream, letterSpacing: 1.5, lineHeight: 36 },
+  wheelCenterLabel: { fontFamily: Fonts.headingItalic, fontSize: 28, color: Colors.cream, letterSpacing: 1.5, lineHeight: 32 },
   wheelCenterMark: { fontSize: 10, color: 'rgba(255,248,240,0.55)', marginTop: 2 },
 
   soloResult: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', width: '100%', ...Shadow.sm, marginTop: Spacing.md },
