@@ -1679,9 +1679,14 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   2. Phone B: observe
   - **Expected:** Phone A active game; Phone B waiting card within 2-3s.
 
-- [ ] **Spicy level locked for free user** 💰 📱
-  1. Phone A free → Spicy
-  - **Expected:** /upgrade; no Firestore write.
+- [ ] **Spicy level locked for free user (lobby entry)** 💰 📱
+  1. Phone A free → TWO PHONES card → Spicy level card
+  - **Expected:** /upgrade; no Firestore write. Same route as every other Spicy surface.
+
+- [ ] **Spicy level tab in mid-session ALSO gates free user** 💰 📱 ⚠️
+  1. Phone A free (non-premium), start a Flirty round with Phone B
+  2. Once in the active round, tap the 🔥 Spicy tab at the top of the screen
+  - **Expected:** Immediately routes to /upgrade. Firestore session doc is NOT rewritten with `level: 'spicy'`. Tab shows a 🔒 prefix and is dimmed so it's visually clear it's locked before you tap. Regression check: pre-fix the mid-session tab strip had no `!isSubscribed` guard, so a Sweet-tier user could tap Spicy mid-round and get access to the full paid pool without ever seeing /upgrade.
 
 - [ ] **Help modal shows on first multiplayer visit**
   1. First time

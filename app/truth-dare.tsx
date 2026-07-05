@@ -492,20 +492,30 @@ export default function TruthDareScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Level tab strip */}
+        {/* Level tab strip. Paywall gate mid-session: the lobby's level card
+            picker gates Spicy on entry, but this tab strip lives INSIDE an
+            active round so users who started on Sweet or Flirty and later
+            tapped Spicy could switch pool without ever hitting /upgrade.
+            Now Spicy tab routes to /upgrade for non-premium users, matching
+            every other Spicy surface in the app. */}
         <View style={styles.levelSegment}>
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             const active = session.level === level;
+            const locked = level === 'spicy' && !isSubscribed;
             return (
               <TouchableOpacity
                 key={level}
-                style={[styles.levelTab, active && { backgroundColor: c.color }]}
-                onPress={async () => { if (coupleId) { setDrawnCard(null); await startTruthDare(coupleId, uid, level); } }}
+                style={[styles.levelTab, active && { backgroundColor: c.color }, locked && { opacity: 0.55 }]}
+                onPress={async () => {
+                  if (locked) { router.push('/upgrade' as any); return; }
+                  if (coupleId) { setDrawnCard(null); await startTruthDare(coupleId, uid, level); }
+                }}
                 activeOpacity={0.8}
-               accessibilityRole="button">
+                accessibilityRole="button"
+                accessibilityLabel={`${c.label}${locked ? ', premium' : ''}`}>
                 <Text style={styles.levelTabEmoji}>{c.emoji}</Text>
-                <Text style={[styles.levelTabLabel, active && { color: c.textColor }]}>{c.label}</Text>
+                <Text style={[styles.levelTabLabel, active && { color: c.textColor }]}>{locked ? '🔒 ' : ''}{c.label}</Text>
               </TouchableOpacity>
             );
           })}
