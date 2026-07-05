@@ -30,7 +30,7 @@ Games and challenges for the two of you.
 #### Games
 | Feature | What it does |
 |---------|-------------|
-| 🎯 **Truth or Dare** | Turn-based 2-phone multiplayer + Solo Dare mode. Truths **311** + Dares **189** across Sweet / Flirty / Spicy |
+| 🎯 **Truth or Dare** | Two modes: "Together Right Here" (one phone, quick dare spin) and "Wherever You Are" (two phones, turn-based with audio answers, works great LDR). Truths **311** + Dares **189** across Sweet / Flirty / Spicy |
 | 💬 **Questions Game** | 3/day per category, private answers, reveal when both answered. **474** questions across Playful (free), Deep and Spicy (paid) |
 | 🆚 **Versus** | Guess your partner's binary answers from Questions Game history |
 | 🤔 **Would You Rather** | Simultaneous answer reveal. **191** questions across Playful / Romantic / Spicy |

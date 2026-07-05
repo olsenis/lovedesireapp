@@ -264,10 +264,10 @@ export default function TruthDareScreen() {
             <TouchableOpacity style={styles.modeCard} onPress={() => setMode('solo')} activeOpacity={0.85} accessibilityRole="button">
               <View style={styles.modeIconRow}>
                 <Text style={styles.modeIcon}>🎲</Text>
-                <Text style={styles.modeBadge}>Quick · one phone</Text>
+                <Text style={styles.modeBadge}>One phone</Text>
               </View>
-              <Text style={styles.modeTitle}>Solo Dare</Text>
-              <Text style={styles.modeDesc}>Spin the wheel on this phone alone. One random dare appears. No partner needed.</Text>
+              <Text style={styles.modeTitle}>Together Right Here</Text>
+              <Text style={styles.modeDesc}>Sitting together? Spin a dare on this phone. Quick, no rules, just do it.</Text>
               <Text style={styles.modeCta}>Spin →</Text>
             </TouchableOpacity>
 
@@ -276,11 +276,11 @@ export default function TruthDareScreen() {
             <TouchableOpacity style={[styles.modeCard, styles.modeCardFeatured]} onPress={() => setMode('multi')} activeOpacity={0.9} accessibilityRole="button">
               <View style={styles.modeIconRow}>
                 <Text style={styles.modeIcon}>💞</Text>
-                <Text style={[styles.modeBadge, styles.modeBadgeOnDark]}>2 phones · turn-based</Text>
+                <Text style={[styles.modeBadge, styles.modeBadgeOnDark]}>Two phones</Text>
               </View>
-              <Text style={[styles.modeTitle, styles.modeTitleOnDark]}>Multiplayer Round</Text>
-              <Text style={[styles.modeDesc, styles.modeDescOnDark]}>Take turns picking truth or dare for each other. Audio answers, scoring, sequential confirmation.</Text>
-              <Text style={[styles.modeCta, styles.modeCtaOnDark]}>Begin round →</Text>
+              <Text style={[styles.modeTitle, styles.modeTitleOnDark]}>Wherever You Are</Text>
+              <Text style={[styles.modeDesc, styles.modeDescOnDark]}>Each of you on your own phone, same room or worlds apart. Take turns picking truth or dare for each other.</Text>
+              <Text style={[styles.modeCta, styles.modeCtaOnDark]}>Begin →</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -293,7 +293,7 @@ export default function TruthDareScreen() {
         <View style={styles.screen}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
-            <Text style={styles.title}>Solo Dare</Text>
+            <Text style={styles.title}>Together Right Here</Text>
             <View style={{ width: 60 }} />
           </View>
           <ScrollView contentContainerStyle={styles.soloWrap}>
@@ -364,12 +364,12 @@ export default function TruthDareScreen() {
       <View style={styles.screen}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
-          <Text style={styles.title}>Multiplayer Round</Text>
+          <Text style={styles.title}>Wherever You Are</Text>
           <View style={{ width: 60 }} />
         </View>
         <ScrollView contentContainerStyle={styles.picker}>
           <Text style={styles.pickerIntro}>
-            A real 2-phone game. You challenge your partner, they answer or do the dare on their phone.
+            One phone each. Pick truth or dare for your partner, they'll answer on their screen.
           </Text>
           <Text style={styles.pickerSectionLabel}>Choose level</Text>
           {LEVELS.map(level => {
@@ -379,7 +379,7 @@ export default function TruthDareScreen() {
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
-                  <Text style={styles.levelSub}>{level === 'spicy' && !isSubscribed ? '🔒 Premium' : 'You go first · partner joins on their phone'}</Text>
+                  <Text style={styles.levelSub}>{level === 'spicy' && !isSubscribed ? '🔒 Premium' : 'You pick first · partner joins from their phone'}</Text>
                 </View>
                 <Text style={[styles.levelArrow, { color: c.textColor }]}>›</Text>
               </TouchableOpacity>

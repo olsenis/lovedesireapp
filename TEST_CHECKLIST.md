@@ -1625,32 +1625,36 @@ Date-driven features: month calendar, countdown lists, sealed time capsules, rel
 ## 5. Truth or Dare + Questions Game + Versus + WYR
 Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would You Rather.
 
-### Truth or Dare — Mode Picker & Solo Dare Spin (app/truth-dare.tsx)
+### Truth or Dare — Mode Picker & "Together Right Here" spin (app/truth-dare.tsx)
 
-- [ ] **Mode picker shows two distinct paths**
+- [ ] **Mode picker shows two distinct paths with new labels**
   1. Open Truth or Dare
-  - **Expected:** Eyebrow 'TONIGHT'; two cards Solo Dare + Multiplayer.
+  - **Expected:** Eyebrow 'TONIGHT'; two cards. Card 1 badge 'ONE PHONE', title 'Together Right Here', CTA 'Spin →'. Card 2 badge 'TWO PHONES', title 'Wherever You Are', CTA 'Begin →'. Regression check: pre-July-2026 the labels were 'Solo Dare' + 'Multiplayer Round' which read as single-player / gamer-speak.
 
-- [ ] **Solo Dare wheel spins and reveals a dare**
-  1. Solo Dare → Spin → wait 1.8s
+- [ ] **"Together Right Here" wheel spins and reveals a dare**
+  1. Tap the ONE PHONE card → Spin → wait 1.8s
   - **Expected:** Wheel rotates 1440°; dare card from Flirty pool.
 
-- [ ] **Solo Dare Spicy level locked for free user** 💰
-  1. Free user → Solo Dare → Spicy
+- [ ] **"Together Right Here" Spicy level locked for free user** 💰
+  1. Free user → ONE PHONE card → Spicy
   - **Expected:** /upgrade.
 
-- [ ] **Solo Dare double-tap spin ignored while spinning** ⚠️
+- [ ] **Wheel double-tap spin ignored while spinning** ⚠️
   1. Spin → immediately Spin again
   - **Expected:** Second tap ignored.
 
-- [ ] **Back from Solo returns to mode picker**
-  1. Solo Dare → ‹ Back
+- [ ] **Back from wheel screen returns to mode picker**
+  1. ONE PHONE card → ‹ Back
   - **Expected:** Returns to Mode Picker.
 
-### Truth or Dare — Multiplayer Lobby
+### Truth or Dare — "Wherever You Are" lobby (two-phone round)
 
-- [ ] **Multiplayer level select starts a round on both phones** 📱
-  1. Phone A: Multiplayer → Flirty
+- [ ] **Level picker shows updated title + subtitle** ⚠️
+  1. Tap the TWO PHONES card
+  - **Expected:** Screen title 'Wherever You Are' (not 'Multiplayer Round'). Subtitle reads "One phone each. Pick truth or dare for your partner, they'll answer on their screen." Section label 'CHOOSE LEVEL'. Each level card sub-text 'You pick first · partner joins from their phone' (was 'You go first · partner joins on their phone').
+
+- [ ] **Two-phone level select starts a round on both phones** 📱
+  1. Phone A: TWO PHONES card → Flirty
   2. Phone B: observe
   - **Expected:** Phone A active game; Phone B waiting card within 2-3s.
 
@@ -4050,7 +4054,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   - **Expected:** Phone A sees only count 'Partner has answered 2 of 5' — no answer text exposed in UI or Firestore client.
 
 - [ ] **Free user tapping Spicy Truth in Truth or Dare hits upgrade gate** 💰
-  1. Free-tier account → Truth or Dare → Multiplayer → tap Spicy level card
+  1. Free-tier account → Truth or Dare → TWO PHONES card → tap Spicy level card
   - **Expected:** Routes to /upgrade; no Firestore truthDare doc written; no card revealed.
 
 - [ ] **Free user tapping locked mood emoji hits upgrade** 💰
@@ -4210,7 +4214,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   3. Resume
   - **Expected:** Playback paused or stopped cleanly; no continued audio in background unless intentional; re-open and replay works.
 
-- [ ] **App backgrounded mid-spin (Solo Dare wheel)** ⚠️
+- [ ] **App backgrounded mid-spin (Together Right Here wheel)** ⚠️
   1. Tap Spin
   2. Background during 1.8s spin animation
   3. Resume

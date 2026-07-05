@@ -232,7 +232,7 @@ Three prompts for expanding content — always use the right one for the categor
 **Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Admin emails hardcoded for testing. Production will use RevenueCat. `isPremium: boolean` field on user Firestore doc also grants access.
 
 ### Free tier (store-safe)
-- Truth or Dare: Sweet + Flirty only (includes Solo Dare mode — the old Dare Wheel folded in)
+- Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)
 - Questions Game: Playful category only (binary + scale variants included)
 - Versus mode (full — uses partner's binary-question history)
 - Would You Rather: Playful + Romantic only
@@ -243,7 +243,7 @@ Three prompts for expanding content — always use the right one for the categor
 - 30-Day Challenge: Reconnect + Spark programs only
 
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
-- Truth or Dare: Spicy level (both multiplayer round AND Solo Dare)
+- Truth or Dare: Spicy level in both modes ("Together Right Here" and "Wherever You Are")
 - Questions Game: Deep + Spicy categories (Deep = vulnerable/romantic/growth; Spicy = sensual/fantasy)
 - Would You Rather: Spicy level
 - Daily Picks: Spicy category
