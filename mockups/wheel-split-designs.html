@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truth or Dare · Wheel Split Designs</title>
+<style>
+  :root {
+    --burgundy: #880E4F;
+    --rose: #F4A7B9;
+    --blush: #FCE4EC;
+    --cream: #FFF8F0;
+    --muted: #9E7B84;
+    --border: #F0D5DC;
+    --truth-tint: #F3E5F5;   /* soft lavender */
+    --dare-tint: #FFCCBC;    /* warm coral */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #EFE7DC;
+    color: #333;
+    padding: 32px 16px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+    font-size: 32px;
+    color: var(--burgundy);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: 40px;
+    font-size: 14px;
+  }
+
+  .designs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* ── Phone frame ─────────────────────────────────────────────── */
+  .phone {
+    background: var(--cream);
+    border: 14px solid #1a1a1a;
+    border-radius: 42px;
+    padding: 16px;
+    max-width: 360px;
+    margin: 0 auto;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  }
+  .phone-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 4px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .back { color: var(--burgundy); font-size: 15px; }
+  .title {
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+    font-size: 22px;
+    color: var(--burgundy);
+    flex: 1;
+  }
+
+  /* ── Intensity pills (shared across all 3) ───────────────────── */
+  .pills {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .pill {
+    flex: 1;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--burgundy);
+  }
+  .pill.active {
+    background: var(--burgundy);
+    color: #fff;
+    border-color: var(--burgundy);
+  }
+  .pill.locked {
+    background: #f5f5f5;
+    color: var(--muted);
+    border-color: var(--border);
+  }
+
+  /* ── Wheel container (shared) ────────────────────────────────── */
+  .wheel-container {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    margin: 20px 0;
+  }
+  .wheel {
+    width: 260px;
+    height: 260px;
+    position: relative;
+  }
+  .halo {
+    position: absolute;
+    inset: -8px;
+    background: var(--rose);
+    opacity: 0.18;
+    border-radius: 50%;
+  }
+  .pointer {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 18px solid var(--burgundy);
+    z-index: 10;
+    filter: drop-shadow(0 4px 4px rgba(136,14,79,0.3));
+  }
+
+  /* ── Design 1: Bold Halves with big labels ───────────────────── */
+  .design-1 .wheel {
+    display: flex;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(255,248,240,0.7);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+  }
+  .design-1 .half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .design-1 .half:hover { transform: scale(0.97); }
+  .design-1 .half-truth {
+    background: linear-gradient(135deg, var(--truth-tint), #E1BEE7);
+    border-right: 1px solid rgba(0,0,0,0.06);
+  }
+  .design-1 .half-dare {
+    background: linear-gradient(135deg, var(--dare-tint), #FFAB91);
+  }
+  .design-1 .half-emoji { font-size: 40px; margin-bottom: 6px; }
+  .design-1 .half-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--burgundy);
+    font-weight: 600;
+    font-style: italic;
+  }
+  .design-1 .surprise {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 4px;
+    text-decoration: underline dotted;
+    cursor: pointer;
+  }
+
+  /* ── Design 2: Halves with center Sweet/Flirty/Spicy anchor ─── */
+  .design-2 .wheel {
+    display: flex;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(255,248,240,0.7);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    position: relative;
+  }
+  .design-2 .half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 15px;
+    cursor: pointer;
+  }
+  .design-2 .half-truth {
+    background: var(--truth-tint);
+    padding-right: 40px;
+  }
+  .design-2 .half-dare {
+    background: var(--dare-tint);
+    padding-left: 40px;
+  }
+  .design-2 .half-emoji { font-size: 28px; margin-bottom: 4px; }
+  .design-2 .half-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px;
+    color: var(--burgundy);
+    font-weight: 600;
+  }
+  .design-2 .center-anchor {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 3px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .design-2 .center-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .design-2 .center-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--burgundy);
+    font-style: italic;
+    font-weight: 600;
+  }
+
+  /* ── Design 3: Curved labels + traditional Spin center ───────── */
+  .design-3 .wheel {
+    display: flex;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(255,248,240,0.7);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    position: relative;
+  }
+  .design-3 .half {
+    flex: 1;
+    position: relative;
+  }
+  .design-3 .half-truth {
+    background: linear-gradient(90deg, #E1BEE7, var(--truth-tint));
+  }
+  .design-3 .half-dare {
+    background: linear-gradient(90deg, var(--dare-tint), #FFAB91);
+  }
+  .design-3 .arc-label {
+    position: absolute;
+    top: 30px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--burgundy);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .design-3 .arc-label-truth {
+    left: 20px;
+    transform: rotate(-45deg);
+    transform-origin: center;
+  }
+  .design-3 .arc-label-dare {
+    right: 20px;
+    transform: rotate(45deg);
+    transform-origin: center;
+  }
+  .design-3 .arc-emoji {
+    position: absolute;
+    bottom: 30px;
+    font-size: 28px;
+  }
+  .design-3 .arc-emoji-truth { left: 40px; }
+  .design-3 .arc-emoji-dare { right: 40px; }
+  .design-3 .center-spin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: var(--burgundy);
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 28px;
+    font-style: italic;
+    font-weight: 600;
+    box-shadow: 0 8px 16px rgba(136,14,79,0.4);
+    z-index: 5;
+    cursor: pointer;
+    border: 4px solid var(--cream);
+  }
+
+  /* ── Design notes ────────────────────────────────────────────── */
+  .design-title {
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--burgundy);
+    margin-top: 24px;
+    margin-bottom: 4px;
+  }
+  .design-desc {
+    text-align: center;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 0 16px 24px;
+  }
+  .design-desc strong { color: var(--burgundy); }
+</style>
+</head>
+<body>
+
+<h1>Truth or Dare · Wheel Split Designs</h1>
+<p class="subtitle">Three variations on splitting the wheel into Truth (left) and Dare (right)</p>
+
+<div class="designs">
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DESIGN 1: Bold Halves with big centered labels              -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="design-1">
+    <div class="phone">
+      <div class="phone-header">
+        <span class="back">‹ Back</span>
+        <span class="title">Together Right Here</span>
+      </div>
+      <div class="pills">
+        <div class="pill">Sweet</div>
+        <div class="pill active">Flirty</div>
+        <div class="pill locked">🔒 Spicy</div>
+      </div>
+      <div class="wheel-container">
+        <div class="halo"></div>
+        <div class="pointer"></div>
+        <div class="wheel">
+          <div class="half half-truth">
+            <div class="half-emoji">💭</div>
+            <div class="half-label">Truth</div>
+          </div>
+          <div class="half half-dare">
+            <div class="half-emoji">🎯</div>
+            <div class="half-label">Dare</div>
+          </div>
+        </div>
+      </div>
+      <div class="surprise">or Surprise me 🎲</div>
+    </div>
+    <div class="design-title">1. Bold Halves</div>
+    <div class="design-desc">
+      Wheel is <strong>50/50 vertical split</strong>. Big emoji + serif label on each side.
+      Tap a half = "spin for this type". <strong>No center button</strong>. Surprise as small link below.
+      <br><br>Most direct. Cleanest use of space. But loses the "Spin" verbal cue.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DESIGN 2: Halves with center Sweet/Flirty/Spicy anchor      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="design-2">
+    <div class="phone">
+      <div class="phone-header">
+        <span class="back">‹ Back</span>
+        <span class="title">Together Right Here</span>
+      </div>
+      <div class="pills">
+        <div class="pill">Sweet</div>
+        <div class="pill active">Flirty</div>
+        <div class="pill locked">🔒 Spicy</div>
+      </div>
+      <div class="wheel-container">
+        <div class="halo"></div>
+        <div class="pointer"></div>
+        <div class="wheel">
+          <div class="half half-truth">
+            <div class="half-emoji">💭</div>
+            <div class="half-label">Truth</div>
+          </div>
+          <div class="half half-dare">
+            <div class="half-emoji">🎯</div>
+            <div class="half-label">Dare</div>
+          </div>
+          <div class="center-anchor">
+            <div class="center-label">Level</div>
+            <div class="center-value">Flirty</div>
+          </div>
+        </div>
+      </div>
+      <div class="surprise">or Surprise me 🎲</div>
+    </div>
+    <div class="design-title">2. Halves + Center Anchor</div>
+    <div class="design-desc">
+      Same split as #1 but with a <strong>small center pill</strong> showing current intensity.
+      Reinforces which level you're playing at, always visible. Tap a half to spin.
+      <br><br>Extra visual info. Trade-off: center circle competes with halves for attention.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DESIGN 3: Curved labels + traditional Spin center           -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="design-3">
+    <div class="phone">
+      <div class="phone-header">
+        <span class="back">‹ Back</span>
+        <span class="title">Together Right Here</span>
+      </div>
+      <div class="pills">
+        <div class="pill">Sweet</div>
+        <div class="pill active">Flirty</div>
+        <div class="pill locked">🔒 Spicy</div>
+      </div>
+      <div class="wheel-container">
+        <div class="halo"></div>
+        <div class="pointer"></div>
+        <div class="wheel">
+          <div class="half half-truth">
+            <div class="arc-label arc-label-truth">Truth</div>
+            <div class="arc-emoji arc-emoji-truth">💭</div>
+          </div>
+          <div class="half half-dare">
+            <div class="arc-label arc-label-dare">Dare</div>
+            <div class="arc-emoji arc-emoji-dare">🎯</div>
+          </div>
+          <div class="center-spin">Spin</div>
+        </div>
+      </div>
+      <div class="surprise">or Surprise me 🎲</div>
+    </div>
+    <div class="design-title">3. Roulette Style</div>
+    <div class="design-desc">
+      Split halves with <strong>curved labels along the arc</strong> (rotated). Center still has the
+      classic <strong>burgundy Spin button</strong>. User picks a half by tapping, then taps Spin center.
+      <br><br>Most "traditional wheel" feel. Extra two-step interaction, but preserves the Spin ritual.
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width: 800px; margin: 60px auto 20px; padding: 20px; background: rgba(255,255,255,0.6); border-radius: 12px; text-align: center; color: #555; font-size: 13px; line-height: 1.6;">
+  <strong style="color: var(--burgundy);">How to use this mockup:</strong><br>
+  Open in a browser · Compare visual balance, tap targets, and clarity ·
+  Pick one number and I'll implement it in React Native.
+</div>
+
+</body>
+</html>
