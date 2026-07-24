@@ -63,6 +63,13 @@ export default function ChallengeScreen() {
       await startChallenge(coupleId!, program);
     } catch (e: any) {
       setStartError(e?.code === 'permission-denied' ? 'Permission denied, check Firebase rules.' : `Error: ${e?.message ?? String(e)}`);
+    } finally {
+      // Always clear the starting flag — previously only reset on error, so a
+      // successful start left `starting=true` forever. When the user then hit
+      // Back from setup phase (which calls handleReset → clears the Firestore
+      // doc), the picker re-rendered with every card stuck showing 'Starting…'
+      // and disabled. Only an app kill fixed it. Now the flag always clears
+      // whether the Firestore write succeeded or failed.
       setStarting(false);
     }
   };

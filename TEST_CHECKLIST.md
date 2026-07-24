@@ -2649,6 +2649,13 @@ Daily-task programs and scheduled local notification reminders.
   1. Tap Reconnect
   - **Expected:** 'Starting…' → Review Days header + 30 cards.
 
+- [ ] **Start → Back → picker resets, no cards stuck on "Starting…"** ⚠️
+  1. Program picker → tap "Start this program" on any program (e.g. Reconnect)
+  2. Setup phase renders with 30 day cards
+  3. Tap ‹ Back to reset
+  4. Picker re-renders
+  - **Expected:** All program cards show "Start this program →" (not "Starting…") and are TAPPABLE. Regression check: pre-July-2026 `starting` local state only reset on error, never on success. So after step 3 the picker came back with every card stuck showing "Starting…" and disabled until app kill. Now `setStarting(false)` fires in a finally block after every doStart attempt.
+
 - [ ] **Desire program shows 18+ warning modal before starting**
   1. Tap Desire
   - **Expected:** Modal 💋 'Desire, 18+ only' + 5-bullet rules + 2 buttons.
