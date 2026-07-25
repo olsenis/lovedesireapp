@@ -32,6 +32,10 @@ export default function FantasyWishesScreen() {
   const [newMatchId, setNewMatchId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [toastActive, setToastActive] = useState(false);
+  // Whether the current toast should jump to the Matches tab on tap. Set
+  // per-show instead of parsing the message string so copy tweaks don't
+  // silently break the interaction.
+  const [toastTappable, setToastTappable] = useState(false);
   const toastAnim = useRef(new Animated.Value(0)).current;
   // Track which items were already matched at last render so we only
   // celebrate NEW mutual Yes events, not historical ones on mount.
@@ -48,9 +52,11 @@ export default function FantasyWishesScreen() {
   }, [coupleId]);
 
   // Small floating banner top of screen. Same helper for match reveal and
-  // +Add confirmation. Auto-dismisses after 3s.
-  const showToast = (msg: string) => {
+  // +Add confirmation. Match variant is tappable (jumps to Matches tab);
+  // +Add variant is passive info. Auto-dismisses after 3s.
+  const showToast = (msg: string, tappable: boolean = false) => {
     setToastMsg(msg);
+    setToastTappable(tappable);
     setToastActive(true);
     toastAnim.setValue(0);
     Animated.sequence([
@@ -60,6 +66,7 @@ export default function FantasyWishesScreen() {
     ]).start(() => {
       setToastActive(false);
       setToastMsg(null);
+      setToastTappable(false);
     });
   };
 
@@ -83,7 +90,7 @@ export default function FantasyWishesScreen() {
       if (matchedItem) {
         setNewMatchId(matchedItem.id);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showToast('✨ Match saved · Tap to view');
+        showToast("It's a Match! ✨ Tap to see", true);
         // Clear the glow highlight after the animation window so the card
         // returns to its normal appearance in Explore / Matches list.
         setTimeout(() => setNewMatchId(null), 2200);
@@ -128,7 +135,7 @@ export default function FantasyWishesScreen() {
     setShownUnvotedIds((prev) => [...prev, newId]);
     setNewText('');
     setShowAdd(false);
-    showToast('Added ✓ · Just below');
+    showToast('Added ✓ · Just below', false);
   };
 
   const loadPresets = async () => {
@@ -241,14 +248,15 @@ export default function FantasyWishesScreen() {
         <Text style={styles.infoText}>✨ Vote privately, only mutual Yes matches are ever revealed</Text>
       </View>
 
-      {/* Floating toast — fires on new match ("Match saved · Tap to view")
-          and on +Add ("Added ✓ · You'll see it after this batch"). Absolute
-          positioned so it hovers over the list content without shifting it.
-          Match variant is tappable to jump to Matches tab. */}
+      {/* Floating toast — fires on new match ("It's a Match! ✨ Tap to see",
+          tappable → Matches tab) and on +Add ("Added ✓ · Just below",
+          passive). Absolute positioned so it hovers over the list content
+          without shifting it. */}
       {toastActive && toastMsg && (
         <Animated.View
           style={[
             styles.toast,
+            toastTappable && styles.toastMatch,
             {
               opacity: toastAnim,
               transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
@@ -257,12 +265,13 @@ export default function FantasyWishesScreen() {
           pointerEvents="box-none"
         >
           <TouchableOpacity
-            onPress={() => { if (toastMsg?.startsWith('✨')) setActiveTab('matches'); }}
-            activeOpacity={0.85}
-            accessibilityRole="button"
+            onPress={() => { if (toastTappable) setActiveTab('matches'); }}
+            activeOpacity={toastTappable ? 0.85 : 1}
+            disabled={!toastTappable}
+            accessibilityRole={toastTappable ? 'button' : 'text'}
             accessibilityLabel={toastMsg}
           >
-            <Text style={styles.toastText}>{toastMsg}</Text>
+            <Text style={[styles.toastText, toastTappable && styles.toastTextMatch]}>{toastMsg}</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -408,7 +417,7 @@ function WishCard({ item, onVote, myVote, isCelebrating }: {
     <View style={[styles.wishCard, isCelebrating && styles.wishCardCelebrating]}>
       {isCelebrating && (
         <View style={styles.celebrateBadge}>
-          <Text style={styles.celebrateBadgeText}>✨ You matched!</Text>
+          <Text style={styles.celebrateBadgeText}>It's a Match! ✨</Text>
         </View>
       )}
       <Text style={styles.wishText}>{item.text}</Text>
@@ -498,6 +507,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   toastText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.3 },
+  // Match variant of the floating toast: inverted colors so it reads as
+  // celebratory instead of informational. Burgundy fill + cream text lands
+  // heavier than the default cream fill + burgundy text used by +Add.
+  toastMatch: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
+  toastTextMatch: { color: Colors.cream, fontSize: 14, letterSpacing: 0.4 },
   matchEmoji: { fontSize: 28, marginTop: 2 },
   matchInfo: { flex: 1, gap: 4 },
   matchText: { fontFamily: Fonts.heading, fontSize: 17, color: Colors.text, lineHeight: 24 },
