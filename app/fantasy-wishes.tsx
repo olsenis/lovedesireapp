@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, Animated } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -25,6 +25,17 @@ export default function FantasyWishesScreen() {
   const [resetting, setResetting] = useState(false);
   const [shownUnvotedIds, setShownUnvotedIds] = useState<string[]>([]);
   const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
+  // Match celebration + generic toast state. newMatchId names the wish card
+  // to render in glow-highlight mode for ~2s after a fresh mutual Yes.
+  // toastMsg / toastAnim drive a small floating banner (~3s) used for both
+  // "match saved" confirmation and "wish added to next batch" from +Add.
+  const [newMatchId, setNewMatchId] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toastActive, setToastActive] = useState(false);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  // Track which items were already matched at last render so we only
+  // celebrate NEW mutual Yes events, not historical ones on mount.
+  const prevMatchIdsRef = useRef<Set<string> | null>(null);
   const help = useHelp('fantasy-wishes');
 
   const coupleId = profile?.coupleId;
@@ -35,6 +46,52 @@ export default function FantasyWishesScreen() {
     if (!coupleId) return;
     return subscribeFantasyWishes(coupleId, setItems);
   }, [coupleId]);
+
+  // Small floating banner top of screen. Same helper for match reveal and
+  // +Add confirmation. Auto-dismisses after 3s.
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setToastActive(true);
+    toastAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(toastAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.delay(3000),
+      Animated.timing(toastAnim, { toValue: 0, duration: 260, useNativeDriver: true }),
+    ]).start(() => {
+      setToastActive(false);
+      setToastMsg(null);
+    });
+  };
+
+  // Detect fresh mutual Yes matches. On first snapshot we snapshot existing
+  // matches into the ref without celebrating (those are historical). Any
+  // new match id that appears after that fires a celebration — either from
+  // my own Yes landing on partner's Yes, or from partner's Yes landing on
+  // mine while I'm looking at the screen.
+  useEffect(() => {
+    if (!partnerId || items.length === 0) return;
+    const currentMatchIds = new Set(
+      items.filter((i) => isFWMatch(i, uid, partnerId)).map((i) => i.id),
+    );
+    if (prevMatchIdsRef.current === null) {
+      prevMatchIdsRef.current = currentMatchIds;
+      return;
+    }
+    const freshMatchIds = [...currentMatchIds].filter((id) => !prevMatchIdsRef.current!.has(id));
+    if (freshMatchIds.length > 0) {
+      const matchedItem = items.find((i) => i.id === freshMatchIds[0]);
+      if (matchedItem) {
+        setNewMatchId(matchedItem.id);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showToast('✨ Match saved · Tap to view');
+        // Clear the glow highlight after the animation window so the card
+        // returns to its normal appearance in Explore / Matches list.
+        setTimeout(() => setNewMatchId(null), 2200);
+      }
+    }
+    prevMatchIdsRef.current = currentMatchIds;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, partnerId, uid]);
 
   // Initialize locked batch of 5 unvoted items when items first load
   useEffect(() => {
@@ -64,6 +121,10 @@ export default function FantasyWishesScreen() {
     await addFantasyWishesItem(coupleId, newText.trim());
     setNewText('');
     setShowAdd(false);
+    // Small confirmation. New wishes don't appear in the current locked
+    // batch — they surface on the next Load 5 more. Toast tells the user
+    // where their wish went so they don't wonder if it saved.
+    showToast("Added ✓ · You'll see it after this batch");
   };
 
   const loadPresets = async () => {
@@ -176,6 +237,32 @@ export default function FantasyWishesScreen() {
         <Text style={styles.infoText}>✨ Vote privately, only mutual Yes matches are ever revealed</Text>
       </View>
 
+      {/* Floating toast — fires on new match ("Match saved · Tap to view")
+          and on +Add ("Added ✓ · You'll see it after this batch"). Absolute
+          positioned so it hovers over the list content without shifting it.
+          Match variant is tappable to jump to Matches tab. */}
+      {toastActive && toastMsg && (
+        <Animated.View
+          style={[
+            styles.toast,
+            {
+              opacity: toastAnim,
+              transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <TouchableOpacity
+            onPress={() => { if (toastMsg?.startsWith('✨')) setActiveTab('matches'); }}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={toastMsg}
+          >
+            <Text style={styles.toastText}>{toastMsg}</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tab, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')} accessibilityRole="button">
           <Text style={[styles.tabText, activeTab === 'explore' && styles.tabTextActive]}>Explore</Text>
@@ -204,7 +291,7 @@ export default function FantasyWishesScreen() {
                 </TouchableOpacity>
               );
             case 'wish-current':
-              return <WishCard item={row.item} onVote={handleVote} myVote={null} />;
+              return <WishCard item={row.item} onVote={handleVote} myVote={null} isCelebrating={row.item.id === newMatchId} />;
             case 'load-more':
               return (
                 <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8} accessibilityRole="button">
@@ -221,7 +308,7 @@ export default function FantasyWishesScreen() {
             case 'voted-label':
               return <Text style={styles.groupLabel}>Already voted</Text>;
             case 'wish-voted':
-              return <WishCard item={row.item} onVote={handleVote} myVote={myVote(row.item)} />;
+              return <WishCard item={row.item} onVote={handleVote} myVote={myVote(row.item)} isCelebrating={row.item.id === newMatchId} />;
             case 'empty-matches':
               return (
                 <View style={styles.emptyCard}>
@@ -235,8 +322,9 @@ export default function FantasyWishesScreen() {
               const iPressed = (item.addToList ?? []).includes(uid);
               const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
               const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
+              const celebrating = item.id === newMatchId;
               return (
-                <View style={styles.matchCard}>
+                <View style={[styles.matchCard, celebrating && styles.matchCardCelebrating]}>
                   <Text style={styles.matchEmoji}>✨</Text>
                   <View style={styles.matchInfo}>
                     <Text style={styles.matchText}>{item.text}</Text>
@@ -306,13 +394,19 @@ export default function FantasyWishesScreen() {
   );
 }
 
-function WishCard({ item, onVote, myVote }: {
+function WishCard({ item, onVote, myVote, isCelebrating }: {
   item: FantasyWishesItem;
   onVote: (item: FantasyWishesItem, vote: FWVote) => void;
   myVote: FWVote | null;
+  isCelebrating?: boolean;
 }) {
   return (
-    <View style={styles.wishCard}>
+    <View style={[styles.wishCard, isCelebrating && styles.wishCardCelebrating]}>
+      {isCelebrating && (
+        <View style={styles.celebrateBadge}>
+          <Text style={styles.celebrateBadgeText}>✨ You matched!</Text>
+        </View>
+      )}
       <Text style={styles.wishText}>{item.text}</Text>
       <View style={styles.voteRow}>
         {(['yes', 'maybe', 'no'] as FWVote[]).map((v) => {
@@ -367,11 +461,39 @@ const styles = StyleSheet.create({
   emptyTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },
   emptyText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
   wishCard: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
+  // Highlight state for ~2s right after a fresh mutual Yes. Warm blush
+  // background + burgundy border pulls the eye without being loud.
+  wishCardCelebrating: { backgroundColor: '#FCE4EC', borderColor: Colors.burgundy, borderWidth: 2 },
+  celebrateBadge: { alignSelf: 'flex-start', backgroundColor: Colors.burgundy, borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 2 },
+  celebrateBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.cream, letterSpacing: 0.5 },
   wishText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
   voteRow: { flexDirection: 'row', gap: Spacing.sm },
   voteBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   voteBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   matchCard: { borderRadius: Radius.lg, padding: Spacing.lg, flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, backgroundColor: '#F3E5F5' },
+  matchCardCelebrating: { borderColor: Colors.burgundy, borderWidth: 2, backgroundColor: '#FCE4EC' },
+  // Floating toast — sits below the info banner, above the list. High
+  // zIndex so it hovers above cards. Warm burgundy text on cream + border.
+  toast: {
+    position: 'absolute',
+    top: 168,
+    left: Spacing.lg,
+    right: Spacing.lg,
+    backgroundColor: Colors.cream,
+    borderColor: Colors.burgundy,
+    borderWidth: 1,
+    borderRadius: Radius.full,
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+    zIndex: 50,
+    elevation: 8,
+    shadowColor: Colors.burgundy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+  },
+  toastText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.3 },
   matchEmoji: { fontSize: 28, marginTop: 2 },
   matchInfo: { flex: 1, gap: 4 },
   matchText: { fontFamily: Fonts.heading, fontSize: 17, color: Colors.text, lineHeight: 24 },

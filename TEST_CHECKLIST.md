@@ -2059,6 +2059,20 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 
 ### Fantasy Wishes — match handshake
 
+- [ ] **Fresh mutual Yes celebrates in-line + shows toast** 💰 📱 ⚠️
+  1. Phone A votes Yes on an item; Phone B has not voted yet — no celebration.
+  2. Phone B opens Fantasy Wishes and votes Yes on the same item.
+  - **Expected:** Phone B's card highlights (blush background, burgundy border, `✨ You matched!` pill on top) for ~2s. Success haptic. Floating toast at top: `✨ Match saved · Tap to view`, dismisses after ~3s. Tapping the toast jumps to Matches tab. Phone A also sees the same celebration when their next Firestore snapshot arrives (their earlier Yes just became mutual). Regression check: pre-July-2026 the only cue was the `Matches (N)` counter incrementing — no in-screen moment for one of the most emotionally rich features.
+
+- [ ] **Historical matches on first open do NOT celebrate** ⚠️ 💰
+  1. Couple already has 5+ matches from earlier sessions
+  2. Close and reopen Fantasy Wishes
+  - **Expected:** Screen loads with matches visible in Matches tab, but no celebration highlight or toast fires for pre-existing matches. `prevMatchIdsRef` snapshots current matches on first load so only fresh events celebrate.
+
+- [ ] **+Add wish shows confirmation toast** ⚠️ 💰
+  1. Tap `+ Add` → type a wish → Send
+  - **Expected:** Modal closes. Floating toast at top: `Added ✓ · You'll see it after this batch`. Toast dismisses after ~3s. Wish does NOT appear in the currently-shown batch of 5 (the locked-batch pattern surfaces it on next Load 5 more) — the toast tells the user where it went so they don't wonder if it saved.
+
 - [ ] **First partner taps add → 'Waiting for partner' shown** 💰 📱
   1. Phone A: '+ Add to Together List'
   - **Expected:** Phone A italic 'Waiting for <Partner>'; no todo yet.
