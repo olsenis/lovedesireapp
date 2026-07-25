@@ -1952,6 +1952,28 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   1. Sign out mid-session → sign in
   - **Expected:** Continues at same index/score.
 
+- [ ] **Match card exposes '+ Save to our list' — single tap saves for both** ⚠️ 📱
+  1. Both pick the same option → green `🎉 You match!` card appears
+  2. Below the discussion prompt, above `Next question →`, an outlined `+ Save to our list` button is visible
+  3. Phone A taps it
+  - **Expected:** Success haptic. Button replaces with a green pill `✓ Saved to Date Ideas` (Playful/Romantic levels) or `✓ Saved to Intimacy` (Spicy level). Phone B's screen also flips to the saved-chip state within ~1s via Firestore subscription. Open Together List from Home → the winning option's exact text (e.g. `Stay in a luxury hotel`, NOT the full `Would you rather…`) is present as a new unchecked item in the mapped category with source=`wyr`. Not saved on mismatch cards — button is only rendered when both partners picked the same option. Regression check: pre-fix the match moment was ephemeral and vanished on Next question; there was no way to turn a shared preference into something the couple could act on.
+
+- [ ] **Save button single-tap race safety — both partners tap simultaneously** ⚠️ 📱
+  1. Match reveal, both partners have the card open with the Save button visible
+  2. Both tap `+ Save to our list` in the same tick
+  - **Expected:** Exactly ONE todo appears in Together List, not two. The atomic transaction in `saveMatchToList` reads `savedToList`; the second tap sees it already true and no-ops before the second `tx.set(todoRef)` runs. Both phones flip to the green `✓ Saved to …` chip.
+
+- [ ] **savedToList resets on Next question** ⚠️
+  1. Save a match → chip shows `✓ Saved to Date Ideas`
+  2. Tap `Next question →`
+  3. Both answer the next question and match again
+  - **Expected:** The new match card shows the `+ Save to our list` button again, not the pre-saved chip — `nextWYRQuestion` explicitly writes `savedToList: false` inside its transaction. Regression: without the reset, every subsequent match in the session would appear pre-saved with no way to trigger a save.
+
+- [ ] **Save button hidden pre-reveal + on mismatch** ⚠️
+  1. Answer alone (partner has not answered) → no reveal card yet
+  2. Both answer, differ → yellow `🤔 You differ!` card
+  - **Expected:** Save button never renders in either state. Only the `matched && !savedToList` branch renders it. Sanity fallback: `saveMatchToList` transaction also refuses to write when `revealed === false`, so a stale client can't sneak a save through.
+
 ---
 
 ## 6. Activity Cards + Fantasy Wishes + Daily Picks + Roulette

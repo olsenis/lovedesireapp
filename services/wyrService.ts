@@ -1,6 +1,7 @@
-import { doc, setDoc, updateDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, collection, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { WYRLevel } from '../constants/content';
+import { TodoCategory } from './todoService';
 
 export type WYRAnswer = 'a' | 'b';
 
@@ -10,6 +11,10 @@ export interface WYRSession {
   answers: Record<string, WYRAnswer>; // { uid: 'a'|'b' }
   revealed: boolean;
   score: { match: number; total: number };
+  // Whether the current match has been saved to the Together List. Absent
+  // means unsaved. Reset back to false on nextWYRQuestion so the next
+  // match's Save button starts fresh.
+  savedToList?: boolean;
 }
 
 export function subscribeWYR(coupleId: string, onChange: (s: WYRSession | null) => void): Unsubscribe {
@@ -62,9 +67,43 @@ export async function nextWYRQuestion(coupleId: string, _session: WYRSession, ui
       questionIndex: live.questionIndex + 1,
       answers: {},
       revealed: false,
+      savedToList: false,
       'score.total': live.score.total + 1,
       'score.match': live.score.match + (matched ? 1 : 0),
     });
+  });
+}
+
+// Save the current match's winning option to the Together List. Atomic:
+// creates the todo doc AND flips savedToList in a single transaction so
+// two rapid taps (both partners hit Save at the same tick) can't produce
+// two duplicate todos. The pre-generated todoRef lets us write into
+// /todos from within the transaction — addDoc can't be called inside a
+// transaction, but tx.set on a doc() with a fresh id can.
+export async function saveMatchToList(
+  coupleId: string,
+  uid: string,
+  text: string,
+  category: TodoCategory,
+): Promise<{ savedNow: boolean }> {
+  const wyrRef = doc(db, 'couples', coupleId, 'wyr', 'active');
+  const todoRef = doc(collection(db, 'couples', coupleId, 'todos'));
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(wyrRef);
+    if (!snap.exists()) return { savedNow: false };
+    const live = snap.data() as WYRSession;
+    if (live.savedToList) return { savedNow: false }; // Already saved, no-op
+    if (!live.revealed) return { savedNow: false }; // Guard: don't save pre-reveal
+    tx.set(todoRef, {
+      text,
+      category,
+      completed: false,
+      createdBy: uid,
+      createdAt: Date.now(),
+      source: 'wyr',
+    });
+    tx.update(wyrRef, { savedToList: true });
+    return { savedNow: true };
   });
 }
 

@@ -13,7 +13,7 @@ import { db } from './firebase';
 
 export type TodoCategory = 'daily' | 'dates' | 'intimacy' | 'goals';
 
-export type TodoSource = 'manual' | 'daily-picks' | 'fantasy-wishes' | 'roulette';
+export type TodoSource = 'manual' | 'daily-picks' | 'fantasy-wishes' | 'roulette' | 'wyr';
 
 export interface Todo {
   id: string;

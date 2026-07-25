@@ -123,7 +123,7 @@ couples/{coupleId}/reminders/{id}    FlirtReminder — message, time, days[], ac
 couples/{coupleId}/dates/{id}        ImportantDate — label, date, emoji, createdBy
 couples/{coupleId}/challenge/active  ChallengeState — program, phase, currentDay, completedDays[], completedBy, customTasks, editsUsed, vetoesUsed
 couples/{coupleId}/blueprints/{uid}  BlueprintResult — type, scores, completedAt (readable by both)
-couples/{coupleId}/wyr/active        WYRSession — level, questionIndex, answers{uid:a|b}, revealed, score
+couples/{coupleId}/wyr/active        WYRSession — level, questionIndex, answers{uid:a|b}, revealed, score, savedToList?
 couples/{coupleId}/bingo/{month}     ActivityCardsSession — squares[], revealed[], revealedBy{}, completed[], pendingCard, turnUid, passes{}, receiverPasses{}, resetCount
 couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(picking|answering|done), card{type,text,answer,audioURL,answeredBy,dareConfirmed[]}, scores, round, skipsUsed
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
@@ -155,7 +155,7 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `helpService.ts` | `getHelpState`, `markFeatureSeen`, `setHelpEnabled`, `disableAllHelp`, `resetHelp` |
 | `dailyWishService.ts` | `subscribeDailyWishes`, `voteDailyWish`, `markAddToList`, `bothWantToAdd` |
 | `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `submitAnswer`, `bothAnswered`, `markDiscussed`, `bothDiscussed` |
-| `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR` |
+| `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR`, `saveMatchToList` |
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 | `timeCapsuleService.ts` | `subscribeTimeCapsules` (metadata), `sealTimeCapsule` (writes metadata + content as separate docs), `getCapsuleContent` (lazy fetch of /sealed/data when opening), `markCapsuleOpened`, `isUnlocked` |

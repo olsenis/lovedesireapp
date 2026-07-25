@@ -6,7 +6,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR } from '../services/wyrService';
+import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList } from '../services/wyrService';
+import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYRLevel } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
 import { useSubscription } from '../hooks/useSubscription';
@@ -67,6 +68,20 @@ export default function WouldYouRatherScreen() {
   const handleReset = async () => {
     if (!coupleId) return;
     await resetWYR(coupleId);
+  };
+
+  // Category mapping. Playful/Romantic mostly describe date-shaped
+  // scenarios (dinners, holidays, weekends), so they land under Date
+  // Ideas. Spicy describes intimate scenarios, so → Intimacy. Users can
+  // reclassify from the Together List if the auto-pick is off.
+  const saveCategory = (level: WYRLevel): TodoCategory => (level === 'spicy' ? 'intimacy' : 'dates');
+  const saveCategoryLabel = (cat: TodoCategory) => (cat === 'intimacy' ? 'Intimacy' : 'Date Ideas');
+
+  const handleSaveMatch = async () => {
+    if (!coupleId || !session || !currentQ || !matched || session.savedToList) return;
+    const winningText = myAnswer === 'a' ? currentQ.a : currentQ.b;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await saveMatchToList(coupleId, uid, winningText, saveCategory(session.level));
   };
 
   if (!loading && !session) {
@@ -168,6 +183,29 @@ export default function WouldYouRatherScreen() {
             {currentQ.discussion && (
               <Text style={styles.discussionPrompt}>💬 {currentQ.discussion}</Text>
             )}
+            {/* Save-to-list only on match. Match already means both partners
+                chose the same option, so no double-confirm handshake needed —
+                one tap saves in the couple's name. Second tap on the other
+                phone no-ops via transaction guard on savedToList. */}
+            {matched && (
+              session.savedToList ? (
+                <View style={styles.savedChip}>
+                  <Text style={styles.savedChipText}>
+                    ✓ Saved to {saveCategoryLabel(saveCategory(session.level))}
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.saveBtn}
+                  onPress={handleSaveMatch}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Save to ${saveCategoryLabel(saveCategory(session.level))}`}
+                >
+                  <Text style={styles.saveBtnText}>+ Save to our list</Text>
+                </TouchableOpacity>
+              )
+            )}
             <TouchableOpacity style={[styles.nextBtn, { backgroundColor: cfg.textColor }]} onPress={handleNext} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.nextBtnText}>Next question →</Text>
             </TouchableOpacity>
@@ -224,4 +262,27 @@ const styles = StyleSheet.create({
   discussionPrompt: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
   nextBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full, marginTop: Spacing.sm },
   nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+  // Save-to-list affordance on match. Outline burgundy so it reads as a
+  // secondary action next to the primary Next question button — we want
+  // Next to remain the visual default so the session flow doesn't slow.
+  saveBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full,
+    borderWidth: 1.5,
+    borderColor: Colors.burgundy,
+    backgroundColor: Colors.white,
+    marginTop: 6,
+  },
+  saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.3 },
+  // Post-save confirmation chip. Non-interactive, sits in the same slot
+  // as the Save button so the layout doesn't jump.
+  savedChip: {
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full,
+    backgroundColor: '#C8E6C9',
+    marginTop: 6,
+  },
+  savedChipText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: '#2E7D32', letterSpacing: 0.3 },
 });
