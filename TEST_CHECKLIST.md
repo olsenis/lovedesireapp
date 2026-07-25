@@ -2069,9 +2069,9 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   2. Close and reopen Fantasy Wishes
   - **Expected:** Screen loads with matches visible in Matches tab, but no celebration highlight or toast fires for pre-existing matches. `prevMatchIdsRef` snapshots current matches on first load so only fresh events celebrate.
 
-- [ ] **+Add wish shows confirmation toast** ⚠️ 💰
+- [ ] **+Add wish appears immediately below current batch** ⚠️ 💰
   1. Tap `+ Add` → type a wish → Send
-  - **Expected:** Modal closes. Floating toast at top: `Added ✓ · You'll see it after this batch`. Toast dismisses after ~3s. Wish does NOT appear in the currently-shown batch of 5 (the locked-batch pattern surfaces it on next Load 5 more) — the toast tells the user where it went so they don't wonder if it saved.
+  - **Expected:** Modal closes. Floating toast at top: `Added ✓ · Just below`. Wish appears immediately at the bottom of the current batch (currentBatch bumps from 5 to 6 items) with Yes / Maybe / No vote buttons. Regression check: pre-fix the wish was silently deferred until Load 5 more, and even then never surfaced because `.slice(0, 5)` on createdAt-asc-sorted items picked the oldest presets first, pushing the just-added (newest) wish to the tail of the list. Now the id is injected into `shownUnvotedIds` on add so it renders inline.
 
 - [ ] **First partner taps add → 'Waiting for partner' shown** 💰 📱
   1. Phone A: '+ Add to Together List'

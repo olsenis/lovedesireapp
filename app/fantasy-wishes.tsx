@@ -118,13 +118,17 @@ export default function FantasyWishesScreen() {
 
   const handleAdd = async () => {
     if (!newText.trim() || !coupleId) return;
-    await addFantasyWishesItem(coupleId, newText.trim());
+    const newId = await addFantasyWishesItem(coupleId, newText.trim());
+    // Inject the new wish into the current locked batch immediately so the
+    // user sees it right below the existing 5, not somewhere down after
+    // Load 5 more. Previously the toast said "You'll see it after this
+    // batch" but Load 5 more's .slice(0, 5) picks the oldest unvoted items
+    // by createdAt, so the just-added (newest) wish never surfaced until
+    // hundreds of presets had been voted on.
+    setShownUnvotedIds((prev) => [...prev, newId]);
     setNewText('');
     setShowAdd(false);
-    // Small confirmation. New wishes don't appear in the current locked
-    // batch — they surface on the next Load 5 more. Toast tells the user
-    // where their wish went so they don't wonder if it saved.
-    showToast("Added ✓ · You'll see it after this batch");
+    showToast('Added ✓ · Just below');
   };
 
   const loadPresets = async () => {

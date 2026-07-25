@@ -18,12 +18,17 @@ export function subscribeFantasyWishes(coupleId: string, onChange: (items: Fanta
   });
 }
 
-export async function addFantasyWishesItem(coupleId: string, text: string): Promise<void> {
-  await addDoc(collection(db, 'couples', coupleId, 'fantasyWishes'), {
+// Returns the newly created doc id so callers can inject the wish into the
+// active view immediately (e.g. Fantasy Wishes' locked-5 batch bumps to 6
+// when the user adds a custom wish, so it's visible without waiting for
+// Load 5 more).
+export async function addFantasyWishesItem(coupleId: string, text: string): Promise<string> {
+  const ref = await addDoc(collection(db, 'couples', coupleId, 'fantasyWishes'), {
     text,
     votes: {},
     createdAt: Date.now(),
   });
+  return ref.id;
 }
 
 export async function voteOnFantasyWish(coupleId: string, itemId: string, uid: string, vote: FWVote): Promise<void> {
