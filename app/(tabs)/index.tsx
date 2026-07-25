@@ -81,7 +81,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
       { tip: `Tell ${partnerName} one specific thing you love about who they are.`, cta: 'Write a Love Note', route: '/notes' },
       { tip: `Send ${partnerName} a voice note. Hearing it lands differently than reading it.`, cta: 'Open Tease', route: '/flashes' },
       { tip: `Send a spark with words that name what you appreciate today.`, cta: 'Send a spark', route: '/(tabs)' },
-      { tip: `Pick a Question from Romantic and answer with words ${partnerName} hasn't heard.`, cta: 'Open Questions', route: '/questions-game' },
+      { tip: `Answer a question in Daily today with words ${partnerName} hasn't heard yet.`, cta: 'Open Daily', route: '/daily' },
     ],
     acts: [
       { tip: `Do one small thing for ${partnerName} they didn't ask for. Notice what.`, cta: 'Add to Together List', route: '/todo' },
@@ -91,13 +91,13 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
     gifts: [
       { tip: `It's the thought, not the price. Send ${partnerName} a Tease photo of something that made you think of them today.`, cta: 'Send a Tease', route: '/flashes' },
       { tip: `Schedule a Love Note unlocked for tonight with one specific thing you got them in mind.`, cta: 'Write a Love Note', route: '/notes' },
-      { tip: `Pick a Daily Pick from Sweet and treat it like a small gift today.`, cta: 'Open Daily Picks', route: '/daily-wishes' },
+      { tip: `Pick something from Playful in Daily and treat it like a small gift today.`, cta: 'Open Daily', route: '/daily?category=playful' },
     ],
     time: [
       { tip: `Carve out 30 phone-free minutes with ${partnerName} today. Mark it on the Calendar so it's real.`, cta: 'Open Calendar', route: '/calendar' },
       { tip: `Do a slow Sunday Check-in tonight. Quality time is the love language and the check-in lives there.`, cta: 'Start the check-in', route: '/state-union' },
       { tip: `Run Date Roulette together. Pick something that lasts longer than dinner.`, cta: 'Spin the wheel', route: '/roulette' },
-      { tip: `Play Questions Game tonight. 3 questions, no phones, eye contact.`, cta: 'Open Questions', route: '/questions-game' },
+      { tip: `Play Daily tonight. Three questions, no phones, eye contact.`, cta: 'Open Daily', route: '/daily' },
     ],
     touch: [
       { tip: `Try a Sensate Focus stage tonight. Touch without goal is exactly ${partnerName}'s language.`, cta: 'Open Sensate', route: '/sensate' },
@@ -297,32 +297,45 @@ export default function HomeScreen() {
     });
   }
 
-  // Daily Questions: partner discussed but user hasn't in at least one
-  if (dailyQDoc && partnerId) {
-    const partnerD = dailyQDoc.discussed[partnerId] ?? [];
-    const myD = dailyQDoc.discussed[uid] ?? [];
-    const waiting = partnerD.filter(i => !myD.includes(i));
-    if (waiting.length > 0) {
-      list.push({
-        emoji: '💬',
-        title: 'Questions waiting',
-        subtitle: `${partner?.name ?? 'Partner'} discussed ${waiting.length} question${waiting.length > 1 ? 's' : ''} today`,
-        route: '/questions-game',
-        bg: '#E3F2FD',
-      });
+  // Daily (unified): partner has ANSWERED or VOTED on items user hasn't
+  // touched. Replaces two prior nudges (Questions Game + Daily Picks) that
+  // now share a route.
+  //
+  // Two fixes bundled with the merge:
+  //  1. Old Q nudge triggered on `discussed[partnerId]` — but the UI never
+  //     exposed a "mark discussed" action anywhere, so the trigger key
+  //     was set only by legacy code paths and the nudge effectively rarely
+  //     fired. Switched to `answers` which is what users actually produce.
+  //  2. Old DP nudge fired when `myVoteCount < 20` — schema is only 15
+  //     items per day, so any partial voter got stuck-nudged forever.
+  //     Switched to a per-item "did partner touch this, did I not" diff
+  //     which naturally clears once caller catches up.
+  //
+  // Route has no ?category= — /daily's auto-selector picks the cat where
+  // partner is ahead (questions ranked above actions), so the tap lands on
+  // the most-urgent cat without the nudge itself having to decide.
+  if (partnerId) {
+    let questionsAhead = 0;
+    if (dailyQDoc) {
+      const partnerAns = dailyQDoc.answers?.[partnerId] ?? {};
+      const myAns = dailyQDoc.answers?.[uid] ?? {};
+      questionsAhead = Object.keys(partnerAns).filter((k) => !(k in myAns)).length;
     }
-  }
-
-  // Daily Picks: partner voted but you haven't voted as much
-  if (dailyWishDoc && partnerId) {
-    const partnerVoteCount = Object.keys(dailyWishDoc.votes[partnerId] ?? {}).length;
-    const myVoteCount = Object.keys(dailyWishDoc.votes[uid] ?? {}).length;
-    if (partnerVoteCount > 0 && myVoteCount < 20) {
+    let picksAhead = 0;
+    if (dailyWishDoc) {
+      const partnerVotes = dailyWishDoc.votes[partnerId] ?? {};
+      const myVotes = dailyWishDoc.votes[uid] ?? {};
+      picksAhead = Object.keys(partnerVotes).filter((k) => !(k in myVotes)).length;
+    }
+    if (questionsAhead > 0 || picksAhead > 0) {
+      const parts: string[] = [];
+      if (questionsAhead > 0) parts.push(`${questionsAhead} question${questionsAhead === 1 ? '' : 's'}`);
+      if (picksAhead > 0) parts.push(`${picksAhead} pick${picksAhead === 1 ? '' : 's'}`);
       list.push({
-        emoji: '🌹',
-        title: "Daily Picks",
-        subtitle: `${partner?.name ?? 'Partner'} has voted on today's picks, your turn`,
-        route: '/daily-wishes',
+        emoji: '💫',
+        title: 'Daily is waiting',
+        subtitle: `${partner?.name ?? 'Partner'} is ahead by ${parts.join(' + ')} today`,
+        route: '/daily',
         bg: Colors.blush,
       });
     }
@@ -522,7 +535,7 @@ export default function HomeScreen() {
     const previsit = [
       { emoji: '💞', title: 'Tomorrow',   sub: `Last sleep before you see ${them}. Leave a note for the morning.`, route: '/notes' },
       { emoji: '✨', title: '2 days',     sub: 'List one thing you want to talk about in person', route: '/notes' },
-      { emoji: '🌹', title: '3 days',     sub: "Pick a Daily Pick you'd both love to try together", route: '/daily-wishes' },
+      { emoji: '🌹', title: '3 days',     sub: "Pick something in Daily you'd both love to try together", route: '/daily?category=playful' },
       { emoji: '📸', title: '4 days',     sub: "Send a teaser of what's coming", route: '/flashes' },
       { emoji: '💌', title: '5 days',     sub: 'Write a note for when they arrive', route: '/notes' },
       { emoji: '🎁', title: '6 days',     sub: 'Plan a small surprise for them', route: '/notes' },
@@ -751,21 +764,9 @@ export default function HomeScreen() {
       </View>
       )}
 
-      {/* ─── TONIGHT'S RITUAL ─── */}
-      <View style={styles.sectionDivider}>
-        <View style={styles.sectionLine} />
-        <Text style={styles.sectionLabel}>Tonight's Ritual</Text>
-        <View style={styles.sectionLine} />
-      </View>
-
-      <TouchableOpacity style={styles.ritualRow} onPress={() => router.push('/questions-game' as any)} activeOpacity={0.85} accessibilityRole="button">
-        <Text style={styles.ritualOrnament}>♥</Text>
-        <View style={styles.ritualText}>
-          <Text style={styles.ritualTitle}>Three questions tonight</Text>
-          <Text style={styles.ritualSub}>Answer privately, then reveal</Text>
-        </View>
-        <Text style={styles.ritualArrow}>›</Text>
-      </TouchableOpacity>
+      {/* Tonight's Ritual section removed July 2026 — Questions Game merged
+          into Daily and its own dedicated ritual row became redundant with
+          the Daily row in Tonight's Picks below. */}
 
       {/* ─── QUICK ─── */}
       {isConnected && (
@@ -841,20 +842,20 @@ export default function HomeScreen() {
       {/* ─── TONIGHT'S PICKS ─── curated launchpad, 3 highest-fun games.
            Discover tab holds the full menu (WYR, Roulette, Bingo, Challenge,
            etc.). Home duplicating the full list dilutes the "tonight's pick"
-           signal — kept lean with Daily Picks (best daily rhythm), Truth or
-           Dare (highest-rated interaction), and Fantasy Wishes (paid premium
-           showcase). "See all games" links to Discover for everything else. */}
+           signal — kept lean with Daily (best daily rhythm, merges picks +
+           questions), Truth or Dare (highest-rated interaction), and Fantasy
+           Wishes (paid premium showcase). */}
       <View style={styles.sectionDivider}>
         <View style={styles.sectionLine} />
         <Text style={styles.sectionLabel}>Tonight's Picks</Text>
         <View style={styles.sectionLine} />
       </View>
 
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/daily-wishes' as any)} activeOpacity={0.85} accessibilityRole="button">
-        <Text style={styles.gameEmoji}>🌹</Text>
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/daily' as any)} activeOpacity={0.85} accessibilityRole="button">
+        <Text style={styles.gameEmoji}>💫</Text>
         <View style={styles.gameText}>
-          <Text style={styles.gameTitle}>Daily Picks</Text>
-          <Text style={styles.gameSub}>5 new picks today · vote privately</Text>
+          <Text style={styles.gameTitle}>Daily</Text>
+          <Text style={styles.gameSub}>Fresh picks and questions every day</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>

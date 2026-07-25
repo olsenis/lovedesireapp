@@ -13,11 +13,33 @@ const defaultState: HelpState = { enabled: true, seen: [] };
 // Writes update both Firestore and the cache so reads stay coherent within a session.
 const cache = new Map<string, HelpState>();
 
+// One-time migration: when Daily Picks + Questions Game merged into one
+// screen (July 2026), the new screen uses help key 'daily'. Users who
+// already dismissed the old 'daily-wishes' or 'questions' keys should NOT
+// see a fresh tutorial for what is effectively the same feature. We
+// back-fill on next getHelpState read so the migration is silent — no
+// separate flag, no client-side scheduler. Safe to remove after the
+// legacy keys stop appearing in production data.
+const LEGACY_DAILY_KEYS = ['daily-wishes', 'questions'];
+async function backfillDailyKey(uid: string, state: HelpState): Promise<HelpState> {
+  if (state.seen.includes('daily')) return state;
+  const hasLegacy = LEGACY_DAILY_KEYS.some((k) => state.seen.includes(k));
+  if (!hasLegacy) return state;
+  const next: HelpState = { ...state, seen: [...state.seen, 'daily'] };
+  try {
+    await updateDoc(doc(db, 'users', uid, 'private', 'help'), { seen: arrayUnion('daily') });
+  } catch {
+    // Doc may not exist yet in edge cases; user hasn't seen anything anyway.
+  }
+  return next;
+}
+
 export async function getHelpState(uid: string): Promise<HelpState> {
   const cached = cache.get(uid);
   if (cached) return cached;
   const snap = await getDoc(doc(db, 'users', uid, 'private', 'help'));
-  const state = snap.exists() ? (snap.data() as HelpState) : defaultState;
+  const raw = snap.exists() ? (snap.data() as HelpState) : defaultState;
+  const state = await backfillDailyKey(uid, raw);
   cache.set(uid, state);
   return state;
 }

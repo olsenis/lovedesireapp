@@ -104,10 +104,10 @@ export default function VersusScreen() {
           <Text style={styles.emptyEmoji}>🤔</Text>
           <Text style={styles.emptyTitle}>Not enough answers yet</Text>
           <Text style={styles.emptyBody}>
-            Versus uses {partnerName}'s past quick-fire answers. Play a few days of binary questions in Questions Game first, then come back to test how well you know them.
+            Versus uses {partnerName}'s past quick-fire answers. Play a few days of Daily questions first, then come back to test how well you know them.
           </Text>
-          <TouchableOpacity style={styles.cta} onPress={() => router.replace('/questions-game')} accessibilityRole="button">
-            <Text style={styles.ctaText}>Go to Questions →</Text>
+          <TouchableOpacity style={styles.cta} onPress={() => router.replace('/daily?category=playful' as any)} accessibilityRole="button">
+            <Text style={styles.ctaText}>Go to Daily →</Text>
           </TouchableOpacity>
         </View>
       )}

@@ -19,8 +19,8 @@
 2. [Home tabs (Home / Discover / Us + Together List surfaced on Home)](#2-home-tabs-home--discover--us--together-list-surfaced-on-home)
 3. [Love Notes + Tease + Moments + Journal](#3-love-notes--tease--moments--journal)
 4. [Calendar + Countdowns + Time Capsules + Our Story + Year-in-Review](#4-calendar--countdowns--time-capsules--our-story--year-in-review)
-5. [Truth or Dare + Questions Game + Versus + WYR](#5-truth-or-dare--questions-game--versus--wyr)
-6. [Activity Cards + Fantasy Wishes + Daily Picks + Roulette](#6-activity-cards--fantasy-wishes--daily-picks--roulette)
+5. [Truth or Dare + Daily (merged Picks + Questions) + Versus + WYR](#5-truth-or-dare--daily-merged-picks--questions--versus--wyr)
+6. [Activity Cards + Fantasy Wishes + Roulette](#6-activity-cards--fantasy-wishes--roulette)
 7. [Blueprint + Sensate + Intimacy Log](#7-blueprint--sensate--intimacy-log)
 8. [Love Language + Relationship Pulse + Sunday Check-in + Mood History](#8-love-language--relationship-pulse--sunday-check-in--mood-history)
 9. [30-Day Challenge + Flirt Reminders](#9-30-day-challenge--flirt-reminders)
@@ -677,15 +677,11 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   1. Phone B writes mood-gated note; Phone A picks 🥺
   - **Expected:** Note becomes readable.
 
-### Tonight's Ritual + Quick + Games rows
+### Quick + Games rows
 
-- [ ] **Ritual row navigates to questions-game**
-  1. Tap 'Three questions tonight'
-  - **Expected:** /questions-game.
-
-- [ ] **Ritual row always renders**
-  1. Open Home
-  - **Expected:** Row always present.
+- [ ] **No 'Tonight's Ritual' section on Home** ⚠️
+  1. Scroll Home
+  - **Expected:** No dedicated "Three questions tonight" ritual row exists. The section was removed July 2026 when Questions Game merged into Daily — the Daily row in Tonight's Picks (below) covers the same intent without redundancy.
 
 - [ ] **Quick card hidden when unpaired**
   1. New user no partner
@@ -737,11 +733,11 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 - [ ] **Tonight's Picks section renders exactly 3 rows + "See all games →" link**
   1. Scroll to Tonight's Picks (renamed from "Games & Rituals" July 2026)
-  - **Expected:** Daily Picks · Truth or Dare · Fantasy Wishes rows visible, in that order. NO Date Roulette / Would You Rather rows on Home. Below the last row: "See all games →" tappable link that navigates to /(tabs)/discover. Regression check: previously this section had 5 rows duplicating the Discover tab menu.
+  - **Expected:** Daily (💫) · Truth or Dare (🎯) · Fantasy Wishes (✨) rows visible, in that order. NO Date Roulette / Would You Rather rows on Home. Below the last row: "See all games →" tappable link that navigates to /(tabs)/discover. Regression check: previously this section had 5 rows duplicating the Discover tab menu; also previously the first row was "Daily Picks" but that merged into "Daily" July 2026.
 
-- [ ] **Daily Picks row navigates**
-  1. Tap Daily Picks
-  - **Expected:** /daily-wishes.
+- [ ] **Daily row navigates to /daily**
+  1. Tap Daily
+  - **Expected:** /daily (no ?category=, auto-selector picks the cat where partner is ahead, defaults to Playful if no partner activity).
 
 - [ ] **Fantasy Wishes row shows lock for free user** 💰
   1. Free user views row
@@ -753,7 +749,7 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 - [ ] **All 3 rows push correct routes + See all games link works**
   1. Tap each of the 3 rows, then See all games
-  - **Expected:** Daily Picks → /daily-wishes, Truth or Dare → /truth-dare, Fantasy Wishes → /fantasy-wishes (or /upgrade if free-tier). See all games link → /(tabs)/discover.
+  - **Expected:** Daily → /daily, Truth or Dare → /truth-dare, Fantasy Wishes → /fantasy-wishes (or /upgrade if free-tier). See all games link → /(tabs)/discover.
 
 ### Waiting for you — challenge / notes / daily
 
@@ -786,17 +782,14 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   1. Phone B writes note openAt 24h away
   - **Expected:** No nudge.
 
-- [ ] **Daily Questions nudge after partner discusses** 📱
-  1. Phone B answers + Discussed
-  - **Expected:** '💬 Questions waiting' nudge.
+- [ ] **Unified Daily nudge after partner has activity** 📱 ⚠️
+  1. Phone B answers a question OR votes on picks
+  - **Expected:** Phone A sees exactly ONE '💫 Daily is waiting' nudge. Subtitle names the deficit: `<B> is ahead by N question(s)` / `M pick(s)` / both combined. Tap → `/daily` (no ?category=, auto-selector). Regression check: pre-merge there were two separate nudges (`💬 Questions waiting` + `🌹 Daily Picks`) that could BOTH appear at once from the same partner activity, each pointing to a different route.
 
-- [ ] **Daily Picks nudge after partner votes** 📱
-  1. Phone B votes 5+
-  - **Expected:** '🌹 Daily Picks' nudge.
-
-- [ ] **Daily Picks nudge clears after I cast 20 votes**
-  1. Vote 20+
-  - **Expected:** Nudge gone.
+- [ ] **Daily nudge clears when I catch up on the deficit** ⚠️
+  1. Nudge fires (partner ahead by 2 picks)
+  2. Open Daily, vote on both those picks
+  - **Expected:** Nudge disappears from Home. Diff-based trigger (`Object.keys(partnerVotes).filter(k => !(k in myVotes))`) resolves naturally as I catch up. Regression check: pre-fix DP nudge fired on `myVoteCount < 20` which never cleared (schema is 15 items) — partial voters got stuck-nudged forever.
 
 - [ ] **WYR nudge after partner answers** 📱
   1. Phone B answers first
@@ -920,11 +913,11 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 - [ ] **All 6 game cards render in order**
   1. Tap Discover
-  - **Expected:** GAMES: Questions Game, Versus, Truth or Dare, WYR, Activity Cards, Fantasy Wishes.
+  - **Expected:** GAMES: Daily, Versus, Truth or Dare, WYR, Activity Cards, Fantasy Wishes.
 
-- [ ] **Questions Game subtitle shows current 3-category list, not legacy 6** ⚠️
-  1. Tap Discover → look at Questions Game card subtitle
-  - **Expected:** Subtitle reads "Playful, Deep and Spicy · answer privately, reveal together". Regression check: pre-fix the subtitle still said "Fun, Deep, Romantic, Spicy, Therapy & Fantasy" — six category names that no longer exist. Users would tap in expecting them and be confused.
+- [ ] **Daily card replaces Questions Game slot in Discover** ⚠️
+  1. Tap Discover → look at first Games card
+  - **Expected:** First card is `💫 Daily` with subtitle `Picks to vote on and questions to answer, fresh every day` routing to `/daily`. Regression check: pre-July-2026 there was a separate `💬 Questions Game` card here — merged into Daily.
 
 - [ ] **Free games show › arrow**
   1. Look at free 4
@@ -1622,8 +1615,8 @@ Date-driven features: month calendar, countdown lists, sealed time capsules, rel
 
 ---
 
-## 5. Truth or Dare + Questions Game + Versus + WYR
-Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would You Rather.
+## 5. Truth or Dare + Daily (merged Picks + Questions) + Versus + WYR
+Multiplayer Truth or Dare, the merged Daily feature (actions + questions in one screen), partner-knowledge Versus, Would You Rather.
 
 ### Truth or Dare — Mode Picker & "Together Right Here" spin (app/truth-dare.tsx)
 
@@ -1780,67 +1773,200 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
   1. ‹ Back → re-enter
   - **Expected:** Returns into active session at same phase.
 
-### Questions Game — Category Tabs & Daily Pool (app/questions-game.tsx)
+### Daily — merged Picks + Questions (app/daily.tsx)
 
-- [ ] **No 🔥 streak counter renders anywhere in header** 🔒 ⚠️
-  1. Open Questions Game
-  - **Expected:** Header has back button + "Questions" title + 60px empty spacer. No 🔥 N pill top-right. Same regression rule as Moments.
+The Daily screen was created July 2026 by merging the old Daily Picks (`/daily-wishes`) and Questions Game (`/questions-game`) features into a single surface. Backend is unchanged — the screen subscribes to both `couples/{coupleId}/dailyWishes/{date}` and `couples/{coupleId}/dailyQuestions/{date}` and interleaves in memory. Old routes are redirect stubs.
 
-- [ ] **Progress counter matches actual category size, not hardcoded /3** ⚠️
-  1. Open Questions Game on an LDR-tagged pool where an item might be filtered out
-  - **Expected:** Progress reads "answeredCount/actualCount answered today" — the denominator matches `catItems.length`, not a hardcoded 3. Regression check: pre-fix the ratio was hardcoded `/3` so a filter that dropped a question showed nonsense like "0/3" with only 2 questions rendered.
+#### Category picker + paywall
 
-- [ ] **Same 3 questions appear on both phones for current category** 📱
-  1. Phone A Playful; Phone B Playful
-  - **Expected:** Same 3 in same order; progress '0/3 answered today'.
+- [ ] **Three tabs, Playful selected by default when no ?category=** ⚠️
+  1. Free session, open `/daily` with no query param
+  - **Expected:** Header 'Daily'. Three tabs: 😊 Playful (active), 💛 Deep 🔒, 🔥 Spicy 🔒. Playful renders. Regression check: default MUST NOT be Deep or Spicy — a push notification tapped by a free user would hit the paywall instead of any content.
+
+- [ ] **Deep-link `?category=deep` respects param even for free users** ⚠️ 💰
+  1. Free user navigates to `/daily?category=deep`
+  - **Expected:** Deep tab visually selected in the picker. Tapping the tab (or auto-selection at start) shows the paywall (`router.push('/upgrade')`). This is intentional — the deep link is treated as a conversion moment, not silently overridden to Playful.
 
 - [ ] **Deep category locked for free user** 💰
-  1. Free → 💛 Deep tab
-  - **Expected:** /upgrade; '🔒' suffix.
+  1. Free user → tap 💛 Deep
+  - **Expected:** `/upgrade`. Suffix ' 🔒' on the tab label.
 
 - [ ] **Spicy category locked for free user** 💰
-  1. Free → 🔥 Spicy tab
-  - **Expected:** /upgrade; '🔒' suffix.
+  1. Free user → tap 🔥 Spicy
+  - **Expected:** `/upgrade`. Suffix ' 🔒'.
 
-- [ ] **LDR-tagged questions appear only when isLongDistance=true** 🌍
-  1. Set LDR; reopen
-  - **Expected:** LDR-tagged questions surface; non-LDR couples never see them.
+- [ ] **Flirty content is now BEHIND the paywall (migration change)** 💰 ⚠️
+  1. Free user opens `/daily?category=spicy`
+  - **Expected:** Paywall. Regression check: pre-July-2026 Flirty Daily Picks were free. The merge moved Flirty content under the paid Spicy tab. This is a documented downgrade of the free-tier value proposition, accepted by the product owner.
 
-- [ ] **Loading state when no items yet** ⚠️
-  1. Fresh couple slow network → pick category
-  - **Expected:** 'Loading today's questions…' until ready.
+- [ ] **Subscribed user sees all three tabs unlocked** 💰
+  1. Subscribed user opens `/daily`
+  - **Expected:** No 🔒 badges. All three tabs open normally.
 
-### Questions Game — Answer Formats
+#### Actions first, questions second (ordering)
 
-- [ ] **Open question accepts text and shows Sent banner**
-  1. Type → Send answer →
-  - **Expected:** White 'Sent! Waiting for <Partner>…' banner.
+- [ ] **Playful cat renders 5 action cards ABOVE 3 question cards** ⚠️
+  1. Both partners fresh Playful (no votes/answers yet)
+  - **Expected:** Card sequence is: 5 action cards (PICK pill, vote row), THEN 3 question cards (QUESTION pill, answer input / binary / scale). Rationale documented in daily.tsx: vote UI doesn't grab keyboard focus, so it forms a low-friction warmup band above the taller question cards.
+
+- [ ] **Both partners see the same row order** 📱
+  1. Both open Daily Playful
+  - **Expected:** Identical actions-first-questions-second order on both phones. Deterministic per couple+date via existing `pickDailyItems` and `pickDailyQuestions` shuffles inside their respective services.
+
+- [ ] **Deep cat shows 3 question cards only + tagline copy** ⚠️
+  1. Subscribed user → 💛 Deep
+  - **Expected:** No action cards at all (by design). 3 question cards. Progress hint reads "Slow evening. Three conversations, no rush." — reframes the low count as intentional. Regression check: don't add empty-state placeholders or fake actions to fill the space.
+
+- [ ] **Spicy cat shows 10 actions + 3 questions = 13 items** 💰
+  1. Subscribed user → 🔥 Spicy
+  - **Expected:** Actions band = ex-Flirty (5) + Spicy DP (5) = 10 cards, followed by 3 Spicy question cards. Progress card shows both voted/answered counts.
+
+#### Action flow (mutual-yes → save to Together List)
+
+- [ ] **Vote Yes surfaces to partner without leaking the vote value** 📱
+  1. Phone A votes Yes on action card #3; Phone B opens same screen
+  - **Expected:** Phone A shows their Yes state (green). Phone B sees `<A> has voted ✓` hint but not the vote itself.
+
+- [ ] **Mutual Yes → match card with save affordance** 📱
+  1. Both vote Yes on the same action
+  - **Expected:** Both phones flip to rose-bordered card. Banner `✓ You both want this!`. Below it: `+ Add to Together List` button.
+
+- [ ] **Single-tap add saves once, second-partner tap becomes confirm** 📱
+  1. Phone A taps Add → `Waiting for <B> to add ✓`
+  2. Phone B taps `<A> wants to add, tap to confirm`
+  - **Expected:** Both phones flip to `✓ Added to Together List`. Open Together List → item appears ONCE, category-mapped: Playful/Sweet → Date Ideas, Spicy/Flirty → Intimacy. Regression check: `markAddToListAtomic` transaction guarantees exactly one write.
+
+- [ ] **Race — both tap Add simultaneously → exactly one todo** ⚠️ 📱 💰
+  1. Both phones on the same match card
+  2. Both tap Add within the same tick
+  - **Expected:** Together List shows exactly one item. Transaction serializes via `markAddToListAtomic`; only the caller whose write completes the pair triggers the `addTodo` write.
+
+- [ ] **Vote change flips match state correctly** ⚠️ 📱
+  1. Phone A: Yes; Phone B: No → no match. Phone B switches to Yes.
+  - **Expected:** Match appears on both phones. Reverse (Phone B switches back to No) clears the match banner.
+
+#### Question flow (private → simultaneous reveal)
+
+- [ ] **Open-text question accepts input and shows Sent banner**
+  1. Type → Send answer
+  - **Expected:** White 'Sent! Waiting for <Partner>…' banner. Answer text displayed as `Your answer: <text>`.
 
 - [ ] **Binary question submits instantly on option tap**
-  1. Tap one option
-  - **Expected:** Sent banner shows that option.
+  1. Tap one of the two options
+  - **Expected:** Sent banner shows the tapped option. No text input rendered for binary format.
 
 - [ ] **Scale question shows 1-5 chips with hint**
   1. Scale-format Q → tap 4
-  - **Expected:** Answer '4' submitted; hint '1 = not at all · 5 = completely'.
+  - **Expected:** Answer '4' submitted. Hint '1 = not at all · 5 = completely' visible before submit.
 
 - [ ] **Reveal shows both side-by-side when both answered** 📱
-  1. Phone A answer; Phone B answer same
-  - **Expected:** Both phones show green card with YOU / partner answers.
+  1. Phone A answer; Phone B answer
+  - **Expected:** Both phones show green card with YOU / partner boxes containing the two answers. Card background flips to `#F1F8E9`.
 
 - [ ] **Partner-already-answered hint before you answer** 📱
-  1. Phone B answers first
-  - **Expected:** Phone A sees '<B> already answered, your turn!'.
+  1. Phone B answers first, Phone A opens same question
+  - **Expected:** Phone A sees `<B> already answered, your turn!` above the input.
 
-### Questions Game — Push
+- [ ] **LDR-tagged questions surface only for isLongDistance couples** 🌍
+  1. Set `couple.isLongDistance = true` in Firestore console
+  2. Reload `/daily`
+  - **Expected:** LDR-tagged questions may appear in today's pool. `isLDR` is forwarded through `subscribeDailyQuestions(coupleId, setQDoc, { isLDR: !!couple?.isLongDistance })`. Regression check: pre-merge this flag was easy to drop silently — plan agent flagged this specifically.
 
-- [ ] **Push notification sent when first to answer** 📱
-  1. Phone A answers first
-  - **Expected:** Phone B receives 'Questions 💬'.
+- [ ] **Push notification on first question answer** 📱
+  1. Phone A answers a question first, Phone B backgrounded
+  - **Expected:** Phone B receives 'Daily 💬' with subtitle `<A> played today, your turn!`. No push when answering second (partner already answered).
 
-- [ ] **No notification when answering second** 📱 ⚠️
-  1. Phone B answered first; Phone A answers
-  - **Expected:** Phone B receives NO push.
+#### Deep-link redirects (legacy routes)
+
+- [ ] **`/daily-wishes` with no param redirects to `/daily`** ⚠️
+  1. Navigate to `/daily-wishes`
+  - **Expected:** Screen shows a plain cream background for one frame, then replaces to `/daily` with no `?category=`. Back button behavior: back from `/daily` goes to the previous route (tabs), not the stub. `router.replace` used specifically so the stub is not on the history stack.
+
+- [ ] **`/daily-wishes?category=sweet` redirects to `/daily?category=playful`** ⚠️
+  1. Navigate to `/daily-wishes?category=sweet`
+  - **Expected:** Auto-replaces to `/daily?category=playful`. Sweet → Playful mapping in the stub because Sweet DP was folded into the Playful merged bucket.
+
+- [ ] **`/daily-wishes?category=flirty` redirects to `/daily?category=spicy`** ⚠️ 💰
+  1. Navigate to `/daily-wishes?category=flirty`
+  - **Expected:** Auto-replaces to `/daily?category=spicy`. Flirty → Spicy mapping because Flirty moved to the paid Spicy tab in the merge.
+
+- [ ] **`/questions-game?category=<known>` passes through** ⚠️
+  1. Navigate to `/questions-game?category=deep`
+  - **Expected:** Auto-replaces to `/daily?category=deep`. Q categories (playful/deep/spicy) already match the merged surface names so the stub passes them through unchanged if in the allow-set.
+
+- [ ] **`/questions-game?category=<unknown>` falls back to `/daily`** ⚠️
+  1. Navigate to `/questions-game?category=fantasy` (legacy 6-category name)
+  - **Expected:** Auto-replaces to `/daily` with no param (safer than passing through a stale category slug).
+
+#### Auto-select-partner-ahead
+
+- [ ] **`/daily` (no param) auto-selects category where partner is ahead** ⚠️ 📱
+  1. Phone A (partner) answers 1 Deep question and votes on 2 Spicy actions (subscribe both partners for this test)
+  2. Phone B (subscribed) opens `/daily` with no `?category=`
+  - **Expected:** Phone B's picker auto-selects Deep (question activity ranked above action activity — an unanswered reveal is more urgent than an unvoted pick). If only action activity exists → auto-selects that cat. Once the user manually taps a tab, the guard flag prevents auto-selection from stealing focus.
+
+- [ ] **Free user auto-select skips paid categories** ⚠️ 💰
+  1. Phone A answers 1 Deep question. Phone B is free tier.
+  - **Expected:** Phone B's `/daily` auto-select does NOT jump to Deep (which would show a paywall). Falls through to Playful default. Guard `if (!isSubscribed && PAID_MERGED_CATEGORIES.includes(cat)) continue` in `pickCategoryPartnerAheadOf`.
+
+- [ ] **Manual tap disables auto-select for the session** ⚠️
+  1. Phone B opens `/daily`, auto-select picks Playful, user then taps Spicy manually
+  2. Partner activity arrives in Playful
+  - **Expected:** Screen stays on Spicy — the manual tap set `autoSelected = true` and the effect early-returns thereafter.
+
+#### Stale-doc self-heal (both underlying services)
+
+- [ ] **Stale dailyWishes doc regenerates AND preserves votes/addToList** 🔒 ⚠️
+  1. Manually seed `couples/{id}/dailyWishes/{today}` with 20 items (legacy 4-category schema, includes 'sexual') and add some votes: `votes: { <uidA>: { "0": "yes", "5": "yes" } }`
+  2. Open `/daily`
+  - **Expected:** `subscribeDailyWishes` detects `items.length !== 15` OR a `'sexual'` category → writes a fresh 15-item doc BUT preserves `votes` and `addToList`. Regression check: pre-fix, migration wrote `{ votes: {}, addToList: {} }` and wiped both partners' progress the moment either refreshed after the schema bump.
+
+#### Progress card
+
+- [ ] **Playful progress shows both voted + answered counts + matches**
+  1. Vote 2/5 Playful actions and answer 1/3 Playful questions
+  - **Expected:** Progress card row: `2/5 You voted` `1/3 You answered`. Matches column only appears when totalMatchCount > 0.
+
+- [ ] **Deep progress hides voted column (no actions)**
+  1. Subscribed user opens Deep
+  - **Expected:** Progress card row: `0/3 You answered` only. No voted column. Below: `Slow evening. Three conversations, no rush.` tagline instead of the generic privacy hint.
+
+- [ ] **Total matches counter opens all-matches modal**
+  1. Vote both partners Yes on 2 actions (any cat) → totalMatchCount = 2
+  - **Expected:** Progress card shows `2 Matches ›` (tappable). Tap → slide-up modal listing all matched items with category badges + Add-to-Together-List affordance.
+
+#### Versus regression (post-merge safety)
+
+- [ ] **Versus still reads dailyQuestions after merge** ⚠️ 📱
+  1. Both partners answer a binary question in `/daily`
+  2. Open Versus
+  - **Expected:** New answer is available in the Versus pool. Proves `dailyQuestions/{date}.answers.{uid}.{gi}` still writes via `submitAnswer` unchanged, and `versusService.ts` still reads the correct path + shape. Regression check: Versus HARD depends on the exact positional `items[gi]` stability — the merge did NOT change Firestore paths or item ordering.
+
+- [ ] **Versus empty-state CTA routes to `/daily?category=playful`** ⚠️
+  1. Fresh couple (no answered binary questions yet), open Versus
+  - **Expected:** Empty state 🤔 shows `Go to Daily →`. Tap → `/daily?category=playful` (uses `router.replace` — does NOT chain through the redirect stub, avoids double-replace flash).
+
+#### Help modal + back-fill
+
+- [ ] **Fresh user sees Daily help modal once**
+  1. Fresh account, no help keys marked seen, open `/daily`
+  - **Expected:** HelpModal 'Daily' with 4 tips visible. Dismiss → does not reappear on later visits.
+
+- [ ] **User with legacy help keys does NOT get a fresh tutorial** ⚠️
+  1. Seed `users/{uid}/private/help.seen = ['daily-wishes']` (or `['questions']`) in Firestore
+  2. Open `/daily`
+  - **Expected:** No HelpModal. The back-fill in `getHelpState` adds `'daily'` to the seen array on first read when either legacy key is present. Prevents an upgrade-day re-tutorial for what is effectively the same feature.
+
+#### Home nudge unification
+
+- [ ] **Home shows ONE unified Daily nudge, not two** ⚠️ 📱
+  1. Phone A (partner) answers 1 question and votes on 2 actions
+  2. Phone B opens Home
+  - **Expected:** Exactly ONE `💫 Daily is waiting` card in Waiting for you. Subtitle: `<A> is ahead by 1 question + 2 picks today`. Tap → `/daily` (no ?category=, auto-selector picks). Regression check: pre-merge there were two separate nudges (Questions Game 💬 + Daily Picks 🌹) that could both appear at once and both point to different routes.
+
+- [ ] **Nudge clears when I catch up** ⚠️
+  1. Nudge fires (partner ahead by 2 picks). I open Daily and vote on both.
+  - **Expected:** Nudge disappears from Home. Diff-based trigger (`Object.keys(partnerVotes).filter(k => !(k in myVotes))`) resolves naturally as I catch up. Regression check: pre-fix DP nudge fired on `myVoteCount < 20` which never cleared because schema is only 15 items — partial voters got stuck-nudged forever.
 
 ### Versus — Pool Loading & Empty State (app/versus.tsx)
 
@@ -1976,7 +2102,7 @@ Multiplayer Truth or Dare, daily Questions Game, partner-knowledge Versus, Would
 
 ---
 
-## 6. Activity Cards + Fantasy Wishes + Daily Picks + Roulette
+## 6. Activity Cards + Fantasy Wishes + Roulette
 Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks, date roulette spinner.
 
 ### Activity Cards — first session + grid (app/bingo.tsx)
@@ -2122,70 +2248,9 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. + Add → blank/spaces → Add
   - **Expected:** Nothing happens.
 
-### Daily Picks — segment + daily generation (app/daily-wishes.tsx)
+### Daily Picks (removed July 2026)
 
-- [ ] **Golden path — open shows 5 sweet items + progress**
-  1. Fresh today open Daily Picks
-  - **Expected:** 3 tabs — Sweet, Flirty, Spicy 🔒 (Spicy shows lock for non-premium). Sweet active; progress 0/5; 5 wish cards with ✓/✗.
-
-- [ ] **Non-premium tap on Spicy tab routes to /upgrade** 💰
-  1. Non-premium user taps 🔥 Spicy tab
-  - **Expected:** Immediately routes to /upgrade; Spicy content never renders. Sweet + Flirty stay openable.
-
-- [ ] **Stale doc from pre-merge (4 categories, 20 items) auto-regenerates AND preserves votes** 🔒 ⚠️
-  1. Manually create a `couples/{id}/dailyWishes/{today}` doc with 20 items (4 old categories, includes 'sexual') and add some votes: `votes: { <uidA>: { "0": "yes", "5": "yes" }, <uidB>: { "0": "yes" } }`
-  2. Phone A opens Daily Picks
-  - **Expected:** subscribeDailyWishes detects `items.length !== 15` or a `'sexual'` category → writes fresh 15-item doc BUT preserves the existing `votes` and `addToList` maps. Match at index 0 (mutual yes on Sweet #0) still shows. Regression check: pre-fix, migration wrote `{ votes: {}, addToList: {} }` from inside onSnapshot, wiping both partners' progress the moment either partner refreshed after the schema bump.
-
-- [ ] **Both partners see same 5 picks (deterministic)** 📱
-  1. Phone A note 5 Sweet; Phone B same tab
-  - **Expected:** Identical text and order.
-
-- [ ] **Switch category tabs scrolls to top**
-  1. Sweet scroll → Spicy
-  - **Expected:** Tab highlights; scrolls to top.
-
-### Daily Picks — private voting + match
-
-- [ ] **Vote yes — counter increments + partner sees 'has voted'** 📱
-  1. Phone A: ✓ Yes on pick 1; Phone B opens
-  - **Expected:** Phone A 1/5; Phone B sees '<A> has voted ✓' but not the vote value.
-
-- [ ] **Mutual yes creates a match** 📱
-  1. Both vote ✓ Yes on same
-  - **Expected:** Rose border card + 'You both want this!'.
-
-- [ ] **Vote no does NOT create match** ⚠️ 📱
-  1. Phone A ✗; Phone B ✓
-  - **Expected:** No match banner.
-
-- [ ] **Change vote from no to yes after partner already yes → match** ⚠️ 📱
-  1. Setup then Phone A switches to ✓
-  - **Expected:** Match appears both phones.
-
-### Daily Picks — Add to Together List atomic handshake
-
-- [ ] **Both partners tap Add — exactly one todo created in correct category** 📱
-  1. Both confirm on Sweet match
-  - **Expected:** Todo added exactly once. Category mapping: sweet→dates, flirty/spicy→intimacy.
-
-- [ ] **Race — both partners tap Add simultaneously, todo once** ⚠️ 📱 💰
-  1. Both tap within 1s on a Spicy match
-  - **Expected:** Transaction serializes; one todo.
-
-### Daily Picks — All Matches modal
-
-- [ ] **Empty total matches — Total tap does nothing** ⚠️
-  1. 0 matches → tap Total
-  - **Expected:** No modal; no chevron.
-
-- [ ] **View all matches across categories**
-  1. Sweet + Flirty matches → tap 'Total matches'
-  - **Expected:** Slide-up modal lists matches with category badges.
-
-- [ ] **Daily refresh — wait past midnight, picks regenerate** ⚠️
-  1. Change device date to next day
-  - **Expected:** New daily doc; 0/5 voted; new picks.
+Daily Picks was merged into the unified Daily feature. See **[Section 5 → Daily — merged Picks + Questions](#daily--merged-picks--questions-appdailytsx)** for all tests. The `/daily-wishes` route now redirects to `/daily?category=...`; the underlying Firestore path `couples/{coupleId}/dailyWishes/{date}` and `services/dailyWishService.ts` are unchanged.
 
 ### Date Night Roulette — spinner + filters + result (app/roulette.tsx)
 
@@ -3080,23 +3145,23 @@ Long-distance toggle and the suite of features it unlocks.
   1. Tap 'When you miss me' → change to 'When you can't sleep'
   - **Expected:** 🌙 icon; Phone B's Open when reflects update within 30s.
 
-### Questions Game LDR-tagged questions (app/questions-game.tsx)
+### Daily LDR-tagged questions (app/daily.tsx)
 
 - [ ] **LDR off: LDR-tagged questions never appear**
-  1. LDR OFF → cycle 4 categories
-  - **Expected:** No LDR phrasing visible.
+  1. LDR OFF → cycle 3 Daily categories
+  - **Expected:** No LDR phrasing visible in question cards.
 
-- [ ] **LDR on: LDR-tagged questions are mixed in daily picks** 🌍
-  1. LDR ON → cycle Deep/Playful multiple days (Romantic category was merged into Deep in July 2026 consolidation)
-  - **Expected:** At least one LDR-flavored question.
+- [ ] **LDR on: LDR-tagged questions are mixed in daily pool** 🌍
+  1. LDR ON → cycle Deep/Playful multiple days
+  - **Expected:** At least one LDR-flavored question surfaces. `isLDR` is forwarded through `subscribeDailyQuestions(coupleId, setQDoc, { isLDR: !!couple?.isLongDistance })` in `daily.tsx`.
 
 - [ ] **Both partners see same LDR-mixed daily questions** 🌍 📱
-  1. Phone A Deep daily picks; Phone B same
-  - **Expected:** Identical 3 in same order.
+  1. Phone A on Daily > Deep; Phone B same
+  - **Expected:** Identical 3 questions in same order.
 
 - [ ] **Toggling LDR mid-day swaps pool** ⚠️ 🌍
-  1. Note today's; toggle LDR ON; reopen
-  - **Expected:** Refreshes via subscribeDailyQuestions; no crash.
+  1. Note today's questions; toggle LDR ON; reopen `/daily`
+  - **Expected:** Question subscription resubscribes with new isLDR value; no crash.
 
 - [ ] **LDR-tagged scale question only shows in LDR** ⚠️ 🌍
   1. LDR ON → seed date to expose 'How connected do you feel apart'
@@ -4387,7 +4452,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
 
 - [ ] **Versus empty state — partner has zero binary answers** ⚠️ 📱
   1. Fresh couple; Phone A opens Versus
-  - **Expected:** 🤔 'Not enough answers yet' + CTA to /questions-game; no crash; no infinite loading.
+  - **Expected:** 🤔 'Not enough answers yet' + CTA `Go to Daily →` routing to `/daily?category=playful`; no crash; no infinite loading.
 
 - [ ] **Fantasy Wishes first-load on premium account with empty Firestore** ⚠️ 💰
   1. Fresh premium couple → Fantasy Wishes → tap '✨ Explore'
@@ -4400,7 +4465,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
 
 - [ ] **First-time open of a screen with hints disabled** ⚠️
   1. Profile → Feature hints OFF
-  2. First-ever visit to Activity Cards / Fantasy Wishes / Questions Game
+  2. First-ever visit to Activity Cards / Fantasy Wishes / Daily
   - **Expected:** No help modal anywhere; feature works fine on first visit.
 
 ---

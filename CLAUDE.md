@@ -73,7 +73,7 @@ app/(auth)/                  Unauthenticated flow (Stack)
   pairing.tsx                Invite code generation & entry
 
 app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
-  index.tsx                  Home — mood, partner card, "Waiting for you" nudges, Your List (Together), Daily Picks
+  index.tsx                  Home — mood, partner card, "Waiting for you" nudges, Your List (Together), Daily
   todo.tsx                   Together List — shared todos (Daily Life / Date Ideas / Intimacy / Goals). Not on tab bar; surfaced via Home 'Your List' card.
   discover.tsx               Discover hub — Games + Challenges
   love.tsx                   Us hub — Rituals / Nurture / Discover yourselves. Renamed from 'Love' July 2026. Utility screens (Calendar, Countdown, Reminders, Relationship Pulse) moved to Profile > Reminders & tools.
@@ -81,7 +81,8 @@ app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
 app/                         Full-screen sub-screens
   (dare.tsx removed July 2026 — Dare Wheel folded into Truth or Dare Solo mode)
   roulette.tsx               Date Night Roulette — spin for a date idea
-  questions-game.tsx         Questions — 3/day per category, private answers, reveal when both answered
+  daily.tsx                  Daily — merged Picks + Questions, 3 categories (Playful free · Deep 💰 · Spicy 💰). Actions first, questions second. Actions with mutual Yes save to Together List; questions reveal side-by-side when both answered
+  questions-game.tsx         Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, 5 at a time
   truth-dare.tsx             Truth or Dare — real 2-phone multiplayer (picking/answering/done), audio answers
   would-you-rather.tsx       Would You Rather — simultaneous answer reveal, 3 levels, session persists
@@ -96,7 +97,7 @@ app/                         Full-screen sub-screens
   reminders.tsx              Flirt Reminders — local scheduled notifications
   quiz.tsx                   Love Language Quiz — 10-question result
   pulse.tsx                  Relationship Pulse — private 10-question satisfaction tracker
-  daily-wishes.tsx           Daily Picks — 5/day per category (Sweet/Flirty/Spicy)
+  daily-wishes.tsx           Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   time-capsules.tsx          Time Capsules — seal a message/photo to open at a future date (1y/5y/10y or custom)
   versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
   (wishlist.tsx and fantasy.tsx removed — legacy features replaced by fantasy-wishes.tsx / dailyWishes)
@@ -233,10 +234,9 @@ Three prompts for expanding content — always use the right one for the categor
 
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)
-- Questions Game: Playful category only (binary + scale variants included)
+- Daily: Playful category only — combines old Sweet Daily Picks (5/day) + old Playful Questions (3/day, incl. binary + scale variants). Flirty Daily Picks moved to Spicy tier July 2026 as part of the Daily merge.
 - Versus mode (full — uses partner's binary-question history)
 - Would You Rather: Playful + Romantic only
-- Daily Picks: Sweet + Flirty only
 - Date Night Roulette (full)
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease, Time Capsules (full)
 - Love Language Quiz, Relationship Pulse (with trend chart, full)
@@ -244,9 +244,8 @@ Three prompts for expanding content — always use the right one for the categor
 
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
 - Truth or Dare: Spicy level in both modes ("Together Right Here" and "Wherever You Are")
-- Questions Game: Deep + Spicy categories (Deep = vulnerable/romantic/growth; Spicy = sensual/fantasy)
+- Daily: Deep + Spicy categories (Deep = 3 questions/day, no actions by design; Spicy = 3 questions + 10 actions/day, includes ex-Flirty picks + explicit Spicy picks + Spicy questions)
 - Would You Rather: Spicy level
-- Daily Picks: Spicy category
 - Fantasy Wishes (entire feature)
 - Erotic Blueprint (entire feature)
 - Sensate Focus (entire feature)
