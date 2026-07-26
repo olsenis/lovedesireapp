@@ -1975,13 +1975,17 @@ The Daily screen was created July 2026 by merging the old Daily Picks (`/daily-w
 
 #### Progress card
 
-- [ ] **Playful progress shows both voted + answered counts + matches**
-  1. Vote 2/5 Playful actions and answer 1/3 Playful questions
-  - **Expected:** Progress card row: `2/5 You voted` `1/3 You answered`. Matches column only appears when totalMatchCount > 0.
+- [ ] **Progress card shows one combined Done today counter** ⚠️
+  1. Playful: vote on 5/5 actions, answer 0/3 questions
+  - **Expected:** Progress card row shows `5/8 Done today` — one number, not the previous split `5/5 You voted` + `0/3 You answered`. Regression check: user reported the split read as "task complete" the moment 5/5 hit its own denominator even though 3 questions were still unanswered. Combined counter fixes the completion-perception issue.
 
-- [ ] **Deep progress hides voted column (no actions)**
+- [ ] **Deep progress shows 0/3 Done today**
   1. Subscribed user opens Deep
-  - **Expected:** Progress card row: `0/3 You answered` only. No voted column. Below: `Slow evening. Three conversations, no rush.` tagline instead of the generic privacy hint.
+  - **Expected:** Progress card row shows `0/3 Done today` initially, `3/3 Done today` after answering all three. Category tagline below: `Slow evening. Three conversations, no rush.`
+
+- [ ] **Spicy progress totals actions + questions**
+  1. Subscribed user opens Spicy, votes on 3 actions, answers 1 question
+  - **Expected:** `4/13 Done today`. 4 completed of 10 actions + 3 questions = 13 total.
 
 - [ ] **Total matches counter opens all-matches modal**
   1. Vote both partners Yes on 2 actions (any cat) → totalMatchCount = 2

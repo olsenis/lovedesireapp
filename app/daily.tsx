@@ -227,7 +227,13 @@ export default function DailyScreen() {
   const questionCount = rows.filter((r) => r.kind === 'question').length;
   const votedCount = rows.filter((r) => r.kind === 'action' && myVote(r.gi) !== null).length;
   const answeredCount = rows.filter((r) => r.kind === 'question' && !!myAnswer(r.gi)).length;
-  const matchCount = rows.filter((r) => r.kind === 'action' && matched(r.gi)).length;
+  // Combined completion counter — the split (voted/actionCount +
+  // answered/questionCount) read as "you're done" the moment either half
+  // hit its own denominator (5/5 shown next to 0/3 felt contradictory to
+  // users). A single done/total number matches the mental model of a
+  // daily task list where completion means the whole thing is finished.
+  const doneCount = votedCount + answeredCount;
+  const totalCount = actionCount + questionCount;
 
   const allMatches = (wishDoc?.items ?? [])
     .map((item, gi) => ({ item, gi }))
@@ -290,22 +296,13 @@ export default function DailyScreen() {
       </View>
 
       <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Progress card. Shows voted/actionCount + answered/questionCount +
-            total matches (tappable → all-matches modal). */}
+        {/* Progress card. One combined done/total counter + a Matches tap
+            column when the couple has any mutual-yes matches to view. */}
         <View style={[styles.progressCard, { borderLeftColor: cfg.color }]}>
           <View style={styles.progressRow}>
-            {actionCount > 0 && (
-              <>
-                <View style={styles.progressItem}>
-                  <Text style={styles.progressNum}>{votedCount}/{actionCount}</Text>
-                  <Text style={styles.progressLabel}>You voted</Text>
-                </View>
-                <View style={styles.progressDivider} />
-              </>
-            )}
             <View style={styles.progressItem}>
-              <Text style={styles.progressNum}>{answeredCount}/{questionCount}</Text>
-              <Text style={styles.progressLabel}>You answered</Text>
+              <Text style={styles.progressNum}>{doneCount}/{totalCount}</Text>
+              <Text style={styles.progressLabel}>Done today</Text>
             </View>
             {totalMatchCount > 0 && (
               <>
@@ -320,9 +317,6 @@ export default function DailyScreen() {
           <Text style={styles.progressHint}>
             {CATEGORY_TAGLINES[selectedCat]}
           </Text>
-          {matchCount > 0 && selectedCat !== 'deep' && (
-            <Text style={styles.progressSubHint}>{matchCount} match{matchCount === 1 ? '' : 'es'} in this category</Text>
-          )}
         </View>
 
         {/* Rows — spread-interleaved via interleaveRows: warmup band of
@@ -670,7 +664,6 @@ const styles = StyleSheet.create({
   progressLabelTap: { color: Colors.burgundy, fontFamily: Fonts.bodyBold },
   progressDivider: { width: 1, height: 32, backgroundColor: Colors.border },
   progressHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
-  progressSubHint: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success, textAlign: 'center' },
 
   card: {
     borderRadius: Radius.xl, padding: Spacing.lg,
