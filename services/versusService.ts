@@ -10,6 +10,19 @@ export interface VersusItem {
   gi: number; // global index in the items array
 }
 
+// Minimum number of binary-format answers the partner needs to have on
+// record before Versus is worth showing. Chosen low so unlock happens
+// within a week of active Daily use for most couples (binary is rare in
+// the pool — ~15 of 474 questions — so an aggressive threshold like 10
+// would gate too many new couples out for weeks).
+//
+// Query cost note: getPartnerBinaryAnswerCount reads up to 45 daily docs
+// per call. Callers should cache the "unlocked" state persistently and
+// only re-run this check while still locked; once unlocked, the state
+// is written to users/{uid}/private/features and the count is never
+// recomputed for that user (see featureUnlockService).
+export const VERSUS_UNLOCK_THRESHOLD = 5;
+
 // Pulls partner's answered questions from recent dailyQuestions docs.
 // Binary questions only for v1 — open-text decoys would need richer logic.
 export async function loadVersusPool(
@@ -52,4 +65,39 @@ export async function loadVersusPool(
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
   return pool.slice(0, maxItems);
+}
+
+// Count of partner's answered binary-format questions across the recent
+// dailyQuestions window. Used to gate whether Versus is worth showing
+// in Discover — a new couple with zero binary answers would just hit
+// Versus's empty state, which is a dead-end tap.
+//
+// Reuses the same 45-day window as loadVersusPool, so if this returns
+// >= VERSUS_UNLOCK_THRESHOLD the pool loader will find at least that
+// many items to play with. Same schema-drift guard applies (only counts
+// answers whose value still matches one of the current options).
+export async function getPartnerBinaryAnswerCount(
+  coupleId: string,
+  partnerUid: string,
+): Promise<number> {
+  const q = query(
+    collection(db, 'couples', coupleId, 'dailyQuestions'),
+    orderBy('date', 'desc'),
+    limit(45),
+  );
+  const snap = await getDocs(q);
+  let count = 0;
+  for (const docSnap of snap.docs) {
+    const data = docSnap.data() as { items?: Question[]; answers?: Record<string, Record<string, string>> };
+    const items = data.items ?? [];
+    const partnerAnswers = data.answers?.[partnerUid] ?? {};
+    items.forEach((qItem, gi) => {
+      if (qItem.format !== 'binary' || !qItem.options) return;
+      const ans = partnerAnswers[String(gi)];
+      if (!ans) return;
+      if (!qItem.options.includes(ans)) return; // Schema drift guard
+      count++;
+    });
+  }
+  return count;
 }

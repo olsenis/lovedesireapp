@@ -911,9 +911,14 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 ### Discover hub
 
-- [ ] **All 6 game cards render in order**
-  1. Tap Discover
-  - **Expected:** GAMES: Daily, Versus, Truth or Dare, WYR, Activity Cards, Fantasy Wishes.
+- [ ] **Games list renders 5 cards by default (Versus hidden until unlocked)** ⚠️
+  1. Fresh couple (partner has 0 answered binary questions), tap Discover
+  - **Expected:** GAMES: Daily, Truth or Dare, WYR, Activity Cards, Fantasy Wishes. No Versus card — data-gated behind `VERSUS_UNLOCK_THRESHOLD` binary answers from partner. Regression check: pre-July-2026 Versus was always visible, which meant new couples always tapped into an empty state (dead-end).
+
+- [ ] **Versus slots in at position 2 once unlocked** ⚠️
+  1. Both partners answer 5+ binary-format questions in Daily
+  2. Reopen Discover
+  - **Expected:** GAMES: Daily, **Versus (with NEW badge)**, Truth or Dare, WYR, Activity Cards, Fantasy Wishes. Versus card sits between Daily and Truth or Dare, matching its historic position. NEW badge = small burgundy pill next to the "Versus" title.
 
 - [ ] **Daily card replaces Questions Game slot in Discover** ⚠️
   1. Tap Discover → look at first Games card
@@ -931,9 +936,35 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   1. Premium taps Activity Cards
   - **Expected:** Navigates to /bingo.
 
-- [ ] **Versus card navigates to /versus**
-  1. Tap Versus
-  - **Expected:** Opens.
+- [ ] **Unlocked Versus card navigates to /versus**
+  1. Once unlocked (partner has 5+ binary answers), tap the Versus card in Discover
+  - **Expected:** Opens `/versus` and plays normally.
+
+- [ ] **Unlock persists across sessions** ⚠️
+  1. Unlock Versus (partner answers 5+ binary questions), verify card appears in Discover
+  2. Sign out, sign back in, reopen Discover
+  - **Expected:** Versus card still visible without needing to re-query partner history. `users/{uid}/private/features.versusUnlockedAt` is set to the original unlock timestamp; `getFeatureUnlockState` reads it and short-circuits the expensive `getPartnerBinaryAnswerCount` scan. Regression check: without persistence, the 45-day dailyQuestions scan would run on every Discover mount for every user forever.
+
+- [ ] **NEW badge disappears 7 days after unlock** ⚠️
+  1. Unlock Versus, verify NEW pill visible on the card
+  2. Set device date to 8+ days in the future
+  3. Reopen Discover
+  - **Expected:** Card still visible (unlock is sticky) but NEW badge is gone. `isVersusUnlockRecent(unlockedAt, 7 days)` returns false past the window. Regression check: without this, first-time users would carry a NEW badge forever, defeating the "just unlocked" signal.
+
+- [ ] **Fresh unlock this session shows NEW badge immediately** ⚠️ 📱
+  1. Partner is at 4 binary answers (still locked)
+  2. Partner answers a 5th binary question via Daily
+  3. Reopen Discover on your phone
+  - **Expected:** Card appears with NEW badge. `markVersusUnlocked` persists the timestamp AND local state flips `versusIsNew` to true for the visible session.
+
+- [ ] **Discover fails closed if binary-count query throws** ⚠️
+  1. Force `getPartnerBinaryAnswerCount` to throw (e.g. offline mode)
+  2. Open Discover
+  - **Expected:** Versus card is NOT shown. Rest of Discover renders normally. Regression check: crash in one card must never break the whole Discover screen. `try/catch` around the count query defaults `versusUnlocked` to false rather than propagating.
+
+- [ ] **Deep-link `/versus` still works when locked, shows updated empty state** ⚠️
+  1. Locked user navigates directly to `/versus` (e.g. from a stale bookmark)
+  - **Expected:** Empty state renders with the copy: `Versus quizzes you on <partner>'s past binary answers from Daily. It unlocks in Discover once <partner> has answered 5 of them. Keep playing Daily together to get there faster.` CTA: `Go to Daily →`. Value `5` is derived from `VERSUS_UNLOCK_THRESHOLD` so copy stays in sync if threshold is tuned.
 
 - [ ] **Both challenge cards render**
   1. Scroll CHALLENGES
@@ -4450,9 +4481,9 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   1. Skip pairing; navigate to Home, Discover, Us, Notes (Together List via Home card)
   - **Expected:** Each screen shows 'Connect with partner' style empty state; no crash; no NPE on missing partner.
 
-- [ ] **Versus empty state — partner has zero binary answers** ⚠️ 📱
-  1. Fresh couple; Phone A opens Versus
-  - **Expected:** 🤔 'Not enough answers yet' + CTA `Go to Daily →` routing to `/daily?category=playful`; no crash; no infinite loading.
+- [ ] **Versus empty state — deep-linked with partner below threshold** ⚠️ 📱
+  1. Fresh couple; navigate directly to `/versus` (Versus is hidden from Discover but deep link still works)
+  - **Expected:** 🤔 'Not enough answers yet' + copy explaining the unlock threshold (`unlocks in Discover once <partner> has answered 5 of them`) + CTA `Go to Daily →` routing to `/daily?category=playful`. No crash, no infinite loading. Regression check: pre-July-2026 the empty state made no mention of the threshold or how to make progress toward unlocking.
 
 - [ ] **Fantasy Wishes first-load on premium account with empty Firestore** ⚠️ 💰
   1. Fresh premium couple → Fantasy Wishes → tap '✨ Explore'

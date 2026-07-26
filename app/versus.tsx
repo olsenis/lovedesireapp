@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { loadVersusPool, VersusItem } from '../services/versusService';
+import { loadVersusPool, VersusItem, VERSUS_UNLOCK_THRESHOLD } from '../services/versusService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
@@ -104,7 +104,7 @@ export default function VersusScreen() {
           <Text style={styles.emptyEmoji}>🤔</Text>
           <Text style={styles.emptyTitle}>Not enough answers yet</Text>
           <Text style={styles.emptyBody}>
-            Versus uses {partnerName}'s past quick-fire answers. Play a few days of Daily questions first, then come back to test how well you know them.
+            Versus quizzes you on {partnerName}'s past binary answers from Daily. It unlocks in Discover once {partnerName} has answered {VERSUS_UNLOCK_THRESHOLD} of them. Keep playing Daily together to get there faster.
           </Text>
           <TouchableOpacity style={styles.cta} onPress={() => router.replace('/daily?category=playful' as any)} accessibilityRole="button">
             <Text style={styles.ctaText}>Go to Daily →</Text>

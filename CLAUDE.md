@@ -111,6 +111,7 @@ Firebase project: `lovedesireapp-8c7f2`
 users/{uid}                          UserProfile — name, photoURL, coupleId, inviteCode, pushToken
 users/{uid}/private/blueprint        BlueprintResult — type, scores, completedAt
 users/{uid}/private/help             HelpState — enabled, seen[]
+users/{uid}/private/features         FeatureUnlockState — versusUnlockedAt? (sticky, per-user data-gate unlocks)
 
 couples/{coupleId}                   Couple — partner1Uid, partner2Uid, inviteCode, createdAt, startDate?
 couples/{coupleId}/todos/{id}        Todo — text, category, completed, createdBy, createdAt
@@ -160,7 +161,8 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 | `timeCapsuleService.ts` | `subscribeTimeCapsules` (metadata), `sealTimeCapsule` (writes metadata + content as separate docs), `getCapsuleContent` (lazy fetch of /sealed/data when opening), `markCapsuleOpened`, `isUnlocked` |
-| `versusService.ts` | `loadVersusPool` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items |
+| `versusService.ts` | `loadVersusPool`, `getPartnerBinaryAnswerCount`, `VERSUS_UNLOCK_THRESHOLD` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items. Threshold gates whether Versus is shown in Discover at all (see below). |
+| `featureUnlockService.ts` | `getFeatureUnlockState`, `markVersusUnlocked`, `isVersusUnlockRecent` — persists per-user unlocks at `users/{uid}/private/features`. In-memory cached. |
 
 ### Hooks
 
@@ -235,7 +237,7 @@ Three prompts for expanding content — always use the right one for the categor
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)
 - Daily: Playful category only — combines old Sweet Daily Picks (5/day) + old Playful Questions (3/day, incl. binary + scale variants). Flirty Daily Picks moved to Spicy tier July 2026 as part of the Daily merge.
-- Versus mode (full — uses partner's binary-question history)
+- Versus mode (data-gated — hidden in Discover until partner has answered 5+ binary questions in Daily, then permanently visible with a NEW badge for the first 7 days. Not paywalled. Empty state deep-link explains the unlock threshold.)
 - Would You Rather: Playful + Romantic only
 - Date Night Roulette (full)
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease, Time Capsules (full)
