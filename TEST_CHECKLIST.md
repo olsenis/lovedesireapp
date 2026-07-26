@@ -1,4 +1,4 @@
-# Desire — Manual Test Checklist
+ég er# Desire — Manual Test Checklist
 
 > Use this to walk through every feature with two real iPhones (or one iPhone + one Android via sideload). Mark each test as you verify it passes.
 
@@ -1834,23 +1834,44 @@ The Daily screen was created July 2026 by merging the old Daily Picks (`/daily-w
   1. Subscribed user opens `/daily`
   - **Expected:** No 🔒 badges. All three tabs open normally.
 
-#### Actions first, questions second (ordering)
+#### Ordering (interleaved, warmup band, per-category taglines)
 
-- [ ] **Playful cat renders 5 action cards ABOVE 3 question cards** ⚠️
+- [ ] **Playful cat interleaves after a 2-action warmup** ⚠️
   1. Both partners fresh Playful (no votes/answers yet)
-  - **Expected:** Card sequence is: 5 action cards (PICK pill, vote row), THEN 3 question cards (QUESTION pill, answer input / binary / scale). Rationale documented in daily.tsx: vote UI doesn't grab keyboard focus, so it forms a low-friction warmup band above the taller question cards.
+  - **Expected:** Card sequence is exactly `A,A,A,Q,A,Q,A,Q` — 3 action cards, then a question, then action/question/action/question/action/question. Regression check: earlier the pattern was 5 actions clustered then 3 questions clustered — user feedback flagged this as a "dull wall of same-shape cards". `interleaveRows` (daily.tsx) uses a `warmup = min(2, major.length - minor.length)` prefix so the first question never sits at row 2 (would summon keyboard and hide unvoted actions below).
 
-- [ ] **Both partners see the same row order** 📱
-  1. Both open Daily Playful
-  - **Expected:** Identical actions-first-questions-second order on both phones. Deterministic per couple+date via existing `pickDailyItems` and `pickDailyQuestions` shuffles inside their respective services.
+- [ ] **Both partners see the same interleaved order** 📱
+  1. Both open Daily Playful, then Spicy
+  - **Expected:** Both phones show the exact same row sequence. `interleaveRows` is a pure function of the two arrays; the arrays are already deterministic per date+couple+cat via existing service shuffles.
+
+- [ ] **Spicy cat spread-interleaves 3 questions through 10 actions** 💰
+  1. Subscribed user → 🔥 Spicy
+  - **Expected:** Card sequence is exactly `A,A,A,A,Q,A,A,Q,A,A,Q,A,A` — 4 warmup actions (2 warmup + 2 more via interval=2), then a question after every 2 more actions until questions run out, then trailing actions. Both partners identical.
 
 - [ ] **Deep cat shows 3 question cards only + tagline copy** ⚠️
   1. Subscribed user → 💛 Deep
-  - **Expected:** No action cards at all (by design). 3 question cards. Progress hint reads "Slow evening. Three conversations, no rush." — reframes the low count as intentional. Regression check: don't add empty-state placeholders or fake actions to fill the space.
+  - **Expected:** No action cards at all (by design). 3 question cards. Progress hint reads "Slow evening. Three conversations, no rush." — reframes the low count as intentional. `interleaveRows` early-returns when minor is empty so the sequence stays `Q,Q,Q` unchanged.
 
-- [ ] **Spicy cat shows 10 actions + 3 questions = 13 items** 💰
-  1. Subscribed user → 🔥 Spicy
-  - **Expected:** Actions band = ex-Flirty (5) + Spicy DP (5) = 10 cards, followed by 3 Spicy question cards. Progress card shows both voted/answered counts.
+- [ ] **Keyboard warmup preserved on Playful** ⚠️
+  1. Both partners open Daily Playful
+  2. Tap the first Type-your-answer input (row 4)
+  - **Expected:** At least the first 2-3 action cards remain visible above the on-screen keyboard, so the user can still vote without dismissing keyboard. Regression check: without the warmup band the first question could land at row 2 and the keyboard would hide every unvoted action.
+
+- [ ] **Per-category tagline text** ⚠️
+  1. Cycle through Playful → Deep → Spicy
+  - **Expected:** Progress card italic subtitle changes per cat:
+    - Playful: `A little mix. Quick picks, a couple of questions.`
+    - Deep: `Slow evening. Three conversations, no rush.`
+    - Spicy: `A big menu. Vote what you're into, answer what you dare.`
+  - Regression check: earlier only Deep had a custom line; Playful/Spicy showed the generic "Votes and answers are always private until revealed." string.
+
+- [ ] **Filled burgundy PICK / QUESTION pill on every card** ⚠️
+  1. Scroll the Playful list
+  - **Expected:** Each card shows a small burgundy pill top-left with cream text: `PICK` (action cards) or `QUESTION` (question cards). Not the previous near-invisible gray-on-white pill. Same font size (9px) so pills stay label-shaped, not chip-shaped.
+
+- [ ] **Matched action stays visually distinct when interleaved** ⚠️ 📱
+  1. Both vote Yes on an action that is NOT the first row (e.g. row 3 of Playful)
+  - **Expected:** The matched card shows the rose left border thickened to 6px + light pink background + `You both want this!` banner. Visibly pops even when neighboured by unmatched actions above and question cards below. Regression check: pre-fix the matched border was 4px, which risked getting lost visually in an interleaved layout that no longer clusters actions together.
 
 #### Action flow (mutual-yes → save to Together List)
 

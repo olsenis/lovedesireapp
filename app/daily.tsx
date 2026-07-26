@@ -39,9 +39,46 @@ const DP_SOURCES: Record<MergedCategory, DailyWishCategory[]> = {
   spicy: ['flirty', 'spicy'],
 };
 
-// Copy shown under the header when Deep is selected — reframes the low
-// item count (3 questions, no actions) as intentional rather than thin.
-const DEEP_TAGLINE = 'Slow evening. Three conversations, no rush.';
+// Per-category tagline shown as the italic subtitle on the progress card.
+// Each cat gets its own voice — Deep still leans on its original "slow
+// evening" framing, Playful and Spicy get copy that matches their energy.
+// Replaces the generic "votes and answers are always private" line that
+// used to render for non-Deep categories.
+const CATEGORY_TAGLINES: Record<MergedCategory, string> = {
+  playful: 'A little mix. Quick picks, a couple of questions.',
+  deep: 'Slow evening. Three conversations, no rush.',
+  spicy: "A big menu. Vote what you're into, answer what you dare.",
+};
+
+// Spread-interleave: place minor items evenly through major items after a
+// warmup band of majors so an early open-text question doesn't summon the
+// keyboard and hide every action below (original "actions first" concern
+// preserved with fewer items).
+//
+// Playful  (major=5A, minor=3Q, warmup=2, interval=1) → A,A,A,Q,A,Q,A,Q
+// Spicy    (major=10A, minor=3Q, warmup=2, interval=2) → A,A,A,A,Q,A,A,Q,A,A,Q,A,A
+// Deep     (major=3Q, minor=0A) → Q,Q,Q (early-return, no interleave needed)
+//
+// Pure function of two arrays — inputs are already deterministic per
+// date+couple+cat via the underlying services' shuffles, so both partners
+// end up on the exact same row sequence.
+function interleaveRows<T>(major: T[], minor: T[]): T[] {
+  if (minor.length === 0) return major;
+  const warmup = Math.min(2, Math.max(0, major.length - minor.length));
+  const rest = major.slice(warmup);
+  const out = major.slice(0, warmup);
+  const interval = Math.max(1, Math.floor(rest.length / minor.length));
+  let mi = 0, ni = 0, toNext = interval;
+  while (mi < rest.length) {
+    out.push(rest[mi++]);
+    if (--toNext === 0 && ni < minor.length) {
+      out.push(minor[ni++]);
+      toNext = interval;
+    }
+  }
+  while (ni < minor.length) out.push(minor[ni++]);
+  return out;
+}
 
 export default function DailyScreen() {
   const { user, profile } = useAuth();
@@ -99,33 +136,40 @@ export default function DailyScreen() {
   const cfg = QUESTION_CATEGORY_CONFIG[selectedCat];
 
   // Build the render row list in a single memo so both subscriptions
-  // committing back-to-back produces one paint, not two. Actions first,
-  // questions second — vote UI is one-tap and doesn't grab the keyboard,
-  // so it forms a low-friction warmup band above the taller question
-  // cards. Reversing the order (questions first) would push actions below
-  // the keyboard-focused input on small screens.
+  // committing back-to-back produces one paint, not two. Actions and
+  // questions are spread-interleaved (see interleaveRows above) so the
+  // scroll doesn't feel like two walls of same-shape cards clustered
+  // by type. A 2-action warmup band before the first question keeps the
+  // keyboard-hides-actions problem from biting on small screens.
   type ActionRow = { kind: 'action'; gi: number; text: string; category: DailyWishCategory };
   type QuestionRow = { kind: 'question'; gi: number; q: Question };
   type Row = ActionRow | QuestionRow;
 
   const rows = useMemo<Row[]>(() => {
-    const list: Row[] = [];
+    const actions: Row[] = [];
+    const questions: Row[] = [];
     const dpSources = DP_SOURCES[selectedCat];
     if (wishDoc && dpSources.length > 0) {
       wishDoc.items.forEach((item, gi) => {
         if (dpSources.includes(item.category)) {
-          list.push({ kind: 'action', gi, text: item.text, category: item.category });
+          actions.push({ kind: 'action', gi, text: item.text, category: item.category });
         }
       });
     }
     if (qDoc) {
       qDoc.items.forEach((q, gi) => {
         if (q.category === selectedCat) {
-          list.push({ kind: 'question', gi, q });
+          questions.push({ kind: 'question', gi, q });
         }
       });
     }
-    return list;
+    // Pick major = whichever has more items so warmup + spread still makes
+    // sense if content pool ever inverts. Current pool always has more
+    // actions than questions (Playful 5:3, Spicy 10:3, Deep 0:3 handled
+    // by early-return in interleaveRows), but algorithm stays generic.
+    return actions.length >= questions.length
+      ? interleaveRows(actions, questions)
+      : interleaveRows(questions, actions);
   }, [wishDoc, qDoc, selectedCat]);
 
   // Action helpers — mirror daily-wishes.tsx behavior verbatim so vote
@@ -274,14 +318,15 @@ export default function DailyScreen() {
             )}
           </View>
           <Text style={styles.progressHint}>
-            {selectedCat === 'deep' ? DEEP_TAGLINE : 'Votes and answers are always private until revealed.'}
+            {CATEGORY_TAGLINES[selectedCat]}
           </Text>
           {matchCount > 0 && selectedCat !== 'deep' && (
             <Text style={styles.progressSubHint}>{matchCount} match{matchCount === 1 ? '' : 'es'} in this category</Text>
           )}
         </View>
 
-        {/* Rows — actions first, then questions */}
+        {/* Rows — spread-interleaved via interleaveRows: warmup band of
+            actions then alternating with questions. See helper for pattern. */}
         {rows.map((row) => (
           row.kind === 'action'
             ? <ActionCard
@@ -636,15 +681,24 @@ const styles = StyleSheet.create({
   // enough on scan to tell the two apart.
   actionCard: { backgroundColor: Colors.white, borderLeftWidth: 4, borderLeftColor: Colors.rose },
   questionCard: { borderLeftWidth: 4, borderLeftColor: Colors.muted },
-  cardMatched: { borderColor: Colors.rose, backgroundColor: '#FFF8FB' },
+  // Bumped left border to 6px on the matched state so matched actions still
+  // pop when the interleaved layout sandwiches them between question cards.
+  // Progress card's Matches counter is still the canonical find-all-matches
+  // path; this is scan-level polish, not a discoverability fix.
+  cardMatched: { borderColor: Colors.rose, backgroundColor: '#FFF8FB', borderLeftWidth: 6 },
   cardText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.text, lineHeight: 24 },
   cardQuestion: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, lineHeight: 30 },
 
+  // Filled burgundy pill instead of the previous 5%-black + muted-gray text
+  // combo, which was near-invisible on both card backgrounds. Same 9px size
+  // keeps it label-shaped (not chip-shaped) so the pill doesn't compete
+  // with card content. Category identity still comes from card background
+  // + left border colour; the pill just says "this is a pick / a question".
   typePill: {
     alignSelf: 'flex-start', paddingVertical: 2, paddingHorizontal: 8,
-    backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: Radius.full,
+    backgroundColor: Colors.burgundy, borderRadius: Radius.full,
   },
-  typePillText: { fontFamily: Fonts.bodyBold, fontSize: 9, color: Colors.muted, letterSpacing: 0.8 },
+  typePillText: { fontFamily: Fonts.bodyBold, fontSize: 9, color: Colors.cream, letterSpacing: 0.8 },
 
   // Action states
   matchSection: { gap: Spacing.sm },
