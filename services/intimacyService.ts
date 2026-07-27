@@ -81,12 +81,17 @@ export function subscribeIntimacyLog(
 export async function addIntimacyEntry(
   coupleId: string,
   uid: string,
-  data: Omit<IntimacyEntry, 'id' | 'createdAt' | 'loggedBy'>
+  data: Omit<IntimacyEntry, 'id' | 'createdAt' | 'loggedBy'>,
+  // Optional override so users can backdate an entry (e.g. logging last
+  // night's moment the following morning). Defaults to now for the common
+  // "log it as it happened" case. Clamped to <= now upstream because
+  // future-dated intimacy entries would be weird.
+  createdAt?: number,
 ): Promise<string> {
   const ref = await addDoc(collection(db, 'couples', coupleId, 'intimacyLog'), {
     ...data,
     loggedBy: uid,
-    createdAt: Date.now(),
+    createdAt: createdAt ?? Date.now(),
   });
   return ref.id;
 }

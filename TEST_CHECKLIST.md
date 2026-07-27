@@ -18,7 +18,7 @@
 1. [Auth + Onboarding + Pairing](#1-auth--onboarding--pairing)
 2. [Home tabs (Home / Discover / Us + Together List surfaced on Home)](#2-home-tabs-home--discover--us--together-list-surfaced-on-home)
 3. [Love Notes + Tease + Moments + Journal](#3-love-notes--tease--moments--journal)
-4. [Calendar + Countdowns + Time Capsules + Our Story + Year-in-Review](#4-calendar--countdowns--time-capsules--our-story--year-in-review)
+4. [Calendar + Countdowns + Our Story + Year-in-Review](#4-calendar--countdowns--our-story--year-in-review)
 5. [Truth or Dare + Daily (merged Picks + Questions) + Versus + WYR](#5-truth-or-dare--daily-merged-picks--questions--versus--wyr)
 6. [Activity Cards + Fantasy Wishes + Roulette](#6-activity-cards--fantasy-wishes--roulette)
 7. [Blueprint + Sensate + Intimacy Log](#7-blueprint--sensate--intimacy-log)
@@ -986,7 +986,7 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 - [ ] **Rituals section renders 5 cards**
   1. Scroll to RITUALS
-  - **Expected:** Sunday Check-in · Moments · Love Notes · Journal · Time Capsules. Tap each navigates to /state-union · /moments · /notes · /journal · /time-capsules.
+  - **Expected:** Sunday Check-in · Moments · Love Notes · Journal (Time Capsules row removed July 2026). Tap each navigates to /state-union · /moments · /notes · /journal.
 
 - [ ] **Nurture section — Intimacy Log hidden behind feature flag**
   1. `features.intimacyLog = false`
@@ -1006,7 +1006,7 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 - [ ] **Discover yourselves section renders 2 cards**
   1. Scroll to DISCOVER YOURSELVES
-  - **Expected:** Our Story + Love Language, in that order. Time Capsules and Sunday Check-in NOT here (moved to Rituals). Relationship Pulse NOT here (moved to Profile). No CONNECTION or INSIGHTS section — those labels were retired July 2026.
+  - **Expected:** Our Story + Love Language, in that order. Sunday Check-in NOT here (moved to Rituals). Relationship Pulse NOT here (moved to Profile). Time Capsules NOT here (feature removed July 2026). No CONNECTION or INSIGHTS section — those labels were retired July 2026.
 
 - [ ] **Utility screens reachable via Profile > Reminders & tools**
   1. Profile → scroll to "Reminders & tools" section
@@ -1373,7 +1373,7 @@ Shared chronological log; either partner can write with optional mood tag.
 
 ---
 
-## 4. Calendar + Countdowns + Time Capsules + Our Story + Year-in-Review
+## 4. Calendar + Countdowns + Our Story + Year-in-Review
 Date-driven features: month calendar, countdown lists, sealed time capsules, relationship timeline, year wrap.
 
 ### Calendar month grid (app/calendar.tsx)
@@ -1454,91 +1454,9 @@ Date-driven features: month calendar, countdown lists, sealed time capsules, rel
   1. New user opens Countdowns
   - **Expected:** HelpModal 'Countdowns' + 4 tips; dismiss once.
 
-### Time Capsule create + seal (app/time-capsules.tsx)
+### Time Capsules (removed July 2026)
 
-- [ ] **Empty state on first visit**
-  1. Open Time Capsules no capsules
-  - **Expected:** 🕰️ + 'Seal a memory for the future' + 'Seal a new capsule' button.
-
-- [ ] **Seal capsule with message only and 1-year preset**
-  1. Type message → 🌱 1 year → Seal capsule 🔒
-  - **Expected:** Success haptic; new sealed card 'From <name>' + 'Opens <date>'.
-
-- [ ] **Seal capsule with photo attached**
-  1. Type → photo → 5 years → Seal
-  - **Expected:** Photo uploads; Firestore metadata hasPhoto:true.
-
-- [ ] **Seal disabled until both message and date are set**
-  1. Observe button states
-  - **Expected:** Disabled until message + date both present.
-
-- [ ] **Validation rejects date less than 1 day in future** ⚠️
-  1. Force today's date; Seal
-  - **Expected:** Alert 'Pick a date at least 1 day in the future.'
-
-- [ ] **Partner gets push notification on seal** 📱
-  1. Phone A seals; Phone B backgrounded
-  - **Expected:** Phone B receives 'Time Capsule sealed 🕰️'.
-
-- [ ] **Photo picker cancel leaves no photo attached** ⚠️
-  1. Tap photo → cancel
-  - **Expected:** Dashed box still says '📷 Add a photo'.
-
-- [ ] **Partner CANNOT bypass openAt to peek at sealed content** 🔒 ⚠️ 📱
-  1. Phone A: seal a 1-year capsule with message 'secret 42'
-  2. Phone B: open Firestore devtools → try to update `couples/{id}/timeCapsules/{capsuleId}` setting `openAt: 0`
-  3. Phone B: read `couples/{id}/timeCapsules/{capsuleId}/sealed/data`
-  - **Expected:** Step 2's update REJECTED by rules — openAt is immutable after create. Step 3 read stays denied because openAt still points to +1y. The 'sealed until X' promise cannot be defeated by a custom client.
-
-- [ ] **Sealer CAN flip `opened` to true after openAt passes** ⚠️
-  1. Sealer opens a ready capsule → tap Open
-  - **Expected:** `opened` field flips to true. Only mutable field on the metadata doc.
-
-- [ ] **Storage upload failure shows error and stays in modal** ⚠️
-  1. Airplane mode → photo → date → Seal
-  - **Expected:** Alert 'Could not seal the capsule. Try again.'
-
-- [ ] **Cancel button resets all state**
-  1. Fill modal → Cancel → reopen
-  - **Expected:** All cleared.
-
-- [ ] **Custom date picker overrides preset selection**
-  1. Tap 5 year → BrandDatePicker pick 90 days → Seal
-  - **Expected:** Countdown shows ~3 months not 5 years.
-
-### Time Capsule view + open (app/time-capsules.tsx)
-
-- [ ] **Sealed (locked) card shows correct countdown formatting**
-  1. Seal capsules 5/60/13mo out
-  - **Expected:** '5 days' / '2 months' / '1y 1m'.
-
-- [ ] **Sealer cannot preview locked card from this screen** ⚠️
-  1. Phone A: tap own locked card
-  - **Expected:** Non-tappable View.
-
-- [ ] **Ready to open card shows when unlock date passes**
-  1. Backdate openAt to now via admin
-  - **Expected:** Card moves to 'Ready to open ✨' with → arrow.
-
-- [ ] **Opening a ready capsule reveals content and marks opened**
-  1. Tap Ready capsule
-  - **Expected:** Modal with sealed date + message + optional photo; lives under 'Opened' after close.
-
-- [ ] **Partner sees opened capsule synced** 📱
-  1. Phone A opens; Phone B opens screen
-  - **Expected:** Moves to Opened on B within 5s.
-
-- [ ] **Firestore rules deny partner reading sealed content early** 📱 ⚠️
-  1. Phone B force-tap still-sealed
-  - **Expected:** Modal shows metadata only; no content.
-
-- [ ] **Lazy content load — viewing previously opened capsule**
-  1. Tap Opened card
-  - **Expected:** 'Loading...' briefly, then message + photo.
-
-- [ ] **Close button dismisses view modal cleanly**
-  1. Scroll to bottom → Close
-  - **Expected:** State reset; reopen shows fresh.
+Feature removed pre-launch. The `/time-capsules` route no longer exists, `services/timeCapsuleService.ts` is deleted, and the Firestore rules block for `/timeCapsules/{id}` is gone. Any pre-launch test seals are cleaned up by the GDPR cascade in `functions/src/index.ts` (still walks the subcollection as a legacy safety net). If the feature is ever brought back, its tests should live here again.
 
 ### Our Story timeline (app/our-story.tsx)
 
@@ -2454,11 +2372,21 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
 
 - [ ] **Golden path: log a minimum-required entry**
   1. Log tab → 'We were intimate' → required 4 fields → Save
-  - **Expected:** Sheet closes; green '✓ Logged today'; Recent list shows entry.
+  - **Expected:** Sheet closes; green '✓ Logged today'; Recent list shows entry with today's date.
 
 - [ ] **Save button stays disabled until all 4 required fields are filled**
   1. Only rating → Save
   - **Expected:** Save 0.4 opacity; hint lists missing fields.
+
+- [ ] **Backdate an entry via the When picker** ⚠️
+  1. Log tab → 'We were intimate' → the sheet now opens with a `When?` date picker at the top, defaulted to today
+  2. Tap the date field, pick a date 3 days in the past
+  3. Fill required fields, Save
+  - **Expected:** Entry saved with `createdAt` set to the picked date (00:00 of that day, per BrandDatePicker behavior). Recent list shows the past date, not today. Regression check: pre-July-2026 the entry always used `Date.now()` so users could only log "we were intimate today" — no way to log last night's moment the next morning.
+
+- [ ] **Future dates blocked in the picker** ⚠️
+  1. Open the When picker
+  - **Expected:** Dates after today are disabled (grayed out on iOS, unselectable on Android, `max` attribute enforces on web). Even if a client bypasses the picker, the parent handler `Math.min(when, Date.now())` clamps any future value back to now. Regression check: future-dated intimacy entries would corrupt stats math that assumes `createdAt <= now`.
 
 - [ ] **Optional fields persist in Firestore and detail sheet**
   1. Set 4 stars + initiator + Hotel + Intercourse+Oral + 25min + positions + 😊 Playful + orgasms + note
@@ -3850,10 +3778,6 @@ System-level behaviors that span multiple features.
   1. 4K photo as today's Moment
   - **Expected:** Storage file ≤1920px, ~1-2MB.
 
-- [ ] **Time Capsule photo upload compresses** 💰
-  1. Seal capsule with large photo
-  - **Expected:** Compressed JPEG.
-
 - [ ] **Flash video does NOT get re-encoded** ⚠️
   1. Send video Flash
   - **Expected:** Uploaded .mp4 original encoding.
@@ -3926,28 +3850,6 @@ System-level behaviors that span multiple features.
   1. Both partners answer a WYR question. Either tap "Next question" so `answers: {}` writes.
   - **Expected:** Write succeeds. Rule allows empty-map writes (size == 0) so game state machines still work.
 
-### Firestore security rules - Time Capsules content gate
-
-- [ ] **Sealed capsule metadata is visible to partner with locked countdown** 📱
-  1. Phone A seals 1-year capsule; Phone B opens screen
-  - **Expected:** Phone B sees entry with sealer name + locked countdown.
-
-- [ ] **Partner cannot read sealed content before openAt** ⚠️ 📱
-  1. Phone B debug getDoc /sealed/data
-  - **Expected:** Denied.
-
-- [ ] **Sealer can re-read their own sealed content (preview)**
-  1. Phone A taps own locked
-  - **Expected:** Phone A sees own content.
-
-- [ ] **Sealed content is immutable** ⚠️
-  1. updateDoc /sealed/data changing message
-  - **Expected:** Rejected.
-
-- [ ] **After openAt passes, partner can open** 📱
-  1. openAt +60s; wait → Phone B opens
-  - **Expected:** Content loads.
-
 ### Firebase Storage security rules
 
 - [ ] **Only self can read arbitrary users/{uid}/ paths (profile.jpg is public exception)** 🔒 ⚠️
@@ -3993,10 +3895,10 @@ System-level behaviors that span multiple features.
   - **Expected:** Couple doc + subcollections + Storage prefix all removed.
 
 - [ ] **All couple subcollections purged on final delete — no orphan writes survive** 🔒 ⚠️
-  1. Populate a couple with data across every service (journal entry, time capsule with sealed content, Sunday check-in with entries, milestones)
+  1. Populate a couple with data across every service (journal entry, Sunday check-in with entries, milestones). Legacy time-capsule seed data from pre-July-2026 test accounts also counts.
   2. Both partners delete account sequentially
   3. Query Firestore for `couples/{coupleId}/journal`, `couples/{coupleId}/timeCapsules`, `couples/{coupleId}/timeCapsules/{id}/sealed`, `couples/{coupleId}/stateUnion`, `couples/{coupleId}/stateUnion/{weekId}/entries`, `couples/{coupleId}/milestones`
-  - **Expected:** Every path returns empty. Regression check for GDPR audit — pre-fix these 4 subcollections + 2 nested were silently skipped and left user data on disk. Sealed time-capsule content and Gottman check-in answers must not survive.
+  - **Expected:** Every path returns empty. Regression check for GDPR audit — pre-fix these subcollections + 2 nested were silently skipped and left user data on disk. The timeCapsules path stays in the cascade as a legacy safety net even after the feature itself was removed, so any pre-launch test seals still purge cleanly.
 
 - [ ] **Profile photo removed from Storage on delete**
   1. Had photo; delete account
@@ -4225,18 +4127,7 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   1. Phone A: tap Take photo → snap → during 'Uploading...' navigate to Profile → Sign out
   - **Expected:** No crash; partial upload either completes silently or is abandoned; no orphan progress UI on next sign-in.
 
-- [ ] **App backgrounded mid-Time-Capsule seal does not duplicate write** ⚠️
-  1. Open Time Capsules → seal capsule with photo → tap Seal
-  2. Background app immediately during upload
-  3. Resume after 30s
-  - **Expected:** Exactly one capsule in Firestore; no duplicate doc; partner receives exactly one push.
-
 ### Security and privacy verifications
-
-- [ ] **UI blocks tapping sealed capsule before openAt date (no client-side bypass)** ⚠️
-  1. Phone A seals capsule with openAt 1 day future
-  2. Phone B: open Time Capsules, attempt to long-press / repeatedly tap locked capsule
-  - **Expected:** Card stays non-interactive; no modal opens; no Firestore read of /sealed/data attempted.
 
 - [ ] **Try to read partner's Sunday Check-in answers before both done** ⚠️ 📱
   1. Phone A finishes all 5 answers; Phone B answers only 2 of 5
@@ -4332,11 +4223,6 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   2. Phone B: receives a Truth from Phone A; tap Record tab → 🎙
   - **Expected:** Recording does not start; either alert appears or button is no-op; no app crash.
 
-- [ ] **Deny photos then try sealing Time Capsule with photo** ⚠️
-  1. Revoke photo library
-  2. Open Time Capsules → tap '📷 Add a photo'
-  - **Expected:** System picker either reprompts or returns empty; no crash; capsule can still be sealed without photo.
-
 - [ ] **Deny photos then Memories/Moments graceful handling** ⚠️
   1. Revoke photo library access
   2. Open Moments → tap Take photo (camera) — should still work since this is camera, not library
@@ -4380,12 +4266,6 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
   1. Tease → 🎙 → start recording → 2s in, background app
   2. Resume after 10s
   - **Expected:** Recording either stops cleanly or is discarded; no audio session leak; mic indicator clears.
-
-- [ ] **App backgrounded with Time Capsule seal modal open** ⚠️
-  1. Open Time Capsules → tap Seal → fill message + date
-  2. Background app
-  3. Resume after 30s
-  - **Expected:** Modal still open with state preserved (message + date); Seal button still works.
 
 - [ ] **App backgrounded mid-Blueprint quiz (Q8 of 15)** ⚠️
   1. Open Erotic Blueprint quiz, answer to Q8

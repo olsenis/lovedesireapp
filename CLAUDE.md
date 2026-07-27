@@ -98,7 +98,7 @@ app/                         Full-screen sub-screens
   quiz.tsx                   Love Language Quiz — 10-question result
   pulse.tsx                  Relationship Pulse — private 10-question satisfaction tracker
   daily-wishes.tsx           Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
-  time-capsules.tsx          Time Capsules — seal a message/photo to open at a future date (1y/5y/10y or custom)
+  (time-capsules.tsx removed July 2026 — abstract long-timeline payoff didn't demo well pre-launch; revisit if users request "seal for later" mechanics)
   versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
   (wishlist.tsx and fantasy.tsx removed — legacy features replaced by fantasy-wishes.tsx / dailyWishes)
 ```
@@ -130,8 +130,6 @@ couples/{coupleId}/bingo/{month}     ActivityCardsSession — squares[], reveale
 couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(picking|answering|done), card{type,text,answer,audioURL,answeredBy,dareConfirmed[]}, scores, round, skipsUsed
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
-couples/{coupleId}/timeCapsules/{id} TimeCapsule metadata — sealedAt, openAt, sealedBy, sealedByName, opened, hasPhoto
-couples/{coupleId}/timeCapsules/{id}/sealed/data TimeCapsuleContent — message, photoURL? (rules: only readable by sealer or after openAt)
 couples/{coupleId}/stateUnion/{weekId} StateUnionDoc — weekId, startedAt, completedAt{uid:ts}, answeredCount{uid:n}
 couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers{qi:text}, updatedAt (rules: only readable by owner OR after both completed)
 ```
@@ -160,7 +158,6 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR`, `saveMatchToList` |
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
-| `timeCapsuleService.ts` | `subscribeTimeCapsules` (metadata), `sealTimeCapsule` (writes metadata + content as separate docs), `getCapsuleContent` (lazy fetch of /sealed/data when opening), `markCapsuleOpened`, `isUnlocked` |
 | `versusService.ts` | `loadVersusPool`, `getPartnerBinaryAnswerCount`, `VERSUS_UNLOCK_THRESHOLD` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items. Threshold gates whether Versus is shown in Discover at all (see below). |
 | `featureUnlockService.ts` | `getFeatureUnlockState`, `markVersusUnlocked`, `isVersusUnlockRecent` — persists per-user unlocks at `users/{uid}/private/features`. In-memory cached. |
 
@@ -210,8 +207,6 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Versus:** Pulls binary-format answers from last 45 days of `dailyQuestions`. Builds a 10-question shuffled quiz of items where partner has answered. Each card shows partner's actual answer + 1 decoy (the other binary option). Instant reveal with ✓/✗ after pick. Final score shown with gradient hero card. Empty state nudges to play more Questions first.
 
-**Time Capsules:** Two-doc structure for security. `couples/{coupleId}/timeCapsules/{id}` holds metadata (sealedBy, sealedByName, sealedAt, openAt, opened, hasPhoto) and is always readable by both partners so the partner can see locked countdown. `couples/{coupleId}/timeCapsules/{id}/sealed/data` holds content (message, photoURL) and is gated: rules allow read only by the sealer OR after openAt has passed. This means a partner with a custom Firestore client genuinely cannot peek at sealed content. Loaded via `getCapsuleContent` when the user taps to open a ready capsule.
-
 **Activity Cards:** 25 face-down cards, turn-based. Picker has 2 passes to swap before accepting. Receiver gets the card and can mark "We did it!" or skip (1 pass). Cards have 3 states: face-down, pending (accepted not done), completed (green). `pendingCard` field tracks which card is waiting for receiver. Paid feature.
 
 **Double-blind voting (Wishlist, Fantasy, Fantasy Wishes):** `votes: { [uid]: 'yes'|'maybe'|'no' }`. Only mutual `yes` surfaces in Matches. Never expose individual votes.
@@ -228,7 +223,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Home screen nudges ("Waiting for you"):** index.tsx subscribes to challenge, notes, fantasyWishes, dailyQuestions, dailyWishes, and WYR. Shows nudge card when partner has acted but current user hasn't.
 
-**Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`, Moments at `couples/{coupleId}/moments/{date}_{uid}.jpg`, Flashes at `couples/{coupleId}/flashes/{ts}_{uid}.{ext}`, Time Capsules at `couples/{coupleId}/timeCapsules/{ts}_{uid}.jpg`. All photo uploads compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before `uploadBytes`.
+**Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`, Moments at `couples/{coupleId}/moments/{date}_{uid}.jpg`, Flashes at `couples/{coupleId}/flashes/{ts}_{uid}.{ext}`. All photo uploads compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before `uploadBytes`. (Time Capsules storage path at `couples/{coupleId}/timeCapsules/` no longer written — feature removed July 2026, any pre-launch test blobs remain in Storage until GDPR cascade cleans them.)
 
 **Content rules:** No em dashes (—) anywhere in UI strings — use commas instead. Dares must be physical actions (do something), not verbal (say/tell/describe). Spicy level = explicitly X-rated language.
 
@@ -240,7 +235,7 @@ Three prompts for expanding content — always use the right one for the categor
 - Versus mode (data-gated — hidden in Discover until partner has answered 5+ binary questions in Daily, then permanently visible with a NEW badge for the first 7 days. Not paywalled. Empty state deep-link explains the unlock threshold.)
 - Would You Rather: Playful + Romantic only
 - Date Night Roulette (full)
-- All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease, Time Capsules (full)
+- All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease (full)
 - Love Language Quiz, Relationship Pulse (with trend chart, full)
 - 30-Day Challenge: Reconnect + Spark programs only
 

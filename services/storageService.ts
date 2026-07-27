@@ -73,15 +73,6 @@ export async function uploadMomentPhoto(coupleId: string, uid: string, uri: stri
   return await getDownloadURL(storageRef);
 }
 
-export async function uploadCapsulePhoto(coupleId: string, uid: string, uri: string): Promise<string> {
-  const compressed = await compressImage(uri);
-  const response = await fetch(compressed);
-  const blob = await response.blob();
-  assertUnderLimit(blob, 'photo');
-  const storageRef = ref(storage, `couples/${coupleId}/timeCapsules/${Date.now()}_${uid}.jpg`);
-  await uploadBytes(storageRef, blob);
-  return await getDownloadURL(storageRef);
-}
 
 export async function uploadFlashMedia(
   coupleId: string,

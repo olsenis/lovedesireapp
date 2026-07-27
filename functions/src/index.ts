@@ -177,8 +177,9 @@ async function batchDeleteDocs(docs: FirebaseFirestore.QueryDocumentSnapshot[]):
 
 // Firestore batch delete doesn't recurse into subcollections. For each parent doc under
 // couples/{coupleId}/{parent}/, walk its named nested subcollection and delete those first.
-// Used for timeCapsules/{id}/sealed and stateUnion/{weekId}/entries — both hold private
-// content that would otherwise survive GDPR erasure.
+// Used for stateUnion/{weekId}/entries which holds per-user Sunday Check-in answers, and
+// timeCapsules/{id}/sealed as a legacy safety net (feature was removed July 2026 but any
+// pre-launch test data still needs to cascade cleanly on account deletion).
 async function deleteNestedSubcollection(coupleId: string, parent: string, nested: string): Promise<void> {
   const parentSnap = await db.collection(`couples/${coupleId}/${parent}`).get();
   for (const p of parentSnap.docs) {
@@ -203,8 +204,9 @@ async function deleteCoupleData(coupleId: string): Promise<void> {
   ];
 
   // Nested subcollections FIRST so their parent docs still exist during the walk.
-  // timeCapsules/{id}/sealed holds the message + photoURL (advertised as sealed).
   // stateUnion/{weekId}/entries/{uid} holds the per-user Gottman check-in answers.
+  // timeCapsules/{id}/sealed is a legacy safety net — feature was removed July 2026
+  // but any pre-launch test seals still need this walk to cascade cleanly.
   await deleteNestedSubcollection(coupleId, 'timeCapsules', 'sealed');
   await deleteNestedSubcollection(coupleId, 'stateUnion', 'entries');
 

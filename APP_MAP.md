@@ -42,7 +42,6 @@ Living overview of every feature, content pool size, and connection between feat
    │  ├─ notes              Us > Rituals ("Love Notes")
    │  ├─ moments            Us > Rituals (BeReal-style)
    │  ├─ flashes            Home Quick tile ("Tease")
-   │  ├─ time-capsules      Us > Rituals
    │  └─ journal            Us > Rituals
    │
    ├─ Insights
@@ -100,7 +99,6 @@ Categories:
 | Love Notes | Timed / mood-gated / stash | Free | User-generated | 4/5 | 4/5 | 4 unlock conditions (right now / timed / mood / visit / stash). Surprise mechanic. |
 | Moments | BeReal-style daily photo | Free | User-generated | 4/5 | 4/5 | Mutual reveal + nudge. Strong daily ritual. |
 | Tease (Flashes) | 24h ephemeral photo/video/voice | Free | User-generated | 4/5 | 4/5 | Snapchat-for-couples. Unique to Desire. |
-| Time Capsules | Sealed messages for future | Free | User-generated | 4/5 | 3/5 | Two-doc security model. Emotional payoff long-delayed. |
 | Journal | Written entries | Free | User-generated | 3/5 | 2/5 | Overlaps heavily with Notes. Redundancy candidate. |
 
 ### Insights

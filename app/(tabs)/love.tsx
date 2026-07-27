@@ -13,7 +13,9 @@ const RITUALS = [
   { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',                 route: '/moments',   bg: '#FFF9C4', paid: false },
   { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',      route: '/notes',     bg: '#FCE4EC', paid: false },
   { emoji: '📓', title: 'Journal',           subtitle: 'Shared space for thoughts, reflections, and gratitude',       route: '/journal',   bg: '#FCE4EC', paid: false },
-  { emoji: '🕰️', title: 'Time Capsules',     subtitle: 'Seal a memory now, open it years from today',                route: '/time-capsules', bg: '#FFF3E0', paid: false },
+  // Time Capsules removed July 2026 — abstract long-timeline payoff didn't
+  // demo well at launch; can revisit post-launch if users request "sealed
+  // for later" mechanics with concrete use cases.
 ];
 
 // Nurture — intimate exploration. Mostly paid tier, deeper commitment.

@@ -14,6 +14,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { BrandDatePicker } from '../components/BrandDatePicker';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -259,9 +260,12 @@ export default function IntimacyTrackerScreen() {
         visible={showSheet}
         onClose={() => setShowSheet(false)}
         partnerName={partnerName}
-        onSave={async (data) => {
+        onSave={async (data, when) => {
           if (!coupleId) throw new Error('No coupleId');
-          await addIntimacyEntry(coupleId, uid, data);
+          // Clamp to now-or-earlier — future dates would be weird and
+          // would break stats math that assumes createdAt <= now.
+          const createdAt = Math.min(when, Date.now());
+          await addIntimacyEntry(coupleId, uid, data, createdAt);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           notifyPartner(coupleId, uid, 'Intimacy Log 💝', `${profile?.name ?? 'Your partner'} logged an intimate moment`).catch(() => {});
           setShowSheet(false);
@@ -422,7 +426,7 @@ function DetailSheet({
 }: {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: Omit<IntimacyEntry, 'id' | 'createdAt' | 'loggedBy'>) => Promise<void>;
+  onSave: (data: Omit<IntimacyEntry, 'id' | 'createdAt' | 'loggedBy'>, when: number) => Promise<void>;
   partnerName: string;
 }) {
   const [initiatedBy, setInitiatedBy] = useState<'me' | 'partner' | 'both' | null>(null);
@@ -437,12 +441,17 @@ function DetailSheet({
   const [myOrgasmCount, setMyOrgasmCount] = useState(1);
   const [partnerOrgasm, setPartnerOrgasm] = useState<'yes' | 'no' | null>(null);
   const [partnerOrgasmCount, setPartnerOrgasmCount] = useState(1);
+  // Default to today. User can back-date via the picker at the top of the
+  // sheet — common when they log this morning what happened last night.
+  // Never allow future dates (maximumDate below caps at today).
+  const [entryDate, setEntryDate] = useState<Date>(new Date());
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
     setInitiatedBy(null); setLocation(null); setTypes([]); setDuration('');
     setPositions([]); setMood(null); setNote(''); setRating(0);
     setMyOrgasm(null); setMyOrgasmCount(1); setPartnerOrgasm(null); setPartnerOrgasmCount(1);
+    setEntryDate(new Date());
     setSaving(false);
   };
 
@@ -468,7 +477,7 @@ function DetailSheet({
             partner: { had: partnerOrgasm === 'yes', count: partnerOrgasm === 'yes' ? partnerOrgasmCount : 0 },
           },
         } : {}),
-      });
+      }, entryDate.getTime());
       reset();
     } catch (e: any) {
       console.error('Save failed:', e);
@@ -495,6 +504,15 @@ function DetailSheet({
 
           <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
             <Text style={styles.sheetTitle}>Log an intimate moment</Text>
+
+            {/* When — defaults to today, backdate for last-night logging */}
+            <Text style={styles.sheetSection}>When?</Text>
+            <BrandDatePicker
+              value={entryDate}
+              onChange={setEntryDate}
+              maximumDate={new Date()}
+              placeholder="Pick a date"
+            />
 
             {/* Star rating */}
             <Text style={styles.sheetSection}>Overall rating <Text style={styles.optional}>optional</Text></Text>

@@ -6,6 +6,42 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## Dark mode (system-auto, no theme picker) (raised July 2026)
+
+### What
+
+Respect the device's system dark mode via React Native's `useColorScheme()` hook. When phone is in dark mode, the app switches to a dark-tinted palette (deep burgundy backgrounds, cream text, adjusted card contrast). No user-facing theme picker — the setting comes from the OS, matching what iOS/Android users expect from every other native app.
+
+### Why deferred
+
+Reviewer flagged the app is light-only. Real work involved:
+- Duplicate `Colors` palette with dark variants
+- Wrap every screen with a `useTheme()` hook or theme-aware color accessor
+- Sweep 30+ screens for contrast bugs, unreadable buttons, hardcoded hex values
+- QA every mood/emoji/gradient surface
+
+Honest estimate: **1-2 days of focused work** plus surprise UI bugs in dozens of places.
+
+Launch-time rule of thumb: most couples apps in this category launch light-only and add dark mode based on real user demand rather than one reviewer note. Doing this pre-launch competes with real launch blockers (RevenueCat, App Store submission, security audit).
+
+### Decision criteria for revisiting
+
+Ship after launch if any of these hit:
+- App Store review comments ask for dark mode (not just "would be nice", but "makes it hard to use at night")
+- Real users request it in support/feedback more than once
+- The user themselves reports discomfort using the app in dark rooms
+
+### Effort estimate
+
+- Palette + theme accessor scaffolding: 3-4 hours
+- Sweep every screen: 6-8 hours (this is where hidden bugs live)
+- QA on both platforms + accessibility contrast check: 2 hours
+- **Total: 1-1.5 days**
+
+Explicit non-goal for the first pass: no theme picker (light/dark/rose/midnight). System-auto only. Custom themes can be a separate follow-up if analytics justify it.
+
+---
+
 ## Enhanced item view for paid subscribers (raised July 2026)
 
 ### What

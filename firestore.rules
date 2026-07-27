@@ -82,48 +82,10 @@ service cloud.firestore {
           && isMemberOfCouple(coupleId);
       }
 
-      // ── Time Capsules: metadata visible to both partners always, content gated ──
-      // Metadata (sealedBy, sealedByName, openAt, opened, hasPhoto) is always
-      // readable so the partner can see locked countdown. The actual message and
-      // photo URL live in /sealed/data and are only readable AFTER openAt has
-      // passed OR if the requester is the sealer themselves. This preserves the
-      // core "1y / 5y / 10y sealed" promise even against a custom Firestore client.
-      match /timeCapsules/{capsuleId} {
-        allow read: if isMemberOfCouple(coupleId);
-        allow create: if isMemberOfCouple(coupleId)
-          && request.resource.data.sealedBy == request.auth.uid;
-        // Time-lock immutability: sealedBy, openAt, sealedAt, hasPhoto MUST NOT
-        // change after create. Without this, either partner could set openAt
-        // back to 0 and defeat the sealed-content read gate at /sealed/{doc}.
-        // The only mutable field is `opened` (bool flip on unlock), and only
-        // the sealer flips it.
-        allow update: if isMemberOfCouple(coupleId)
-          && request.resource.data.sealedBy == resource.data.sealedBy
-          && request.resource.data.openAt   == resource.data.openAt
-          && request.resource.data.sealedAt == resource.data.sealedAt
-          && request.resource.data.get('hasPhoto', false) == resource.data.get('hasPhoto', false)
-          && (
-            request.resource.data.get('opened', false) == resource.data.get('opened', false)
-            || request.auth.uid == resource.data.sealedBy
-          );
-        allow delete: if isMemberOfCouple(coupleId)
-          && resource.data.sealedBy == request.auth.uid;
-
-        match /sealed/{contentDoc} {
-          // Sealer can always read their own content (UI shows preview while sealing).
-          // Partner can read only AFTER the parent's openAt has passed.
-          allow read: if isMemberOfCouple(coupleId) && (
-            get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.sealedBy == request.auth.uid
-            || get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.openAt <= request.time.toMillis()
-          );
-          allow create: if isMemberOfCouple(coupleId)
-            && get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.sealedBy == request.auth.uid;
-          // Content is immutable once sealed — that's the whole point.
-          allow update: if false;
-          allow delete: if isMemberOfCouple(coupleId)
-            && get(/databases/$(database)/documents/couples/$(coupleId)/timeCapsules/$(capsuleId)).data.sealedBy == request.auth.uid;
-        }
-      }
+      // Time Capsules feature was removed July 2026 — no rules block needed
+      // for /timeCapsules/{id}. Any leftover pre-launch test data is cleaned
+      // up by the GDPR cascade in functions/src/index.ts (still walks the
+      // subcollection as a safety net).
 
       // ── Sunday Check-in: parent doc tracks completion, per-user answers gated ──
       // Parent doc (weekId metadata + completedAt map) is always readable so the
