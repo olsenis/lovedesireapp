@@ -13,30 +13,67 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 type CardKind = 'cover' | 'days' | 'moods' | 'rituals' | 'intimacy' | 'outro';
 
+// Any counter above zero means the year's review will have real content
+// beyond just the days-together number (which comes from couple.startDate,
+// not activity). Used to decide whether to fall back from current year to
+// previous year on load.
+function hasAnyActivity(s: YearSummary): boolean {
+  return s.totalMoods > 0
+    || s.questionsAnswered > 0
+    || s.momentsCaptured > 0
+    || s.notesExchanged > 0
+    || s.intimacyEntries > 0;
+}
+
 export default function YearInReviewScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [summary, setSummary] = useState<YearSummary | null>(null);
+  const [effectiveYear, setEffectiveYear] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
-  const year = new Date().getFullYear() - 1; // Default to LAST year (Dec → next Jan accesses prior year)
-  // Use current year if it's late in the year (Sep+) — early-bird users get current snapshot
-  const effectiveYear = new Date().getMonth() >= 8 ? new Date().getFullYear() : year;
-
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
 
+  // Try current year first, fall back to previous year if empty. Fixes the
+  // dead-end where a mid-year visit (e.g. July 2026) would show 2025 with
+  // no data because the couple had not existed yet. Cost: one extra
+  // Firestore roundtrip only when current year is genuinely empty, which
+  // is exactly when the fallback is needed anyway.
   useEffect(() => {
     if (!profile?.coupleId) return;
-    aggregateYearSummary(profile.coupleId, uid, partnerId, effectiveYear, {
+    const opts = {
       intimacyLogEnabled: profile?.features?.intimacyLog,
       startDate: couple?.startDate,
-    })
-      .then((s) => setSummary(s))
-      .finally(() => setLoading(false));
-  }, [profile?.coupleId, uid, partnerId, effectiveYear, couple?.startDate, profile?.features?.intimacyLog]);
+    };
+    const currentYear = new Date().getFullYear();
+    const lastYear = currentYear - 1;
+    let cancelled = false;
+    (async () => {
+      try {
+        const current = await aggregateYearSummary(profile.coupleId!, uid, partnerId, currentYear, opts);
+        if (cancelled) return;
+        if (hasAnyActivity(current)) {
+          setSummary(current);
+          setEffectiveYear(currentYear);
+        } else {
+          const last = await aggregateYearSummary(profile.coupleId!, uid, partnerId, lastYear, opts);
+          if (cancelled) return;
+          // Even if both are empty, we still land on the last-year summary so
+          // the "days together" / "outro" cards have something to render;
+          // moods/rituals will show 0. Alternative: dedicated empty-state
+          // card, deferred to post-launch analytics on how often this hits.
+          setSummary(last);
+          setEffectiveYear(lastYear);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [profile?.coupleId, uid, partnerId, couple?.startDate, profile?.features?.intimacyLog]);
 
   // Decide which cards to show — skip intimacy if no entries OR log disabled
   const cards: CardKind[] = ['cover', 'days', 'moods', 'rituals'];
