@@ -6,6 +6,65 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## Home screen widgets (Android + iOS) (raised July 2026)
+
+### What
+
+Native OS home-screen widgets that pull live data from the app without opening it. Turns Desire into a "present-in-daily-life" surface rather than a destination the user has to consciously visit. Candidate widgets, ranked by likely engagement lift:
+
+1. **Partner mood** (small square) — big emoji + note ("Ola: 😊 Playful · 2h ago"). Sits on home screen so user sees partner's current state every time they unlock the phone. Highest signal-to-effort ratio.
+2. **Daily nudge** (medium rectangle) — "Ola is ahead by 2 picks + 1 question today · Tap to catch up". Deep-links to `/daily`. Mirrors the existing Home nudge but skips the app-open step.
+3. **LDR countdown** (small square) — "127 days together · 5 days until visit". Only relevant if `couple.isLongDistance`.
+4. **Latest match** (medium rectangle) — most recent Fantasy Wishes or Daily action match with a "Tap to view" CTA. Emotional payoff surface.
+5. **Quick spark** (small tappable) — one-tap sends a heart/spark to partner from the widget itself. Requires background-task capability (deep link with query param that fires spark on cold launch).
+
+### Why deferred
+
+Expo Managed workflow does not support native widgets out of the box. Options:
+
+- **`react-native-android-widget`** — third-party Android-only lib + Expo config plugin. Roughly 2-3 days to wire up one widget end-to-end (widget XML layout, Kotlin update service, RN bridge to fetch data from Firestore, refresh scheduling).
+- **Custom Expo config plugin with native Swift/Kotlin** — full control, both platforms. 5-7 days for the first widget; each additional widget adds a day or so.
+- **Eject to Bare workflow** — biggest lift, breaks the current EAS build flow, hard to reverse.
+
+iOS is even heavier because WidgetKit requires SwiftUI code and iOS 14+ Widget Extensions. Live Activities (iOS 16+) for the daily nudge would be a separate integration.
+
+Beyond the initial build, widgets have real-world quirks that only surface in device testing:
+
+- Refresh cycles are OS-controlled and rate-limited (Android throttles background updates; iOS has a strict WidgetKit timeline budget).
+- Image caching for partner avatars / mood emoji needs a widget-local cache, not the app's memory cache.
+- Firestore auth in a widget process differs from the app process — needs careful token handling.
+- Widget layout scales poorly across manufacturer skins (Samsung One UI, MIUI, Pixel Launcher all render differently).
+
+Also competes for engineering time with launch blockers (RevenueCat integration, App Store submission, remaining security testing).
+
+### Decision criteria for revisiting
+
+Ship a first widget post-launch if any of these hit:
+
+- **Daily-open rate is high but session duration is short** — analytics signal that users open just to "check partner" and leave. A widget removes the open step entirely and reinforces that habit.
+- **Reviews mention "want to see partner without opening"** — direct request signal.
+- **Retention drops off after week 2-3** — widgets can rebuild the "always there" feeling without asking the user to remember to open the app.
+- **A specific competitor gains traction with widgets** (Paired, Between, etc.) — market pressure.
+
+Order to ship: **Partner mood → Daily nudge → LDR countdown → Quick spark → Latest match**. Partner mood is highest ROI (proven Between/Paired pattern) with simplest data flow (single Firestore doc read, no interactions).
+
+### Effort estimate (per widget)
+
+- **First widget on Android via react-native-android-widget**: 2-3 days (setup + data flow + refresh + design + QA on 2-3 launchers)
+- **First widget on iOS via WidgetKit**: 3-4 days (Swift extension + timeline provider + design + QA)
+- **Each additional widget**: ~1-1.5 days per platform, assuming shared data-fetch layer
+- **Live Activities (iOS 16+) for daily nudge**: separate 2-day integration on top
+
+Realistic first pass = Partner mood widget on both platforms = **1 week of focused work + QA**. Full 5-widget suite on both platforms = **3-4 weeks**.
+
+### Non-goals for the first pass
+
+- No interactive widgets on iOS pre-iOS 17 (limited by WidgetKit)
+- No configurable widgets (pick which stat to show) — ship one clear layout per widget type
+- No cross-couple widgets ("all your friends' moods") — this is a 1:1 app, don't drift into social
+
+---
+
 ## Dark mode (system-auto, no theme picker) (raised July 2026)
 
 ### What
