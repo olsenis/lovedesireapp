@@ -25,7 +25,8 @@
 
 Use this if a test says one thing and the app calls it something else.
 
-- **Questions Game** — Discover → Questions Game. 3 categories: 😊 Playful (free), 💛 Deep (paid 🔒), 🔥 Spicy (paid 🔒). Answer privately, reveal when both done.
+- **Daily** — Discover → Daily (or Home → Tonight's Picks → Daily). 3 categories: 😊 Playful (free), 💛 Deep (paid 🔒), 🔥 Spicy (paid 🔒). Merged Daily Picks + Questions Game (July 2026): each category interleaves action cards (vote Yes/Not for me) and question cards (private answer → reveal when both done). Route: `/daily`. Legacy `/daily-wishes` and `/questions-game` redirect here.
+- **Versus** — Data-gated: card is hidden in Discover until partner has answered 5+ binary questions in Daily. Once unlocked, appears at position 2 with a `NEW` badge for 7 days. Not paywalled.
 - **Tease** — Us tab → Rituals section is where daily ritual features live; Tease is a Quick action on Home + reachable via Flashes route. 24h ephemeral photos/videos/voice notes.
 - **Moments** — Us tab → Rituals section → Moments. BeReal-style daily photo ritual with reveal.
 - **Sunday Check-in** — Us tab → Rituals section → Sunday Check-in. 5-question weekly Gottman ritual.
@@ -39,29 +40,29 @@ user taps it. Paid-gate tests below cover the most important ones; this table
 is the complete reference.
 
 ### FREE (no lock, works for all users)
-**Games:** Truth or Dare Sweet + Flirty, Questions Game **Playful**, Versus
-mode (full), Would You Rather Playful + Romantic, Date Night Roulette (full).
-Note: Dare Wheel was folded into Truth or Dare — no separate route.
+**Games:** Truth or Dare Sweet + Flirty, Daily **Playful** category (merged
+Sweet action cards + Playful question cards), Versus mode (data-gated —
+appears after partner has 5+ binary answers), Would You Rather Playful +
+Romantic, Date Night Roulette (full).
+Note: Dare Wheel was folded into Truth or Dare, Time Capsules removed
+July 2026 — no separate route for either.
 
 **Rituals + Async (Us tab / Home / Profile):** Mood (except Kinky/Horny),
-Spark, Love Notes, Moments, Tease, Journal, Time Capsules, Sunday Check-in,
-Together List (via Home). Utility screens moved to Profile → Reminders &
-tools: Calendar, Countdowns, Flirt Reminders, Relationship Pulse.
+Spark, Love Notes, Moments, Tease, Journal, Sunday Check-in, Together List
+(via Home). Utility screens moved to Profile → Reminders & tools: Calendar,
+Countdowns, Flirt Reminders, Relationship Pulse.
 
 **Insights:** Love Language Quiz, Relationship Pulse (with trend chart —
 now in Profile), Our Story, Year-in-Review, 30-Day Challenge Reconnect + Spark
 
-**Daily Picks:** Sweet + Flirty categories
-
 ### PAID (locked with 🔒 icon, tap sends to /upgrade)
-**Games:** Truth or Dare Spicy level, Questions Game **Deep + Spicy**
-categories, Would You Rather Spicy level, Activity Cards (entire feature),
+**Games:** Truth or Dare Spicy level, Daily **Deep + Spicy** categories
+(includes ex-Flirty action cards which moved from free tier as part of the
+merge), Would You Rather Spicy level, Activity Cards (entire feature),
 Fantasy Wishes (entire feature)
 
 **Intimacy:** Erotic Blueprint (entire feature), Sensate Focus (entire
 feature), Intimacy Log (opt-in from Profile — free but hidden by default)
-
-**Daily Picks:** Spicy category (previously Spicy + Sexual, merged July 2026)
 
 **Mood:** 😈 Kinky, 🥵 Horny emojis (last two on the picker)
 
@@ -86,7 +87,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ### Content pools
 
-- [ ] **Questions Game** — [constants/content.ts:QUESTIONS](constants/content.ts) · 474 items
+- [ ] **Daily questions** — [constants/content.ts:QUESTIONS](constants/content.ts) · 474 items (surfaced via merged Daily screen; source unchanged post-merge)
   - Playful (87) · free tier · [must be App Store safe]
   - Deep (241) · paid tier · [vulnerable / romantic / growth; not explicit]
   - Spicy (146) · paid tier · [explicit permitted per explicit_content_prompt.md]
@@ -107,7 +108,7 @@ For each pool, tick the box only after reading every item. If you find one drift
   - Romantic (60) · free tier
   - Spicy (61) · paid tier
 
-- [ ] **Daily Picks** — [constants/content.ts:DAILY_WISH_ITEMS](constants/content.ts) · 224 items
+- [ ] **Daily actions** — [constants/content.ts:DAILY_WISH_ITEMS](constants/content.ts) · 224 items (surfaced via merged Daily screen; category `sweet` renders under Playful, `flirty` + `spicy` render under Spicy)
   - Sweet (60) · free tier
   - Flirty (60) · free tier
   - Spicy (104) · paid tier · [merged from old Spicy + Sexual, July 2026]
@@ -200,7 +201,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 2. Core daily features (8 tests)
+## 2. Core daily features (10 tests)
 
 - [x] **Mood pick syncs to partner within 30s** 📱
   1. Phone A: Tap 😍 In love
@@ -211,10 +212,10 @@ For each pool, tick the box only after reading every item. If you find one drift
   1. Phone A: Tap ❤️ Love you pill
   - **Expected:** Phone B home banner: "Eva sent you a spark · just now · ❤️ Love you" within 30s.
 
-- [x] **Questions Game answer reveal when both done** 📱
-  1. Both: Discover → Questions Game → pick Playful category (free — Deep and Spicy are 🔒 paid)
-  2. Both: Type answer to question 1 → Send answer
-  - **Expected:** Both screens reveal both answers side by side within 10s. Own answer in green box on left, partner's answer in green box on right.
+- [x] **Daily question reveal when both answered** 📱
+  1. Both: Discover → Daily (or Home → Tonight's Picks → Daily) → Playful category (default; Deep and Spicy are 🔒 paid)
+  2. Both: scroll to a QUESTION card (interleaved after action cards, marked with burgundy `QUESTION` pill) → Type answer → Send answer
+  - **Expected:** Both screens reveal both answers side by side within 10s. Own answer in green box on left, partner's answer in green box on right. Route is `/daily` (Questions Game merged into Daily July 2026).
 
 - [x] **Moment photo capture + reveal when both posted** 📱
   1. Phone A: Open Moments → 📸 → take photo → upload
@@ -235,13 +236,23 @@ For each pool, tick the box only after reading every item. If you find one drift
   2. Phone B: Home → tap 😢 mood
   - **Expected:** Phone B receives nudge "A note unlocked from Eva" within 30s. Open shows the message.
 
-- [x] **Daily Picks mutual match adds to Together List** 📱
-  1. Both: Open Daily Picks → both tap ❤️ on same item in same category
-  - **Expected:** Match modal appears on both phones. Tap "Add to list" → item appears under correct Together List category.
+- [x] **Daily action mutual match adds to Together List** 📱
+  1. Both: Open Daily → Playful, scroll to action cards (marked with burgundy `PICK` pill)
+  2. Both: vote ✓ Yes on the same action card
+  - **Expected:** Both cards flip to rose-bordered match state showing `✓ You both want this!` + `+ Add to Together List` button. One partner taps Add → both phones show `✓ Added to Together List`. Open `/todo` → item appears under Date Ideas (Playful/Sweet mapping). Route is `/daily` (Daily Picks merged into Daily July 2026).
 
----
+- [ ] **Home shows unified Daily nudge when partner is ahead** 📱
+  1. Phone A: open `/daily` → Playful → answer 1 question + vote on 2 action items
+  2. Phone B: refresh Home
+  - **Expected:** Exactly ONE `💫 Daily is waiting` nudge in `Waiting for you` section. Subtitle: `Eva is ahead by 1 question + 2 picks today`. Tap → opens `/daily` (auto-selects category where partner is ahead). Regression check: pre-July-2026 there were two separate nudges (Questions Game + Daily Picks) that could BOTH appear at once.
 
-## 3. Games — multiplayer correctness (8 tests)
+- [x] **Intimacy Log entry with backdate picker** 💰
+  1. Us tab → Intimacy Log → tap "We were intimate" hero button
+  2. Sheet opens with `When?` date picker at top, defaulted to today
+  3. Tap picker → pick a date 3 days in the past → fill required fields → Save
+  - **Expected:** Sheet closes; Recent list shows the past date (not today). Stats screen still counts the entry. Future dates are blocked in the picker + clamped in the handler. Regression check: pre-July-2026 the entry always used `Date.now()` so users could only log "today".
+
+## 3. Games — multiplayer correctness (13 tests)
 
 - [ ] **Truth or Dare full round end-to-end** 📱
   1. Phone A: Open Truth or Dare → start → pick Sweet level
@@ -250,31 +261,57 @@ For each pool, tick the box only after reading every item. If you find one drift
   4. Phone A: See partner's answer
   - **Expected:** Both phones move through picking/answering/done phases in sync. Score increments correctly on truth-answered.
 
-- [ ] **Questions Game binary format** 📱
-  1. Both: Discover → Questions Game → stay on Playful (or unlock Deep/Spicy) → cycle through today's 3 questions until a binary one appears (e.g., "Beach or Mountains?", "Morning or night?")
+- [ ] **Daily question binary format** 📱
+  1. Both: Open Daily → Playful (or unlock Deep/Spicy) → cycle through today's 3 questions until a binary one appears (e.g., "Beach or Mountains?", "Morning or night?")
   - **Expected:** Both see two large buttons (e.g. "Beach" and "Mountains"). Tap → answer locks in. Both partners answered → reveal shows both choices side by side.
 
-- [ ] **Questions Game scale format** 📱 💰
-  1. Both: Unlock premium → Questions Game → Deep chip → scan today's 3 for a scale-format question (e.g., "How safe do you feel sharing something hard with me?", "How adventurous are you feeling?")
+- [ ] **Daily question scale format** 📱 💰
+  1. Both: Unlock premium → Daily → Deep tab → scan today's 3 for a scale-format question (e.g., "How safe do you feel sharing something hard with me?", "How adventurous are you feeling?")
   - **Expected:** Both see 1-5 row with "1=not at all · 5=completely" hint. Tap → submit → reveal shows both scores. Scale prompts are almost all in Deep + Spicy so this test currently requires premium.
 
-- [ ] **Versus mode end-to-end** 📱
-  1. Phone B: Open Versus
-  - **Expected:** If 10+ binary questions in history: 10-question quiz starts; each card shows partner's actual answer + 1 decoy; score tallied; final gradient card with %. If <10: empty state with CTA to Questions Game.
+- [x] **Daily rows interleave (actions first + spread pattern)** ⚠️
+  1. Both partners open Daily → Playful with no votes/answers yet
+  - **Expected:** Card sequence is exactly `A,A,A,Q,A,Q,A,Q` — 3 warmup action cards (burgundy `PICK` pill), then alternating action/question after that. Spicy: `A,A,A,A,Q,A,A,Q,A,A,Q,A,A`. Deep: `Q,Q,Q` unchanged. Both partners see identical order. Regression check: pre-fix Playful showed 5 actions clustered then 3 questions clustered — user flagged this as a "dull wall".
+
+- [x] **Daily progress card shows one combined counter** ⚠️
+  1. Playful: vote on some actions, answer some questions
+  - **Expected:** Progress card shows `X/8 Done today` where X = votes + answers. NOT the previous split `X/5 You voted` + `Y/3 You answered`. Regression check: user reported the split `5/5` looked like "done" when 3 questions were still unanswered.
+
+- [ ] **Versus mode end-to-end** 📱 💰
+  1. Phone B: Discover → tap Versus card (only appears when partner has 5+ binary answers in Daily; hidden otherwise)
+  - **Expected:** If 10+ binary questions in history: 10-question quiz starts; each card shows partner's actual answer + 1 decoy; score tallied; final gradient card with %. If 5-9: shorter round with what's available. If <5: card is hidden from Discover entirely.
+
+- [ ] **Versus card hidden in Discover for new couples** ⚠️
+  1. Fresh couple (partner has 0 binary answers), open Discover
+  - **Expected:** Games list shows exactly 5 cards (Daily, Truth or Dare, WYR, Activity Cards, Fantasy Wishes). NO Versus card. Regression check: pre-July-2026 Versus was always visible so new couples always tapped into a dead-end "not enough answers yet" empty state.
+
+- [ ] **Versus card appears with NEW badge after partner hits threshold** 📱
+  1. Partner answers 5+ binary questions in Daily (may take a few days of active play)
+  2. Reopen Discover
+  - **Expected:** Games list now shows 6 cards including `🆚 Versus` at position 2 with a small burgundy `NEW` pill next to the title. Unlock is sticky (persisted in `users/{uid}/private/features.versusUnlockedAt`) and NEW badge decays after 7 days.
 
 - [ ] **WYR session persists across app close** 📱
   1. Phone A: Open Would You Rather → Playful → start → answer Q1
   2. Phone A: Close app, reopen → Would You Rather
   - **Expected:** Session resumes at Q2 (or wherever they left off), not restart.
 
+- [ ] **WYR match → Save to Together List (single tap saves for both)** 📱
+  1. Both: WYR → pick the same option on a question so a green `You match!` card appears
+  2. Either partner: tap `+ Save to our list`
+  - **Expected:** Success haptic. Button replaces with green pill `✓ Saved to Date Ideas` (Playful/Romantic) or `✓ Saved to Intimacy` (Spicy). Both phones flip to saved state within one Firestore snapshot. Open Together List → winning option text (e.g. `Stay in a luxury hotel`, NOT the full "Would you rather..." question) appears once in the mapped category with source=`wyr`. Match is already double-confirmed by the match itself, so single-tap saves; race guard in `saveMatchToList` transaction prevents double-write if both tap simultaneously.
+
 - [ ] **Activity Cards flip → accept → complete** 📱 💰
   1. Phone A (premium): Activity Cards → flip card 12
   2. Phone B: Receives card → "We did it!" or skip
   - **Expected:** Card goes face-down → pending (yellow) → completed (green). Turn passes to partner. Both phones see same state.
 
-- [ ] **Fantasy Wishes mutual YES surfaces match** 📱 💰
+- [ ] **Fantasy Wishes mutual YES surfaces match + celebratory toast** 📱 💰
   1. Both (premium): Fantasy Wishes → vote same item with ❤️ yes
-  - **Expected:** Item moves to Matches section on both phones. Other votes never visible (double-blind).
+  - **Expected:** Card flips to celebrating state (blush background, burgundy border, `It's a Match! ✨` pill on top) for ~2s. Success haptic. Floating toast at top: `It's a Match! ✨ Tap to see` on burgundy fill with cream text (celebratory — inverted colors vs the passive `Added ✓` toast). Tap toast → jumps to Matches tab. Both phones celebrate independently as their Firestore snapshot lands. Regression check: pre-fix copy was flat `✨ Match saved · Tap to view` on cream fill — user flagged as dull.
+
+- [ ] **Fantasy Wishes +Add wish appears inline in current batch** ⚠️ 💰
+  1. Fantasy Wishes → tap `+ Add` → type a wish → Send
+  - **Expected:** Modal closes. Floating toast: `Added ✓ · Just below`. Wish appears at the bottom of the current batch (currentBatch bumps 5→6 items) with Yes/Maybe/No vote buttons. Regression check: pre-fix the wish silently deferred until Load 5 more, and even then never surfaced because `.slice(0,5)` on createdAt-asc-sorted items picked the oldest presets first.
 
 ---
 
@@ -322,36 +359,19 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 6. Time Capsules (3 tests)
-
-- [ ] **Seal capsule with photo + message → partner sees locked metadata** 📱 🔒
-  1. Phone A: Time Capsules → Seal new → message + photo → 1 year preset → Seal
-  2. Phone B: Open Time Capsules
-  - **Expected:** Phone B sees "Sealed" section with one card showing "🔒 From Eva · Opens [date 1 year out] · 365 days". Content NOT visible.
-
-- [ ] **Try to open before openAt blocked at content level** 🔒 ⚠️
-  1. Phone B: Tap the locked partner capsule
-  - **Expected:** Either disabled tap, or modal shows "Loading..." indefinitely and Firestore rule denies read on `/sealed/data`. NEVER shows message + photo before date.
-
-- [ ] **Sealer can preview own capsule anytime**
-  1. Phone A: Time Capsules → tap own sealed capsule (the one they created)
-  - **Expected:** Modal opens showing message + photo (the sealer always sees their own).
-
----
-
-## 7. Security verifications 🔒 (5 tests)
+## 6. Security verifications 🔒 (5 tests)
 
 - [ ] **Free user → Spicy Truth → upgrade gate** 💰
   1. Phone B (non-premium): Truth or Dare → tap Spicy level
   - **Expected:** Navigates to /upgrade screen. Cannot bypass.
 
-- [ ] **Free user → Deep Questions → upgrade gate** 💰
-  1. Phone B (non-premium): Discover → Questions Game → tap 💛 Deep chip
-  - **Expected:** Chip shows 🔒 lock. Tap → navigates to /upgrade.
+- [ ] **Free user → Deep Daily → upgrade gate** 💰
+  1. Phone B (non-premium): Home → Tonight's Picks → Daily → tap 💛 Deep tab
+  - **Expected:** Tab shows 🔒 badge. Tap → navigates to /upgrade.
 
-- [ ] **Free user → Spicy Questions → upgrade gate** 💰
-  1. Phone B (non-premium): Discover → Questions Game → tap 🔥 Spicy chip
-  - **Expected:** Chip shows 🔒 lock. Tap → navigates to /upgrade. Playful remains accessible as the free taste.
+- [ ] **Free user → Spicy Daily → upgrade gate** 💰
+  1. Phone B (non-premium): Home → Tonight's Picks → Daily → tap 🔥 Spicy tab
+  - **Expected:** Tab shows 🔒 badge. Tap → navigates to /upgrade. Playful remains accessible as the free taste. Flirty content (previously free in Daily Picks) is now behind this gate — documented downgrade of free-tier value from the July 2026 Daily merge.
 
 - [ ] **Free user → Fantasy Wishes → upgrade gate** 💰
   1. Phone B (non-premium): Discover → Fantasy Wishes (also reachable via Home "Tonight's Picks")
@@ -373,7 +393,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 8. Push notifications (18 tests — 📡 EAS-only)
+## 7. Push notifications (📡 EAS-only)
 
 > **Run this section ONCE after every EAS build, before submitting to TestFlight / hosting the APK.** All tests below require both phones to be running an EAS build (not Expo Go, not Vercel web). Push tokens register on first launch via `Notifications.getExpoPushTokenAsync()` — verify tokens exist in `users/{uid}.pushToken` in Firestore before starting.
 
@@ -400,9 +420,9 @@ For each pool, tick the box only after reading every item. If you find one drift
   1. Phone B: lock screen. Phone A: Notes → New → "Right now" → send.
   - **Expected:** Phone B push "You have a love note 💌" + subtitle.
 
-- [ ] **Questions Game answer push** 📡 📱
-  1. Phone B: lock screen. Phone A: Questions Game → answer any question first.
-  - **Expected:** Phone B push "Questions 💬" + "Oli answered a question, your turn!". No push if Phone B was the one who answered first.
+- [ ] **Daily answer push** 📡 📱
+  1. Phone B: lock screen. Phone A: Daily → answer any question first.
+  - **Expected:** Phone B push "Daily 💬" + "Eva played today, your turn!". No push if Phone B was the one who answered first. Title changed from "Questions 💬" post-merge (July 2026).
 
 - [ ] **Would You Rather answer push** 📡 📱
   1. Phone B: lock screen. Phone A: WYR → tap A or B.
@@ -431,10 +451,6 @@ For each pool, tick the box only after reading every item. If you find one drift
 - [ ] **Fantasy Wishes mutual match push** 📡 📱 💰
   1. Both premium, at least one item already yes-voted by B. Phone B: lock screen. Phone A: vote yes on same item.
   - **Expected:** Phone B push "New match ✨" + "shared fantasy wish".
-
-- [ ] **Time Capsule sealed push** 📡 📱
-  1. Phone B: lock screen. Phone A: Time Capsules → seal a new capsule.
-  - **Expected:** Phone B push "Time Capsule sealed 🕰️" + open date.
 
 - [ ] **Tease (Flash) push** 📡 📱
   1. Phone B: lock screen. Phone A: Tease → send a flash.
@@ -479,12 +495,12 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 9. iOS permissions (4 tests)
+## 8. iOS permissions (4 tests)
 
 - [ ] **First camera use shows description string** ⚠️
   1. Fresh install on Phone A
-  2. Tap "Take photo" anywhere (Moments, Tease, Time Capsule)
-  - **Expected:** iOS prompt shows: "Love Desire uses the camera so you can capture daily Moments, send Tease photos and videos, and add photos to Time Capsules." → Allow/Deny.
+  2. Tap "Take photo" anywhere (Moments, Tease, Memories, Profile photo)
+  - **Expected:** iOS prompt shows a permission rationale for camera access → Allow/Deny. Description string must not mention Time Capsules (feature removed July 2026); if it still does, update `app.json` `NSCameraUsageDescription`.
 
 - [ ] **First microphone use shows description string** ⚠️
   1. Fresh install
@@ -503,7 +519,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 10. Image upload + compression (2 tests)
+## 9. Image upload + compression (2 tests)
 
 - [ ] **Profile photo upload + partner sees** 📱
   1. Phone A: Profile → tap avatar → pick photo from library → Upload
@@ -518,7 +534,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 11. GDPR + Account (3 tests)
+## 10. GDPR + Account (3 tests)
 
 - [ ] **Delete account preserves couple data for partner** 📱 ⚠️
   1. Phone A: Profile → Delete account → confirm with password
@@ -536,7 +552,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 12. Race conditions (2 tests)
+## 11. Race conditions (2 tests)
 
 - [ ] **Both flip same Activity Card** 📱 💰 ⚠️
   1. Both (premium): Activity Cards → both tap card 8 within 1 second
@@ -549,19 +565,13 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 ---
 
-## 13. State transitions (3 tests)
+## 12. State transitions (2 tests)
 
 - [ ] **Sign out mid-Truth-or-Dare round** ⚠️ 📱
   1. Phone A: Truth or Dare active session, picker phase
   2. Phone A: Sign out from Profile
   3. Phone B: Open Truth or Dare
   - **Expected:** Phone B can either continue from same session, reset, or sees a "your partner left" message. No infinite loading.
-
-- [ ] **Background app mid-Time-Capsule seal preserves state** ⚠️
-  1. Phone A: Time Capsules → Seal new → fill message + photo → DON'T tap Seal
-  2. Press home button (background)
-  3. Wait 30s, come back
-  - **Expected:** Form state preserved (message + photo still there). OR modal closed cleanly with no data loss other than the draft.
 
 - [ ] **Disconnect couple → previous data hidden** 🔒 ⚠️ 📱
   1. Phone A: Disconnect from partner
@@ -573,23 +583,25 @@ For each pool, tick the box only after reading every item. If you find one drift
 ## Tally
 
 **Coverage targets:**
-- ✅ All 12 feature areas
-- ✅ 5 core daily-engagement features tested 2-phone
+- ✅ All 11 feature areas (Time Capsules removed July 2026)
+- ✅ Core daily-engagement features tested 2-phone (Daily merged)
 - ✅ Security rules validated behaviourally
 - ✅ iOS permission prompts verified
 - ✅ Push notification reliability
 - ✅ Race conditions for known concurrent paths
+- ✅ July 2026 shipped features covered: Daily merge (interleave + combined counter + tagline + pills), WYR save-to-list, Fantasy Wishes match toast + inline +Add, Versus data-gated unlock, Intimacy Log backdate picker, Home unified nudge, Time Capsules removal
 
-**Total: 59 tests**
-- 📱 Two-phone: ~30
-- 🌍 LDR: 4
-- ⚠️ Edge cases: ~18
-- 💰 Paid-gate: 11
-- 🔒 Security: 8
+**Total: ~64 tests**
+- 📱 Two-phone: ~32
+- 🌍 LDR: 3
+- ⚠️ Edge cases: ~22
+- 💰 Paid-gate: 12
+- 🔒 Security: 7
+- 📡 EAS-only: ~22
 
-**Estimated time: 4-6 hours with 2 phones, single tester.**
+**Estimated time: 4-6 hours with 2 phones, single tester + ~1h for push (📡 EAS-only, real device required).**
 
-If beta with 5 real couples: distribute checklist sections (~12 tests each) across couples for parallel coverage.
+If beta with 5 real couples: distribute checklist sections (~13 tests each) across couples for parallel coverage.
 
 ---
 
