@@ -321,6 +321,23 @@ For each pool, tick the box only after reading every item. If you find one drift
   2. Either partner: tap `+ Save to our list`
   - **Expected:** Success haptic. Button replaces with green pill `✓ Saved to Date Ideas` (Playful/Romantic) or `✓ Saved to Intimacy` (Spicy). Both phones flip to saved state within one Firestore snapshot. Open Together List → winning option text (e.g. `Stay in a luxury hotel`, NOT the full "Would you rather..." question) appears once in the mapped category with source=`wyr`. Match is already double-confirmed by the match itself, so single-tap saves; race guard in `saveMatchToList` transaction prevents double-write if both tap simultaneously.
 
+- [ ] **WYR score shows percentage + compatibility band mid-session** ⚠️
+  1. Start any WYR session, answer 3+ questions with mix of matches and differs
+  - **Expected:** Header top-right shows `X/Y` + small italic percentage below (e.g. `6/7` + `86%`). Below the level badge, a small band label appears: 🔥 Twin flames (100%), 💫 Perfectly synced (90-99%), ✨ In tune (75-89%), 🌱 Learning each other (50-74%), ⚡ Opposites attract (25-49%), or 🌪️ Wildly different (<25%). Band only appears after 3+ total (a single match doesn't over-claim). Regression check: pre-fix the header was just `6/7` with no context — user reported it as "hvað þýðir 6/7?"
+
+- [ ] **WYR milestone toast fires at 5/10/25/50/100/200 matches** ⚠️
+  1. Answer WYR questions with your partner until you cross a milestone match count (e.g. hit 5 mutual yes/agreements)
+  - **Expected:** Burgundy fill toast slides down from top with celebratory copy: `5 matches — you're getting each other!` / `10 matches! You're in sync ✨` / `25 matches! Serious compatibility 💫` / `50 matches! You know each other well 💛` / `100 matches! Twin flames 🔥` / `200 matches! Off the charts 🌟`. Success haptic. Auto-dismisses after ~3s. Regression guard: does NOT re-fire on tab switch, app reopen, or Firestore re-snapshot — celebratedAtLeastRef seeds on first load so historical milestones don't retroactively celebrate.
+
+- [ ] **WYR session summary opens at 10/25/50/100 matches** ⚠️
+  1. Cross a summary milestone (10, 25, 50, or 100 matches)
+  - **Expected:** Full-screen modal card overlay opens on top of the toast: big percentage (e.g. `86%`), compatibility band (🔥/💫/✨/…), current cat + score line (`Playing 😊 Playful · 8/10`), best-ever comparison (`Your best: 92% on Romantic`) OR `🏆 New personal best!` badge, and two buttons: `Keep going` (dismiss) + `Try Romantic next?` (or level-appropriate suggestion — Playful→Romantic, Romantic→Spicy, Spicy→Playful). Tapping the suggestion resets session to the recommended level.
+
+- [ ] **WYR best-ever record persists across sessions and resets** ⚠️ 📱
+  1. Play a full session to at least 10 questions, note the summary card's percentage
+  2. Change level (score resets), play another session past 10 questions with higher rate
+  - **Expected:** Second summary card shows the first session's rate as "Your best: N%" if second was lower, OR `🏆 New personal best!` if second exceeded first. Record is stored at `couples/{coupleId}/wyr/records` and survives `resetWYR` (which only wipes the active session). Guard: sessions with < 10 total do NOT overwrite the record (prevents a lucky 3/3 from permanently claiming "Twin flames").
+
 - [ ] **WYR level badge tap → change level mid-session** ⚠️
   1. Start any WYR session (e.g. Playful), answer at least one question so score accumulates
   2. Tap the small level badge under the "Would you rather..." prompt (shows current cat emoji + label + `Change ›` hint)

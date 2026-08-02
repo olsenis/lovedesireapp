@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, collection, runTransaction, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, collection, runTransaction, getDoc, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { WYRLevel } from '../constants/content';
 import { TodoCategory } from './todoService';
@@ -115,4 +115,57 @@ export async function resetWYR(coupleId: string): Promise<void> {
     revealed: false,
     score: { match: 0, total: 0 },
   });
+}
+
+// Historical best-ever match rate for the couple across all levels and
+// sessions. Persisted at couples/{coupleId}/wyr/records so it survives
+// resetWYR (which wipes the active session). The session summary card
+// compares current-session rate against this baseline to say things like
+// "This is your best ever!" or "Close to your best of 92%".
+//
+// Schema (all optional so a missing doc reads as "no record yet"):
+//   bestPct: number         // percentage 0-100
+//   bestLevel: WYRLevel     // level of the best session
+//   bestMatch: number       // raw match count
+//   bestTotal: number       // raw total count
+//   bestAt: number          // ms timestamp
+export interface WYRRecords {
+  bestPct?: number;
+  bestLevel?: WYRLevel;
+  bestMatch?: number;
+  bestTotal?: number;
+  bestAt?: number;
+}
+
+export async function getWYRRecords(coupleId: string): Promise<WYRRecords> {
+  const snap = await getDoc(doc(db, 'couples', coupleId, 'wyr', 'records'));
+  return snap.exists() ? (snap.data() as WYRRecords) : {};
+}
+
+// Update the persistent best-ever record if the given session's rate
+// beats it. Guarded by minTotal so a lucky 3-out-of-3 (100%) doesn't
+// permanently record "Twin flames" and block realistic later sessions
+// from ever surfacing as new bests.
+export async function updateWYRRecordIfBest(
+  coupleId: string,
+  match: number,
+  total: number,
+  level: WYRLevel,
+  minTotal: number = 10,
+): Promise<{ becameBest: boolean; pct: number }> {
+  const pct = total > 0 ? Math.round((match / total) * 100) : 0;
+  if (total < minTotal) return { becameBest: false, pct };
+  const ref = doc(db, 'couples', coupleId, 'wyr', 'records');
+  const snap = await getDoc(ref);
+  const existing = snap.exists() ? (snap.data() as WYRRecords) : {};
+  const currentBest = existing.bestPct ?? -1;
+  if (pct <= currentBest) return { becameBest: false, pct };
+  await setDoc(ref, {
+    bestPct: pct,
+    bestLevel: level,
+    bestMatch: match,
+    bestTotal: total,
+    bestAt: Date.now(),
+  }, { merge: true });
+  return { becameBest: true, pct };
 }

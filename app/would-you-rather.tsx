@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList } from '../services/wyrService';
+import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, WYRRecords } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYRLevel } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
@@ -17,6 +17,60 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
 const LEVELS: WYRLevel[] = ['playful', 'romantic', 'spicy'];
+
+// Compatibility bands turn the raw match/total ratio into a warm, playful
+// label so the number stops being two digits in a corner and starts being
+// a signal about the couple. Emojis kept mild — this is intimacy-app tone,
+// not gamer stat popup. Thresholds chosen so a couple who differs on one
+// question early still lands in "In tune", not demoted to "Learning each
+// other" for the whole session.
+const COMPATIBILITY_BANDS: { min: number; label: string; emoji: string }[] = [
+  { min: 100, label: 'Twin flames',       emoji: '🔥' },
+  { min: 90,  label: 'Perfectly synced',  emoji: '💫' },
+  { min: 75,  label: 'In tune',           emoji: '✨' },
+  { min: 50,  label: 'Learning each other', emoji: '🌱' },
+  { min: 25,  label: 'Opposites attract', emoji: '⚡' },
+  { min: 0,   label: 'Wildly different',  emoji: '🌪️' },
+];
+
+function compatibilityBand(match: number, total: number): { label: string; emoji: string; pct: number } | null {
+  // No band until couple has answered at least 3 questions — a single
+  // match doesn't tell you if you're "Twin flames" or just lucky once.
+  if (total < 3) return null;
+  const pct = Math.round((match / total) * 100);
+  const band = COMPATIBILITY_BANDS.find((b) => pct >= b.min) ?? COMPATIBILITY_BANDS[COMPATIBILITY_BANDS.length - 1];
+  return { label: band.label, emoji: band.emoji, pct };
+}
+
+// Match count thresholds worth celebrating. Chosen to feel earned but
+// not rare: first celebration lands within 5 matches (early on), then
+// gradually spaces out so a couple who plays for months still gets
+// occasional moments rather than the milestone system going silent.
+const MILESTONES = [5, 10, 25, 50, 100, 200] as const;
+const MILESTONE_MESSAGES: Record<number, string> = {
+  5: "5 matches — you're getting each other!",
+  10: "10 matches! You're in sync ✨",
+  25: '25 matches! Serious compatibility 💫',
+  50: '50 matches! You know each other well 💛',
+  100: '100 matches! Twin flames 🔥',
+  200: '200 matches! Off the charts 🌟',
+};
+
+// Which milestones also auto-open the full session summary card on top of
+// the toast. Small early milestones (5) get the toast only — a modal at
+// question 5 would feel intrusive. Big milestones deserve the deeper
+// "chapter done" moment. 200 skipped because at that point the couple
+// has seen the summary many times already.
+const SUMMARY_MILESTONES = new Set<number>([10, 25, 50, 100]);
+
+// Suggests a fresh level to try after a summary card, based on the
+// current level. Playful → Deep (build depth), Deep → Spicy (escalate),
+// Spicy → Playful (reset with something light). CTA copy stays warm.
+const NEXT_LEVEL_SUGGESTION: Record<WYRLevel, { level: WYRLevel; label: string }> = {
+  playful:  { level: 'romantic', label: 'Try Romantic next?' },
+  romantic: { level: 'spicy',    label: 'Ready for Spicy?' },
+  spicy:    { level: 'playful',  label: 'Reset with something Playful?' },
+};
 
 export default function WouldYouRatherScreen() {
   const { user, profile } = useAuth();
@@ -28,6 +82,26 @@ export default function WouldYouRatherScreen() {
   // an accidental tap on the level badge would otherwise silently
   // destroy.
   const [showChangeLevel, setShowChangeLevel] = useState(false);
+  // Milestone toast state — fires once per crossing of a MILESTONES value.
+  // Ref tracks the highest match count already celebrated so re-renders
+  // (Firestore snapshots landing, tab switches, etc.) don't retrigger the
+  // same milestone. Initialized to Infinity so nothing fires until we've
+  // seen the current session score at least once.
+  const [milestoneMsg, setMilestoneMsg] = useState<string | null>(null);
+  const milestoneAnim = useRef(new Animated.Value(0)).current;
+  const celebratedAtLeastRef = useRef<number>(Infinity);
+  // Session summary modal — opens on top of the milestone toast for the
+  // bigger milestones (SUMMARY_MILESTONES) so users see the deeper
+  // insight (rate, best-ever comparison, level suggestion) instead of
+  // just a fleeting celebration line.
+  const [summary, setSummary] = useState<{
+    matched: number;
+    total: number;
+    level: WYRLevel;
+    becameBest: boolean;
+    previousBest: WYRRecords | null;
+  } | null>(null);
+  const [records, setRecords] = useState<WYRRecords>({});
   const help = useHelp('would-you-rather');
   const { isSubscribed } = useSubscription();
 
@@ -40,6 +114,66 @@ export default function WouldYouRatherScreen() {
     const unsub = subscribeWYR(coupleId, (s) => { setSession(s); setLoading(false); });
     return unsub;
   }, [coupleId]);
+
+  // Fetch persisted best-ever record on mount so the summary card can
+  // show "Your best: 92% on Deep" or "New personal best!" when it opens.
+  useEffect(() => {
+    if (!coupleId) return;
+    getWYRRecords(coupleId).then(setRecords).catch(() => {});
+  }, [coupleId]);
+
+  // Milestone detection. Snapshots the current match count on first sight
+  // so historical milestones don't retroactively celebrate on app open,
+  // then fires exactly once each time the couple crosses the next
+  // MILESTONES value in this session. Toast auto-dismisses after ~3s.
+  // For SUMMARY_MILESTONES (10/25/50/100) the summary modal also opens
+  // on top of the toast — deeper insight beyond the fleeting celebration.
+  useEffect(() => {
+    if (!session || !coupleId) return;
+    const match = session.score.match;
+    if (celebratedAtLeastRef.current === Infinity) {
+      // First snapshot: seed baseline without celebrating anything
+      // (including any milestone the couple had already crossed before
+      // this app open). Any NEW crossings after this fire normally.
+      celebratedAtLeastRef.current = match;
+      return;
+    }
+    if (match <= celebratedAtLeastRef.current) return;
+    const crossed = MILESTONES.find((m) => match >= m && celebratedAtLeastRef.current < m);
+    celebratedAtLeastRef.current = match;
+    if (crossed === undefined) return;
+    const msg = MILESTONE_MESSAGES[crossed];
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setMilestoneMsg(msg);
+    milestoneAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(milestoneAnim, { toValue: 1, duration: 260, useNativeDriver: true }),
+      Animated.delay(3000),
+      Animated.timing(milestoneAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => setMilestoneMsg(null));
+
+    // Big milestones also open the summary card. Snapshot the previous
+    // record BEFORE updating so the modal can show "your best was X%"
+    // even when this same session is about to become the new best.
+    if (SUMMARY_MILESTONES.has(crossed)) {
+      (async () => {
+        const previousBest = records.bestPct ? { ...records } : null;
+        const { becameBest } = await updateWYRRecordIfBest(coupleId, session.score.match, session.score.total, session.level);
+        if (becameBest) {
+          // Refresh in-memory records so next milestone shows updated value
+          const fresh = await getWYRRecords(coupleId);
+          setRecords(fresh);
+        }
+        setSummary({
+          matched: session.score.match,
+          total: session.score.total,
+          level: session.level,
+          becameBest,
+          previousBest,
+        });
+      })().catch(() => {});
+    }
+  }, [session?.score.match]);
 
   const levelQuestions = session ? WYR_QUESTIONS.filter(q => q.level === session.level) : [];
   const currentQ = session ? levelQuestions[session.questionIndex % levelQuestions.length] : null;
@@ -132,6 +266,14 @@ export default function WouldYouRatherScreen() {
         <Text style={styles.title}>Would You Rather</Text>
         <View style={styles.scoreWrap}>
           <Text style={[styles.score, { color: cfg.textColor }]}>{session.score.match}/{session.score.total}</Text>
+          {(() => {
+            const band = compatibilityBand(session.score.match, session.score.total);
+            return band ? (
+              <Text style={styles.scoreLabel}>{band.pct}%</Text>
+            ) : (
+              <Text style={styles.scoreLabel}>matches</Text>
+            );
+          })()}
         </View>
       </View>
 
@@ -151,6 +293,21 @@ export default function WouldYouRatherScreen() {
           <Text style={[styles.levelBadgeText, { color: cfg.textColor }]}>{cfg.label}</Text>
           <Text style={[styles.levelBadgeChange, { color: cfg.textColor }]}>Change ›</Text>
         </TouchableOpacity>
+
+        {/* Compatibility band — appears once the couple has answered 3+
+            questions, so a single match doesn't over-claim "Twin flames"
+            on question 1. Warm playful label + emoji instead of a bare
+            percentage; the pct is already in the header. */}
+        {(() => {
+          const band = compatibilityBand(session.score.match, session.score.total);
+          if (!band) return null;
+          return (
+            <View style={styles.bandRow}>
+              <Text style={styles.bandEmoji}>{band.emoji}</Text>
+              <Text style={styles.bandLabel}>{band.label}</Text>
+            </View>
+          );
+        })()}
 
         <Text style={styles.prompt}>Would you rather…</Text>
 
@@ -230,6 +387,84 @@ export default function WouldYouRatherScreen() {
         )}
       </View>
 
+      {/* Milestone toast — burgundy fill, cream text, celebratory. Fires
+          on 5/10/25/50/100/200 match crossings via the effect above. */}
+      {milestoneMsg && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.milestoneToast,
+            {
+              opacity: milestoneAnim,
+              transform: [{ translateY: milestoneAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
+            },
+          ]}
+        >
+          <Text style={styles.milestoneText}>{milestoneMsg}</Text>
+        </Animated.View>
+      )}
+
+      {/* Session summary modal — auto-opens on 10/25/50/100 match
+          milestones. Shows current session's match rate + compatibility
+          band + best-ever comparison + suggestion to try the next level.
+          Dismiss returns to the current session unchanged. Change-level
+          CTA reuses handleReset to swap to the suggested level. */}
+      {summary && (() => {
+        const band = compatibilityBand(summary.matched, summary.total);
+        const pct = band?.pct ?? Math.round((summary.matched / summary.total) * 100);
+        const suggestion = NEXT_LEVEL_SUGGESTION[summary.level];
+        const summaryCfg = WYR_LEVEL_CONFIG[summary.level];
+        return (
+          <View style={styles.summaryOverlay}>
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryEyebrow}>{summary.matched} MATCHES DONE</Text>
+              <Text style={styles.summaryPct}>{pct}%</Text>
+              {band && (
+                <Text style={styles.summaryBand}>{band.emoji} {band.label}</Text>
+              )}
+              <Text style={styles.summaryCat}>
+                Playing {summaryCfg.emoji} {summaryCfg.label} · {summary.matched}/{summary.total}
+              </Text>
+
+              {summary.becameBest ? (
+                <View style={styles.summaryRecord}>
+                  <Text style={styles.summaryRecordText}>🏆 New personal best!</Text>
+                </View>
+              ) : summary.previousBest?.bestPct !== undefined ? (
+                <View style={styles.summaryRecord}>
+                  <Text style={styles.summaryRecordText}>
+                    Your best: {summary.previousBest.bestPct}%
+                    {summary.previousBest.bestLevel ? ` on ${WYR_LEVEL_CONFIG[summary.previousBest.bestLevel].label}` : ''}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View style={styles.summaryBtnRow}>
+                <TouchableOpacity
+                  style={styles.summaryContinueBtn}
+                  onPress={() => setSummary(null)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.summaryContinueText}>Keep going</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.summarySwitchBtn}
+                  onPress={async () => {
+                    setSummary(null);
+                    await handleReset();
+                  }}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.summarySwitchText}>{suggestion.label}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        );
+      })()}
+
       <ConfirmModal
         visible={showChangeLevel}
         title="Change level?"
@@ -252,8 +487,92 @@ const styles = StyleSheet.create({
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
-  scoreWrap: { width: 60, alignItems: 'flex-end' },
-  score: { fontFamily: Fonts.bodyBold, fontSize: 14 },
+  scoreWrap: { width: 72, alignItems: 'flex-end' },
+  score: { fontFamily: Fonts.bodyBold, fontSize: 15 },
+  scoreLabel: { fontFamily: Fonts.bodyItalic, fontSize: 10, color: Colors.muted, marginTop: 1 },
+
+  bandRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' },
+  bandEmoji: { fontSize: 14 },
+  bandLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
+
+  // Absolute-positioned celebratory toast that hovers below the header
+  // when the couple crosses a milestone. Burgundy fill + cream text so
+  // it reads as a moment, not an info line — matches the pattern used
+  // for the Fantasy Wishes match toast so the app has one consistent
+  // celebration voice.
+  milestoneToast: {
+    position: 'absolute',
+    top: 110,
+    left: Spacing.lg,
+    right: Spacing.lg,
+    backgroundColor: Colors.burgundy,
+    borderRadius: Radius.full,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+    zIndex: 50,
+    elevation: 10,
+    shadowColor: Colors.burgundy,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  milestoneText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream, letterSpacing: 0.3 },
+
+  // Session summary — full-screen modal overlay with a centered card.
+  // Backdrop is deep burgundy tint so it feels like the whole app pauses
+  // for the moment, not a small confirm popup.
+  summaryOverlay: {
+    position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+    backgroundColor: 'rgba(61,26,36,0.72)',
+    justifyContent: 'center', alignItems: 'center',
+    padding: Spacing.lg, zIndex: 100,
+  },
+  summaryCard: {
+    backgroundColor: Colors.cream, borderRadius: Radius.xl,
+    padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm,
+    width: '100%', maxWidth: 400, ...Shadow.md,
+  },
+  summaryEyebrow: {
+    fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted,
+    letterSpacing: 2, textTransform: 'uppercase',
+  },
+  summaryPct: {
+    fontFamily: Fonts.heading, fontSize: 72, color: Colors.burgundy,
+    lineHeight: 78, marginVertical: Spacing.xs,
+  },
+  summaryBand: {
+    fontFamily: Fonts.headingItalic, fontSize: 22, color: Colors.burgundy,
+  },
+  summaryCat: {
+    fontFamily: Fonts.body, fontSize: 13, color: Colors.muted,
+    marginTop: 4,
+  },
+  summaryRecord: {
+    marginTop: Spacing.md, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md,
+    backgroundColor: '#FFF9C4', borderRadius: Radius.full,
+  },
+  summaryRecordText: {
+    fontFamily: Fonts.bodyBold, fontSize: 13, color: '#5D4037',
+  },
+  summaryBtnRow: {
+    flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg,
+    width: '100%',
+  },
+  summaryContinueBtn: {
+    flex: 1, paddingVertical: Spacing.md, alignItems: 'center',
+    borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy,
+  },
+  summaryContinueText: {
+    fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy,
+  },
+  summarySwitchBtn: {
+    flex: 1, paddingVertical: Spacing.md, alignItems: 'center',
+    borderRadius: Radius.full, backgroundColor: Colors.burgundy,
+  },
+  summarySwitchText: {
+    fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream,
+  },
 
   picker: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.lg, gap: Spacing.md },
   pickerIntro: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
