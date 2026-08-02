@@ -241,10 +241,15 @@ For each pool, tick the box only after reading every item. If you find one drift
   2. Both: vote ✓ Yes on the same action card
   - **Expected:** Both cards flip to rose-bordered match state showing `✓ You both want this!` + `+ Add to Together List` button. One partner taps Add → both phones show `✓ Added to Together List`. Open `/todo` → item appears under Date Ideas (Playful/Sweet mapping). Route is `/daily` (Daily Picks merged into Daily July 2026).
 
-- [ ] **Home shows unified Daily nudge when partner is ahead** 📱
+- [x] **Home shows unified Daily nudge when partner is ahead** 📱
   1. Phone A: open `/daily` → Playful → answer 1 question + vote on 2 action items
   2. Phone B: refresh Home
   - **Expected:** Exactly ONE `💫 Daily is waiting` nudge in `Waiting for you` section. Subtitle: `Eva is ahead by 1 question + 2 picks today`. Tap → opens `/daily` (auto-selects category where partner is ahead). Regression check: pre-July-2026 there were two separate nudges (Questions Game + Daily Picks) that could BOTH appear at once.
+
+- [x] **Daily nudge clears when I catch up on the deficit** ⚠️ 📱
+  1. Nudge fires (partner ahead by 1 question + 2 picks)
+  2. Phone B: tap nudge → answer the same question, vote on the same 2 picks → Home → refresh
+  - **Expected:** `💫 Daily is waiting` nudge disappears. Other unrelated nudges (challenge, notes, etc.) stay. Diff-based trigger resolves naturally as caller catches up. Regression check: pre-fix DP nudge fired on `myVoteCount < 20` which never cleared because schema is 15 items — partial voters got stuck-nudged forever.
 
 - [x] **Intimacy Log entry with backdate picker** 💰
   1. Us tab → Intimacy Log → tap "We were intimate" hero button
@@ -269,6 +274,22 @@ For each pool, tick the box only after reading every item. If you find one drift
   1. Both: Unlock premium → Daily → Deep tab → scan today's 3 for a scale-format question (e.g., "How safe do you feel sharing something hard with me?", "How adventurous are you feeling?")
   - **Expected:** Both see 1-5 row with "1=not at all · 5=completely" hint. Tap → submit → reveal shows both scores. Scale prompts are almost all in Deep + Spicy so this test currently requires premium.
 
+- [x] **Daily category picker: all 3 tabs accessible for paid user** 💰
+  1. Paid user opens `/daily`, taps each of `😊 Playful` / `💛 Deep` / `🔥 Spicy`
+  - **Expected:** No 🔒 badges. Each tab opens instantly, no `/upgrade` redirect. Deep shows 3 questions only (0 actions by design). Spicy shows 13 items (4 warmup PICK + interleaved QUESTIONs). Playful shows 8 items (3 warmup PICK + interleaved). Each cat has its own tagline copy.
+
+- [x] **Legacy routes redirect cleanly** ⚠️
+  1. Navigate to `/daily-wishes` (no param) → auto-replaces to `/daily?category=playful`
+  2. Navigate to `/daily-wishes?category=flirty` → auto-replaces to `/daily?category=spicy` (Flirty moved to paid Spicy tier as part of merge)
+  3. Navigate to `/questions-game?category=deep` → auto-replaces to `/daily?category=deep` (Q category names match merged category names exactly)
+  4. Navigate to `/questions-game` (no param) → auto-replaces to `/daily` (defaults to Playful)
+  - **Expected:** Each URL shows a plain cream flash for at most one frame, then lands on the correct `/daily?category=...`. No 404. No hang. Back button behaves — `router.replace` cleared the stub from history so back goes to the previous route (tabs), not the stub.
+
+- [x] **Daily auto-selects category where partner is ahead** ⚠️ 📱
+  1. Partner (Phone A) answers 1 Deep question (a cat where user is behind)
+  2. User (Phone B) taps `💫 Daily is waiting` nudge on Home
+  - **Expected:** `/daily` opens with `💛 Deep` tab active (not Playful default). Auto-selector picked Deep because partner is ahead there and questions rank above actions. Manual tap on another tab sets `autoSelected=true` guard so subsequent nudge taps in the same session don't steal focus back.
+
 - [x] **Daily rows interleave (actions first + spread pattern)** ⚠️
   1. Both partners open Daily → Playful with no votes/answers yet
   - **Expected:** Card sequence is exactly `A,A,A,Q,A,Q,A,Q` — 3 warmup action cards (burgundy `PICK` pill), then alternating action/question after that. Spicy: `A,A,A,A,Q,A,A,Q,A,A,Q,A,A`. Deep: `Q,Q,Q` unchanged. Both partners see identical order. Regression check: pre-fix Playful showed 5 actions clustered then 3 questions clustered — user flagged this as a "dull wall".
@@ -281,7 +302,7 @@ For each pool, tick the box only after reading every item. If you find one drift
   1. Phone B: Discover → tap Versus card (only appears when partner has 5+ binary answers in Daily; hidden otherwise)
   - **Expected:** If 10+ binary questions in history: 10-question quiz starts; each card shows partner's actual answer + 1 decoy; score tallied; final gradient card with %. If 5-9: shorter round with what's available. If <5: card is hidden from Discover entirely.
 
-- [ ] **Versus card hidden in Discover for new couples** ⚠️
+- [x] **Versus card hidden in Discover for new couples** ⚠️
   1. Fresh couple (partner has 0 binary answers), open Discover
   - **Expected:** Games list shows exactly 5 cards (Daily, Truth or Dare, WYR, Activity Cards, Fantasy Wishes). NO Versus card. Regression check: pre-July-2026 Versus was always visible so new couples always tapped into a dead-end "not enough answers yet" empty state.
 
@@ -295,10 +316,17 @@ For each pool, tick the box only after reading every item. If you find one drift
   2. Phone A: Close app, reopen → Would You Rather
   - **Expected:** Session resumes at Q2 (or wherever they left off), not restart.
 
-- [ ] **WYR match → Save to Together List (single tap saves for both)** 📱
+- [x] **WYR match → Save to Together List (single tap saves for both)** 📱
   1. Both: WYR → pick the same option on a question so a green `You match!` card appears
   2. Either partner: tap `+ Save to our list`
   - **Expected:** Success haptic. Button replaces with green pill `✓ Saved to Date Ideas` (Playful/Romantic) or `✓ Saved to Intimacy` (Spicy). Both phones flip to saved state within one Firestore snapshot. Open Together List → winning option text (e.g. `Stay in a luxury hotel`, NOT the full "Would you rather..." question) appears once in the mapped category with source=`wyr`. Match is already double-confirmed by the match itself, so single-tap saves; race guard in `saveMatchToList` transaction prevents double-write if both tap simultaneously.
+
+- [ ] **WYR level badge tap → change level mid-session** ⚠️
+  1. Start any WYR session (e.g. Playful), answer at least one question so score accumulates
+  2. Tap the small level badge under the "Would you rather..." prompt (shows current cat emoji + label + `Change ›` hint)
+  3. Confirm modal appears: `Change level? Your current score (X/Y) will reset.`
+  4. Tap `Change level`
+  - **Expected:** Session resets, level picker reappears with 3 tabs. Pick a different level → new session starts fresh. Cancel button leaves session untouched. Regression check: pre-fix `handleReset` was defined in the code but wired to no UI element, so a couple who started Playful was locked into 90 Playful questions before they could try Romantic or Spicy.
 
 - [ ] **Activity Cards flip → accept → complete** 📱 💰
   1. Phone A (premium): Activity Cards → flip card 12

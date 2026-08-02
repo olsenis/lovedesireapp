@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYRLevel } from '../constants/content';
@@ -22,6 +23,11 @@ export default function WouldYouRatherScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<WYRSession | null>(null);
   const [loading, setLoading] = useState(true);
+  // Confirms a mid-session level change — hidden behind a modal because
+  // resetWYR wipes the couple's score and current question index, which
+  // an accidental tap on the level badge would otherwise silently
+  // destroy.
+  const [showChangeLevel, setShowChangeLevel] = useState(false);
   const help = useHelp('would-you-rather');
   const { isSubscribed } = useSubscription();
 
@@ -130,10 +136,21 @@ export default function WouldYouRatherScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={[styles.levelBadge, { backgroundColor: cfg.color }]}>
+        {/* Level badge doubles as the escape hatch: tap to change level
+            mid-session. Without this, once startWYR runs the couple is
+            locked into that level until they finish all 90 questions.
+            Modal-gated so an accidental tap doesn't nuke the score. */}
+        <TouchableOpacity
+          style={[styles.levelBadge, { backgroundColor: cfg.color }]}
+          onPress={() => setShowChangeLevel(true)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={`Current level: ${cfg.label}. Tap to change.`}
+        >
           <Text style={styles.levelBadgeEmoji}>{cfg.emoji}</Text>
           <Text style={[styles.levelBadgeText, { color: cfg.textColor }]}>{cfg.label}</Text>
-        </View>
+          <Text style={[styles.levelBadgeChange, { color: cfg.textColor }]}>Change ›</Text>
+        </TouchableOpacity>
 
         <Text style={styles.prompt}>Would you rather…</Text>
 
@@ -212,6 +229,19 @@ export default function WouldYouRatherScreen() {
           </View>
         )}
       </View>
+
+      <ConfirmModal
+        visible={showChangeLevel}
+        title="Change level?"
+        message={`Your current score (${session.score.match}/${session.score.total}) will reset. You can start a new level right after.`}
+        confirmLabel="Change level"
+        destructive
+        onConfirm={async () => {
+          setShowChangeLevel(false);
+          await handleReset();
+        }}
+        onCancel={() => setShowChangeLevel(false)}
+      />
     </View>
   );
 }
@@ -238,6 +268,7 @@ const styles = StyleSheet.create({
   levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 14, borderRadius: Radius.full },
   levelBadgeEmoji: { fontSize: 16 },
   levelBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 13 },
+  levelBadgeChange: { fontFamily: Fonts.bodyItalic, fontSize: 11, marginLeft: 4, opacity: 0.75 },
 
   prompt: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.text, textAlign: 'center' },
 
