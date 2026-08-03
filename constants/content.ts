@@ -903,10 +903,10 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
 ];
 
 // ─── INTIMACY STYLE QUIZ ──────────────────────────────────────────────────────
-// Custom 5-type taxonomy of intimate response. Named to describe the
-// essential quality of each type: Ambient (atmosphere-driven), Direct
-// (body-forward), Charge (anticipation-driven), Edge (power/boundary
-// play), Explorer (variety-driven).
+// Custom 5-type taxonomy of intimate response, named to describe the
+// essential quality of each type: Feeling (sensory), Bold (direct body),
+// Spark (electric anticipation), Shadow (psychological depth + edges),
+// Explorer (variety).
 //
 // Internal enum keys ('sensual'/'sexual'/'energetic'/'kinky'/'shapeshifter')
 // are kept as-is for zero-migration compatibility with existing Firestore
@@ -924,10 +924,10 @@ export const BLUEPRINT_TYPE_CONFIG: Record<BlueprintType, {
   label: string; emoji: string; color: string;
   description: string; turnOns: string; turnOffs: string;
 }> = {
-  sensual:     { label: 'Ambient',   emoji: '🌸', color: '#FCE4EC', description: 'You come alive through all five senses, the right ambiance, scent, texture, and sound are everything.', turnOns: 'Candlelight, music, slow touch, whole-body connection, setting the mood', turnOffs: 'Being rushed, harsh environments, skipping foreplay' },
-  sexual:      { label: 'Direct',    emoji: '🔥', color: '#FFCCBC', description: 'You\'re direct, visual, and confident. You feel most alive with explicit, body-forward physical connection.', turnOns: 'Visual stimulation, directness, confident touch, nudity, physical presence', turnOffs: 'Overthinking, too much talking, slow burn without payoff' },
-  energetic:   { label: 'Charge',    emoji: '⚡', color: '#FFF9C4', description: 'Anticipation is your fuel. The charge between you, the almost, is often more exciting than the moment itself.', turnOns: 'Teasing, eye contact, not yet, emotional intensity, delayed gratification', turnOffs: 'Being grabbed without buildup, predictability, no anticipation' },
-  kinky:       { label: 'Edge',      emoji: '🖤', color: '#F3E5F5', description: 'Power, roleplay, taboo, and psychological depth turn you on. You need a partner who can safely explore edges with you.', turnOns: 'Dominance and submission, roleplay, restraint, psychological play, taboo scenarios', turnOffs: 'Vanilla without variation, feeling judged, no trust built first' },
+  sensual:     { label: 'Feeling',  emoji: '🌸', color: '#FCE4EC', description: 'You come alive through all five senses, the right ambiance, scent, texture, and sound are everything.', turnOns: 'Candlelight, music, slow touch, whole-body connection, setting the mood', turnOffs: 'Being rushed, harsh environments, skipping foreplay' },
+  sexual:      { label: 'Bold',     emoji: '🔥', color: '#FFCCBC', description: 'You\'re direct, visual, and confident. You feel most alive with explicit, body-forward physical connection.', turnOns: 'Visual stimulation, directness, confident touch, nudity, physical presence', turnOffs: 'Overthinking, too much talking, slow burn without payoff' },
+  energetic:   { label: 'Spark',    emoji: '⚡', color: '#FFF9C4', description: 'Anticipation is your fuel. The charge between you, the almost, is often more exciting than the moment itself.', turnOns: 'Teasing, eye contact, not yet, emotional intensity, delayed gratification', turnOffs: 'Being grabbed without buildup, predictability, no anticipation' },
+  kinky:       { label: 'Shadow',   emoji: '🖤', color: '#F3E5F5', description: 'Power, roleplay, taboo, and psychological depth turn you on. You need a partner who can safely explore edges with you.', turnOns: 'Dominance and submission, roleplay, restraint, psychological play, taboo scenarios', turnOffs: 'Vanilla without variation, feeling judged, no trust built first' },
   shapeshifter: { label: 'Explorer', emoji: '🌀', color: '#E3F2FD', description: 'You\'re turned on by all of it. Variety and novelty keep you engaged, you can match any partner\'s energy.', turnOns: 'Surprise, variety, new experiences, different moods, unpredictability', turnOffs: 'Routine, repetition, a partner who only wants one thing' },
 };
 
@@ -986,7 +986,7 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
   },
   sexual: {
     sensual: {
-      summary: "Your directness can be deeply exciting for an Ambient partner, once they're in the right headspace. The patience required from you will pay off significantly.",
+      summary: "Your directness can be deeply exciting for a Feeling partner, once they're in the right headspace. The patience required from you will pay off significantly.",
       challenge: "You may interpret their need for atmosphere as hesitation or lack of interest, when it's actually them building toward you.",
       tips: ["Engage in the scene-setting rather than waiting for it to end, light a candle, put on music, touch something", "See foreplay as part of sex, not a delay before it", "Ask 'what do you need right now?' and genuinely wait for the answer"],
     },
@@ -1040,7 +1040,7 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
   },
   kinky: {
     sensual: {
-      summary: "An Ambient partner can create the most immersive setting for your scenes, the atmosphere, textures, and ritual of it all plays directly into what you need to feel fully engaged.",
+      summary: "A Feeling partner can create the most immersive setting for your scenes, the atmosphere, textures, and ritual of it all plays directly into what you need to feel fully engaged.",
       challenge: "If you introduce power or structure too quickly, before the atmosphere is right, your partner may feel disconnected from what you've built.",
       tips: ["Let them set the scene fully before you introduce the power dynamic", "Integrate sensory elements into your scenes, blindfolds, textures, temperature, scent", "Give them control of the environment; take control of everything else"],
     },
@@ -1050,7 +1050,7 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
       tips: ["Set the scene explicitly before you begin, 'tonight, this is how it works'", "Channel their physical energy through the role structure rather than letting it override it", "Give them a clear role that lets them be direct within the world you've created"],
     },
     energetic: {
-      summary: "Withholding and power are your natural territory. A Charge partner will be deeply drawn to you for it, they live for the very tension you know how to create.",
+      summary: "Withholding and power are your natural territory. A Spark partner will be deeply drawn to you for it, they live for the very tension you know how to create.",
       challenge: "If you both focus on tension and power, neither of you may deliver the release, the scene could stall in permanent buildup.",
       tips: ["Decide who ends the tension and when, make it a deliberate choice within the scene", "Use your power to both create and resolve the anticipation, control the beginning and the end", "Let their need for release become the lever you hold, and use it consciously and precisely"],
     },
@@ -1060,29 +1060,29 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
       tips: ["Establish role-switching rituals so both of you get to lead and follow over time", "Have regular out-of-role conversations about what's working and what you want to try", "Gradually push the boundary of your scenes together, introduce new elements slowly and with consent"],
     },
     shapeshifter: {
-      summary: "Your Explorer partner can inhabit any role you create for them, this is a remarkable gift for an Edge type. Their flexibility is a superpower in your hands.",
+      summary: "Your Explorer partner can inhabit any role you create for them, this is a remarkable gift for a Shadow type. Their flexibility is a superpower in your hands.",
       challenge: "Their natural variety-seeking may pull them out of the role you've established before the scene is complete.",
       tips: ["Brief them clearly on the role before you begin, they can commit fully when they understand it", "Build variety into your scenes, new scenarios, new roles, so their need for novelty is met within your structure", "Give them clear permission to step out of the role when the scene ends, they'll appreciate the signal"],
     },
   },
   shapeshifter: {
     sensual: {
-      summary: "Your variety can bring the richness an Ambient partner craves, new environments, new sensations, new moods, all delivered with care and attention.",
+      summary: "Your variety can bring the richness a Feeling partner craves, new environments, new sensations, new moods, all delivered with care and attention.",
       challenge: "If you change moods too quickly, they won't have time to settle into the atmosphere they need, and you'll both miss out on what the moment could be.",
       tips: ["Give them time to arrive in each new environment before moving to the next", "Let the setting change but the pace stay slow, novelty in atmosphere, steadiness in touch", "Ask them what element they'd like you to surprise them with, let them guide the direction of the variety"],
     },
     sexual: {
       summary: "Your partner loves what you're capable of, confident, direct, physically present. Your variety means they'll never quite know what they're getting, which keeps things exciting.",
-      challenge: "Your mood shifts may feel like a bait-and-switch to a Direct partner who was already fully ready to go.",
+      challenge: "Your mood shifts may feel like a bait-and-switch to a Bold partner who was already fully ready to go.",
       tips: ["When you want to switch modes, signal it clearly rather than just changing, bring them with you", "Let their directness be a constant within your variety, you change the scenario, they provide the energy", "Occasionally ask them what they want and just do exactly that, give them the direct experience they love most"],
     },
     energetic: {
-      summary: "Your unpredictability creates the ideal conditions for a Charge partner. They'll never know what you're building toward, and that sustained uncertainty is everything to them.",
+      summary: "Your unpredictability creates the ideal conditions for a Spark partner. They'll never know what you're building toward, and that sustained uncertainty is everything to them.",
       challenge: "Your variety might release the tension at exactly the wrong moment, just as they needed it to keep building.",
       tips: ["Watch for when they're at peak tension, that's not the moment to change the mood", "Use your variety to extend and vary the anticipation rather than resolve it prematurely", "Ask 'more?' before you resolve anything, let them tell you when they're ready to arrive"],
     },
     kinky: {
-      summary: "You can embody any role your partner creates for them, this makes you an ideal partner for an Edge type's scene work. Your flexibility is genuinely rare.",
+      summary: "You can embody any role your partner creates for them, this makes you an ideal partner for a Shadow type's scene work. Your flexibility is genuinely rare.",
       challenge: "If you break from the role spontaneously, you'll disrupt your partner's carefully built psychological structure at its most important moment.",
       tips: ["Stay in the role until they explicitly release you, ask before stepping out", "Bring your own role ideas to them in advance, pitch them outside the scene and let them build around your suggestion", "Tell them when you want to try something different, always between scenes, never during"],
     },
