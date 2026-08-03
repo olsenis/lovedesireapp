@@ -1,6 +1,6 @@
-import { doc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, runTransaction, getDoc, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, orderBy, addDoc, runTransaction, getDoc, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
-import { WYRLevel } from '../constants/content';
+import { WYRLevel, WYRQuestion } from '../constants/content';
 import { TodoCategory } from './todoService';
 
 export type WYRAnswer = 'a' | 'b';
@@ -173,4 +173,44 @@ export async function updateWYRRecordIfBest(
     bestAt: Date.now(),
   }, { merge: true });
   return { becameBest: true, pct };
+}
+
+// Custom WYR questions authored by the couple themselves. Mixed into the
+// per-level pool alongside curated WYR_QUESTIONS. Stored under a
+// dedicated subcollection (NOT under wyr/active) so they survive
+// resetWYR — a level reset wipes the active session doc but should not
+// blow away the couple's authored library.
+//
+// Firestore path: couples/{coupleId}/wyrCustom/{id}
+//
+// Rules: falls under the existing couple wildcard subcollection rule.
+// createdBy identity guard enforces the writer is the requester.
+export interface WYRCustomQuestion extends WYRQuestion {
+  id: string;
+  createdAt: number;
+  createdBy: string; // uid
+}
+
+export function subscribeCustomWYRQuestions(coupleId: string, onChange: (qs: WYRCustomQuestion[]) => void): Unsubscribe {
+  const q = query(collection(db, 'couples', coupleId, 'wyrCustom'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snap) => {
+    onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as WYRCustomQuestion)));
+  });
+}
+
+export async function addCustomWYRQuestion(
+  coupleId: string,
+  uid: string,
+  data: { a: string; b: string; level: WYRLevel; discussion?: string },
+): Promise<string> {
+  const ref = await addDoc(collection(db, 'couples', coupleId, 'wyrCustom'), {
+    ...data,
+    createdAt: Date.now(),
+    createdBy: uid,
+  });
+  return ref.id;
+}
+
+export async function deleteCustomWYRQuestion(coupleId: string, id: string): Promise<void> {
+  await deleteDoc(doc(db, 'couples', coupleId, 'wyrCustom', id));
 }

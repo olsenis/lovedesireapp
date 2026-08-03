@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, WYRRecords } from '../services/wyrService';
+import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, WYRRecords, WYRCustomQuestion } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYR_PACKS, WYRLevel, WYRPack } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
@@ -102,6 +102,21 @@ export default function WouldYouRatherScreen() {
     previousBest: WYRRecords | null;
   } | null>(null);
   const [records, setRecords] = useState<WYRRecords>({});
+  // Pack picker visibility — expanded state on the level picker screen
+  // when the user taps the "🎨 Themed session" row. Small UX: not a
+  // separate route, just an accordion so users can dip into pack list
+  // without leaving the picker context.
+  const [packPickerOpen, setPackPickerOpen] = useState(false);
+  // Couple's own authored questions, mixed into levelQuestions alongside
+  // the curated WYR_QUESTIONS pool. Subscribed in real-time so both
+  // partners see additions instantly.
+  const [customQs, setCustomQs] = useState<WYRCustomQuestion[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addA, setAddA] = useState('');
+  const [addB, setAddB] = useState('');
+  const [addDiscussion, setAddDiscussion] = useState('');
+  const [addLevel, setAddLevel] = useState<WYRLevel>('playful');
+  const [saving, setSaving] = useState(false);
   const help = useHelp('would-you-rather');
   const { isSubscribed } = useSubscription();
 
@@ -120,6 +135,14 @@ export default function WouldYouRatherScreen() {
   useEffect(() => {
     if (!coupleId) return;
     getWYRRecords(coupleId).then(setRecords).catch(() => {});
+  }, [coupleId]);
+
+  // Couple's authored WYR questions — live subscription so a partner who
+  // adds a question mid-session (unlikely but possible via the +Add
+  // button on the picker) surfaces on the other side instantly.
+  useEffect(() => {
+    if (!coupleId) return;
+    return subscribeCustomWYRQuestions(coupleId, setCustomQs);
   }, [coupleId]);
 
   // Milestone detection. Snapshots the current match count on first sight
@@ -178,14 +201,24 @@ export default function WouldYouRatherScreen() {
   // Question source depends on session mode:
   //   - pack mode (session.packId set): use pack's curated sequence in
   //     order, and DON'T wrap the index — packs are meant to complete
-  //     with a "pack done" moment, not loop indefinitely.
-  //   - level mode: filter WYR_QUESTIONS by level and wrap the index so
-  //     the couple can keep playing past 60-70 questions if they want.
+  //     with a "pack done" moment, not loop indefinitely. Custom
+  //     questions do NOT mix into packs (would break the arc).
+  //   - level mode: filter WYR_QUESTIONS by level and append couple's
+  //     own custom questions for that level, sorted by createdAt. Wrap
+  //     the index so the couple can keep playing past 60-70 questions.
+  //     Appending (not interleaving) means adding a new custom Q mid-
+  //     session doesn't shift the current questionIndex to a different
+  //     question — new ones just extend the tail.
   const activePack: WYRPack | null = session?.packId
     ? WYR_PACKS.find((p) => p.id === session.packId) ?? null
     : null;
   const levelQuestions = session
-    ? (activePack ? activePack.questions : WYR_QUESTIONS.filter(q => q.level === session.level))
+    ? (activePack
+        ? activePack.questions
+        : [
+            ...WYR_QUESTIONS.filter(q => q.level === session.level),
+            ...customQs.filter(q => q.level === session.level),
+          ])
     : [];
   const packComplete = !!(activePack && session && session.questionIndex >= activePack.questions.length);
   const currentQ = session && !packComplete
@@ -204,11 +237,6 @@ export default function WouldYouRatherScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await startWYR(coupleId, level, packId);
   };
-  // Pack picker visibility — expanded state on the level picker screen
-  // when the user taps the "🎨 Themed session" row. Small UX: not a
-  // separate route, just an accordion so users can dip into pack list
-  // without leaving the picker context.
-  const [packPickerOpen, setPackPickerOpen] = useState(false);
 
   const handleAnswer = async (answer: WYRAnswer) => {
     if (!coupleId || !session || myAnswer) return;
@@ -301,6 +329,23 @@ export default function WouldYouRatherScreen() {
             </View>
             <Text style={[styles.levelArrow, { color: '#4A148C' }]}>{packPickerOpen ? '▾' : '›'}</Text>
           </TouchableOpacity>
+          {/* Author your own — small link at the bottom, less prominent
+              than the level cards. Opens a modal to add a new WYR
+              question that mixes into the couple's pool for the chosen
+              level. Existing custom questions count shown inline so the
+              couple sees their library grow. */}
+          <TouchableOpacity
+            style={styles.addOwnBtn}
+            onPress={() => setShowAddModal(true)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Add your own question"
+          >
+            <Text style={styles.addOwnBtnText}>
+              + Add your own {customQs.length > 0 ? `· ${customQs.length} yours` : ''}
+            </Text>
+          </TouchableOpacity>
+
           {packPickerOpen && WYR_PACKS.map((pack) => {
             const locked = pack.paid && !isSubscribed;
             return (
@@ -330,6 +375,114 @@ export default function WouldYouRatherScreen() {
           description="Both partners answer at the same time, then reveal. See if you match, and talk about why you chose differently."
           tips={["Pick a level and both answer simultaneously","Your answer is hidden until your partner also answers","If you match → +1 point","If you don't → discuss why! That's the fun part"]}
           onDismiss={help.dismiss} onDismissAll={help.dismissAll} />
+
+        {/* Add-your-own modal. A/B text inputs + optional discussion +
+            level pick. Save writes to couples/{coupleId}/wyrCustom, list
+            surfaces immediately via subscription for both partners. */}
+        <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => setShowAddModal(false)}>
+          <View style={styles.addModalOverlay}>
+            <View style={styles.addModalCard}>
+              <Text style={styles.addModalTitle}>Add your own question</Text>
+              <Text style={styles.addModalHint}>Both of you will see it mixed in with the built-in questions on the level you pick.</Text>
+
+              <Text style={styles.addModalLabel}>Option A</Text>
+              <TextInput
+                style={styles.addModalInput}
+                value={addA}
+                onChangeText={setAddA}
+                placeholder="e.g. Stay in a luxury hotel"
+                placeholderTextColor={Colors.muted}
+                multiline
+                maxLength={140}
+              />
+
+              <Text style={styles.addModalLabel}>Option B</Text>
+              <TextInput
+                style={styles.addModalInput}
+                value={addB}
+                onChangeText={setAddB}
+                placeholder="e.g. Camp under the stars"
+                placeholderTextColor={Colors.muted}
+                multiline
+                maxLength={140}
+              />
+
+              <Text style={styles.addModalLabel}>Discussion prompt (optional)</Text>
+              <TextInput
+                style={styles.addModalInput}
+                value={addDiscussion}
+                onChangeText={setAddDiscussion}
+                placeholder="e.g. What does your ideal getaway look like?"
+                placeholderTextColor={Colors.muted}
+                multiline
+                maxLength={160}
+              />
+
+              <Text style={styles.addModalLabel}>Level</Text>
+              <View style={styles.addModalLevelRow}>
+                {LEVELS.map((lvl) => {
+                  const lvlCfg = WYR_LEVEL_CONFIG[lvl];
+                  const locked = lvl === 'spicy' && !isSubscribed;
+                  const active = addLevel === lvl;
+                  return (
+                    <TouchableOpacity
+                      key={lvl}
+                      style={[
+                        styles.addModalLevelChip,
+                        active && { backgroundColor: lvlCfg.color, borderColor: lvlCfg.textColor },
+                      ]}
+                      onPress={() => { if (locked) return; setAddLevel(lvl); }}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${lvlCfg.label} level${locked ? ' (premium locked)' : ''}`}
+                    >
+                      <Text style={styles.addModalLevelEmoji}>{lvlCfg.emoji}</Text>
+                      <Text style={[styles.addModalLevelText, active && { color: lvlCfg.textColor, fontFamily: Fonts.bodyBold }]}>
+                        {lvlCfg.label}{locked ? ' 🔒' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.addModalBtnRow}>
+                <TouchableOpacity
+                  style={styles.addModalCancelBtn}
+                  onPress={() => { setShowAddModal(false); setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful'); }}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.addModalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.addModalSaveBtn, (!addA.trim() || !addB.trim() || saving) && { opacity: 0.4 }]}
+                  onPress={async () => {
+                    if (!coupleId || !addA.trim() || !addB.trim() || saving) return;
+                    setSaving(true);
+                    try {
+                      await addCustomWYRQuestion(coupleId, uid, {
+                        a: addA.trim(),
+                        b: addB.trim(),
+                        level: addLevel,
+                        ...(addDiscussion.trim() ? { discussion: addDiscussion.trim() } : {}),
+                      });
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      setShowAddModal(false);
+                      setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={!addA.trim() || !addB.trim() || saving}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.addModalSaveText}>{saving ? 'Saving…' : 'Save'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -781,6 +934,50 @@ const styles = StyleSheet.create({
   packDoneScore: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, marginBottom: Spacing.md },
   packDoneBack: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted, marginTop: Spacing.sm },
   center: { alignItems: 'center', justifyContent: 'center' },
+
+  // Add-your-own button at the bottom of the level picker. Text link
+  // style so it doesn't compete with the level cards or themed row —
+  // less prominent affordance for an occasional-use feature.
+  addOwnBtn: {
+    marginTop: Spacing.md, paddingVertical: 12, alignItems: 'center',
+    borderRadius: Radius.full, borderWidth: 1.5, borderStyle: 'dashed',
+    borderColor: Colors.burgundy, backgroundColor: 'transparent',
+  },
+  addOwnBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+
+  // Add modal
+  addModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  addModalCard: {
+    backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl,
+    padding: Spacing.xl, gap: Spacing.sm, maxHeight: '92%',
+  },
+  addModalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
+  addModalHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, marginBottom: Spacing.sm },
+  addModalLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: Spacing.sm },
+  addModalInput: {
+    backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md,
+    fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
+    minHeight: 48, borderWidth: 1, borderColor: Colors.border,
+  },
+  addModalLevelRow: { flexDirection: 'row', gap: Spacing.sm },
+  addModalLevelChip: {
+    flex: 1, alignItems: 'center', paddingVertical: 12, gap: 4,
+    borderRadius: Radius.lg, borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  addModalLevelEmoji: { fontSize: 18 },
+  addModalLevelText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
+  addModalBtnRow: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.lg },
+  addModalCancelBtn: {
+    flex: 1, paddingVertical: Spacing.md, alignItems: 'center',
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
+  },
+  addModalCancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
+  addModalSaveBtn: {
+    flex: 1, paddingVertical: Spacing.md, alignItems: 'center',
+    borderRadius: Radius.full, backgroundColor: Colors.burgundy,
+  },
+  addModalSaveText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   nextBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full, marginTop: Spacing.sm },
   nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   // Save-to-list affordance on match. Outline burgundy so it reads as a
