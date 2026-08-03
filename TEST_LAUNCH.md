@@ -107,11 +107,25 @@ For each pool, tick the box only after reading every item. If you find one drift
   - Playful (70) · free tier
   - Romantic (60) · free tier
   - Spicy (61) · paid tier
+  - Verify level-picker descriptors (August 2026): Playful "Light and fun, easy to start" · Romantic "Deeper, connection-focused" · Spicy "Intimate, X-rated". Descriptors replaced raw question counts so the picker doesn't advertise pool size.
 
-- [ ] **Daily actions** — [constants/content.ts:DAILY_WISH_ITEMS](constants/content.ts) · 224 items (surfaced via merged Daily screen; category `sweet` renders under Playful, `flirty` + `spicy` render under Spicy)
+- [ ] **WYR themed packs** — [constants/content.ts:WYR_PACKS](constants/content.ts) · 2 packs × ~10 curated questions each = ~20 items · free tier
+  - "Getting to know you" (🌱) — mixed Playful + Romantic warm-up arc
+  - "Friday night" (🌆) — Playful-heavy wind-down with a closing Romantic beat
+  - Verify: each pack reads as a coherent 10-question narrative arc, not just a random shuffle. If a question breaks the arc's flow, swap or reorder within the pack.
+
+- [ ] **Custom WYR question feature** — [app/would-you-rather.tsx](app/would-you-rather.tsx) · UI copy for the +Add / manage flow
+  - Empty-library button label: `+ Add your own`
+  - Manage-list header: `Your questions · N ›`
+  - Add-modal title: `Add your own question` (create mode) / `Edit question` (edit mode)
+  - Placeholder hint under title: `Both of you will see it mixed in with the built-in questions on the level you pick.`
+  - Delete confirm modal: `Delete this question? Both of you will stop seeing it. This cannot be undone.`
+
+- [ ] **Daily actions** — [constants/content.ts:DAILY_WISH_ITEMS](constants/content.ts) · 254 items (surfaced via merged Daily screen; category `sweet` renders under Playful, `flirty` + `spicy` render under Spicy, new `deep` category renders under Deep)
   - Sweet (60) · free tier
-  - Flirty (60) · free tier
+  - Flirty (60) · paid tier · [moved to paid as part of July 2026 Daily merge; verify no Flirty item reads as too explicit for the old free-tier expectation, since existing free users may have seen a range]
   - Spicy (104) · paid tier · [merged from old Spicy + Sexual, July 2026]
+  - Deep (30) · paid tier · [reflective, connection-oriented actions added August 2026 — read carefully to confirm none read as "task-y" like Sweet items should; if a Deep action feels like a chore instead of a conversation invitation, flag it]
 
 - [ ] **Fantasy Wishes** — [constants/content.ts:FANTASY_WISHES_PRESETS](constants/content.ts) · 394 items · paid tier only
   - Verify: noun/gerund phrases, not commands ("Kiss for 30 seconds") or questions ("What if we...?"). Prompt: memory/fantasy_wishes_prompt.md.
@@ -126,7 +140,12 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 - [ ] **Activity Cards** — [constants/content.ts:BINGO_ACTIVITIES + BINGO_REWARDS](constants/content.ts) · 55 + 10 items · paid tier
 
-- [ ] **Blueprint Quiz** — [constants/content.ts:BLUEPRINT_QUESTIONS + BLUEPRINT_COMPATIBILITY](constants/content.ts) · 15 questions + 25 pair compatibility entries · paid tier
+- [ ] **The Lovers (Intimacy Style Quiz)** — [constants/content.ts:BLUEPRINT_QUESTIONS + BLUEPRINT_TYPE_CONFIG + BLUEPRINT_COMPATIBILITY](constants/content.ts) · paid tier
+  - 15 A/B quiz questions — verify no drift toward a single type (each of the 5 types should appear roughly equally as A and B options across the 15 Qs)
+  - 5 type profiles (Feeling / Sexual / Spark / Kinky / Explorer) — for each: label + description + turnOns + turnOffs. Feature name is "The Lovers"; NOT "Erotic Blueprint" (renamed August 2026 for IP reasons)
+  - 25 pair compatibility entries — each has summary + challenge + 3 tips (75 fields total)
+  - Post-rewrite verification: BDSM/kink jargon was removed from ~12 entries in Aug 2026 rewrite. Confirm zero uses of "the scene", "scene-setting", "scene-entry", "the setup", "brief you" remain. Grep: `Grep(pattern: "the scene|scene-setting|scene-entry|the setup|brief you", path: "constants/content.ts")` should return 0.
+  - Tone check: an intelligent 30-year-old with NO BDSM experience should understand every tip and know what specific action to take.
 
 - [ ] **Love Language Quiz** — [constants/content.ts:QUIZ_QUESTIONS + LOVE_LANGUAGE_LABELS](constants/content.ts) · 10 questions + 5 labels · free tier
 
@@ -151,7 +170,16 @@ For each pool, tick the box only after reading every item. If you find one drift
 ### Notes
 
 - Prompts for generating consistent content live in `memory/question_writer_prompt.md`, `memory/explicit_content_prompt.md`, and `memory/fantasy_wishes_prompt.md`. Use them for any additions during this review.
-- Rough total: ~2400 items to read. Budget ~4-6 hours over two sittings. Don't try to power through in one — tone fatigue leads to false positives.
+- Rough total: ~2500 items to read (was 2400 pre-August 2026; Deep actions + WYR packs + The Lovers rewrite added ~120 items and re-opened ~75 pieces of The Lovers copy). Budget ~4-6 hours over two sittings. Don't try to power through in one, tone fatigue leads to false positives.
+
+### 🔒 Final content approval before launch
+
+This gate cannot be delegated. Sign off comes from the app owner personally after reading every pool above. If any pool box is unticked, do not sign.
+
+- [ ] **I have read every content pool listed above in Section 0 and approve them for App Store submission. I understand no content ships without this checkbox ticked.**
+      - Signed by: ______________
+      - Date: ______________
+      - Notes / caveats: ______________
 
 ---
 
@@ -660,4 +688,21 @@ If beta with 5 real couples: distribute checklist sections (~13 tests each) acro
 
 ---
 
-> When this passes end-to-end, you're launch-ready. For deep verification before major releases or after big refactors, fall back to the full `TEST_CHECKLIST.md` (902 tests).
+## 🚀 Launch readiness gate
+
+App Store submission is BLOCKED until every one of the following is ticked. This is the final go / no-go for shipping:
+
+- [ ] **All 62+ functional tests above pass** (Section 1 through Section 12, or are explicitly deferred with reason logged)
+- [ ] **Section 0 content read-through is complete + signed off** (the "Final content approval" checkbox is the gate — no shipping content that hasn't been personally read)
+- [ ] **`npx tsc --noEmit` returns clean** (zero type errors on main)
+- [ ] **`npm run build` returns clean** (local prod build succeeds)
+- [ ] **Vercel preview deploy verified on 2 real phones** (not just simulator; not just web)
+- [ ] **EAS production build succeeds** (`npx eas build --platform ios --profile production`)
+- [ ] **TestFlight distribution reached at least one real device** with push notifications actually landing
+- [ ] **RevenueCat integration confirmed** (or explicitly deferred with launch-plan note)
+- [ ] **Privacy Policy + Terms of Service hosted at public URLs** (required for App Store submission)
+- [ ] **App icon + splash + store screenshots ready in EAS build**
+
+If any box is unchecked, do not ship. If you're unsure whether a box counts as ticked, it doesn't — sign off means confident yes, not "probably fine".
+
+> When all of the above passes, you're launch-ready. For deep verification before major releases or after big refactors, fall back to the full `TEST_CHECKLIST.md` (902 tests).
