@@ -61,7 +61,7 @@ now in Profile), Our Story, Year-in-Review, 30-Day Challenge Reconnect + Spark
 merge), Would You Rather Spicy level, Activity Cards (entire feature),
 Fantasy Wishes (entire feature)
 
-**Intimacy:** Erotic Blueprint (entire feature), Sensate Focus (entire
+**Intimacy:** Intimacy Style Quiz (entire feature), Sensate Focus (entire
 feature), Intimacy Log (opt-in from Profile — free but hidden by default)
 
 **Mood:** 😈 Kinky, 🥵 Horny emojis (last two on the picker)
@@ -373,7 +373,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 ## 4. Intimacy + Insights (5 tests)
 
 - [ ] **Blueprint quiz completion + couple compatibility view** 📱 💰
-  1. Both (premium): Open Erotic Blueprint → answer all 15 questions → see result
+  1. Both (premium): Open Intimacy Style Quiz → answer all 15 questions → see result
   - **Expected:** Each sees own type + partner's type once both completed + compatibility text. Score breakdown bars visible.
 
 - [ ] **Sensate Focus timer completes stage 1** 💰

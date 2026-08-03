@@ -88,7 +88,7 @@ app/                         Full-screen sub-screens
   would-you-rather.tsx       Would You Rather — simultaneous answer reveal, 3 levels, session persists
   bingo.tsx                  Activity Cards — 25 face-down cards, turn-based reveal, 3 states (pending/done), passes system
   challenge.tsx              30-Day Challenge — Reconnect/Spark/Fire/Desire + edit/veto system
-  blueprint.tsx              Erotic Blueprint Quiz — 5 types, couple compatibility
+  blueprint.tsx              Intimacy Style Quiz — 5 types (Ambient/Direct/Charge/Edge/Explorer), couple compatibility. Renamed from "Erotic Blueprint" Aug 2026 to establish own taxonomy (was too close to Jaiya Ma's trademarked framework). Enum keys kept as-is internally for zero-migration compatibility.
   profile.tsx                Profile & Settings — name, photo, password, notifications, relationship date
   sensate.tsx                Guided Sensate Focus — 3-stage guided sessions with timer
   notes.tsx                  Love Notes — timed secret messages
@@ -244,7 +244,7 @@ Three prompts for expanding content — always use the right one for the categor
 - Daily: Deep + Spicy categories (Deep = 3 questions + 5 reflective actions/day, added Aug 2026; Spicy = 3 questions + 10 actions/day, includes ex-Flirty picks + explicit Spicy picks + Spicy questions)
 - Would You Rather: Spicy level
 - Fantasy Wishes (entire feature)
-- Erotic Blueprint (entire feature)
+- Intimacy Style Quiz (entire feature)
 - Sensate Focus (entire feature)
 - 30-Day Challenge: Fire + Desire programs
 - Activity Cards (entire feature)

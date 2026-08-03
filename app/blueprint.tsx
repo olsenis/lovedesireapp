@@ -77,7 +77,7 @@ export default function BlueprintScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Erotic Blueprint</Text>
+        <Text style={styles.title}>Intimacy Style</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -212,7 +212,7 @@ export default function BlueprintScreen() {
 
       <HelpModal
         visible={help.visible}
-        title="Erotic Blueprint"
+        title="Intimacy Style"
         description="15 questions that identify your erotic type, how you feel most alive in intimacy. When both partners complete it, your compatibility appears."
         tips={[
           '5 types: Sensual, Sexual, Energetic, Kinky, Shapeshifter',
