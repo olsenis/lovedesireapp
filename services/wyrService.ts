@@ -11,6 +11,11 @@ export interface WYRSession {
   answers: Record<string, WYRAnswer>; // { uid: 'a'|'b' }
   revealed: boolean;
   score: { match: number; total: number };
+  // Optional themed pack id. When set, the screen loads questions from
+  // WYR_PACKS[packId] instead of filtering WYR_QUESTIONS by level.
+  // The `level` field is still populated (from the pack's own primary
+  // level or the current question) for styling / paid-gate purposes.
+  packId?: string;
   // Whether the current match has been saved to the Together List. Absent
   // means unsaved. Reset back to false on nextWYRQuestion so the next
   // match's Save button starts fresh.
@@ -31,13 +36,14 @@ export function subscribeWYR(coupleId: string, onChange: (s: WYRSession | null) 
   });
 }
 
-export async function startWYR(coupleId: string, level: WYRLevel): Promise<void> {
+export async function startWYR(coupleId: string, level: WYRLevel, packId?: string): Promise<void> {
   await setDoc(doc(db, 'couples', coupleId, 'wyr', 'active'), {
     level,
     questionIndex: 0,
     answers: {},
     revealed: false,
     score: { match: 0, total: 0 },
+    ...(packId ? { packId } : {}),
   });
 }
 

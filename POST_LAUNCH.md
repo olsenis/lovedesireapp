@@ -6,6 +6,38 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## More WYR themed packs (raised August 2026)
+
+### What
+
+WYR themed packs shipped with 2 sample packs (Getting to know you, Friday night). The mechanic supports N packs — adding more is content-only work. Queued pack ideas ranked by likely appeal:
+
+1. **First fight aftermath** (Romantic-heavy) — questions for the "we just had a fight, let's not pretend everything is fine" moment
+2. **Fantasy night** (Spicy, paid) — 10 curated Spicy questions with a slow escalation arc
+3. **Weekend planning** (Playful) — "what do we want this weekend to feel like" — practical + emotional
+4. **Values check** (Romantic-heavy) — money, family, boundaries, ambitions
+5. **Long-distance edition** (Romantic + LDR-tagged) — questions only surfaced when isLongDistance is on
+6. **New relationship** (Playful/Romantic mix) — for couples in first 6 months, discover basics
+7. **Long-term couple** (Romantic/Deep-adjacent) — for couples past year 3, deeper reflection
+
+### Why deferred
+
+Content authoring, not code. Each pack = ~10 hand-curated WYRQuestion objects sequenced into a narrative arc. Realistic budget: **~1h per pack** to draft + review + tune the sequence for flow. 5 more packs = 5h focused writing. Not a launch blocker — 2 packs demonstrate the mechanic.
+
+### Decision criteria for revisiting
+
+- Real users spend time in themed mode (analytics: session-with-packId count)
+- Reviews mention "we finished the packs, want more"
+- Content backlog has spare bandwidth (competes with Daily/Truth pool growth)
+
+### Effort estimate
+
+- Per pack: ~1h (draft + copyedit + sequence tuning)
+- All 5 queued: ~5h focused authoring session
+- No code changes required — just add entries to `WYR_PACKS` in `constants/content.ts`
+
+---
+
 ## Home screen widgets (Android + iOS) (raised July 2026)
 
 ### What

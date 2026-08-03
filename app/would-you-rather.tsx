@@ -9,7 +9,7 @@ import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, guessWYR, WYRRecords } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
-import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYRLevel } from '../constants/content';
+import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYR_PACKS, WYRLevel, WYRPack } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
 import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
@@ -181,19 +181,40 @@ export default function WouldYouRatherScreen() {
     }
   }, [session?.score.match]);
 
-  const levelQuestions = session ? WYR_QUESTIONS.filter(q => q.level === session.level) : [];
-  const currentQ = session ? levelQuestions[session.questionIndex % levelQuestions.length] : null;
+  // Question source depends on session mode:
+  //   - pack mode (session.packId set): use pack's curated sequence in
+  //     order, and DON'T wrap the index — packs are meant to complete
+  //     with a "pack done" moment, not loop indefinitely.
+  //   - level mode: filter WYR_QUESTIONS by level and wrap the index so
+  //     the couple can keep playing past 60-70 questions if they want.
+  const activePack: WYRPack | null = session?.packId
+    ? WYR_PACKS.find((p) => p.id === session.packId) ?? null
+    : null;
+  const levelQuestions = session
+    ? (activePack ? activePack.questions : WYR_QUESTIONS.filter(q => q.level === session.level))
+    : [];
+  const packComplete = !!(activePack && session && session.questionIndex >= activePack.questions.length);
+  const currentQ = session && !packComplete
+    ? (activePack
+        ? levelQuestions[session.questionIndex]
+        : levelQuestions[session.questionIndex % levelQuestions.length])
+    : null;
 
   const myAnswer = session?.answers[uid];
   const partnerAnswer = session?.answers[partnerId ?? ''];
   const bothAnswered = session?.revealed;
   const matched = bothAnswered && myAnswer === partnerAnswer;
 
-  const handleStart = async (level: WYRLevel) => {
+  const handleStart = async (level: WYRLevel, packId?: string) => {
     if (!coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await startWYR(coupleId, level);
+    await startWYR(coupleId, level, packId);
   };
+  // Pack picker visibility — expanded state on the level picker screen
+  // when the user taps the "🎨 Themed session" row. Small UX: not a
+  // separate route, just an accordion so users can dip into pack list
+  // without leaving the picker context.
+  const [packPickerOpen, setPackPickerOpen] = useState(false);
 
   // Discussion timer — start counts from 30 down. Interval stored in ref
   // so we can cancel cleanly on Next question / unmount / stop tap.
@@ -296,11 +317,77 @@ export default function WouldYouRatherScreen() {
               </TouchableOpacity>
             );
           })}
+
+          {/* Themed session picker. Collapsed by default so the level
+              picker stays the primary choice. Tap the row to expand
+              inline pack list, tap a pack to start. */}
+          <TouchableOpacity
+            style={[styles.levelCard, { backgroundColor: '#E1BEE7' }]}
+            onPress={() => setPackPickerOpen((v) => !v)}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={`Themed session, ${WYR_PACKS.length} packs available`}
+          >
+            <Text style={styles.levelEmoji}>🎨</Text>
+            <View style={styles.levelInfo}>
+              <Text style={[styles.levelLabel, { color: '#4A148C' }]}>Themed session</Text>
+              <Text style={styles.levelCount}>{WYR_PACKS.length} curated packs</Text>
+            </View>
+            <Text style={[styles.levelArrow, { color: '#4A148C' }]}>{packPickerOpen ? '▾' : '›'}</Text>
+          </TouchableOpacity>
+          {packPickerOpen && WYR_PACKS.map((pack) => {
+            const locked = pack.paid && !isSubscribed;
+            return (
+              <TouchableOpacity
+                key={pack.id}
+                style={styles.packCard}
+                onPress={() => {
+                  if (locked) { router.push('/upgrade' as any); return; }
+                  const primaryLevel: WYRLevel = pack.questions[0]?.level ?? 'playful';
+                  handleStart(primaryLevel, pack.id);
+                }}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`${pack.name}, ${pack.questions.length} questions${locked ? ', premium locked' : ''}`}
+              >
+                <Text style={styles.packEmoji}>{pack.emoji}</Text>
+                <View style={styles.levelInfo}>
+                  <Text style={styles.packName}>{pack.name}{locked ? ' 🔒' : ''}</Text>
+                  <Text style={styles.packDesc}>{pack.description}</Text>
+                </View>
+                <Text style={styles.packArrow}>›</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
         <HelpModal visible={help.visible} title="Would You Rather"
           description="Both partners answer at the same time, then reveal. See if you match, and talk about why you chose differently."
           tips={["Pick a level and both answer simultaneously","Your answer is hidden until your partner also answers","If you match → +1 point","If you don't → discuss why! That's the fun part"]}
           onDismiss={help.dismiss} onDismissAll={help.dismissAll} />
+      </View>
+    );
+  }
+
+  // Pack complete state — deliberate end-of-session moment for themed
+  // packs (unlike level mode which loops indefinitely). Shows a summary
+  // card + option to start another pack or switch back to level mode
+  // via the change-level flow.
+  if (packComplete && session && activePack) {
+    const rate = session.score.total > 0 ? Math.round((session.score.match / session.score.total) * 100) : 0;
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <View style={styles.packDoneCard}>
+          <Text style={styles.packDoneEmoji}>{activePack.emoji}</Text>
+          <Text style={styles.packDoneTitle}>{activePack.name} — done!</Text>
+          <Text style={styles.packDonePct}>{rate}%</Text>
+          <Text style={styles.packDoneScore}>{session.score.match} matches of {session.score.total}</Text>
+          <TouchableOpacity style={styles.saveBtn} onPress={handleReset} activeOpacity={0.85} accessibilityRole="button">
+            <Text style={styles.saveBtnText}>Pick another pack</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} accessibilityRole="button">
+            <Text style={styles.packDoneBack}>‹ Back to Discover</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -363,8 +450,10 @@ export default function WouldYouRatherScreen() {
           accessibilityRole="button"
           accessibilityLabel={`Current level: ${cfg.label}. Tap to change.`}
         >
-          <Text style={styles.levelBadgeEmoji}>{cfg.emoji}</Text>
-          <Text style={[styles.levelBadgeText, { color: cfg.textColor }]}>{cfg.label}</Text>
+          <Text style={styles.levelBadgeEmoji}>{activePack ? activePack.emoji : cfg.emoji}</Text>
+          <Text style={[styles.levelBadgeText, { color: cfg.textColor }]}>
+            {activePack ? `${activePack.name} · ${session.questionIndex + 1}/${activePack.questions.length}` : cfg.label}
+          </Text>
           <Text style={[styles.levelBadgeChange, { color: cfg.textColor }]}>Change ›</Text>
         </TouchableOpacity>
 
@@ -837,6 +926,36 @@ const styles = StyleSheet.create({
   hunchResultText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
   hunchScoreText: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted },
   summaryHunchLine: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, marginTop: Spacing.sm, textAlign: 'center' },
+
+  // Pack rows in the collapsed pack accordion on the level picker screen.
+  // Smaller / less prominent than the level cards above so packs feel
+  // like a secondary mode, not a competing primary.
+  packCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    padding: Spacing.md, backgroundColor: Colors.white,
+    borderRadius: Radius.lg, borderWidth: 1, borderColor: '#E1BEE7',
+    marginLeft: Spacing.md,
+  },
+  packEmoji: { fontSize: 28 },
+  packName: { fontFamily: Fonts.heading, fontSize: 18, color: '#4A148C' },
+  packDesc: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  packArrow: { fontFamily: Fonts.heading, fontSize: 22, color: '#4A148C' },
+
+  // Pack completion card — full-screen centered when the couple finishes
+  // the last question in a themed pack. Sits at .center on styles.screen
+  // so it doesn't have to compete with the running session UI.
+  packDoneCard: {
+    backgroundColor: Colors.white, borderRadius: Radius.xl,
+    padding: Spacing.xxl, alignItems: 'center', gap: Spacing.md,
+    borderWidth: 1, borderColor: Colors.border, ...Shadow.md,
+    marginHorizontal: Spacing.lg,
+  },
+  packDoneEmoji: { fontSize: 56 },
+  packDoneTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy, textAlign: 'center' },
+  packDonePct: { fontFamily: Fonts.heading, fontSize: 56, color: Colors.burgundy, lineHeight: 62 },
+  packDoneScore: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, marginBottom: Spacing.md },
+  packDoneBack: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted, marginTop: Spacing.sm },
+  center: { alignItems: 'center', justifyContent: 'center' },
   nextBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full, marginTop: Spacing.sm },
   nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   // Save-to-list affordance on match. Outline burgundy so it reads as a

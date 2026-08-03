@@ -1611,6 +1611,67 @@ export const WYR_LEVEL_CONFIG: Record<WYRLevel, { label: string; emoji: string; 
   spicy:    { label: 'Spicy',    emoji: '🔥', color: '#FFCCBC', textColor: '#BF360C' },
 };
 
+// Themed session packs — curated question sequences with a narrative
+// arc, as an alternative to the "pick a level, get random questions"
+// default mode. Each pack is a specific ~10-question walk designed
+// around a shared mood or conversation goal.
+//
+// Content authoring note: only 2 sample packs shipped for launch. The
+// mechanic supports N packs; adding more is content-only work (copy 8-12
+// existing WYRQuestions, sequence them into a narrative arc, ship). See
+// POST_LAUNCH.md for the queued pack ideas: Friday night, First fight
+// aftermath, Fantasy night, Getting to know you (this), Weekend planning,
+// Values check, Long-distance edition.
+export interface WYRPack {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  paid: boolean;
+  questions: WYRQuestion[]; // inline for now — refactor to id refs if pack count grows
+}
+
+export const WYR_PACKS: WYRPack[] = [
+  {
+    id: 'getting-to-know-you',
+    name: 'Getting to know you',
+    emoji: '🌱',
+    description: '10 warm-up questions to spark understanding. Mix of Playful and Romantic.',
+    paid: false,
+    questions: [
+      { level: 'playful',  a: "Spend a lazy Sunday in bed together", b: "Go on a spontaneous adventure", discussion: "What does your ideal Sunday look like?" },
+      { level: 'playful',  a: "Take a road trip with no plan", b: "Book a perfectly planned holiday", discussion: "What's the best trip you've ever taken together?" },
+      { level: 'romantic', a: "Be told 'I love you' every day", b: "Be shown love through small actions every day", discussion: "Which one lands deeper for you and why?" },
+      { level: 'playful',  a: "Cook an elaborate dinner together", b: "Order your favorite takeout", discussion: "What's your all-time favorite takeout order?" },
+      { level: 'romantic', a: "Get a heartfelt letter from your partner", b: "Get a surprise gift from your partner", discussion: "Which one would you keep forever?" },
+      { level: 'playful',  a: "Have a movie night with all your favorites", b: "Try a totally new genre neither of you has watched", discussion: "What's a movie you'd love to introduce them to?" },
+      { level: 'romantic', a: "Have your partner remember every tiny detail about you", b: "Have your partner surprise you with something new every week", discussion: "Which feels more like being loved to you?" },
+      { level: 'playful',  a: "Live in a big city forever", b: "Live in the countryside forever", discussion: "Where would you feel most yourself?" },
+      { level: 'romantic', a: "Spend a whole day talking about your future together", b: "Spend a whole day reliving your favorite memories together", discussion: "Which excites you more right now?" },
+      { level: 'playful',  a: "Have unlimited money but only 3 vacation days a year", b: "Have unlimited vacation but only enough money to travel simply", discussion: "Which trade-off feels right for you?" },
+    ],
+  },
+  {
+    id: 'friday-night',
+    name: 'Friday night',
+    emoji: '🌆',
+    description: '10 questions for winding down together. Easy energy, no heavy questions.',
+    paid: false,
+    questions: [
+      { level: 'playful',  a: "Order pizza and stay in tonight", b: "Get dressed up and go out tonight", discussion: "Which one calls you louder right now?" },
+      { level: 'playful',  a: "Watch a comfort movie you've seen 10 times", b: "Try a brand new movie neither of you has heard of", discussion: "Which one wins on a low-energy night?" },
+      { level: 'playful',  a: "Have friends over for a small dinner", b: "Have the whole night just to yourselves", discussion: "Which feels like the right kind of Friday tonight?" },
+      { level: 'romantic', a: "Slow dance in the kitchen for one song", b: "Sit on the couch and just talk for an hour", discussion: "Which one would you actually do tonight?" },
+      { level: 'playful',  a: "Order dessert first", b: "Save room for a big dessert at the end", discussion: "What's your dessert of choice this week?" },
+      { level: 'playful',  a: "Play a two-player video game", b: "Play a card or board game", discussion: "What's a game you'd want to play more?" },
+      { level: 'romantic', a: "Give each other a long hug in silence", b: "Talk about the best part of your week", discussion: "Which one grounds you more after a long week?" },
+      { level: 'playful',  a: "Have music playing all night", b: "Have candles lit all night", discussion: "Which one sets the vibe you want tonight?" },
+      { level: 'playful',  a: "Go for a walk after dinner", b: "Curl up on the couch after dinner", discussion: "Which one wins tonight?" },
+      { level: 'romantic', a: "Fall asleep talking", b: "Fall asleep holding each other in silence", discussion: "Which one is the softer landing for you?" },
+    ],
+  },
+];
+
 export const WYR_QUESTIONS: WYRQuestion[] = [
   // Playful
   { level: 'playful', a: "Spend a lazy Sunday in bed together", b: "Go on a spontaneous adventure", discussion: "What does your ideal Sunday look like?" },
