@@ -90,7 +90,7 @@ app/                         Full-screen sub-screens
   challenge.tsx              30-Day Challenge — Reconnect/Spark/Fire/Desire + edit/veto system
   blueprint.tsx              The Lovers — 5-type intimacy quiz (Feeling/Sexual/Spark/Kinky/Explorer), couple compatibility. Feature renamed from "Erotic Blueprint" → "Intimacy Style" → "The Lovers" (Aug 2026) to establish own brand vocabulary, distancing from Jaiya Ma's trademarked framework. Enum keys kept as-is internally for zero-migration compatibility. 3 of 5 type names are custom (Feeling/Spark/Explorer); Sexual + Kinky are common English descriptors used freely in sex education literature.
   profile.tsx                Profile & Settings — name, photo, password, notifications, relationship date
-  sensate.tsx                Guided Sensate Focus — 3-stage guided sessions with timer
+  sensate.tsx                Guided Sensate Focus — 3-stage guided sessions with timer, cycle tracking (couples/{coupleId}/sensate/progress adds cyclesCompleted + currentCycleStages Aug 2026), full-cycle completion moment, Home nudge after 14+ days of inactivity if cyclesCompleted ≥ 1
   notes.tsx                  Love Notes — timed secret messages
   memories.tsx               Memory Wall — shared photo album (Firebase Storage)
   countdown.tsx              Countdowns — important dates & anniversaries

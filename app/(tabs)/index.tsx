@@ -10,6 +10,7 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
+import { subscribeSensateProgress, SensateProgress } from '../../services/sensateService';
 import { subscribeNotes, LoveNote, unlockMoodNotes, unlockVisitNotes } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
@@ -155,6 +156,7 @@ export default function HomeScreen() {
   const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -188,7 +190,8 @@ export default function HomeScreen() {
     const u13 = subscribeStateUnion(coupleId, getCurrentWeekId(), setSuDoc);
     const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
     const u15 = subscribeTodos(coupleId, setTodos);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); };
+    const u16 = subscribeSensateProgress(coupleId, setSensateProgress);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -338,6 +341,32 @@ export default function HomeScreen() {
         route: '/daily',
         bg: Colors.blush,
       });
+    }
+  }
+
+  // Sensate Focus: gently surface a return-to prompt if the couple has
+  // done at least one cycle (proves they engaged with it) but hasn't
+  // touched any stage in a while. Threshold: 14 days of quiet since the
+  // most recent session across any stage. Only fires when cyclesCompleted
+  // >= 1 so first-time users aren't pushed toward a paid feature they
+  // haven't opted into.
+  if (sensateProgress && (sensateProgress.cyclesCompleted ?? 0) >= 1) {
+    const dates = [sensateProgress.stage1.lastDate, sensateProgress.stage2.lastDate, sensateProgress.stage3.lastDate]
+      .filter(Boolean)
+      .sort()
+      .reverse();
+    const mostRecent = dates[0];
+    if (mostRecent) {
+      const daysSince = Math.floor((Date.now() - new Date(mostRecent).getTime()) / 86400000);
+      if (daysSince >= 14) {
+        list.push({
+          emoji: '🫁',
+          title: 'Sensate Focus',
+          subtitle: `${daysSince} days since your last session, consider returning`,
+          route: '/sensate',
+          bg: '#FAEEF2',
+        });
+      }
     }
   }
 
@@ -558,7 +587,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos]);
+  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

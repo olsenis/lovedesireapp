@@ -99,7 +99,14 @@ export default function SensateScreen() {
     stage1: { count: 0, lastDate: '' },
     stage2: { count: 0, lastDate: '' },
     stage3: { count: 0, lastDate: '' },
+    cyclesCompleted: 0,
+    currentCycleStages: { stage1: false, stage2: false, stage3: false },
   });
+  // Cycle completion modal state — fires when a completeStage call fills
+  // the final missing stage in the current cycle. Local-only state (no
+  // need to sync across partners; each partner sees it locally when
+  // their own action triggered the completion).
+  const [cycleModalCount, setCycleModalCount] = useState<number | null>(null);
   const help = useHelp('sensate');
   const [elapsed, setElapsed] = useState(0);
   const [promptIndex, setPromptIndex] = useState(0);
@@ -161,8 +168,15 @@ export default function SensateScreen() {
   const handleMarkComplete = async () => {
     if (!coupleId || !activeStage) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await completeStage(coupleId, activeStage.id as 1 | 2 | 3, progress);
+    const { cycleJustCompleted, cyclesCompleted } = await completeStage(coupleId, activeStage.id as 1 | 2 | 3, progress);
     setMarked(true);
+    // If this completion filled the last missing stage in the cycle,
+    // show the cycle-completion moment. Held in state and rendered as
+    // an overlay so it feels like a distinct beat separate from the
+    // stage's own "session saved" banner.
+    if (cycleJustCompleted) {
+      setTimeout(() => setCycleModalCount(cyclesCompleted), 400);
+    }
   };
 
   const toggleTimer = () => {
@@ -194,6 +208,16 @@ export default function SensateScreen() {
           <Text style={styles.intro}>
             A research-backed approach to rekindling physical intimacy. Three stages, each building presence, not performance.
           </Text>
+          {/* Cycles-completed pill. Shows once the couple has done at
+              least one full 3-stage cycle. Small, non-competitive framing
+              — it's a record of the journey, not a scoreboard. */}
+          {(progress.cyclesCompleted ?? 0) > 0 && (
+            <View style={styles.cyclesPill}>
+              <Text style={styles.cyclesPillText}>
+                🌸 {progress.cyclesCompleted} {progress.cyclesCompleted === 1 ? 'cycle' : 'cycles'} together
+              </Text>
+            </View>
+          )}
           {STAGES.map((stage) => {
             const key = `stage${stage.id}` as 'stage1' | 'stage2' | 'stage3';
             const count = progress[key].count;
@@ -333,6 +357,31 @@ export default function SensateScreen() {
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />
+
+      {/* Cycle completion moment — full-screen overlay fired when the
+          couple's completeStage transaction filled the final missing
+          stage in the current cycle. Deliberately quiet copy (this is
+          Sensate Focus, not a game — no confetti, no leaderboard).
+          Dismisses back to the stage list. */}
+      {cycleModalCount !== null && (
+        <View style={styles.cycleOverlay}>
+          <View style={styles.cycleCard}>
+            <Text style={styles.cycleEmoji}>🌸</Text>
+            <Text style={styles.cycleTitle}>Cycle {cycleModalCount} complete</Text>
+            <Text style={styles.cycleBody}>
+              You've moved through all three stages together. What you learned about each other is yours to keep. The cycle resets whenever you'd like to walk it again.
+            </Text>
+            <TouchableOpacity
+              style={styles.cycleBtn}
+              onPress={() => { setCycleModalCount(null); setActiveStage(null); }}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <Text style={styles.cycleBtnText}>Done for now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -402,4 +451,39 @@ const styles = StyleSheet.create({
   markBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   markedBanner: { width: '100%', paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
   markedText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+
+  // Cycles-completed pill on the stage list. Quiet framing —
+  // acknowledges the journey without turning it into a scoreboard.
+  cyclesPill: {
+    alignSelf: 'center', backgroundColor: Colors.blush,
+    paddingVertical: 6, paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full, marginTop: -Spacing.sm, marginBottom: Spacing.sm,
+  },
+  cyclesPillText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+
+  // Cycle completion overlay. Full-screen backdrop tinted so the
+  // moment reads as a distinct beat separate from the ongoing session
+  // view underneath. Card is quiet on purpose — no confetti, no
+  // "Congratulations!" energy. Sensate is a mindfulness feature, not
+  // a game.
+  cycleOverlay: {
+    position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+    backgroundColor: 'rgba(61,26,36,0.72)',
+    justifyContent: 'center', alignItems: 'center',
+    padding: Spacing.lg, zIndex: 100,
+  },
+  cycleCard: {
+    backgroundColor: Colors.cream, borderRadius: Radius.xl,
+    padding: Spacing.xl, alignItems: 'center', gap: Spacing.md,
+    width: '100%', maxWidth: 400, ...Shadow.md,
+  },
+  cycleEmoji: { fontSize: 56 },
+  cycleTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy, textAlign: 'center' },
+  cycleBody: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text, textAlign: 'center', lineHeight: 22 },
+  cycleBtn: {
+    marginTop: Spacing.sm, paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl, borderRadius: Radius.full,
+    backgroundColor: Colors.burgundy,
+  },
+  cycleBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream },
 });
