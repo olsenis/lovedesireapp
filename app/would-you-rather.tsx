@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, WYRRecords } from '../services/wyrService';
+import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, guessWYR, WYRRecords } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYRLevel } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
@@ -235,6 +235,19 @@ export default function WouldYouRatherScreen() {
     }
   };
 
+  // Optional hunch — "I think my partner will pick X" placed BEFORE the
+  // user answers themselves. Skipped by default (users who never tap a
+  // hunch chip simply never call this). Scored on nextWYRQuestion.
+  const handleGuess = async (guess: WYRAnswer) => {
+    if (!coupleId || !session || myAnswer) return; // Cannot change hunch after answering own
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await guessWYR(coupleId, uid, guess);
+  };
+  const myGuess: WYRAnswer | undefined = session?.guesses?.[uid];
+  const partnerActual: WYRAnswer | undefined = partnerId ? session?.answers[partnerId] : undefined;
+  const guessScore = session?.guessScore?.[uid];
+  const partnerName = partner?.name ?? 'partner';
+
   const handleNext = async () => {
     if (!coupleId || !session || !partnerId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -304,7 +317,28 @@ export default function WouldYouRatherScreen() {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Would You Rather</Text>
-        <View style={styles.scoreWrap}>
+        {/* Tap the score to open the session summary on demand — the same
+            modal that auto-opens on 10/25/50/100 milestones. Gives users
+            an anytime "how are we doing?" moment instead of only at
+            fixed thresholds. Disabled at total < 1 to avoid a blank
+            modal on question 1. */}
+        <TouchableOpacity
+          style={styles.scoreWrap}
+          onPress={() => {
+            if (session.score.total < 1) return;
+            setSummary({
+              matched: session.score.match,
+              total: session.score.total,
+              level: session.level,
+              becameBest: false,
+              previousBest: records.bestPct ? { ...records } : null,
+            });
+          }}
+          activeOpacity={session.score.total > 0 ? 0.7 : 1}
+          disabled={session.score.total < 1}
+          accessibilityRole="button"
+          accessibilityLabel={session.score.total > 0 ? 'View session summary' : 'No progress yet'}
+        >
           <Text style={[styles.score, { color: cfg.textColor }]}>{session.score.match}/{session.score.total}</Text>
           {(() => {
             const band = compatibilityBand(session.score.match, session.score.total);
@@ -314,7 +348,7 @@ export default function WouldYouRatherScreen() {
               <Text style={styles.scoreLabel}>matches</Text>
             );
           })()}
-        </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
@@ -350,6 +384,37 @@ export default function WouldYouRatherScreen() {
         })()}
 
         <Text style={styles.prompt}>Would you rather…</Text>
+
+        {/* Optional hunch — "guess what partner will pick" before you
+            answer your own. Fully skippable. Once you've answered your
+            own question the hunch chip locks (can't change guess after
+            committing). After reveal, an inline note tells you if you
+            were right. */}
+        {!myAnswer && (
+          <View style={styles.hunchRow}>
+            <Text style={styles.hunchLabel}>🔮 What will {partnerName} pick?</Text>
+            <View style={styles.hunchChipRow}>
+              <TouchableOpacity
+                style={[styles.hunchChip, myGuess === 'a' && { backgroundColor: cfg.textColor, borderColor: cfg.textColor }]}
+                onPress={() => handleGuess('a')}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`Guess partner will pick A`}
+              >
+                <Text style={[styles.hunchChipText, myGuess === 'a' && { color: Colors.white }]}>A</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.hunchChip, myGuess === 'b' && { backgroundColor: cfg.textColor, borderColor: cfg.textColor }]}
+                onPress={() => handleGuess('b')}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`Guess partner will pick B`}
+              >
+                <Text style={[styles.hunchChipText, myGuess === 'b' && { color: Colors.white }]}>B</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Option A */}
         <TouchableOpacity
@@ -394,6 +459,22 @@ export default function WouldYouRatherScreen() {
           <View style={[styles.resultCard, { backgroundColor: matched ? '#E8F5E9' : '#FFF9C4' }]}>
             <Text style={styles.resultEmoji}>{matched ? '🎉' : '🤔'}</Text>
             <Text style={styles.resultTitle}>{matched ? 'You match!' : 'You differ!'}</Text>
+
+            {/* Hunch result — only shows if user placed a hunch this round.
+                Fed by the guessScore Firestore update in nextWYRQuestion. */}
+            {myGuess && partnerActual && (
+              <View style={styles.hunchResult}>
+                <Text style={styles.hunchResultText}>
+                  {myGuess === partnerActual ? '🔮 You called it!' : `🔮 You guessed ${myGuess.toUpperCase()}, they picked ${partnerActual.toUpperCase()}`}
+                </Text>
+                {guessScore && guessScore.total > 0 && (
+                  <Text style={styles.hunchScoreText}>
+                    Hunches: {guessScore.correct}/{guessScore.total} ({Math.round((guessScore.correct / guessScore.total) * 100)}%)
+                  </Text>
+                )}
+              </View>
+            )}
+
             {currentQ.discussion && (
               <Text style={styles.discussionPrompt}>💬 {currentQ.discussion}</Text>
             )}
@@ -521,6 +602,15 @@ export default function WouldYouRatherScreen() {
                   </Text>
                 </View>
               ) : null}
+
+              {/* Hunch accuracy roll-up — only if user placed any hunches
+                  this session. Sits below best-ever line so match rate
+                  stays the headline stat. */}
+              {guessScore && guessScore.total > 0 && (
+                <Text style={styles.summaryHunchLine}>
+                  🔮 Hunches: {guessScore.correct}/{guessScore.total} ({Math.round((guessScore.correct / guessScore.total) * 100)}%) — how well you read {partnerName}
+                </Text>
+              )}
 
               <View style={styles.summaryBtnRow}>
                 <TouchableOpacity
@@ -717,6 +807,36 @@ const styles = StyleSheet.create({
   },
   timerDoneText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#5D4037' },
   timerStop: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
+
+  // Optional hunch row above the vote options. Small chip-style toggle
+  // with two letter chips (A / B). Absent for users who don't want to
+  // guess — they just skip straight to answering.
+  hunchRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    marginBottom: Spacing.xs, paddingHorizontal: Spacing.sm, paddingVertical: 8,
+    backgroundColor: Colors.white, borderRadius: Radius.full,
+    borderWidth: 1, borderColor: Colors.border, alignSelf: 'stretch',
+    justifyContent: 'space-between',
+  },
+  hunchLabel: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, flex: 1 },
+  hunchChipRow: { flexDirection: 'row', gap: 6 },
+  hunchChip: {
+    width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.white,
+  },
+  hunchChipText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+
+  // Hunch result on the reveal card — sits between the You match/differ
+  // header and the discussion prompt. Only rendered if the user actually
+  // placed a hunch this round.
+  hunchResult: {
+    alignItems: 'center', gap: 2,
+    paddingVertical: 6, paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full, backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  hunchResultText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  hunchScoreText: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted },
+  summaryHunchLine: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, marginTop: Spacing.sm, textAlign: 'center' },
   nextBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full, marginTop: Spacing.sm },
   nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   // Save-to-list affordance on match. Outline burgundy so it reads as a
