@@ -6,6 +6,43 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## Rebalance Spicy tab count (raised August 2026)
+
+### What
+
+Daily's Spicy tab renders 13 items per day (10 actions + 3 questions), noticeably heavier than Playful (8) and Deep (8). Consider capping Spicy at 5 actions total so all three tabs match at 8 items.
+
+### Why the imbalance exists
+
+Historical: pre-merge Flirty was a free Daily Picks category. When Daily merged (July 2026) and Flirty moved to the paid tier as part of the free/paid split, both Flirty (5/day) and Spicy (5/day) subpools got mapped under the Spicy tab. Net: 10 actions/day instead of 5.
+
+### Why deferred
+
+Not a bug. Two defensible framings for keeping asymmetric:
+- Paid users pay for more content → 13 vs 8 is a value differentiator
+- Spicy pool is larger than Sweet/Deep (164 combined vs 60/30) so daily rotation stays fresh without repetition even at 10/day
+
+Real users may or may not perceive the "wall of cards" feel. Wait for signal before cutting.
+
+### Three options if we do act
+
+- **B1:** Spicy 5 spicy + 0 flirty — Flirty content orphaned in daily rotation (still available if we surface it elsewhere)
+- **B2:** Spicy 3 spicy + 2 flirty — mixed, both subpools rotate, all content still surfaces just less frequently
+- **B3:** Merge Flirty items into Spicy pool permanently (rename category) — bigger refactor with data migration, cleanest long-term because the Flirty/Spicy distinction is invisible to users anyway (both paid, same tab)
+
+### Decision criteria for revisiting
+
+- Analytics show Spicy tab has high scroll depth but low completion rate (users feeling overwhelmed)
+- Reviews mention Spicy being "too much" or "hard to get through"
+- Session length on Spicy consistently longer than other tabs beyond what's expected
+
+### Effort estimate
+
+- B1 or B2: ~10 min (one-line change to DP_SOURCES or slice logic in daily.tsx rows builder)
+- B3: ~30-45 min (content re-categorization + migration path for existing dailyWishes docs)
+
+---
+
 ## Grow content pools (raised August 2026)
 
 ### What
