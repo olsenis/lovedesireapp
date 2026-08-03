@@ -21,7 +21,7 @@ const RITUALS = [
 // Nurture — intimate exploration. Mostly paid tier, deeper commitment.
 const NURTURE = [
   { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Log and reflect on your intimate moments',               route: '/intimacy-tracker', bg: '#FFF0F3', paid: true },
-  { emoji: '🧬', title: 'Intimacy Style',    subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true },
+  { emoji: '🧬', title: 'The Lovers',        subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true },
   { emoji: '🫁', title: 'Sensate Focus',     subtitle: 'Guided touch sessions, rekindling through presence',      route: '/sensate',   bg: '#E8F5E9', paid: true },
 ];
 

@@ -902,7 +902,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
   { a: { text: "A handwritten card on a special day", language: 'gifts' }, b: { text: "A whole day with no interruptions together", language: 'time' } },
 ];
 
-// ─── INTIMACY STYLE QUIZ ──────────────────────────────────────────────────────
+// ─── THE LOVERS (5-type intimacy quiz) ────────────────────────────────────────
 // Hybrid 5-type taxonomy: 3 custom names (Feeling, Spark, Explorer) +
 // 2 generic English descriptors (Sexual, Kinky) that also appear in
 // Jaiya Ma's original framework. Rationale for keeping the two common
@@ -910,8 +910,9 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
 // categories of intimate preference (like "extrovert" for personality),
 // not trademarkable in isolation, and clearer to users than more
 // abstract alternatives (Bold/Shadow felt too generic and too dark
-// respectively). Feature name stays "Intimacy Style Quiz" (not "Erotic
-// Blueprint") which is the primary IP protection.
+// respectively). Feature name is "The Lovers" (Tarot-adjacent, iconic,
+// zero IP overlap with "Erotic Blueprint®") which is the primary IP
+// protection.
 //
 // Internal enum keys ('sensual'/'sexual'/'energetic'/'kinky'/'shapeshifter')
 // unchanged for zero-migration compatibility with existing Firestore
