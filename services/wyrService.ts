@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, collection, runTransaction, getDoc, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, runTransaction, getDoc, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { WYRLevel } from '../constants/content';
 import { TodoCategory } from './todoService';
@@ -20,14 +20,6 @@ export interface WYRSession {
   // means unsaved. Reset back to false on nextWYRQuestion so the next
   // match's Save button starts fresh.
   savedToList?: boolean;
-  // Optional hunch per user for the current question — "what will my
-  // partner pick?" Cleared on nextWYRQuestion. Absent means the user
-  // skipped the hunch. Correct guesses feed guessScore below.
-  guesses?: Record<string, WYRAnswer>;
-  // Session-level guess accuracy for each user. Incremented in
-  // nextWYRQuestion based on whether the user's guess matched partner's
-  // actual answer. Absent map / uid = no hunches placed yet.
-  guessScore?: Record<string, { correct: number; total: number }>;
 }
 
 export function subscribeWYR(coupleId: string, onChange: (s: WYRSession | null) => void): Unsubscribe {
@@ -64,15 +56,6 @@ export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer
   });
 }
 
-// Save a hunch — "I think my partner will pick X" — for the current
-// question. Cleared on nextWYRQuestion. Optional per user per question,
-// so a caller who never taps a hunch chip simply never calls this.
-export async function guessWYR(coupleId: string, uid: string, guess: WYRAnswer): Promise<void> {
-  await updateDoc(doc(db, 'couples', coupleId, 'wyr', 'active'), {
-    [`guesses.${uid}`]: guess,
-  });
-}
-
 // Transaction so two rapid "Next question" taps (partner and me at reveal
 // time) don't both read questionIndex=N and both write N+1, or both add 1
 // to score.total from the same stale snapshot.
@@ -86,29 +69,9 @@ export async function nextWYRQuestion(coupleId: string, _session: WYRSession, ui
     // is a duplicate advance — no-op.
     if (Object.keys(live.answers ?? {}).length === 0) return;
     const matched = live.answers[uids[0]] === live.answers[uids[1]];
-    // Score any hunches placed this round. Each user's guess is checked
-    // against the OTHER user's actual answer. Guesses are opt-in per
-    // question so users who skipped just don't get their guessScore
-    // incremented.
-    const guesses = live.guesses ?? {};
-    const prevGuessScore = live.guessScore ?? {};
-    const nextGuessScore = { ...prevGuessScore };
-    for (const uid of uids) {
-      const guess = guesses[uid];
-      if (!guess) continue;
-      const otherUid = uids[0] === uid ? uids[1] : uids[0];
-      const partnerAnswer = live.answers[otherUid];
-      const prev = nextGuessScore[uid] ?? { correct: 0, total: 0 };
-      nextGuessScore[uid] = {
-        correct: prev.correct + (guess === partnerAnswer ? 1 : 0),
-        total: prev.total + 1,
-      };
-    }
     tx.update(ref, {
       questionIndex: live.questionIndex + 1,
       answers: {},
-      guesses: {},
-      guessScore: nextGuessScore,
       revealed: false,
       savedToList: false,
       'score.total': live.score.total + 1,
@@ -150,16 +113,13 @@ export async function saveMatchToList(
   });
 }
 
+// Delete the active session doc entirely so subscribeWYR fires with null
+// and the caller lands back on the level picker. Previous behaviour was
+// setDoc({ level: 'playful', ... }) which technically "reset" but locked
+// the user into Playful — the level badge "Change level" flow felt like
+// a no-op because it never surfaced the picker.
 export async function resetWYR(coupleId: string): Promise<void> {
-  await setDoc(doc(db, 'couples', coupleId, 'wyr', 'active'), {
-    level: 'playful',
-    questionIndex: 0,
-    answers: {},
-    guesses: {},
-    guessScore: {},
-    revealed: false,
-    score: { match: 0, total: 0 },
-  });
+  await deleteDoc(doc(db, 'couples', coupleId, 'wyr', 'active'));
 }
 
 // Historical best-ever match rate for the couple across all levels and
