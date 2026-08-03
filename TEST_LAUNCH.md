@@ -343,7 +343,17 @@ For each pool, tick the box only after reading every item. If you find one drift
   2. Tap the small level badge under the "Would you rather..." prompt (shows current cat emoji + label + `Change ›` hint)
   3. Confirm modal appears: `Change level? Your current score (X/Y) will reset.`
   4. Tap `Change level`
-  - **Expected:** Session resets, level picker reappears with 3 tabs. Pick a different level → new session starts fresh. Cancel button leaves session untouched. Regression check: pre-fix `handleReset` was defined in the code but wired to no UI element, so a couple who started Playful was locked into 90 Playful questions before they could try Romantic or Spicy.
+  - **Expected:** Session ends (resetWYR deletes the active doc), level picker reappears with 3 level cards + Themed session accordion + Add-your-own button. Pick a different level → new session starts fresh. Cancel button leaves session untouched. Regression check: pre-fix resetWYR did setDoc({level:'playful',...}) which technically "reset" but locked the user onto Playful without ever surfacing the picker.
+
+- [x] **WYR custom questions: add, edit, delete lifecycle** ⚠️ 📱
+  1. Level picker → tap `+ Add your own` → modal opens (empty library shortcut)
+  2. Fill Option A + B, pick a level, Save → couple's library now has 1 entry
+  3. Both partners: start a session on that level → newly added question shows FIRST (newest custom is prepended to the level array, and addCustomWYRQuestion resets the active session's questionIndex to 0)
+  4. Back to picker → button now reads `Your questions · 1 ›` → tap to expand accordion
+  5. Accordion shows `+ Add a new one` row + the custom question row with ✎ Edit and 🗑 Delete
+  6. Tap ✎ → same modal opens in EDIT mode (title: `Edit question`, save: `Save changes`), fields pre-filled → change something → Save changes → accordion row updates
+  7. Tap 🗑 → ConfirmModal `Delete this question? Both of you will stop seeing it.` → Confirm → row disappears, partner's device also drops it via subscription
+  - **Expected:** All three flows work. Add is cross-partner (both see it via realtime subscription). Edit preserves createdBy/createdAt (does NOT re-order the library or nuke session state — typo fix should be low-drama). Delete is destructive-styled and confirmed. Regression check: pre-fix the +Add button was write-only, no manage list existed — couples could only add, never edit or prune.
 
 - [ ] **Activity Cards flip → accept → complete** 📱 💰
   1. Phone A (premium): Activity Cards → flip card 12
