@@ -966,12 +966,12 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
     sensual: {
       summary: "You share the same language, atmosphere, sensation, and whole-body presence. When both of you create the right environment, your intimacy can be extraordinarily deep.",
       challenge: "Without differences to navigate, you may fall into ritual and lose spontaneity over time.",
-      tips: ["Let one partner lead the entire scene-setting and surprise the other", "Introduce a new sensory element each time, a new scent, texture, or location", "Occasionally try something that challenges your sensory comfort zone together"],
+      tips: ["Let one partner set the whole mood tonight and surprise the other, from lighting to music to how you first touch", "Introduce a new sensory element each time, a new scent, texture, or location", "Occasionally try something that challenges your sensory comfort zone together"],
     },
     sexual: {
       summary: "You bring atmosphere and presence; your partner brings directness and physical confidence. Together you can have deeply sensual and physically satisfying intimacy, if you meet each other halfway.",
       challenge: "Your partner may rush past the atmosphere you need, leaving you feeling disconnected before anything has started.",
-      tips: ["Tell your partner what the scene-setting does for you, make it tangible, not abstract", "Ask for 5 minutes of slow intentional touch before anything escalates", "Frame it positively: 'I love it when you slow down' works better than 'you're rushing'"],
+      tips: ["Tell your partner what setting the mood actually does for you, make it tangible, not abstract", "Ask for 5 minutes of slow intentional touch before anything escalates", "Frame it positively: 'I love it when you slow down' works better than 'you're rushing'"],
     },
     energetic: {
       summary: "You both value slow build, just from different angles. You love the full sensory experience; your partner loves tension and anticipation. These combine beautifully when given space.",
@@ -979,9 +979,9 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
       tips: ["Let your partner know when you're fully in the sensory zone, that's their cue to begin the tease", "Create atmosphere together, let your partner control the timing, you control how it feels", "Explore adding scent, sound, and texture to the anticipation itself"],
     },
     kinky: {
-      summary: "You create a world that's deeply felt; your partner wants structure and psychological depth within it. A richly designed scene can satisfy both of you completely.",
-      challenge: "Power play can feel jarring if the sensory environment isn't right first, your partner may want to start before you're fully ready.",
-      tips: ["Establish scene-entry rituals that set both the atmosphere and the roles simultaneously", "Tell your partner what sensory cues signal you're fully present and ready to begin", "Give them clear permission to start, that moment of consent can itself be part of the scene"],
+      summary: "You create a world that's deeply felt; your partner wants a clear shape to what happens inside it, who is leading, how it will unfold. When you build both the atmosphere and the framework together, you can satisfy each other completely.",
+      challenge: "The leader/follower feel your partner loves can jar you if the atmosphere isn't right first, they may want to start before you're fully ready.",
+      tips: ["Build a way of easing in together that sets both the mood and who is leading, all at once", "Tell your partner what sensory cues signal you're fully present and ready to begin", "Give them clear permission to start, that moment of handing over the lead can itself be part of what makes it hot"],
     },
     shapeshifter: {
       summary: "Your partner loves variety; you love depth. When they bring novelty to the sensory experience, new settings, new sensations, it can be extraordinary for both of you.",
@@ -993,7 +993,7 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
     sensual: {
       summary: "Your directness can be deeply exciting for a Feeling partner, once they're in the right headspace. The patience required from you will pay off significantly.",
       challenge: "You may interpret their need for atmosphere as hesitation or lack of interest, when it's actually them building toward you.",
-      tips: ["Engage in the scene-setting rather than waiting for it to end, light a candle, put on music, touch something", "See foreplay as part of sex, not a delay before it", "Ask 'what do you need right now?' and genuinely wait for the answer"],
+      tips: ["Get involved in setting the mood rather than waiting for it to end, light a candle, put on music, touch something", "See foreplay as part of sex, not a delay before it", "Ask 'what do you need right now?' and genuinely wait for the answer"],
     },
     sexual: {
       summary: "You're both direct, physical, and uninhibited, this creates high energy and little ambiguity about what you both want. The connection can be immediate and electric.",
@@ -1006,9 +1006,9 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
       tips: ["Let them tease you, practice enjoying anticipation without breaking it prematurely", "Give your partner the lead for the first 20 minutes, then take over fully", "Text them what you want to do that evening, hours before, and make them wait for it"],
     },
     kinky: {
-      summary: "Both of you are unafraid of intensity. You bring physical confidence; your partner brings psychological structure. Together you can explore bold territory safely.",
-      challenge: "Your physical directness may override the structured scene your partner needs to feel fully engaged.",
-      tips: ["Ask your partner to brief you on the scene before you begin, respect the setup", "Channel your directness through the agreed roles, not outside them", "Within the scene, signal when you want to take charge, ask permission in a way that fits the dynamic"],
+      summary: "Both of you are unafraid of intensity. You bring physical confidence; your partner brings the shape of who leads and how it unfolds. Together you can explore bold territory safely.",
+      challenge: "Your physical directness may override the framework your partner needs, the leader/follower feel that lets them be fully in it.",
+      tips: ["Ask your partner what kind of energy they want tonight before you jump in, then let their lead shape how you show up", "Stay inside the roles the two of you set up, don't drop them halfway through", "When you want to take charge, ask them for it inside the dynamic you set up together, that ask can itself be part of what turns them on"],
     },
     shapeshifter: {
       summary: "Your consistent physical confidence is a reliable anchor for your partner's variety. They'll always know where you stand, and that gives them freedom to explore.",
@@ -1033,9 +1033,9 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
       tips: ["Take turns deciding who ends the anticipation and when", "Set clear arrival moments in advance so the tension always has somewhere to go", "Enjoy the tension, but also give each other explicit permission to break it"],
     },
     kinky: {
-      summary: "Anticipation is its own form of power, and your partner understands this instinctively. You can use the tension itself as a form of dominance or surrender within their scene.",
-      challenge: "If you both love to withhold and tease, neither of you may take charge and the scene may stall in perpetual buildup.",
-      tips: ["Decide in advance who leads and who surrenders to the tension", "Let your partner build the structure while you fill it with the charge", "Use anticipation as an explicit tool within the power dynamic, make them wait for permission to proceed"],
+      summary: "Anticipation is its own form of power, and your partner understands this instinctively. You can use the tension itself as a way of leading or being led inside the shape they've set up.",
+      challenge: "If you both love to withhold and tease, neither of you may take charge and things can lose momentum in perpetual buildup.",
+      tips: ["Decide in advance who leads and who surrenders to the tension", "Let your partner set the framework of the evening while you fill it with the charge", "Use anticipation as an explicit tool inside the leader/follower feel you two set up, make them wait for permission to proceed"],
     },
     shapeshifter: {
       summary: "You both love unpredictability, you through sustained tension, they through constant variety. Together you can create encounters that feel completely alive and unrepeatable.",
@@ -1045,29 +1045,29 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
   },
   kinky: {
     sensual: {
-      summary: "A Feeling partner can create the most immersive setting for your scenes, the atmosphere, textures, and ritual of it all plays directly into what you need to feel fully engaged.",
-      challenge: "If you introduce power or structure too quickly, before the atmosphere is right, your partner may feel disconnected from what you've built.",
-      tips: ["Let them set the scene fully before you introduce the power dynamic", "Integrate sensory elements into your scenes, blindfolds, textures, temperature, scent", "Give them control of the environment; take control of everything else"],
+      summary: "A Feeling partner can create the most immersive world for the kind of intimate moments you love, the atmosphere, textures, and ritual all play directly into what you need to feel fully engaged.",
+      challenge: "If you introduce the leader/follower feel too quickly, before the atmosphere is right, your partner may feel disconnected from what you've built.",
+      tips: ["Let them set the mood fully before you introduce who is leading", "Weave sensory elements into what you two build together, blindfolds, textures, temperature, scent", "Give them control of the environment; take control of everything else"],
     },
     sexual: {
-      summary: "You provide psychological structure; your partner provides physical energy. When roles are clearly established, you can channel that directness into something powerful together.",
-      challenge: "Your partner's directness may pull both of you out of the scene before it's fully developed.",
-      tips: ["Set the scene explicitly before you begin, 'tonight, this is how it works'", "Channel their physical energy through the role structure rather than letting it override it", "Give them a clear role that lets them be direct within the world you've created"],
+      summary: "You provide the framework of who leads and how it unfolds; your partner provides physical energy. When the roles are clearly set, you can channel that directness into something powerful together.",
+      challenge: "Your partner's directness may pull both of you out of the shape you've built before it's fully developed.",
+      tips: ["Lay it out explicitly before you begin, 'tonight, this is how it works between us'", "Let the roles you've set channel their physical energy rather than letting it override the shape", "Give them a clear role that lets them be direct inside the world you've built together"],
     },
     energetic: {
-      summary: "Withholding and power are your natural territory. A Spark partner will be deeply drawn to you for it, they live for the very tension you know how to create.",
-      challenge: "If you both focus on tension and power, neither of you may deliver the release, the scene could stall in permanent buildup.",
-      tips: ["Decide who ends the tension and when, make it a deliberate choice within the scene", "Use your power to both create and resolve the anticipation, control the beginning and the end", "Let their need for release become the lever you hold, and use it consciously and precisely"],
+      summary: "Withholding and leading are your natural territory. A Spark partner will be deeply drawn to you for it, they live for the very tension you know how to create.",
+      challenge: "If you both focus on tension and holding back, neither of you may deliver the release, things could stall in permanent buildup.",
+      tips: ["Decide who ends the tension and when, make it a deliberate choice inside the dynamic you two set up", "Use your lead to both create and resolve the anticipation, own the beginning and the end", "Let their need for release become the lever you hold, and use it consciously and precisely"],
     },
     kinky: {
-      summary: "You speak the same language of power, structure, and psychological play, this can create remarkably rich, trusting, and layered intimate experiences.",
+      summary: "You both speak the same language of leading, being led, and the psychology of it, this can create remarkably rich, trusting, and layered intimate experiences.",
       challenge: "Without clear communication, you may both wait for the other to lead, or compete for the same role.",
-      tips: ["Establish role-switching rituals so both of you get to lead and follow over time", "Have regular out-of-role conversations about what's working and what you want to try", "Gradually push the boundary of your scenes together, introduce new elements slowly and with consent"],
+      tips: ["Build a rhythm of switching who leads so both of you get to give and receive over time", "Have regular conversations outside intimate time about what's working and what you want to try", "Push the boundaries of what you two do together slowly, introduce new elements with real consent each time"],
     },
     shapeshifter: {
-      summary: "Your Explorer partner can inhabit any role you create for them, this is a remarkable gift for a Kinky type. Their flexibility is a superpower in your hands.",
-      challenge: "Their natural variety-seeking may pull them out of the role you've established before the scene is complete.",
-      tips: ["Brief them clearly on the role before you begin, they can commit fully when they understand it", "Build variety into your scenes, new scenarios, new roles, so their need for novelty is met within your structure", "Give them clear permission to step out of the role when the scene ends, they'll appreciate the signal"],
+      summary: "Your Explorer partner can slip into any role you set up for them, which is genuinely rare and worth honoring. Their flexibility becomes a superpower in your hands.",
+      challenge: "Their natural pull toward variety may take them out of the role you've built before the moment is complete.",
+      tips: ["Walk them through the role clearly before you begin, they commit fully when they understand it", "Build variety into what you two do, new scenarios, new roles, so their need for novelty is met inside the shape you've set", "Give them a clear signal when the role ends, they'll appreciate knowing when to step back into being themselves"],
     },
   },
   shapeshifter: {
@@ -1087,9 +1087,9 @@ export const BLUEPRINT_COMPATIBILITY: Record<BlueprintType, Record<BlueprintType
       tips: ["Watch for when they're at peak tension, that's not the moment to change the mood", "Use your variety to extend and vary the anticipation rather than resolve it prematurely", "Ask 'more?' before you resolve anything, let them tell you when they're ready to arrive"],
     },
     kinky: {
-      summary: "You can embody any role your partner creates for them, this makes you an ideal partner for a Kinky type's scene work. Your flexibility is genuinely rare.",
-      challenge: "If you break from the role spontaneously, you'll disrupt your partner's carefully built psychological structure at its most important moment.",
-      tips: ["Stay in the role until they explicitly release you, ask before stepping out", "Bring your own role ideas to them in advance, pitch them outside the scene and let them build around your suggestion", "Tell them when you want to try something different, always between scenes, never during"],
+      summary: "You can slip into any role your partner sets up, which makes you an ideal fit for a Kinky type's kind of intimacy. Your flexibility is genuinely rare.",
+      challenge: "If you break from the role spontaneously, you'll disrupt the shape your partner has carefully built at its most important moment.",
+      tips: ["Stay in the role until they explicitly release you, ask before stepping out", "Bring your own role ideas to them ahead of time, pitch them outside the moment and let them build around your suggestion", "Tell them when you want to try something different, always between moments, not in the middle of one"],
     },
     shapeshifter: {
       summary: "You're both drawn to variety and novelty, this means you'll rarely be bored and can follow each other's mood shifts with genuine ease.",
