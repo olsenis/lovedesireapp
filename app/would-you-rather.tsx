@@ -203,21 +203,31 @@ export default function WouldYouRatherScreen() {
   //     order, and DON'T wrap the index — packs are meant to complete
   //     with a "pack done" moment, not loop indefinitely. Custom
   //     questions do NOT mix into packs (would break the arc).
-  //   - level mode: filter WYR_QUESTIONS by level and append couple's
-  //     own custom questions for that level, sorted by createdAt. Wrap
-  //     the index so the couple can keep playing past 60-70 questions.
-  //     Appending (not interleaving) means adding a new custom Q mid-
-  //     session doesn't shift the current questionIndex to a different
-  //     question — new ones just extend the tail.
+  //   - level mode: PREPEND couple's custom questions (newest first) to
+  //     WYR_QUESTIONS filtered by level. Wrap the index so the couple
+  //     can keep playing past the pool size.
+  //
+  //     Newest-custom-first means index 0 is always the most recent
+  //     custom question. The addCustomWYRQuestion service resets the
+  //     session's questionIndex to 0 on write, so a newly added Q
+  //     surfaces as the couple's very next question — matches user
+  //     expectation ("if I add a question, we should play it now, not
+  //     after grinding through 70 built-in ones").
   const activePack: WYRPack | null = session?.packId
     ? WYR_PACKS.find((p) => p.id === session.packId) ?? null
     : null;
+  const levelCustomSorted = session
+    ? customQs
+        .filter((q) => q.level === session.level)
+        .slice()
+        .sort((a, b) => b.createdAt - a.createdAt)
+    : [];
   const levelQuestions = session
     ? (activePack
         ? activePack.questions
         : [
+            ...levelCustomSorted,
             ...WYR_QUESTIONS.filter(q => q.level === session.level),
-            ...customQs.filter(q => q.level === session.level),
           ])
     : [];
   const packComplete = !!(activePack && session && session.questionIndex >= activePack.questions.length);

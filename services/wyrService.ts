@@ -208,6 +208,34 @@ export async function addCustomWYRQuestion(
     createdAt: Date.now(),
     createdBy: uid,
   });
+  // Best-effort jump the active session so the couple actually plays
+  // the new question next instead of it landing at the tail of a 70-item
+  // curated pool. Only touch the session when it's mid-level (not pack
+  // mode) and on the same level as the new question — otherwise a
+  // Playful custom would nuke a Romantic session's state for no reason.
+  //
+  // The pair with the levelQuestions array putting newest custom at
+  // index 0 (see would-you-rather.tsx) means questionIndex=0 = the new
+  // custom. Answers + revealed reset so both partners answer fresh; the
+  // score isn't touched, so the running match/total stays intact.
+  try {
+    const activeRef = doc(db, 'couples', coupleId, 'wyr', 'active');
+    const snap = await getDoc(activeRef);
+    if (snap.exists()) {
+      const live = snap.data() as WYRSession;
+      if (live.level === data.level && !live.packId) {
+        await updateDoc(activeRef, {
+          questionIndex: 0,
+          answers: {},
+          revealed: false,
+          savedToList: false,
+        });
+      }
+    }
+  } catch {
+    // No active session or write blocked — new custom will surface next
+    // time the couple starts a session on this level.
+  }
   return ref.id;
 }
 
