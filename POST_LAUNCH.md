@@ -6,6 +6,48 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## Grow content pools (raised August 2026)
+
+### What
+
+Several content pools are thin enough that active couples will loop through them within a few weeks. Targets below are informed by looking at the level picker with question counts visible — small numbers made the app feel content-poor even though 60-70 is plenty for typical use.
+
+Priority ranking (by likelihood of user hitting the loop point):
+
+| Pool | Current | Target | Delta | Estimated hours |
+|---|---|---|---|---|
+| WYR Playful | 70 | 150 | +80 | ~4h |
+| WYR Romantic | 60 | 120 | +60 | ~3h |
+| WYR Spicy | 61 | 100 | +39 | ~2h (paid) |
+| Activity Cards | 55 | 100 | +45 | ~2h (paid) |
+| Daily Picks Sweet | 60 | 100 | +40 | ~2h |
+| Daily Picks Flirty | 60 | 100 | +40 | ~2h (paid) |
+| Truth or Dare (all levels) | 141 | 250 | +109 | ~5h |
+
+**Total content debt: ~20h of focused writing across all pools.**
+
+### Why deferred
+
+Not launch-blocking. Even the smallest pool (Activity Cards at 55) supports weeks of use before repetition. Descriptor labels ("Light and fun", "Intimate, X-rated") replaced raw counts in the WYR level picker so users no longer see "70 questions" and pre-conclude the app is thin.
+
+### Decision criteria for revisiting
+
+- User reviews mention "we finished all the questions" or "keep seeing the same ones"
+- Retention data shows drop-off at week 3-4 when active users would naturally hit loop points
+- A specific content area gets specifically requested (e.g. "more Playful WYR" feedback)
+
+### How to add without touching code
+
+All pools live in `constants/content.ts` as arrays. Adding items = append new entries. No code changes needed. Existing `discussion` field on WYR items is optional but adds real value — worth including on every new one.
+
+### Non-goals for first content pass
+
+- No new categories or level types (keep 3 levels per pool for now)
+- No user-generated content (would need moderation flow, big scope)
+- No AI-generated content (quality variance, brand-tone risk — see ai_research.md in memory)
+
+---
+
 ## More WYR themed packs (raised August 2026)
 
 ### What

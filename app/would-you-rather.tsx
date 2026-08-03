@@ -264,7 +264,20 @@ export default function WouldYouRatherScreen() {
                 <Text style={styles.levelEmoji}>{cfg.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
-                  <Text style={styles.levelCount}>{level === 'spicy' && !isSubscribed ? '🔒 Premium' : `${WYR_QUESTIONS.filter(q => q.level === level).length} questions`}</Text>
+                  {/* Descriptor instead of raw count. 60-70 questions looks
+                      thin next to competitors ("500+ questions") even though
+                      it's plenty for typical couple use. Descriptor conveys
+                      what the level is FOR, which is the actually useful
+                      framing. Paid gate still surfaced explicitly. */}
+                  <Text style={styles.levelCount}>
+                    {level === 'spicy' && !isSubscribed
+                      ? '🔒 Premium'
+                      : level === 'playful'
+                        ? 'Light and fun, easy to start'
+                        : level === 'romantic'
+                          ? 'Deeper, connection-focused'
+                          : 'Intimate, X-rated'}
+                  </Text>
                 </View>
                 <Text style={[styles.levelArrow, { color: cfg.textColor }]}>›</Text>
               </TouchableOpacity>
@@ -284,7 +297,7 @@ export default function WouldYouRatherScreen() {
             <Text style={styles.levelEmoji}>🎨</Text>
             <View style={styles.levelInfo}>
               <Text style={[styles.levelLabel, { color: '#4A148C' }]}>Themed session</Text>
-              <Text style={styles.levelCount}>{WYR_PACKS.length} curated packs</Text>
+              <Text style={styles.levelCount}>Curated packs with a narrative arc</Text>
             </View>
             <Text style={[styles.levelArrow, { color: '#4A148C' }]}>{packPickerOpen ? '▾' : '›'}</Text>
           </TouchableOpacity>
