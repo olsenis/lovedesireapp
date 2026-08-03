@@ -183,7 +183,7 @@ All static game content lives here — import from this file, never hardcode in 
 - `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 4 programs x 30 tasks
 - `WYR_QUESTIONS` + `WYR_LEVEL_CONFIG` — 90 Would You Rather questions (Playful/Romantic/Spicy)
 - `BINGO_ACTIVITIES` + `BINGO_REWARDS` — 55 activities + 10 rewards for Intimacy Bingo
-- `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 224 items for Daily Picks in 3 categories (Sweet 60 + Flirty 60 + Spicy 104). Old 'sexual' category merged into 'spicy' July 2026. `sx()` factory still exists in content.ts but now emits `category: 'spicy'` with `sx-` id prefix so the diff stays small. See `memory/explicit_content_prompt.md` for Spicy.
+- `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 254 items across 4 categories (Sweet 60 + Flirty 60 + Spicy 104 + Deep 30). Old 'sexual' category merged into 'spicy' July 2026. Deep actions added Aug 2026 (reflective, connection-oriented prompts) to give the Deep tab in Daily its own action pool alongside its questions. `sx()` factory still exists but now emits `category: 'spicy'`; `dp()` factory added for Deep. See `memory/explicit_content_prompt.md` for Spicy.
 
 ### Content generation prompts (`memory/`)
 Three prompts for expanding content — always use the right one for the category:
@@ -241,7 +241,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)
 - Truth or Dare: Spicy level in both modes ("Together Right Here" and "Wherever You Are")
-- Daily: Deep + Spicy categories (Deep = 3 questions/day, no actions by design; Spicy = 3 questions + 10 actions/day, includes ex-Flirty picks + explicit Spicy picks + Spicy questions)
+- Daily: Deep + Spicy categories (Deep = 3 questions + 5 reflective actions/day, added Aug 2026; Spicy = 3 questions + 10 actions/day, includes ex-Flirty picks + explicit Spicy picks + Spicy questions)
 - Would You Rather: Spicy level
 - Fantasy Wishes (entire feature)
 - Erotic Blueprint (entire feature)

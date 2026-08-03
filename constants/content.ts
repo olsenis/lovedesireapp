@@ -1942,7 +1942,7 @@ export const BINGO_REWARDS: string[] = [
 
 // ─── DAILY WISHES ─────────────────────────────────────────────────────────────
 
-export type DailyWishCategory = 'sweet' | 'flirty' | 'spicy';
+export type DailyWishCategory = 'sweet' | 'flirty' | 'spicy' | 'deep';
 
 export interface DailyWishItem {
   id: string;
@@ -1954,6 +1954,12 @@ export const DAILY_WISH_CATEGORY_CONFIG: Record<DailyWishCategory, { label: stri
   sweet:   { label: 'Sweet',   emoji: '🌸', color: '#FCE4EC', textColor: '#880E4F' },
   flirty:  { label: 'Flirty',  emoji: '😏', color: '#F3E5F5', textColor: '#6A1B9A' },
   spicy:   { label: 'Spicy',   emoji: '🔥', color: '#FFCCBC', textColor: '#BF360C' },
+  // Deep actions are reflective, connection-oriented prompts — "listen
+  // for 20 min", "share a fear", "take a walk and talk". Added Aug 2026
+  // to give the Deep tab in Daily merged a set of vote items alongside
+  // its questions (previously questions-only, felt thin at 3 cards).
+  // Emoji + palette match Q:deep for visual continuity across the tab.
+  deep:    { label: 'Deep',    emoji: '💛', color: '#FCE4EC', textColor: '#880E4F' },
 };
 
 // ─── FANTASY WISHES (merged Wishlist + Fantasy) ───────────────────────────────
@@ -2387,6 +2393,7 @@ export const FANTASY_WISHES_PRESETS: FantasyWishesItem[] = [
 const sw = (text: string): DailyWishItem => ({ id: `sw-${text.slice(0,20)}`, text, category: 'sweet' });
 const fl = (text: string): DailyWishItem => ({ id: `fl-${text.slice(0,20)}`, text, category: 'flirty' });
 const sp = (text: string): DailyWishItem => ({ id: `sp-${text.slice(0,20)}`, text, category: 'spicy' });
+const dp = (text: string): DailyWishItem => ({ id: `dp-${text.slice(0,20)}`, text, category: 'deep' });
 // sx (old 'sexual') was merged into spicy in July 2026 — items that used sx
 // now go through sp() but keep an 'sx-' id prefix so old Firestore matches
 // don't collide with existing sp-prefixed ids.
@@ -2624,4 +2631,40 @@ export const DAILY_WISH_ITEMS: DailyWishItem[] = [
   sx("Spend an entire evening exploring only one specific type of stimulation"),
   sx("Have sex where the rule is that you must both orgasm at the same time"),
   sx("Try a couples' toy that stimulates both partners simultaneously"),
+
+  // ── Deep ─────────────────────────────────────────────────────────────────
+  // Reflective, connection-oriented action prompts. Tone: slow, curious,
+  // no rush. Deliberately less "task-y" than Sweet — many are talk/listen
+  // shaped rather than do-a-thing shaped. Deep tab is paid, same as
+  // Q:deep.
+  dp("Spend 20 minutes listening to each other's day without interrupting"),
+  dp("Take a slow walk and talk about what's on your mind"),
+  dp("Share the highlight and the low point of your week"),
+  dp("Sit face to face and take three deep breaths together"),
+  dp("Ask one question you've been meaning to ask but haven't"),
+  dp("Share something you're grateful for about them today"),
+  dp("Talk about what you need more of in the relationship right now"),
+  dp("Share a fear you've been holding onto lately"),
+  dp("Ask about their childhood, one thing you don't know yet"),
+  dp("Talk about a small dream you haven't shared with each other"),
+  dp("Share what you love about being together right now"),
+  dp("Ask what makes them feel most loved lately"),
+  dp("Talk about a hard thing you've been avoiding"),
+  dp("Share what home means to you"),
+  dp("Ask what they want more of in their life"),
+  dp("Talk about what makes you feel safe with each other"),
+  dp("Share the version of yourself you want to grow into"),
+  dp("Ask what they'd do with one perfect day"),
+  dp("Talk about a boundary that would help this week"),
+  dp("Share what you needed most this week"),
+  dp("Talk about a value that matters to both of you"),
+  dp("Share the moment you felt closest to them recently"),
+  dp("Ask what makes them feel unseen sometimes"),
+  dp("Talk about how you handle stress differently"),
+  dp("Share a memory that changed how you see them"),
+  dp("Ask what part of their day they wish you were in"),
+  dp("Talk about what you're proud of them for lately"),
+  dp("Share one thing you want to try together this month"),
+  dp("Ask what season of life they feel they're in"),
+  dp("Do a body scan together, no phones, just present for 5 minutes"),
 ];

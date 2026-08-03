@@ -30,23 +30,20 @@ type MergedCategory = QuestionCategory;
 const MERGED_CATEGORIES: MergedCategory[] = ['playful', 'deep', 'spicy'];
 const PAID_MERGED_CATEGORIES: MergedCategory[] = ['deep', 'spicy'];
 
-// Which underlying DP categories flow into each merged bucket. Deep has
-// no actions on purpose; the value is an empty array so the mapper stays
-// uniform.
+// Which underlying DP categories flow into each merged bucket. Deep gained
+// its own action pool in August 2026 — the tab was previously questions-
+// only which felt thin at 3 cards next to Playful (8) and Spicy (13).
 const DP_SOURCES: Record<MergedCategory, DailyWishCategory[]> = {
   playful: ['sweet'],
-  deep: [],
+  deep: ['deep'],
   spicy: ['flirty', 'spicy'],
 };
 
 // Per-category tagline shown as the italic subtitle on the progress card.
-// Each cat gets its own voice — Deep still leans on its original "slow
-// evening" framing, Playful and Spicy get copy that matches their energy.
-// Replaces the generic "votes and answers are always private" line that
-// used to render for non-Deep categories.
+// Each cat gets its own voice matching its energy.
 const CATEGORY_TAGLINES: Record<MergedCategory, string> = {
   playful: 'A little mix. Quick picks, a couple of questions.',
-  deep: 'Slow evening. Three conversations, no rush.',
+  deep: "Slow evening. Talk, listen, choose what you'd like to do together.",
   spicy: "A big menu. Vote what you're into, answer what you dare.",
 };
 

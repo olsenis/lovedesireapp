@@ -29,8 +29,13 @@ function deterministicShuffle(pool: DailyWishItem[], seedStr: string): DailyWish
   return arr;
 }
 
-const CATEGORIES: DailyWishCategory[] = ['sweet', 'flirty', 'spicy'];
-const EXPECTED_ITEM_COUNT = CATEGORIES.length * 5; // 3 cats × 5 picks
+// Order matters for migration safety — 'deep' appended at the end so
+// existing vote indices for sweet/flirty/spicy don't shift when the
+// stale-doc detector regenerates a pre-Deep-actions doc. Sweet takes
+// indices 0-4, Flirty 5-9, Spicy 10-14 as before; Deep is the new
+// 15-19 slot.
+const CATEGORIES: DailyWishCategory[] = ['sweet', 'flirty', 'spicy', 'deep'];
+const EXPECTED_ITEM_COUNT = CATEGORIES.length * 5; // 4 cats × 5 picks = 20
 
 function pickDailyItems(date: string, coupleId: string): DailyWishItem[] {
   const result: DailyWishItem[] = [];
@@ -42,8 +47,13 @@ function pickDailyItems(date: string, coupleId: string): DailyWishItem[] {
   return result;
 }
 
-// Doc is stale if item count doesn't match current schema (was 20 for 4 cats,
-// now 15 for 3 cats) or if any item still carries the removed 'sexual' category.
+// Doc is stale if item count doesn't match current schema. History: was
+// 20 items for 4 cats (sweet/flirty/spicy/sexual), then 15 for 3 cats
+// after 'sexual' merged into 'spicy' July 2026, now 20 again for 4 cats
+// after Deep actions added August 2026 (deep appended at end so old
+// vote indices survive). Also catches any lingering item with a
+// category that isn't in the current CATEGORIES set (e.g. legacy
+// 'sexual').
 function isStaleDoc(items: DailyWishItem[]): boolean {
   if (items.length !== EXPECTED_ITEM_COUNT) return true;
   return items.some((i) => !CATEGORIES.includes(i.category));

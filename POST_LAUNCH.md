@@ -22,6 +22,7 @@ Priority ranking (by likelihood of user hitting the loop point):
 | Activity Cards | 55 | 100 | +45 | ~2h (paid) |
 | Daily Picks Sweet | 60 | 100 | +40 | ~2h |
 | Daily Picks Flirty | 60 | 100 | +40 | ~2h (paid) |
+| Daily Picks Deep | 30 | 60 | +30 | ~1.5h (paid) — MVP set landed Aug 2026, grow when analytics justify |
 | Truth or Dare (all levels) | 141 | 250 | +109 | ~5h |
 
 **Total content debt: ~20h of focused writing across all pools.**

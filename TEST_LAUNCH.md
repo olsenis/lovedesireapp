@@ -276,7 +276,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 - [x] **Daily category picker: all 3 tabs accessible for paid user** 💰
   1. Paid user opens `/daily`, taps each of `😊 Playful` / `💛 Deep` / `🔥 Spicy`
-  - **Expected:** No 🔒 badges. Each tab opens instantly, no `/upgrade` redirect. Deep shows 3 questions only (0 actions by design). Spicy shows 13 items (4 warmup PICK + interleaved QUESTIONs). Playful shows 8 items (3 warmup PICK + interleaved). Each cat has its own tagline copy.
+  - **Expected:** No 🔒 badges. Each tab opens instantly, no `/upgrade` redirect. Deep shows 5 PICK + 3 QUESTION cards (Deep gained its own action pool August 2026 — was 3 questions only pre-fix). Spicy shows 13 items (4 warmup PICK + interleaved QUESTIONs). Playful shows 8 items (3 warmup PICK + interleaved). Each cat has its own tagline copy.
 
 - [x] **Legacy routes redirect cleanly** ⚠️
   1. Navigate to `/daily-wishes` (no param) → auto-replaces to `/daily?category=playful`
@@ -292,7 +292,7 @@ For each pool, tick the box only after reading every item. If you find one drift
 
 - [x] **Daily rows interleave (actions first + spread pattern)** ⚠️
   1. Both partners open Daily → Playful with no votes/answers yet
-  - **Expected:** Card sequence is exactly `A,A,A,Q,A,Q,A,Q` — 3 warmup action cards (burgundy `PICK` pill), then alternating action/question after that. Spicy: `A,A,A,A,Q,A,A,Q,A,A,Q,A,A`. Deep: `Q,Q,Q` unchanged. Both partners see identical order. Regression check: pre-fix Playful showed 5 actions clustered then 3 questions clustered — user flagged this as a "dull wall".
+  - **Expected:** Card sequence is exactly `A,A,A,Q,A,Q,A,Q` — 3 warmup action cards (burgundy `PICK` pill), then alternating action/question after that. Spicy: `A,A,A,A,Q,A,A,Q,A,A,Q,A,A`. Deep: `A,A,A,Q,A,Q,A,Q` (5 reflective PICK + 3 QUESTION, same interleave shape as Playful now that Deep has an action pool). Both partners see identical order. Regression check: pre-July-2026 Playful showed 5 actions clustered then 3 questions clustered — user flagged this as a "dull wall". Deep was questions-only until August 2026.
 
 - [x] **Daily progress card shows one combined counter** ⚠️
   1. Playful: vote on some actions, answer some questions
