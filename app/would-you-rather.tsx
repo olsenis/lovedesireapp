@@ -102,6 +102,12 @@ export default function WouldYouRatherScreen() {
     previousBest: WYRRecords | null;
   } | null>(null);
   const [records, setRecords] = useState<WYRRecords>({});
+  // Live discussion timer — optional 30s countdown that turns the
+  // discussion prompt into a real ritual ("phones down, talk, when the
+  // timer beeps we're done"). Only rendered when the current question
+  // has a discussion string; question with no prompt is a straight tap.
+  const [timerSeconds, setTimerSeconds] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const help = useHelp('would-you-rather');
   const { isSubscribed } = useSubscription();
 
@@ -189,6 +195,36 @@ export default function WouldYouRatherScreen() {
     await startWYR(coupleId, level);
   };
 
+  // Discussion timer — start counts from 30 down. Interval stored in ref
+  // so we can cancel cleanly on Next question / unmount / stop tap.
+  // At 0 → success haptic + timer clears. Also cleared when the reveal
+  // state goes away (nextWYRQuestion clears `revealed` in Firestore).
+  const startTimer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setTimerSeconds(30);
+    timerRef.current = setInterval(() => {
+      setTimerSeconds((s) => {
+        if (s === null) return null;
+        if (s <= 1) {
+          if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  };
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setTimerSeconds(null);
+  };
+  useEffect(() => {
+    // Clear timer if reveal state goes away (partner tapped Next, session reset, etc.)
+    if (!session?.revealed && timerRef.current) stopTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [session?.revealed]);
+
   const handleAnswer = async (answer: WYRAnswer) => {
     if (!coupleId || !session || myAnswer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -260,7 +296,11 @@ export default function WouldYouRatherScreen() {
   const cfg = WYR_LEVEL_CONFIG[session.level];
 
   return (
-    <View style={styles.screen}>
+    // Screen background gets a very subtle wash of the level's tint colour
+    // so Playful feels warm yellow, Romantic feels blush, Spicy feels
+    // deeper peach. Alpha kept low (~13% via '22' hex append) so text
+    // and cards remain crisp — this is a mood signal, not a takeover.
+    <View style={[styles.screen, { backgroundColor: cfg.color + '55' }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Would You Rather</Text>
@@ -318,7 +358,7 @@ export default function WouldYouRatherScreen() {
           disabled={!!myAnswer}
           activeOpacity={0.85}
          accessibilityRole="button">
-          <Text style={[styles.optionLetter, myAnswer === 'a' && { color: Colors.white }]}>A</Text>
+          <Text style={[styles.optionLetter, { color: cfg.textColor }, myAnswer === 'a' && { color: Colors.white }]}>A</Text>
           <Text style={[styles.optionText, myAnswer === 'a' && { color: Colors.white }]}>{currentQ.a}</Text>
           {bothAnswered && partnerAnswer === 'a' && <Text style={styles.partnerTag}>{partner?.name ?? 'Partner'}</Text>}
         </TouchableOpacity>
@@ -336,7 +376,7 @@ export default function WouldYouRatherScreen() {
           disabled={!!myAnswer}
           activeOpacity={0.85}
          accessibilityRole="button">
-          <Text style={[styles.optionLetter, myAnswer === 'b' && { color: Colors.white }]}>B</Text>
+          <Text style={[styles.optionLetter, { color: cfg.textColor }, myAnswer === 'b' && { color: Colors.white }]}>B</Text>
           <Text style={[styles.optionText, myAnswer === 'b' && { color: Colors.white }]}>{currentQ.b}</Text>
           {bothAnswered && partnerAnswer === 'b' && <Text style={styles.partnerTag}>{partner?.name ?? 'Partner'}</Text>}
         </TouchableOpacity>
@@ -357,17 +397,60 @@ export default function WouldYouRatherScreen() {
             {currentQ.discussion && (
               <Text style={styles.discussionPrompt}>💬 {currentQ.discussion}</Text>
             )}
+
+            {/* Discussion timer — appears only when there's a prompt.
+                Turns the prompt into a phones-down ritual: 30s countdown,
+                success haptic at zero. Dismissable at any time. Cleared
+                automatically on Next question. */}
+            {currentQ.discussion && (
+              timerSeconds === null ? (
+                <TouchableOpacity
+                  style={styles.timerStartBtn}
+                  onPress={startTimer}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel="Start 30 second talk timer"
+                >
+                  <Text style={styles.timerStartText}>⏱ Talk for 30s</Text>
+                </TouchableOpacity>
+              ) : timerSeconds > 0 ? (
+                <View style={styles.timerActive}>
+                  <Text style={styles.timerNum}>0:{timerSeconds.toString().padStart(2, '0')}</Text>
+                  <Text style={styles.timerHint}>Phones down. Talk. Beep when done.</Text>
+                  <TouchableOpacity onPress={stopTimer} accessibilityRole="button">
+                    <Text style={styles.timerStop}>Stop</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.timerDone}>
+                  <Text style={styles.timerDoneText}>💛 Time's up</Text>
+                  <TouchableOpacity onPress={stopTimer} accessibilityRole="button">
+                    <Text style={styles.timerStop}>Dismiss</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            )}
             {/* Save-to-list only on match. Match already means both partners
                 chose the same option, so no double-confirm handshake needed —
                 one tap saves in the couple's name. Second tap on the other
                 phone no-ops via transaction guard on savedToList. */}
             {matched && (
               session.savedToList ? (
-                <View style={styles.savedChip}>
+                // Tappable so the user can jump straight to the list they
+                // just added to instead of Back → Home → Your List → tab.
+                // Same reason applied to the Daily action match pill in
+                // app/daily.tsx.
+                <TouchableOpacity
+                  style={styles.savedChip}
+                  onPress={() => router.push('/todo' as any)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Saved to ${saveCategoryLabel(saveCategory(session.level))}. Tap to view Together List.`}
+                >
                   <Text style={styles.savedChipText}>
-                    ✓ Saved to {saveCategoryLabel(saveCategory(session.level))}
+                    ✓ Saved to {saveCategoryLabel(saveCategory(session.level))} · View ›
                   </Text>
-                </View>
+                </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={styles.saveBtn}
@@ -610,6 +693,30 @@ const styles = StyleSheet.create({
   resultEmoji: { fontSize: 36 },
   resultTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },
   discussionPrompt: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
+
+  // Discussion timer — start button is outlined burgundy (secondary), the
+  // active countdown is a small card, and "time's up" is a warm sign-off.
+  // All three states sit in the same slot on the reveal card so the layout
+  // doesn't jump as the timer progresses.
+  timerStartBtn: {
+    paddingVertical: 10, paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy,
+    marginTop: 6,
+  },
+  timerStartText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  timerActive: {
+    marginTop: 6, paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.lg, backgroundColor: Colors.white, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border, gap: 4,
+  },
+  timerNum: { fontFamily: Fonts.heading, fontSize: 34, color: Colors.burgundy, lineHeight: 38 },
+  timerHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
+  timerDone: {
+    marginTop: 6, paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.lg, backgroundColor: '#FFF9C4', alignItems: 'center', gap: 4,
+  },
+  timerDoneText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#5D4037' },
+  timerStop: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
   nextBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full, marginTop: Spacing.sm },
   nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   // Save-to-list affordance on match. Outline burgundy so it reads as a

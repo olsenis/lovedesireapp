@@ -386,7 +386,14 @@ export default function DailyScreen() {
                       </View>
                       <Text style={styles.matchModalText}>{item.text}</Text>
                       {both ? (
-                        <Text style={styles.addedText}>✓ Added to Together List</Text>
+                        <TouchableOpacity
+                          onPress={() => { setShowMatches(false); router.push('/todo' as any); }}
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                          accessibilityLabel="Added to Together List. Tap to view."
+                        >
+                          <Text style={styles.addedText}>✓ Added to Together List · View ›</Text>
+                        </TouchableOpacity>
                       ) : iAdded ? (
                         <Text style={styles.waitingText}>Waiting for {partnerName} ✓</Text>
                       ) : (
@@ -492,9 +499,15 @@ function ActionCard({
             <Text style={styles.matchBannerText}>✓ You both want this!</Text>
           </View>
           {bothAddedToList ? (
-            <View style={styles.addedBadge}>
-              <Text style={styles.addedText}>✓ Added to Together List</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.addedBadge}
+              onPress={() => router.push('/todo' as any)}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Added to Together List. Tap to view."
+            >
+              <Text style={styles.addedText}>✓ Added to Together List · View ›</Text>
+            </TouchableOpacity>
           ) : iAdded ? (
             <Text style={styles.waitingText}>Waiting for {partnerName} to add ✓</Text>
           ) : (
