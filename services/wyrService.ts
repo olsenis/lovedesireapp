@@ -242,3 +242,25 @@ export async function addCustomWYRQuestion(
 export async function deleteCustomWYRQuestion(coupleId: string, id: string): Promise<void> {
   await deleteDoc(doc(db, 'couples', coupleId, 'wyrCustom', id));
 }
+
+// Edit an existing custom question. createdBy/createdAt intentionally
+// not editable — createdBy is the author record, createdAt drives the
+// deterministic "newest custom first" ordering in the level array.
+// If either changed, both partners could see the couple's library
+// re-order unexpectedly.
+export async function updateCustomWYRQuestion(
+  coupleId: string,
+  id: string,
+  data: { a: string; b: string; level: WYRLevel; discussion?: string },
+): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'wyrCustom', id);
+  const trimmedDiscussion = data.discussion?.trim() ?? '';
+  await updateDoc(ref, {
+    a: data.a,
+    b: data.b,
+    level: data.level,
+    // Empty string when cleared — the WYR reveal card checks
+    // `currentQ.discussion` truthiness so empty ≡ absent for rendering.
+    discussion: trimmedDiscussion,
+  });
+}

@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, WYRRecords, WYRCustomQuestion } from '../services/wyrService';
+import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, updateCustomWYRQuestion, deleteCustomWYRQuestion, WYRRecords, WYRCustomQuestion } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYR_PACKS, WYRLevel, WYRPack } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
@@ -117,6 +117,15 @@ export default function WouldYouRatherScreen() {
   const [addDiscussion, setAddDiscussion] = useState('');
   const [addLevel, setAddLevel] = useState<WYRLevel>('playful');
   const [saving, setSaving] = useState(false);
+  // Manage-list accordion. Expanded shows the couple's authored library
+  // with edit + delete affordances per row. Collapsed keeps the picker
+  // clean when the library is empty or the user isn't managing.
+  const [manageExpanded, setManageExpanded] = useState(false);
+  // editingId non-null → modal is in EDIT mode, Save calls
+  // updateCustomWYRQuestion; null → ADD mode, Save calls
+  // addCustomWYRQuestion. Same modal serves both to keep JSX simple.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const help = useHelp('would-you-rather');
   const { isSubscribed } = useSubscription();
 
@@ -339,22 +348,98 @@ export default function WouldYouRatherScreen() {
             </View>
             <Text style={[styles.levelArrow, { color: '#4A148C' }]}>{packPickerOpen ? '▾' : '›'}</Text>
           </TouchableOpacity>
-          {/* Author your own — small link at the bottom, less prominent
-              than the level cards. Opens a modal to add a new WYR
-              question that mixes into the couple's pool for the chosen
-              level. Existing custom questions count shown inline so the
-              couple sees their library grow. */}
+          {/* Author-your-own area. Two states:
+                - Library empty (N=0): single button that opens the add
+                  modal directly. Fastest path to the first custom.
+                - Library non-empty (N>0): tap the outer button toggles
+                  a manage accordion below with edit/delete per row and
+                  a fresh "+ Add new" entry at top. */}
           <TouchableOpacity
             style={styles.addOwnBtn}
-            onPress={() => setShowAddModal(true)}
+            onPress={() => {
+              if (customQs.length === 0) {
+                setEditingId(null);
+                setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
+                setShowAddModal(true);
+              } else {
+                setManageExpanded((v) => !v);
+              }
+            }}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel="Add your own question"
+            accessibilityLabel={customQs.length === 0 ? 'Add your own question' : `Manage your ${customQs.length} question${customQs.length === 1 ? '' : 's'}`}
           >
             <Text style={styles.addOwnBtnText}>
-              + Add your own {customQs.length > 0 ? `· ${customQs.length} yours` : ''}
+              {customQs.length === 0
+                ? '+ Add your own'
+                : `Your questions · ${customQs.length} ${manageExpanded ? '▾' : '›'}`}
             </Text>
           </TouchableOpacity>
+
+          {/* Manage list accordion. Only rendered when there's actually
+              a library and it's been expanded. Shows a fresh "+ Add new"
+              at the top so users don't have to close and reopen to add
+              another, then each row is: level emoji + A vs B preview
+              + Edit + Delete icons. */}
+          {manageExpanded && customQs.length > 0 && (
+            <View style={styles.manageList}>
+              <TouchableOpacity
+                style={styles.manageAddNewRow}
+                onPress={() => {
+                  setEditingId(null);
+                  setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
+                  setShowAddModal(true);
+                }}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Add a new question"
+              >
+                <Text style={styles.manageAddNewText}>+ Add a new one</Text>
+              </TouchableOpacity>
+              {customQs
+                .slice()
+                .sort((a, b) => b.createdAt - a.createdAt)
+                .map((q) => {
+                  const lvlCfg = WYR_LEVEL_CONFIG[q.level];
+                  return (
+                    <View key={q.id} style={styles.manageRow}>
+                      <Text style={styles.manageRowEmoji}>{lvlCfg.emoji}</Text>
+                      <View style={styles.manageRowInfo}>
+                        <Text style={styles.manageRowText} numberOfLines={2}>
+                          {q.a} <Text style={styles.manageRowVs}>vs</Text> {q.b}
+                        </Text>
+                        <Text style={styles.manageRowLevel}>{lvlCfg.label}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEditingId(q.id);
+                          setAddA(q.a);
+                          setAddB(q.b);
+                          setAddDiscussion(q.discussion ?? '');
+                          setAddLevel(q.level);
+                          setShowAddModal(true);
+                        }}
+                        style={styles.manageRowBtn}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Edit question"
+                      >
+                        <Text style={styles.manageRowBtnText}>✎</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => setDeletingId(q.id)}
+                        style={styles.manageRowBtn}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Delete question"
+                      >
+                        <Text style={styles.manageRowBtnText}>🗑</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+            </View>
+          )}
 
           {packPickerOpen && WYR_PACKS.map((pack) => {
             const locked = pack.paid && !isSubscribed;
@@ -392,7 +477,7 @@ export default function WouldYouRatherScreen() {
         <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => setShowAddModal(false)}>
           <View style={styles.addModalOverlay}>
             <View style={styles.addModalCard}>
-              <Text style={styles.addModalTitle}>Add your own question</Text>
+              <Text style={styles.addModalTitle}>{editingId ? 'Edit question' : 'Add your own question'}</Text>
               <Text style={styles.addModalHint}>Both of you will see it mixed in with the built-in questions on the level you pick.</Text>
 
               <Text style={styles.addModalLabel}>Option A</Text>
@@ -458,7 +543,11 @@ export default function WouldYouRatherScreen() {
               <View style={styles.addModalBtnRow}>
                 <TouchableOpacity
                   style={styles.addModalCancelBtn}
-                  onPress={() => { setShowAddModal(false); setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful'); }}
+                  onPress={() => {
+                    setShowAddModal(false);
+                    setEditingId(null);
+                    setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
+                  }}
                   activeOpacity={0.85}
                   accessibilityRole="button"
                 >
@@ -470,14 +559,20 @@ export default function WouldYouRatherScreen() {
                     if (!coupleId || !addA.trim() || !addB.trim() || saving) return;
                     setSaving(true);
                     try {
-                      await addCustomWYRQuestion(coupleId, uid, {
+                      const payload = {
                         a: addA.trim(),
                         b: addB.trim(),
                         level: addLevel,
                         ...(addDiscussion.trim() ? { discussion: addDiscussion.trim() } : {}),
-                      });
+                      };
+                      if (editingId) {
+                        await updateCustomWYRQuestion(coupleId, editingId, payload);
+                      } else {
+                        await addCustomWYRQuestion(coupleId, uid, payload);
+                      }
                       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                       setShowAddModal(false);
+                      setEditingId(null);
                       setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
                     } finally {
                       setSaving(false);
@@ -487,12 +582,26 @@ export default function WouldYouRatherScreen() {
                   activeOpacity={0.85}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.addModalSaveText}>{saving ? 'Saving…' : 'Save'}</Text>
+                  <Text style={styles.addModalSaveText}>{saving ? 'Saving…' : (editingId ? 'Save changes' : 'Save')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
+
+        <ConfirmModal
+          visible={!!deletingId}
+          title="Delete this question?"
+          message="Both of you will stop seeing it. This cannot be undone."
+          confirmLabel="Delete"
+          destructive
+          onConfirm={async () => {
+            if (!coupleId || !deletingId) return;
+            await deleteCustomWYRQuestion(coupleId, deletingId);
+            setDeletingId(null);
+          }}
+          onCancel={() => setDeletingId(null)}
+        />
       </View>
     );
   }
@@ -988,6 +1097,33 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full, backgroundColor: Colors.burgundy,
   },
   addModalSaveText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+
+  // Manage-list accordion under +Add. Nested slightly (marginLeft on
+  // parent-alike rows) to signal "child of the +Add row above". Each
+  // row is compact so a library of 10-15 questions doesn't dominate
+  // the picker screen.
+  manageList: { gap: 6, marginTop: -4, marginLeft: Spacing.md },
+  manageAddNewRow: {
+    paddingVertical: 10, paddingHorizontal: Spacing.md,
+    borderRadius: Radius.lg, backgroundColor: 'rgba(136,14,79,0.08)',
+    alignItems: 'center',
+  },
+  manageAddNewText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  manageRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    padding: Spacing.sm, backgroundColor: Colors.white,
+    borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border,
+  },
+  manageRowEmoji: { fontSize: 20 },
+  manageRowInfo: { flex: 1, gap: 2 },
+  manageRowText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 18 },
+  manageRowVs: { fontFamily: Fonts.bodyItalic, color: Colors.muted },
+  manageRowLevel: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted },
+  manageRowBtn: {
+    width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(136,14,79,0.06)',
+  },
+  manageRowBtnText: { fontSize: 15, color: Colors.burgundy },
   nextBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full, marginTop: Spacing.sm },
   nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   // Save-to-list affordance on match. Outline burgundy so it reads as a
