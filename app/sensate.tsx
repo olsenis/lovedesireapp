@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, AppState, Platform } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
@@ -93,7 +94,6 @@ export default function SensateScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
-  const [running, setRunning] = useState(false);
   const [marked, setMarked] = useState(false);
   const [progress, setProgress] = useState<SensateProgress>({
     stage1: { count: 0, lastDate: '' },
@@ -108,10 +108,27 @@ export default function SensateScreen() {
   // their own action triggered the completion).
   const [cycleModalCount, setCycleModalCount] = useState<number | null>(null);
   const help = useHelp('sensate');
-  const [elapsed, setElapsed] = useState(0);
+  // Wall-clock timer state. `runStartMs` is when the current run leg began
+  // (Date.now()); `accumulatedMs` is time from earlier legs (before the
+  // most recent pause). Deriving elapsed from Date.now() means the timer
+  // keeps counting even when the screen is off or the app is backgrounded.
+  const [runStartMs, setRunStartMs] = useState<number | null>(null);
+  const [accumulatedMs, setAccumulatedMs] = useState(0);
+  // Bumps every second while running so the countdown re-renders. The
+  // source of truth is still the wall clock; this just drives redraws.
+  const [tick, setTick] = useState(0);
   const [promptIndex, setPromptIndex] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const promptAnim = useRef(new Animated.Value(1)).current;
+  const lastPromptRotateSecRef = useRef(0);
+  // Identifier for the currently scheduled completion notification (if any).
+  // Kept in a ref so pause/resume/back can cancel it without waiting for
+  // React re-renders.
+  const scheduledNotifIdRef = useRef<string | null>(null);
+
+  const running = runStartMs !== null;
+  const elapsed = Math.floor(
+    (accumulatedMs + (runStartMs !== null ? Date.now() - runStartMs : 0)) / 1000
+  );
 
   const coupleId = profile?.coupleId;
 
@@ -126,47 +143,112 @@ export default function SensateScreen() {
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
 
+  // Redraw tick — every second while running, purely to re-render the
+  // countdown. Wall-clock is authoritative, so if the tick skips (backgrounded
+  // JS timer throttling on iOS), elapsed still resolves correctly on next fire.
   useEffect(() => {
     if (!running) return;
-    // Use a local handle to avoid stale ref bugs across re-runs of this effect.
-    const handle = setInterval(() => {
-      setElapsed((e) => {
-        if (totalSeconds > 0 && e >= totalSeconds) {
-          clearInterval(handle);
-          intervalRef.current = null;
-          setRunning(false);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          return e;
-        }
-        // Rotate prompt every 90 seconds
-        if ((e + 1) % 90 === 0) {
-          Animated.sequence([
-            Animated.timing(promptAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
-            Animated.timing(promptAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
-          ]).start();
-          setPromptIndex((i) => (i + 1) % (activeStage?.prompts.length ?? 1));
-        }
-        return e + 1;
+    const handle = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(handle);
+  }, [running]);
+
+  // Re-sync immediately when app returns to foreground so the countdown
+  // jumps to the correct wall-clock value without waiting for the next tick.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setTick((t) => t + 1);
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Cancel any scheduled completion notification if the user closes the
+  // screen mid-session, so they don't get a stale "Stage 1 complete" alert
+  // 8 minutes after they navigated away.
+  useEffect(() => {
+    return () => { cancelCompletionNotif(); };
+  }, []);
+
+  // Prompt rotation — every 90 seconds of elapsed time. Guarded so app
+  // resume doesn't fire multiple rotations at once when elapsed jumps.
+  useEffect(() => {
+    if (!running) return;
+    const rotateAt = Math.floor(elapsed / 90);
+    if (rotateAt > lastPromptRotateSecRef.current && rotateAt > 0) {
+      lastPromptRotateSecRef.current = rotateAt;
+      Animated.sequence([
+        Animated.timing(promptAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+        Animated.timing(promptAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      ]).start();
+      setPromptIndex((i) => (i + 1) % (activeStage?.prompts.length ?? 1));
+    }
+  }, [elapsed, running, activeStage, promptAnim]);
+
+  // Completion detection — stop the run leg and fire success haptic when
+  // wall-clock elapsed reaches the stage duration. The scheduled local
+  // notification handles the audible cue (works even when app is closed).
+  useEffect(() => {
+    if (!running || totalSeconds === 0) return;
+    if (elapsed >= totalSeconds) {
+      // Freeze accumulatedMs at exactly totalSeconds so the display shows 0:00.
+      setAccumulatedMs(totalSeconds * 1000);
+      setRunStartMs(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Local notification will have already fired at this moment, no need
+      // to cancel — but clear the ref so pause/back logic stays clean.
+      scheduledNotifIdRef.current = null;
+    }
+  }, [elapsed, running, totalSeconds]);
+
+  // Schedule / cancel the completion notification. Web / Expo Go without
+  // notification permission fail silently, which is fine — the on-screen
+  // countdown still works and Haptics fires when the app is foregrounded.
+  async function scheduleCompletionNotif(stage: Stage, secondsUntil: number) {
+    if (Platform.OS === 'web' || secondsUntil <= 0) return;
+    try {
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Sensate Focus 🌸',
+          body: `Stage ${stage.id}: ${stage.title} complete. Switch or rest together.`,
+          sound: true,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: secondsUntil,
+        },
       });
-    }, 1000);
-    intervalRef.current = handle;
-    return () => {
-      clearInterval(handle);
-      intervalRef.current = null;
-    };
-  }, [running, totalSeconds]);
+      scheduledNotifIdRef.current = id;
+    } catch { /* permission not granted or unsupported host */ }
+  }
+
+  async function cancelCompletionNotif() {
+    const id = scheduledNotifIdRef.current;
+    scheduledNotifIdRef.current = null;
+    if (!id || Platform.OS === 'web') return;
+    try { await Notifications.cancelScheduledNotificationAsync(id); } catch { /* already fired */ }
+  }
 
   const startStage = (stage: Stage) => {
+    // Cancel any leftover notification from a prior stage before switching.
+    cancelCompletionNotif();
     setActiveStage(stage);
-    setElapsed(0);
+    setAccumulatedMs(0);
+    setRunStartMs(null);
     setPromptIndex(0);
-    setRunning(false);
     setMarked(false);
+    lastPromptRotateSecRef.current = 0;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const exitStage = () => {
+    cancelCompletionNotif();
+    setActiveStage(null);
+    setRunStartMs(null);
+    setAccumulatedMs(0);
   };
 
   const handleMarkComplete = async () => {
     if (!coupleId || !activeStage) return;
+    cancelCompletionNotif();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const { cycleJustCompleted, cyclesCompleted } = await completeStage(coupleId, activeStage.id as 1 | 2 | 3, progress);
     setMarked(true);
@@ -181,7 +263,20 @@ export default function SensateScreen() {
 
   const toggleTimer = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setRunning((r) => !r);
+    if (running) {
+      // Pause: fold current run leg into accumulated, cancel scheduled notif.
+      const legMs = Date.now() - (runStartMs ?? Date.now());
+      setAccumulatedMs((a) => a + legMs);
+      setRunStartMs(null);
+      cancelCompletionNotif();
+    } else {
+      // Start / resume: schedule notification for remaining time, then set run start.
+      const remainingSec = Math.max(totalSeconds - Math.floor(accumulatedMs / 1000), 0);
+      if (activeStage && totalSeconds > 0 && remainingSec > 0) {
+        scheduleCompletionNotif(activeStage, remainingSec);
+      }
+      setRunStartMs(Date.now());
+    }
   };
 
   const nextPrompt = () => {
@@ -260,7 +355,7 @@ export default function SensateScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: activeStage.color }]}>
       <View style={[styles.header, { borderBottomColor: 'rgba(0,0,0,0.08)', backgroundColor: 'transparent' }]}>
-        <TouchableOpacity onPress={() => setActiveStage(null)} style={styles.back} accessibilityRole="button">
+        <TouchableOpacity onPress={exitStage} style={styles.back} accessibilityRole="button">
           <Text style={[styles.backText, { color: activeStage.textColor }]}>‹ Stages</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: activeStage.textColor }]}>{activeStage.title}</Text>
