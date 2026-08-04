@@ -11,14 +11,32 @@ import { Spacing, Radius } from '../constants/spacing';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 
-const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
+// Both options share the same soft blush so neither draws the eye more
+// than the other. Previously A was pink and B was cream, which biased
+// the choice toward A on an A/B preference quiz where symmetric
+// affordance is important.
+const OPTION_BG = '#FFF0F3';
 
 export default function QuizScreen() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<Record<LoveLanguage, number>>({ words: 0, acts: 0, gifts: 0, time: 0, touch: 0 });
   const [done, setDone] = useState(false);
+  // True when we're viewing a previously saved result (from profile) rather
+  // than a fresh run through the quiz. In this mode we don't have the score
+  // breakdown, so we hide the bars and show a plain result card.
+  const [viewingSaved, setViewingSaved] = useState(false);
   const help = useHelp('love-language');
+
+  // On first render, if the user already has a saved love language on
+  // their profile, jump straight to the results state so they can see
+  // it without retaking the quiz.
+  useEffect(() => {
+    if (!done && !viewingSaved && profile?.loveLanguage) {
+      setViewingSaved(true);
+      setDone(true);
+    }
+  }, [profile?.loveLanguage, done, viewingSaved]);
 
   const q = QUIZ_QUESTIONS[step];
 
@@ -37,17 +55,25 @@ export default function QuizScreen() {
     setStep(0);
     setScores({ words: 0, acts: 0, gifts: 0, time: 0, touch: 0 });
     setDone(false);
+    setViewingSaved(false);
   };
 
   const sorted = (Object.entries(scores) as [LoveLanguage, number][]).sort((a, b) => b[1] - a[1]);
-  const primary = sorted[0][0];
+  // When viewing a saved result we don't have the fresh scores, so read
+  // primary from the persisted profile value instead of the (all-zero)
+  // scores map.
+  const primary: LoveLanguage = viewingSaved && profile?.loveLanguage
+    ? (profile.loveLanguage as LoveLanguage)
+    : sorted[0][0];
   const max = sorted[0][1];
 
-  // Persist the top result on the user profile so partner-side insight generation can read it.
+  // Persist the top result on the user profile so partner-side insight
+  // generation can read it. Skip when just viewing a previously saved
+  // result — nothing new to write.
   useEffect(() => {
-    if (!done || !user) return;
+    if (!done || viewingSaved || !user) return;
     createUserProfile(user.uid, { loveLanguage: primary } as any).catch(() => {});
-  }, [done, primary, user]);
+  }, [done, viewingSaved, primary, user]);
 
   return (
     <View style={styles.screen}>
@@ -71,7 +97,7 @@ export default function QuizScreen() {
 
           <Text style={styles.question}>Which feels more meaningful to you?</Text>
 
-          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[0] }]} onPress={() => pick(q.a.language)} activeOpacity={0.8} accessibilityRole="button">
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG }]} onPress={() => pick(q.a.language)} activeOpacity={0.8} accessibilityRole="button">
             <Text style={styles.optionText}>{q.a.text}</Text>
           </TouchableOpacity>
 
@@ -81,7 +107,7 @@ export default function QuizScreen() {
             <View style={styles.orLine} />
           </View>
 
-          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG[1] }]} onPress={() => pick(q.b.language)} activeOpacity={0.8} accessibilityRole="button">
+          <TouchableOpacity style={[styles.optionCard, { backgroundColor: OPTION_BG }]} onPress={() => pick(q.b.language)} activeOpacity={0.8} accessibilityRole="button">
             <Text style={styles.optionText}>{q.b.text}</Text>
           </TouchableOpacity>
         </View>
@@ -92,27 +118,33 @@ export default function QuizScreen() {
           <Text style={styles.primaryLabel}>{LOVE_LANGUAGE_LABELS[primary].label}</Text>
           <Text style={styles.primaryDesc}>{LOVE_LANGUAGE_LABELS[primary].description}</Text>
 
-          <View style={styles.scoreList}>
-            {sorted.map(([lang, score]) => {
-              const cfg = LOVE_LANGUAGE_LABELS[lang];
-              const pct = max > 0 ? (score / max) * 100 : 0;
-              return (
-                <View key={lang} style={styles.scoreRow}>
-                  <Text style={styles.scoreEmoji}>{cfg.emoji}</Text>
-                  <View style={styles.scoreBarWrap}>
-                    <Text style={styles.scoreLang}>{cfg.label}</Text>
-                    <View style={styles.scoreBarBg}>
-                      <View style={[styles.scoreBarFill, { width: `${pct}%` }]} />
+          {viewingSaved ? (
+            <Text style={styles.savedNote}>
+              Saved from your last quiz. Retake anytime.
+            </Text>
+          ) : (
+            <View style={styles.scoreList}>
+              {sorted.map(([lang, score]) => {
+                const cfg = LOVE_LANGUAGE_LABELS[lang];
+                const pct = max > 0 ? (score / max) * 100 : 0;
+                return (
+                  <View key={lang} style={styles.scoreRow}>
+                    <Text style={styles.scoreEmoji}>{cfg.emoji}</Text>
+                    <View style={styles.scoreBarWrap}>
+                      <Text style={styles.scoreLang}>{cfg.label}</Text>
+                      <View style={styles.scoreBarBg}>
+                        <View style={[styles.scoreBarFill, { width: `${pct}%` }]} />
+                      </View>
                     </View>
+                    <Text style={styles.scoreNum}>{score}</Text>
                   </View>
-                  <Text style={styles.scoreNum}>{score}</Text>
-                </View>
-              );
-            })}
-          </View>
+                );
+              })}
+            </View>
+          )}
 
           <TouchableOpacity style={styles.restartBtn} onPress={restart} accessibilityRole="button">
-            <Text style={styles.restartText}>Retake quiz ↻</Text>
+            <Text style={styles.restartText}>{viewingSaved ? 'Retake quiz ↻' : 'Retake quiz ↻'}</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -182,6 +214,8 @@ const styles = StyleSheet.create({
   primaryEmoji: { fontSize: 80 },
   primaryLabel: { fontFamily: Fonts.heading, fontSize: 34, color: Colors.burgundy, textAlign: 'center' },
   primaryDesc: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text, textAlign: 'center', lineHeight: 24 },
+
+  savedNote: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', paddingHorizontal: Spacing.lg },
 
   scoreList: { width: '100%', gap: Spacing.md },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
