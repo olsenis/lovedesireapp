@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -163,6 +164,30 @@ export default function HomeScreen() {
       setShowSparkPicker(true);
     }
   }, [params?.openSpark]);
+
+  // "Insight for you" dismiss-for-the-day. Once the user taps the CTA,
+  // hide the card until midnight local so the day feels closed. Uses
+  // AsyncStorage so the dismissal survives app relaunches within the
+  // same day. Per-device (no partner sync needed — each partner has
+  // their own home).
+  const INSIGHT_DISMISS_KEY = 'insight_dismissed_date';
+  const todayLocalYmd = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const [insightDismissedToday, setInsightDismissedToday] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(INSIGHT_DISMISS_KEY).then((val) => {
+      if (cancelled) return;
+      if (val && val === todayLocalYmd()) setInsightDismissedToday(true);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  const dismissInsightForToday = () => {
+    setInsightDismissedToday(true);
+    AsyncStorage.setItem(INSIGHT_DISMISS_KEY, todayLocalYmd()).catch(() => {});
+  };
   const [memories, setMemories] = useState<Memory[]>([]);
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [moments, setMoments] = useState<MomentEntry[]>([]);
@@ -714,22 +739,23 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Daily insight card — based on partner's Love Language quiz result */}
-      {(() => {
+      {/* Daily insight card — based on partner's Love Language quiz result.
+          Hidden for the rest of the day once the user acts on the CTA,
+          so the day feels closed. Reappears with a fresh tip tomorrow. */}
+      {!insightDismissedToday && (() => {
         const tip = getLanguageTip((partner as any)?.loveLanguage, partner?.name ?? 'them');
         if (!tip) return null;
         const langMeta = (partner as any)?.loveLanguage ? `${(partner as any).loveLanguage}` : '';
-        // Some tips act on state that lives on this screen (e.g. the
-        // Spark picker modal). Route-based navigation to the same tab
-        // doesn't remount, so query-param handlers won't fire. Handle
-        // those inline instead of via router.push.
         const handleTipPress = () => {
           if (!tip.route) return;
+          // Route-based CTAs that stay on Home (e.g. the Spark picker) can't
+          // rely on a remount, so trigger their local state directly.
           if (tip.route.startsWith('/(tabs)?openSpark')) {
             setShowSparkPicker(true);
-            return;
+          } else {
+            router.push(tip.route as any);
           }
-          router.push(tip.route as any);
+          dismissInsightForToday();
         };
         return (
           <TouchableOpacity
