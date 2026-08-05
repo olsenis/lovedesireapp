@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -28,15 +28,19 @@ export default function QuizScreen() {
   const [viewingSaved, setViewingSaved] = useState(false);
   const help = useHelp('love-language');
 
-  // On first render, if the user already has a saved love language on
-  // their profile, jump straight to the results state so they can see
-  // it without retaking the quiz.
+  // Auto-restore should fire ONCE when the profile arrives on mount.
+  // Without this guard, pressing "Retake quiz" would immediately snap
+  // back to the saved-view state because the profile still has the
+  // saved loveLanguage and the effect would keep firing.
+  const autoRestoredRef = useRef(false);
   useEffect(() => {
-    if (!done && !viewingSaved && profile?.loveLanguage) {
+    if (autoRestoredRef.current) return;
+    if (profile?.loveLanguage) {
+      autoRestoredRef.current = true;
       setViewingSaved(true);
       setDone(true);
     }
-  }, [profile?.loveLanguage, done, viewingSaved]);
+  }, [profile?.loveLanguage]);
 
   const q = QUIZ_QUESTIONS[step];
 
