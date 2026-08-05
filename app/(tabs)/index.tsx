@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -81,7 +81,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
     words: [
       { tip: `Tell ${partnerName} one specific thing you love about who they are.`, cta: 'Write a Love Note', route: '/notes' },
       { tip: `Send ${partnerName} a voice note. Hearing it lands differently than reading it.`, cta: 'Open Tease', route: '/flashes' },
-      { tip: `Send a spark with words that name what you appreciate today.`, cta: 'Send a spark', route: '/(tabs)' },
+      { tip: `Send a spark with words that name what you appreciate today.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
       { tip: `Answer a question in Daily today with words ${partnerName} hasn't heard yet.`, cta: 'Open Daily', route: '/daily' },
     ],
     acts: [
@@ -150,6 +150,19 @@ export default function HomeScreen() {
   const [recentSparks, setRecentSparks] = useState<SparkEntry[]>([]);
   const [sparkSent, setSparkSent] = useState(false);
   const [showSparkPicker, setShowSparkPicker] = useState(false);
+  // Support `?openSpark=1` deep link so tips or nudges elsewhere in the
+  // app can navigate Home and pop the Spark picker in one step. Uses a
+  // ref to fire once per param arrival, so navigating away and back
+  // doesn't re-open the modal repeatedly.
+  const params = useLocalSearchParams<{ openSpark?: string }>();
+  const openSparkHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    const flag = params?.openSpark ?? null;
+    if (flag && openSparkHandledRef.current !== flag) {
+      openSparkHandledRef.current = flag;
+      setShowSparkPicker(true);
+    }
+  }, [params?.openSpark]);
   const [memories, setMemories] = useState<Memory[]>([]);
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [moments, setMoments] = useState<MomentEntry[]>([]);
