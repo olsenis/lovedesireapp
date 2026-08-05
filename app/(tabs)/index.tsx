@@ -580,6 +580,19 @@ export default function HomeScreen() {
     }
   }
 
+  // LDR: persistent nudge to set next visit date when none is on file.
+  // Complements the couple-card pill above (higher on the screen) so the
+  // ask remains visible even after the user has scrolled past the header.
+  if (isLDR && !couple?.nextVisitDate) {
+    list.push({
+      emoji: '✈️',
+      title: 'Set your next visit',
+      subtitle: 'Unlocks a daily hype nudge for both of you in the run-up',
+      route: '/profile',
+      bg: '#FFF4E8',
+    });
+  }
+
   // Post-visit recovery (LDR, 1-3 days after the last set visit date) — rotating daily prompt.
   // We use the raw nextVisitDate in the past, since getNextVisit() returns null once it's passed.
   if (isLDR && couple?.nextVisitDate && couple.nextVisitDate < Date.now()) {
@@ -713,6 +726,21 @@ export default function HomeScreen() {
                     {visibleNextVisit.daysUntil === 0 ? 'next visit' : `in ${visibleNextVisit.daysUntil} days · next visit`}
                   </Text>
                 </View>
+              )}
+              {/* LDR: prompt to set a next-visit date if none is on file. The whole
+                  pre-visit hype nudge system depends on this being set, so surface
+                  it right in the couple card so it's the obvious next step. */}
+              {isLDR && !couple?.nextVisitDate && (
+                <TouchableOpacity
+                  style={[styles.anniversaryPill, { marginTop: 4 }]}
+                  onPress={() => router.push('/profile' as any)}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Set next visit date"
+                >
+                  <Text style={styles.anniversaryText}>✈️ Set next visit →</Text>
+                  <Text style={styles.anniversaryDays}>unlocks countdown + hype</Text>
+                </TouchableOpacity>
               )}
             </View>
             <View style={styles.avatarCol}>
