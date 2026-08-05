@@ -106,19 +106,66 @@ export default function HitaScreen() {
 
   const getSuggestion = (): string => {
     const lowest = QUESTIONS.reduce((min, q) => (scores[q.key] ?? 5) < (scores[min.key] ?? 5) ? q : min, QUESTIONS[0]);
-    const suggestions: Record<string, string> = {
-      communication: "Try a 15-minute phone-free conversation tonight.",
-      time: "Plan one activity together this week with no distractions.",
-      affection: "Give a long hug every morning and evening for a week.",
-      fun: "Do something silly together, a game, a new activity, anything.",
-      support: "Ask your partner: 'What do you need from me right now?'",
-      trust: "Share something vulnerable you haven't mentioned recently.",
-      intimacy: "Check your Wishlist together and pick something mutual.",
-      appreciation: "Tell your partner 3 specific things you noticed this week.",
-      growth: "Set a small shared goal, something to work on together.",
-      overall: "Spend an evening just talking, no phones, no TV.",
+    // 3-4 suggestions per dimension. Rotates by history.length so the
+    // same key hit twice in a row still surfaces a different suggestion.
+    const suggestions: Record<string, string[]> = {
+      communication: [
+        "Try a 15-minute phone-free conversation tonight.",
+        "Ask one open question at dinner, no agenda, listen more than talk.",
+        "Write down one thing you want to say and read it out loud together.",
+      ],
+      time: [
+        "Plan one activity together this week with no distractions.",
+        "Block 30 phone-free minutes tonight, put both phones in a drawer.",
+        "Pick one evening this week that's just for you two.",
+      ],
+      affection: [
+        "Give a long hug every morning and evening for a week.",
+        "Reach for their hand more often today, no reason needed.",
+        "Try a slow 20-second kiss when you next greet each other.",
+      ],
+      fun: [
+        "Do something silly together, a game, a new activity, anything.",
+        "Cook a new recipe together this weekend, no takeaway.",
+        "Put on a playlist from when you first met and dance in the kitchen.",
+      ],
+      support: [
+        "Ask your partner: 'What do you need from me right now?'",
+        "Take one task off their plate today without being asked.",
+        "Sit with them for 10 minutes and just ask how they really are.",
+      ],
+      trust: [
+        "Share something vulnerable you haven't mentioned recently.",
+        "Tell them one small worry you've been carrying alone.",
+        "Ask them to share something they've been holding back, no judgment.",
+      ],
+      intimacy: [
+        "Check your Wishlist together and pick something mutual.",
+        "Try a Sensate Focus stage tonight, presence over performance.",
+        "Play a round of Truth or Dare on the Flirty level.",
+      ],
+      appreciation: [
+        "Tell your partner 3 specific things you noticed this week.",
+        "Send a Love Note or Spark with one thing you're grateful for.",
+        "Write down one quality you admire and share it at dinner.",
+      ],
+      growth: [
+        "Set a small shared goal, something to work on together.",
+        "Pick one habit you both want to build and start it this week.",
+        "Take the Sunday Check-in together and see what surfaces.",
+      ],
+      overall: [
+        "Spend an evening just talking, no phones, no TV.",
+        "Take a slow walk together, no destination.",
+        "Do a full Sunday Check-in tonight and see where you both are.",
+      ],
     };
-    return suggestions[lowest.key] ?? "Take time this week for each other.";
+    const pool = suggestions[lowest.key] ?? ["Take time this week for each other."];
+    // history includes the just-submitted result at index 0 by the time
+    // this renders (subscribePulseHistory is live), so length is a stable
+    // rotator. Any leftover history from before we shipped multi-tips
+    // just starts the rotation from a different offset — no migration.
+    return pool[history.length % pool.length];
   };
 
   return (
