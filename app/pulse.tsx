@@ -106,58 +106,90 @@ export default function HitaScreen() {
 
   const getSuggestion = (): string => {
     const lowest = QUESTIONS.reduce((min, q) => (scores[q.key] ?? 5) < (scores[min.key] ?? 5) ? q : min, QUESTIONS[0]);
-    // 3-4 suggestions per dimension. Rotates by history.length so the
-    // same key hit twice in a row still surfaces a different suggestion.
+    // 6 suggestions per dimension = 60 total. Rotates by history.length so
+    // the same key hit repeatedly surfaces different suggestions before
+    // any one repeats. At weekly cadence that's ~6 weeks of no-repeat tips
+    // per dimension.
     const suggestions: Record<string, string[]> = {
       communication: [
         "Try a 15-minute phone-free conversation tonight.",
         "Ask one open question at dinner, no agenda, listen more than talk.",
         "Write down one thing you want to say and read it out loud together.",
+        "At the end of today, share one high and one low from your day.",
+        "Ask 'what's been on your mind lately?' and don't interrupt.",
+        "Play Daily together tonight, three questions, take turns answering.",
       ],
       time: [
         "Plan one activity together this week with no distractions.",
         "Block 30 phone-free minutes tonight, put both phones in a drawer.",
         "Pick one evening this week that's just for you two.",
+        "Spin Date Roulette and do whatever comes up this weekend.",
+        "Wake up 20 minutes earlier one morning and share coffee together.",
+        "Add a recurring weekly 'us time' block to your calendar.",
       ],
       affection: [
         "Give a long hug every morning and evening for a week.",
         "Reach for their hand more often today, no reason needed.",
         "Try a slow 20-second kiss when you next greet each other.",
+        "Sit closer on the couch tonight, no phone between you.",
+        "Try a Sensate Focus stage this week, touch without goal.",
+        "Send a Spark with a heart emoji when you think of them today.",
       ],
       fun: [
         "Do something silly together, a game, a new activity, anything.",
         "Cook a new recipe together this weekend, no takeaway.",
         "Put on a playlist from when you first met and dance in the kitchen.",
+        "Play Would You Rather tonight, pick a level you haven't tried.",
+        "Try a round of Activity Cards together this week.",
+        "Go somewhere neither of you has been in your own city.",
       ],
       support: [
         "Ask your partner: 'What do you need from me right now?'",
         "Take one task off their plate today without being asked.",
         "Sit with them for 10 minutes and just ask how they really are.",
+        "Text them one small encouragement in the middle of their day.",
+        "Ask what they're stressed about this week and just listen.",
+        "Bring them their favourite drink without them asking, one time.",
       ],
       trust: [
         "Share something vulnerable you haven't mentioned recently.",
         "Tell them one small worry you've been carrying alone.",
         "Ask them to share something they've been holding back, no judgment.",
+        "Do a Sunday Check-in this week and answer honestly.",
+        "Tell them one thing you're grateful they've kept private for you.",
+        "Ask 'is there anything unsaid between us?' and hold space for the answer.",
       ],
       intimacy: [
         "Check your Wishlist together and pick something mutual.",
         "Try a Sensate Focus stage tonight, presence over performance.",
         "Play a round of Truth or Dare on the Flirty level.",
+        "Vote on Fantasy Wishes together, see what matches.",
+        "Try a Daily Spicy pick this week if you're both up for it.",
+        "Spend one evening just kissing, nothing has to lead anywhere.",
       ],
       appreciation: [
         "Tell your partner 3 specific things you noticed this week.",
         "Send a Love Note or Spark with one thing you're grateful for.",
         "Write down one quality you admire and share it at dinner.",
+        "Say 'thank you' out loud for something small they do routinely.",
+        "Compliment something they wore or did without expecting anything back.",
+        "Tell them one memory from this year you keep coming back to.",
       ],
       growth: [
         "Set a small shared goal, something to work on together.",
         "Pick one habit you both want to build and start it this week.",
         "Take the Sunday Check-in together and see what surfaces.",
+        "Try the Lovers quiz together if you haven't yet.",
+        "Talk about one thing you each want to be doing more of in a year.",
+        "Pick a book, podcast, or class you'd both like and start it.",
       ],
       overall: [
         "Spend an evening just talking, no phones, no TV.",
         "Take a slow walk together, no destination.",
         "Do a full Sunday Check-in tonight and see where you both are.",
+        "Cook dinner together tonight, no rush.",
+        "Write each other a short Love Note and open them tomorrow.",
+        "Plan one small trip together, even just an overnight nearby.",
       ],
     };
     const pool = suggestions[lowest.key] ?? ["Take time this week for each other."];
