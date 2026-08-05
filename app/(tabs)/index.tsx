@@ -719,10 +719,22 @@ export default function HomeScreen() {
         const tip = getLanguageTip((partner as any)?.loveLanguage, partner?.name ?? 'them');
         if (!tip) return null;
         const langMeta = (partner as any)?.loveLanguage ? `${(partner as any).loveLanguage}` : '';
+        // Some tips act on state that lives on this screen (e.g. the
+        // Spark picker modal). Route-based navigation to the same tab
+        // doesn't remount, so query-param handlers won't fire. Handle
+        // those inline instead of via router.push.
+        const handleTipPress = () => {
+          if (!tip.route) return;
+          if (tip.route.startsWith('/(tabs)?openSpark')) {
+            setShowSparkPicker(true);
+            return;
+          }
+          router.push(tip.route as any);
+        };
         return (
           <TouchableOpacity
             style={styles.insightCard}
-            onPress={() => tip.route && router.push(tip.route as any)}
+            onPress={handleTipPress}
             activeOpacity={tip.route ? 0.85 : 1}
             accessibilityRole={tip.route ? 'button' : undefined}
           >
