@@ -34,7 +34,7 @@ const VERSUS_CARD: GameCard = {
 
 const CHALLENGES = [
   { emoji: '🗓️', title: '30-Day Challenge', subtitle: 'Reconnect, Spark, or Fire, a daily practice', route: '/challenge', bg: '#FFF9C4', paid: false },
-  { emoji: '🎰', title: 'Date Night Roulette', subtitle: 'Let fate pick your perfect date idea',      route: '/roulette',  bg: '#E8F5E9', paid: false },
+  { emoji: '💘', title: "Tonight's Date",       subtitle: 'Let fate pick your perfect date idea',      route: '/roulette',  bg: '#E8F5E9', paid: false },
 ];
 
 function FeatureCard({

@@ -104,7 +104,7 @@ export default function RouletteScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Date Night</Text>
+        <Text style={styles.title}>Tonight's Date</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -155,7 +155,7 @@ export default function RouletteScreen() {
         {/* Spinner */}
         <View style={styles.spinnerOuter}>
           <Animated.View style={[styles.spinner, { transform: [{ rotate: spinRotate }] }]}>
-            <Text style={styles.spinnerEmoji}>🎰</Text>
+            <Text style={styles.spinnerEmoji}>💘</Text>
           </Animated.View>
         </View>
 
@@ -213,7 +213,7 @@ export default function RouletteScreen() {
 
       <HelpModal
         visible={help.visible}
-        title="Date Night Roulette"
+        title="Tonight's Date"
         description="Let fate decide your next date. Spin for a random date idea from 48 options across three types."
         tips={[
           'Filter by At Home, Going Out, or Adventure',

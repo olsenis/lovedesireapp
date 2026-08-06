@@ -80,7 +80,7 @@ app/(tabs)/                  Authenticated flow (Bottom Tab navigator)
 
 app/                         Full-screen sub-screens
   (dare.tsx removed July 2026 — Dare Wheel folded into Truth or Dare Solo mode)
-  roulette.tsx               Date Night Roulette — spin for a date idea
+  roulette.tsx               Tonight's Date — spin for a date idea (formerly "Date Night Roulette")
   daily.tsx                  Daily — merged Picks + Questions, 3 categories (Playful free · Deep 💰 · Spicy 💰). Actions first, questions second. Actions with mutual Yes save to Together List; questions reveal side-by-side when both answered
   questions-game.tsx         Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, 5 at a time
@@ -234,7 +234,7 @@ Three prompts for expanding content — always use the right one for the categor
 - Daily: Playful category only — combines old Sweet Daily Picks (5/day) + old Playful Questions (3/day, incl. binary + scale variants). Flirty Daily Picks moved to Spicy tier July 2026 as part of the Daily merge.
 - Versus mode (data-gated — hidden in Discover until partner has answered 5+ binary questions in Daily, then permanently visible with a NEW badge for the first 7 days. Not paywalled. Empty state deep-link explains the unlock threshold.)
 - Would You Rather: Playful + Romantic only
-- Date Night Roulette (full)
+- Tonight's Date (full)
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease (full)
 - Love Language Quiz, Relationship Pulse (with trend chart, full)
 - 30-Day Challenge: Reconnect + Spark programs only

@@ -112,7 +112,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
     time: [
       { tip: `Carve out 30 phone-free minutes with ${partnerName} today. Mark it on the Calendar so it's real.`, cta: 'Open Calendar', route: '/calendar' },
       { tip: `Do a slow Sunday Check-in tonight. Quality time is the love language and the check-in lives there.`, cta: 'Start the check-in', route: '/state-union' },
-      { tip: `Run Date Roulette together. Pick something that lasts longer than dinner.`, cta: 'Spin the wheel', route: '/roulette' },
+      { tip: `Spin Tonight's Date together. Pick something that lasts longer than dinner.`, cta: 'Draw a date', route: '/roulette' },
       { tip: `Play Daily tonight. Three questions, no phones, eye contact.`, cta: 'Open Daily', route: '/daily' },
     ],
     touch: [
@@ -1044,7 +1044,7 @@ export default function HomeScreen() {
       })()}
 
       {/* ─── TONIGHT'S PICKS ─── curated launchpad, 3 highest-fun games.
-           Discover tab holds the full menu (WYR, Roulette, Bingo, Challenge,
+           Discover tab holds the full menu (WYR, Tonight's Date, Bingo, Challenge,
            etc.). Home duplicating the full list dilutes the "tonight's pick"
            signal — kept lean with Daily (best daily rhythm, merges picks +
            questions), Truth or Dare (highest-rated interaction), and Fantasy

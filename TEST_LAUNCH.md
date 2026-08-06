@@ -43,7 +43,7 @@ is the complete reference.
 **Games:** Truth or Dare Sweet + Flirty, Daily **Playful** category (merged
 Sweet action cards + Playful question cards), Versus mode (data-gated —
 appears after partner has 5+ binary answers), Would You Rather Playful +
-Romantic, Date Night Roulette (full).
+Romantic, Tonight's Date (full).
 Note: Dare Wheel was folded into Truth or Dare, Time Capsules removed
 July 2026 — no separate route for either.
 
@@ -436,8 +436,8 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
   2. Return to Home
   - **Expected:** Couple card shows ✈️ "14 days" pill below names.
 
-- [ ] **Date Roulette defaults to virtual-only when LDR on** 🌍
-  1. Phone A (LDR on): Discover → Date Roulette → Spin
+- [ ] **Tonight's Date defaults to virtual-only when LDR on** 🌍
+  1. Phone A (LDR on): Discover → Tonight's Date → Spin
   - **Expected:** Only ideas with `virtual: true` flag in pool. "Show in-person too" pill available to override.
 
 ---

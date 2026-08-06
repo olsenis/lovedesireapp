@@ -123,7 +123,7 @@ export default function HitaScreen() {
         "Plan one activity together this week with no distractions.",
         "Block 30 phone-free minutes tonight, put both phones in a drawer.",
         "Pick one evening this week that's just for you two.",
-        "Spin Date Roulette and do whatever comes up this weekend.",
+        "Spin Tonight's Date and do whatever comes up this weekend.",
         "Wake up 20 minutes earlier one morning and share coffee together.",
         "Add a recurring weekly 'us time' block to your calendar.",
       ],

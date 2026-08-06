@@ -31,7 +31,7 @@ Living overview of every feature, content pool size, and connection between feat
    │  ├─ bingo              Discover ("Activity Cards", paid)
    │  ├─ challenge          Discover ("30-Day Challenge")
    │  ├─ fantasy-wishes     Us (paid)
-   │  └─ roulette           Discover ("Date Night Roulette")
+   │  └─ roulette           Discover ("Tonight's Date", formerly "Date Night Roulette")
    │
    ├─ Nurture (Us tab)
    │  ├─ blueprint          Us ("Erotic Blueprint", paid)
