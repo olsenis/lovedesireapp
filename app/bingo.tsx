@@ -136,6 +136,10 @@ export default function ActivityCardsScreen() {
               : `${partnerName}'s turn to pick`}
           </Text>
         </View>
+        {/* DEBUG — remove after Ola-can't-pick bug is fixed */}
+        <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, textAlign: 'center', marginTop: 4 }}>
+          debug: my uid={uid.slice(0,6)} · turnUid={session.turnUid?.slice(0,6)} · pending={String(session.pendingCard)}
+        </Text>
 
         {/* Progress + passes */}
         <Text style={styles.progressText}>{revealed.length} of 25 flipped · {remaining} remaining</Text>
