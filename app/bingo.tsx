@@ -7,6 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ActivityCardsSession, MAX_PASSES, MAX_RECEIVER_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
+import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -97,11 +98,20 @@ export default function ActivityCardsScreen() {
     notifyPartner(coupleId, uid, 'Activity Cards', `${profile?.name ?? 'Your partner'} skipped this one, they're picking next`).catch(() => {});
   };
 
-  const handleReset = async () => {
-    if (!coupleId || !session) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await resetActivityCards(coupleId, session, uid);
-    setConfirmReset(false);
+  // Save-for-later: some activities (skinny dipping, weekend trips, etc.)
+  // can't be done in the moment. Instead of forcing "we did it" or losing
+  // the card via skip, save it to the Together List for later. Card is
+  // removed from the deck like a normal completion, turn alternates.
+  const handleSaveForLater = async () => {
+    if (!coupleId || !session || !partnerId) return;
+    if (session.pendingCard === null || session.pendingCard === undefined) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const activityText = session.squares[session.pendingCard];
+    try {
+      await addTodo(coupleId, activityText, 'intimacy', uid, 'activity-cards');
+    } catch { /* non-fatal */ }
+    await markCardDone(coupleId, session.pendingCard, uid);
+    notifyPartner(coupleId, uid, 'Activity Cards 💾', `${profile?.name ?? 'Your partner'} saved this challenge for later`).catch(() => {});
   };
 
   if (loading || !session) return null;
@@ -136,9 +146,11 @@ export default function ActivityCardsScreen() {
               : `${partnerName}'s turn to pick`}
           </Text>
         </View>
-        {/* DEBUG — remove after Ola-can't-pick bug is fixed */}
-        <Text style={{ fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, textAlign: 'center', marginTop: 4 }}>
-          debug: my uid={uid.slice(0,6)} · turnUid={session.turnUid?.slice(0,6)} · pending={String(session.pendingCard)}
+        {/* Deck mode indicator — helps users understand why some
+            planned/seasonal cards aren't showing up. Absent = legacy
+            doc from before deckMode existed, treat as quick. */}
+        <Text style={styles.deckModeText}>
+          {(session.deckMode ?? 'quick') === 'quick' ? '✨ Quick deck, tap ↺ New for bucket-list mode' : '🌙 Bucket-list deck'}
         </Text>
 
         {/* Progress + passes */}
@@ -208,14 +220,17 @@ export default function ActivityCardsScreen() {
               <Text style={styles.acceptBtnText}>✓ We did it!</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.captureBtn} onPress={async () => { await handleMarkDone(); router.push('/moments' as any); }} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.captureBtnText}>📸 We did it — capture this moment</Text>
+              <Text style={styles.captureBtnText}>📸 We did it, capture this moment</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.saveLaterBtn} onPress={handleSaveForLater} activeOpacity={0.85} accessibilityRole="button">
+              <Text style={styles.saveLaterBtnText}>💾 Save for later, plan it together</Text>
             </TouchableOpacity>
             {receiverPassesLeft > 0 ? (
               <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived} accessibilityRole="button">
-                <Text style={styles.cancelRevealText}>Skip — not for us ({receiverPassesLeft} left)</Text>
+                <Text style={styles.cancelRevealText}>Skip, not for us ({receiverPassesLeft} left)</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={styles.noPassesText}>No skips left — must complete this one</Text>
+              <Text style={styles.noPassesText}>No skips left, must complete or save</Text>
             )}
           </Animated.View>
         </View>
@@ -275,20 +290,42 @@ export default function ActivityCardsScreen() {
         </Modal>
       )}
 
-      {/* Reset confirmation */}
+      {/* Reset confirmation with deck-mode picker: quick-only for
+          spontaneous "do this tonight" activities, all-in for bucket-list
+          mode that includes planned items like weekend trips or seasonal
+          things (skinny dipping, sunrise, day trips). */}
       <Modal visible={confirmReset} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>New deck?</Text>
-            <Text style={styles.modalText}>This will shuffle a fresh set of 25 activity cards.</Text>
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setConfirmReset(false)} accessibilityRole="button">
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleReset} accessibilityRole="button">
-                <Text style={styles.confirmText}>↺ New deck</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.modalText}>Pick which activities to shuffle in:</Text>
+            <TouchableOpacity
+              style={styles.confirmBtn}
+              onPress={async () => {
+                if (!coupleId || !session) return;
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await resetActivityCards(coupleId, session, uid, 'quick');
+                setConfirmReset(false);
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={styles.confirmText}>✨ Quick only, do tonight</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.confirmBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.burgundy, marginTop: 8 }]}
+              onPress={async () => {
+                if (!coupleId || !session) return;
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await resetActivityCards(coupleId, session, uid, 'all');
+                setConfirmReset(false);
+              }}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.confirmText, { color: Colors.burgundy }]}>🌙 Bucket list, includes planned</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 8 }]} onPress={() => setConfirmReset(false)} accessibilityRole="button">
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -366,6 +403,9 @@ const styles = StyleSheet.create({
   acceptBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
   captureBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   captureBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+  saveLaterBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
+  saveLaterBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+  deckModeText: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, textAlign: 'center', marginTop: 4 },
   cancelRevealBtn: { paddingVertical: Spacing.xs },
   cancelRevealText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   noPassesText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.error, textAlign: 'center' },

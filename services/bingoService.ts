@@ -1,6 +1,6 @@
 import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
-import { BINGO_ACTIVITIES } from '../constants/content';
+import { BINGO_ACTIVITIES, BingoActivity } from '../constants/content';
 
 export const MAX_PASSES = 2;
 export const MAX_RECEIVER_PASSES = 1;
@@ -16,6 +16,10 @@ export interface ActivityCardsSession {
   resetCount: number;
   passes: Record<string, number>;
   receiverPasses: Record<string, number>;
+  // Whether the deck was seeded from quick-only activities (default) or
+  // the full pool including planned items (bucket-list mode). Absent on
+  // legacy docs = 'quick' (backwards-safe).
+  deckMode?: 'quick' | 'all';
 }
 
 // Keep old name as alias for backwards compat
@@ -26,10 +30,13 @@ function monthKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function generateCard(seed: string): string[] {
+function generateCard(seed: string, mode: 'quick' | 'all' = 'quick'): string[] {
   let s = 0;
   for (const c of seed) s = ((s << 5) - s + c.charCodeAt(0)) | 0;
-  const pool = [...BINGO_ACTIVITIES];
+  const filtered: BingoActivity[] = mode === 'quick'
+    ? BINGO_ACTIVITIES.filter((a) => a.duration === 'quick')
+    : [...BINGO_ACTIVITIES];
+  const pool = filtered.map((a) => a.text);
   for (let i = pool.length - 1; i > 0; i--) {
     s = (Math.imul(s, 1664525) + 1013904223) | 0;
     const j = Math.abs(s) % (i + 1);
@@ -73,10 +80,11 @@ export function subscribeActivityCards(
       // write clobbers the first. Wrap in a transaction that only writes if
       // the doc is still non-existent inside the tx. If the other partner
       // won the race, we re-read via onSnapshot and use their session.
-      const squares = generateCard(month + coupleId + '0');
+      const squares = generateCard(month + coupleId + '0', 'quick');
       const newSession: ActivityCardsSession = {
         month, squares, revealed: [], revealedBy: {},
         turnUid: starterUid, resetCount: 0, passes: {}, receiverPasses: {}, completed: [], pendingCard: null,
+        deckMode: 'quick',
       };
       try {
         const winnerSession = await runTransaction(db, async (tx) => {
@@ -175,11 +183,12 @@ export async function skipReceivedCard(
 export async function resetActivityCards(
   coupleId: string,
   session: ActivityCardsSession,
-  starterUid: string
+  starterUid: string,
+  deckMode: 'quick' | 'all' = 'quick'
 ): Promise<void> {
   const month = monthKey();
   const newReset = (session.resetCount ?? 0) + 1;
-  const squares = generateCard(month + coupleId + String(newReset));
+  const squares = generateCard(month + coupleId + String(newReset), deckMode);
   // setDoc replaces the whole document, so every field on ActivityCardsSession
   // must be set here or downstream readers hit `undefined.has(index)` / similar crashes.
   await setDoc(doc(db, 'couples', coupleId, 'bingo', month), {
@@ -191,6 +200,7 @@ export async function resetActivityCards(
     pendingCard: null,
     turnUid: starterUid,
     resetCount: newReset,
+    deckMode,
     passes: {},
     receiverPasses: {},
   });

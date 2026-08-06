@@ -1885,60 +1885,72 @@ export const WYR_QUESTIONS: WYRQuestion[] = [
 
 // ─── INTIMACY BINGO ───────────────────────────────────────────────────────────
 
-export const BINGO_ACTIVITIES: string[] = [
+// Activity Cards items now tagged with a duration so the deck can filter
+// out planned-only items (need advance planning, right season, specific
+// location) from spontaneous "do this tonight" items. Default deck shows
+// quick-only; users can toggle planned items in for bucket-list mode.
+export interface BingoActivity {
+  text: string;
+  duration: 'quick' | 'planned';
+}
+
+const q = (text: string): BingoActivity => ({ text, duration: 'quick' });
+const pl = (text: string): BingoActivity => ({ text, duration: 'planned' });
+
+export const BINGO_ACTIVITIES: BingoActivity[] = [
   // Mild / Romantic
-  "Cook a meal together from scratch",
-  "Give each other a 20-minute massage",
-  "Watch a film you've never seen together",
-  "Take a bath or shower together",
-  "Dance together in the kitchen",
-  "Read each other something you love",
-  "Take an intimate photo together",
-  "Write each other a short love letter",
-  "Spend a morning in bed doing nothing",
-  "Watch the sunrise or sunset together",
-  "Give a full foot massage",
-  "Cook breakfast in bed for each other",
-  "Have a picnic together",
-  "Go stargazing",
-  "Hold hands for an entire evening",
-  "Send a voice note describing what you love about them",
-  "Take a day trip somewhere neither of you has been",
-  "Go skinny dipping together",
-  "Spend an evening with no phones or screens",
-  "Give a full neck and shoulder massage",
+  pl("Cook a meal together from scratch"),
+  q("Give each other a 20-minute massage"),
+  pl("Watch a film you've never seen together"),
+  q("Take a bath or shower together"),
+  q("Dance together in the kitchen"),
+  q("Read each other something you love"),
+  q("Take an intimate photo together"),
+  q("Write each other a short love letter"),
+  pl("Spend a morning in bed doing nothing"),
+  pl("Watch the sunrise or sunset together"),
+  q("Give a full foot massage"),
+  pl("Cook breakfast in bed for each other"),
+  pl("Have a picnic together"),
+  pl("Go stargazing"),
+  q("Hold hands for an entire evening"),
+  q("Send a voice note describing what you love about them"),
+  pl("Take a day trip somewhere neither of you has been"),
+  pl("Go skinny dipping together"),
+  q("Spend an evening with no phones or screens"),
+  q("Give a full neck and shoulder massage"),
   // Flirty / Intimate
-  "Make out for 10 minutes without going further",
-  "Take turns undressing each other slowly",
-  "Give a full body massage",
-  "Try sex somewhere other than the bedroom",
-  "Have sex with all the lights on",
-  "Try morning sex",
-  "Watch adult content together",
-  "Share a fantasy you haven't said aloud before",
-  "Try a blindfold",
-  "Have sex after building anticipation all day",
-  "Spend a full evening focused entirely on your partner's pleasure",
-  "Try a new position together",
-  "Try oral sex with total focus on the other person",
-  "Give each other 30 minutes of pure sensual touch, no goals",
-  "Try sex with music playing that you chose together",
+  q("Make out for 10 minutes without going further"),
+  q("Take turns undressing each other slowly"),
+  q("Give a full body massage"),
+  q("Try sex somewhere other than the bedroom"),
+  q("Have sex with all the lights on"),
+  pl("Try morning sex"),
+  q("Watch adult content together"),
+  q("Share a fantasy you haven't said aloud before"),
+  q("Try a blindfold"),
+  pl("Have sex after building anticipation all day"),
+  q("Spend a full evening focused entirely on your partner's pleasure"),
+  q("Try a new position together"),
+  q("Try oral sex with total focus on the other person"),
+  q("Give each other 30 minutes of pure sensual touch, no goals"),
+  q("Try sex with music playing that you chose together"),
   // Spicy / Bold
-  "Try a new toy together",
-  "Have a 'yes night', one partner decides everything",
-  "Try sensory play with ice and warmth",
-  "Try role-playing a scenario together",
-  "Take a couples photo somewhere beautiful",
-  "Try edging together, build and pause at least 3 times",
-  "Have sex outdoors in a genuinely private spot",
-  "Make a private video together",
-  "Try consensual restraint, wrists, agreed in advance",
-  "Have sex twice in one day",
-  "Try 69 together",
-  "Let your partner guide your hands all evening",
-  "Try sex immediately after a long romantic build-up",
-  "Have sex in complete silence, no words at all",
-  "Act out a roleplay scenario from the Fantasy Wishes list",
+  pl("Try a new toy together"),
+  q("Have a 'yes night', one partner decides everything"),
+  q("Try sensory play with ice and warmth"),
+  q("Try role-playing a scenario together"),
+  pl("Take a couples photo somewhere beautiful"),
+  q("Try edging together, build and pause at least 3 times"),
+  pl("Have sex outdoors in a genuinely private spot"),
+  q("Make a private video together"),
+  q("Try consensual restraint, wrists, agreed in advance"),
+  pl("Have sex twice in one day"),
+  q("Try 69 together"),
+  q("Let your partner guide your hands all evening"),
+  pl("Try sex immediately after a long romantic build-up"),
+  q("Have sex in complete silence, no words at all"),
+  q("Act out a roleplay scenario from the Fantasy Wishes list"),
 ];
 
 export const BINGO_REWARDS: string[] = [
