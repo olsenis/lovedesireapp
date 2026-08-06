@@ -279,6 +279,47 @@ If any two of these signal "yes", enrich top-15 items handwritten (2-3h). Ship. 
 
 ---
 
+## LDR-tagged content across more games (raised August 2026)
+
+### What
+
+Extend LDR-specific content into games where it currently doesn't exist:
+
+- **Would You Rather** — LDR-tagged questions like "Would you rather visit 3x/year for 2 weeks, or 12x/year for 3 days?", "Would you rather move to their city, or have them move to yours?"
+- **Truth or Dare** — LDR truths ("What do you miss most about being in the same room?", "When was the last time you cried missing me?"). Dares are inherently in-person so LDR would need "video-call dares" as a distinct sub-mode.
+- **Fantasy Wishes** — LDR-flavoured entries around "next time we're together" or "over video" scenarios.
+- **Sunday Check-in** — swap or supplement 1-2 of the 5 questions for LDR-specific ones when isLongDistance is on (e.g. "What was the hardest thing about being apart this week?").
+
+Currently LDR pairs get: 42 LDR-tagged Daily questions, 28 virtual date ideas, 3 extra Note occasions, Distance program in 30-Day Challenge. That covers 4 of ~10 content-driven surfaces.
+
+### Why deferred
+
+Aligns with [feedback_defer_content_authoring.md](../memory/feedback_defer_content_authoring.md): ship-clean-then-enrich-top-N from analytics. Writing quality LDR-specific content across 3-4 more games = ~4-6h of focused authoring for ~50-100 items to feel meaningful — and we don't yet know which games LDR pairs actually open.
+
+Some of these are also design-question, not just content:
+- Video-call dares as a Truth or Dare sub-mode is a UX design task, not just writing
+- Fantasy Wishes for LDR raises the "when? next time we're together?" temporal question
+- Sunday Check-in question swap risks breaking the fixed-5 shared identity that both partners recognise
+
+Ship the current LDR feature set, observe post-launch which games LDR pairs use, then invest content authoring in the games they actually engage with.
+
+### Decision criteria for revisiting
+
+- LDR pair segment ≥ 15% of active couples AND their session breakdown shows they open a game with no LDR content (WYR, Truth or Dare, Fantasy Wishes)
+- Reviews from LDR users specifically mention "feels made for co-located couples"
+- A specific game gets requested by name ("more LDR questions in WYR")
+
+### Effort estimate (for revisit)
+
+- WYR LDR items: ~1.5h for 20-30 items
+- Truth or Dare LDR truths: ~1.5h for 20-30 truths
+- Video-call dares (design + 15-20 items): ~3h
+- Fantasy Wishes LDR flavour: ~2h for 20-30 items
+- Sunday Check-in LDR variant (5 questions): ~30 min + design decision on how to gate
+- **Total content pass: ~8-10h, spread across passes**
+
+---
+
 ## LDR distance banner on Home (raised July 2026)
 
 ### What

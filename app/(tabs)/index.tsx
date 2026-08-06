@@ -74,6 +74,20 @@ function getNextVisit(nextVisitDate?: number): { dateLabel: string; daysUntil: n
 
 type LangTip = { tip: string; cta: string; route: string };
 
+// LDR-specific tips that rotate into the insight card when the couple is
+// long distance. These sit alongside (not replacing) love-language tips so
+// LDR pairs see genuinely distance-aware suggestions on some days.
+const LDR_TIPS: LangTip[] = [
+  { tip: `Send them a morning spark with your first coffee.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
+  { tip: `Video call over dinner tonight, one candle each.`, cta: '', route: '' },
+  { tip: `Watch the same episode at the same time, hit play together.`, cta: '', route: '' },
+  { tip: `Send a voice note instead of a text today. Hearing them lands differently.`, cta: 'Open Tease', route: '/flashes' },
+  { tip: `Sync your calendars for next weekend, pick one thing to look forward to.`, cta: 'Open Countdowns', route: '/countdown' },
+  { tip: `Cook the same recipe tonight, video-call while you eat.`, cta: '', route: '' },
+  { tip: `Write a Love Note timed to unlock tomorrow morning.`, cta: 'Write a Love Note', route: '/notes' },
+  { tip: `Share a short playlist of what's been on repeat for you this week.`, cta: '', route: '' },
+];
+
 // Daily-rotating tips per partner's love language. Picks one per day based on day-of-year.
 function getLanguageTip(language: string | undefined, partnerName: string): LangTip | null {
   if (!language) return null;
@@ -120,6 +134,66 @@ function timeInZone(tz?: string): string | null {
   } catch {
     return null;
   }
+}
+
+// Local hour (0-23) in the given IANA timezone, or null if unknown.
+function hourInZone(tz?: string): number | null {
+  if (!tz) return null;
+  try {
+    const hs = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', hour12: false }).format(new Date());
+    const n = parseInt(hs, 10);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+// Overlap window when both partners are typically awake, based on a naive
+// 07:00-23:00 awake day. Returns a "HH:00 - HH:00 your time" string for the
+// partner-awake window projected onto the local clock, or null if there is
+// no overlap or timezones are missing / identical.
+function getOverlapWindow(myTz?: string, partnerTz?: string): string | null {
+  if (!myTz || !partnerTz || myTz === partnerTz) return null;
+  const myH = hourInZone(myTz);
+  const pH = hourInZone(partnerTz);
+  if (myH === null || pH === null) return null;
+  // Partner's local hours 07..22 (inclusive) = awake. Convert each hour to
+  // "my clock" by adding the timezone diff (myH - pH).
+  const diff = myH - pH;
+  const awakePartnerHoursMine: number[] = [];
+  for (let h = 7; h <= 22; h++) {
+    const mine = ((h + diff) % 24 + 24) % 24;
+    awakePartnerHoursMine.push(mine);
+  }
+  // Intersect with my awake window 07..22.
+  const mineAwake = new Set<number>();
+  for (let h = 7; h <= 22; h++) mineAwake.add(h);
+  const overlap = awakePartnerHoursMine.filter((h) => mineAwake.has(h)).sort((a, b) => a - b);
+  if (overlap.length === 0) return null;
+  // Detect largest contiguous run so we don't format a disjoint set.
+  let bestStart = overlap[0], bestEnd = overlap[0];
+  let curStart = overlap[0], curEnd = overlap[0];
+  for (let i = 1; i < overlap.length; i++) {
+    if (overlap[i] === curEnd + 1) {
+      curEnd = overlap[i];
+    } else {
+      if (curEnd - curStart > bestEnd - bestStart) { bestStart = curStart; bestEnd = curEnd; }
+      curStart = overlap[i]; curEnd = overlap[i];
+    }
+  }
+  if (curEnd - curStart > bestEnd - bestStart) { bestStart = curStart; bestEnd = curEnd; }
+  const pad = (h: number) => `${String(h).padStart(2, '0')}:00`;
+  return `${pad(bestStart)} – ${pad(bestEnd + 1)}`;
+}
+
+// Days apart proxy: uses couple.createdAt as an anchor for "since we joined
+// as a couple", or nextVisitDate (past) as "since we last saw each other"
+// when set. Returns null if we don't have a useful anchor.
+function getDaysApart(createdAt?: number, nextVisitDate?: number): number | null {
+  const anchor = nextVisitDate && nextVisitDate < Date.now() ? nextVisitDate : createdAt;
+  if (!anchor) return null;
+  const days = Math.floor((Date.now() - anchor) / 86400000);
+  return days > 0 ? days : null;
 }
 
 interface NudgeItem {
@@ -288,6 +362,10 @@ export default function HomeScreen() {
   const showAnniversaryOnly = !!anniversary && (!visibleNextVisit || (!showBothEvents && anniversary.daysUntil < visibleNextVisit.daysUntil));
   const myTimezone = isLDR ? timeInZone(profile?.timezone) : null;
   const partnerTimezone = isLDR ? timeInZone(partner?.timezone) : null;
+  // LDR ambient status: days-apart proxy + overlap window between the two
+  // awake days. Both derived from cheap computations, no extra queries.
+  const daysApart = isLDR ? getDaysApart(couple?.createdAt, couple?.nextVisitDate) : null;
+  const overlapWindow = isLDR ? getOverlapWindow(profile?.timezone, partner?.timezone) : null;
 
   // Build nudge items (memoized — only rebuilds when one of the sources actually changes)
   const nudges = useMemo<NudgeItem[]>(() => {
@@ -742,6 +820,15 @@ export default function HomeScreen() {
                   <Text style={styles.anniversaryDays}>unlocks countdown + hype</Text>
                 </TouchableOpacity>
               )}
+              {/* LDR: days-apart proxy + overlap window. Kept subtle (no pill
+                  chrome) so they read as an ambient status line under the
+                  headline, not as another action to take. */}
+              {isLDR && daysApart !== null && (
+                <Text style={styles.ldrStatusLine}>✨ {daysApart} {daysApart === 1 ? 'day' : 'days'} apart</Text>
+              )}
+              {isLDR && overlapWindow && (
+                <Text style={styles.ldrStatusLine}>🕒 Both awake {overlapWindow} your time</Text>
+              )}
             </View>
             <View style={styles.avatarCol}>
               <View style={styles.avatarRing}>
@@ -769,11 +856,20 @@ export default function HomeScreen() {
 
       {/* Daily insight card — based on partner's Love Language quiz result.
           Hidden for the rest of the day once the user acts on the CTA,
-          so the day feels closed. Reappears with a fresh tip tomorrow. */}
+          so the day feels closed. Reappears with a fresh tip tomorrow.
+          When Long Distance is on, every 3rd day rotates in a
+          distance-specific tip instead of a love-language one, so LDR
+          pairs see genuinely distance-aware suggestions regularly. */}
       {!insightDismissedToday && (() => {
-        const tip = getLanguageTip((partner as any)?.loveLanguage, partner?.name ?? 'them');
+        const dayN = Math.floor(Date.now() / 86400000);
+        const isLdrDay = isLDR && dayN % 3 === 0;
+        const tip = isLdrDay
+          ? LDR_TIPS[dayN % LDR_TIPS.length]
+          : getLanguageTip((partner as any)?.loveLanguage, partner?.name ?? 'them');
         if (!tip) return null;
-        const langMeta = (partner as any)?.loveLanguage ? `${(partner as any).loveLanguage}` : '';
+        const langMeta = isLdrDay
+          ? 'LONG DISTANCE'
+          : ((partner as any)?.loveLanguage ? `${(partner as any).loveLanguage}` : '');
         const handleTipPress = () => {
           if (!tip.route) return;
           // Route-based CTAs that stay on Home (e.g. the Spark picker) can't
@@ -792,7 +888,7 @@ export default function HomeScreen() {
             activeOpacity={tip.route ? 0.85 : 1}
             accessibilityRole={tip.route ? 'button' : undefined}
           >
-            <Text style={styles.insightEyebrow}>INSIGHT FOR YOU{langMeta ? ` · ${langMeta.toUpperCase()}` : ''}</Text>
+            <Text style={styles.insightEyebrow}>INSIGHT FOR YOU{langMeta ? ` · ${isLdrDay ? langMeta : langMeta.toUpperCase()}` : ''}</Text>
             <Text style={styles.insightTip}>{tip.tip}</Text>
             {tip.cta ? <Text style={styles.insightCta}>{tip.cta} →</Text> : null}
           </TouchableOpacity>
@@ -1099,6 +1195,7 @@ const styles = StyleSheet.create({
   anniversaryPill: { alignItems: 'center', gap: 1, marginTop: 2 },
   anniversaryText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: 'rgba(255,255,255,0.9)', textAlign: 'center' },
   anniversaryDays: { fontFamily: Fonts.bodyItalic, fontSize: 10, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
+  ldrStatusLine: { fontFamily: Fonts.body, fontSize: 11, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: 4 },
 
   connectBanner: { backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.rose, gap: Spacing.sm },
   connectEmoji: { fontSize: 32 },

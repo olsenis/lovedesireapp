@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
+import { useCouple } from '../../hooks/useCouple';
 import { useSubscription } from '../../hooks/useSubscription';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -19,10 +20,14 @@ const RITUALS = [
 ];
 
 // Nurture — intimate exploration. Mostly paid tier, deeper commitment.
+// `inPerson: true` flags features that inherently require being in the
+// same room. LDR pairs get a small "in-person" pill so they know upfront
+// this is for when they're together, but the feature stays fully
+// accessible (they can plan for the next visit).
 const NURTURE = [
   { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Log and reflect on your intimate moments',               route: '/intimacy-tracker', bg: '#FFF0F3', paid: true },
   { emoji: '🧬', title: 'The Lovers',        subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true },
-  { emoji: '🫁', title: 'Sensate Focus',     subtitle: 'Guided touch sessions, rekindling through presence',      route: '/sensate',   bg: '#E8F5E9', paid: true },
+  { emoji: '🫁', title: 'Sensate Focus',     subtitle: 'Guided touch sessions, rekindling through presence',      route: '/sensate',   bg: '#E8F5E9', paid: true, inPerson: true },
 ];
 
 // Discover Yourselves — quiz-based identity + shared history. One-time
@@ -45,11 +50,12 @@ function SectionDivider({ label }: { label: string }) {
 }
 
 function FeatureCard({
-  emoji, title, subtitle, route, bg, paid, isSubscribed,
+  emoji, title, subtitle, route, bg, paid, isSubscribed, inPerson, isLDR,
 }: {
-  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean;
+  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean; inPerson?: boolean; isLDR?: boolean;
 }) {
   const locked = paid && !isSubscribed;
+  const showInPersonPill = !!inPerson && !!isLDR;
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: bg }]}
@@ -58,7 +64,14 @@ function FeatureCard({
      accessibilityRole="button">
       <Text style={styles.cardEmoji}>{emoji}</Text>
       <View style={styles.cardText}>
-        <Text style={styles.cardTitle}>{title}</Text>
+        <View style={styles.cardTitleRow}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          {showInPersonPill && (
+            <View style={styles.inPersonPill}>
+              <Text style={styles.inPersonPillText}>IN-PERSON</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.cardSub}>{subtitle}</Text>
       </View>
       <Text style={styles.arrow}>{locked ? '🔒' : '›'}</Text>
@@ -68,7 +81,9 @@ function FeatureCard({
 
 export default function LoveScreen() {
   const { isSubscribed } = useSubscription();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const isLDR = !!couple?.isLongDistance;
   const intimacyLogEnabled = profile?.features?.intimacyLog ?? false;
   const nurture = NURTURE.filter(f => f.route !== '/intimacy-tracker' || intimacyLogEnabled);
   return (
@@ -77,13 +92,13 @@ export default function LoveScreen() {
       <Text style={styles.subtitle}>Your rhythm together</Text>
 
       <SectionDivider label="Rituals" />
-      {RITUALS.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      {RITUALS.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
 
       <SectionDivider label="Nurture" />
-      {nurture.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      {nurture.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
 
       <SectionDivider label="Discover yourselves" />
-      {DISCOVER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      {DISCOVER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
     </ScrollView>
   );
 }
@@ -107,7 +122,20 @@ const styles = StyleSheet.create({
   },
   cardEmoji: { fontSize: 36 },
   cardText: { flex: 1 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   cardTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },
   cardSub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, marginTop: 2 },
   arrow: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.muted },
+  inPersonPill: {
+    backgroundColor: 'rgba(136,14,79,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+  },
+  inPersonPillText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 9,
+    color: Colors.burgundy,
+    letterSpacing: 0.8,
+  },
 });

@@ -11,7 +11,7 @@ import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 
 type GameCard = {
-  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean;
+  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; inPerson?: boolean;
 };
 
 // Versus is data-gated (see below), so it isn't in the static GAMES list —
@@ -21,7 +21,9 @@ const GAMES: GameCard[] = [
   { emoji: '💫', title: 'Daily',                subtitle: 'Picks to vote on and questions to answer, fresh every day', route: '/daily',          bg: '#E3F2FD', paid: false },
   { emoji: '🎯', title: 'Truth or Dare',        subtitle: 'Solo spin or 2-phone multiplayer round',        route: '/truth-dare',     bg: '#F3E5F5', paid: false },
   { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time, then reveal',   route: '/would-you-rather', bg: '#FFF9C4', paid: false },
-  { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true },
+  // Activity Cards' cards ask you to do things in the same room together.
+  // LDR pairs get an "IN-PERSON" pill so they know before opening.
+  { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true, inPerson: true },
   { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5', paid: true },
 ];
 
@@ -36,11 +38,12 @@ const CHALLENGES = [
 ];
 
 function FeatureCard({
-  emoji, title, subtitle, route, bg, paid, isSubscribed, isNew,
+  emoji, title, subtitle, route, bg, paid, isSubscribed, isNew, inPerson, isLDR,
 }: {
-  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean; isNew?: boolean;
+  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean; isNew?: boolean; inPerson?: boolean; isLDR?: boolean;
 }) {
   const locked = paid && !isSubscribed;
+  const showInPersonPill = !!inPerson && !!isLDR;
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: bg }]}
@@ -54,6 +57,11 @@ function FeatureCard({
           {isNew && (
             <View style={styles.newBadge}>
               <Text style={styles.newBadgeText}>NEW</Text>
+            </View>
+          )}
+          {showInPersonPill && (
+            <View style={styles.inPersonPill}>
+              <Text style={styles.inPersonPillText}>IN-PERSON</Text>
             </View>
           )}
         </View>
@@ -72,6 +80,7 @@ export default function DiscoverScreen() {
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
   const coupleId = profile?.coupleId;
+  const isLDR = !!couple?.isLongDistance;
 
   // Versus visibility state.
   //  - null   = still checking (first mount, before Firestore reads land)
@@ -138,12 +147,13 @@ export default function DiscoverScreen() {
           key={f.route}
           {...f}
           isSubscribed={isSubscribed}
+          isLDR={isLDR}
           isNew={f.route === '/versus' && versusIsNew}
         />
       ))}
 
       <Text style={styles.sectionLabel}>Challenges</Text>
-      {CHALLENGES.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} />)}
+      {CHALLENGES.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
     </ScrollView>
   );
 }
@@ -176,5 +186,17 @@ const styles = StyleSheet.create({
   },
   newBadgeText: {
     fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.cream, letterSpacing: 0.8,
+  },
+  inPersonPill: {
+    backgroundColor: 'rgba(136,14,79,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+  },
+  inPersonPillText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 9,
+    color: Colors.burgundy,
+    letterSpacing: 0.8,
   },
 });
