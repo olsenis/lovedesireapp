@@ -138,7 +138,7 @@ export default function DailyScreen() {
   // scroll doesn't feel like two walls of same-shape cards clustered
   // by type. A 2-action warmup band before the first question keeps the
   // keyboard-hides-actions problem from biting on small screens.
-  type ActionRow = { kind: 'action'; gi: number; text: string; category: DailyWishCategory };
+  type ActionRow = { kind: 'action'; gi: number; text: string; category: DailyWishCategory; inPerson?: boolean };
   type QuestionRow = { kind: 'question'; gi: number; q: Question };
   type Row = ActionRow | QuestionRow;
 
@@ -149,7 +149,7 @@ export default function DailyScreen() {
     if (wishDoc && dpSources.length > 0) {
       wishDoc.items.forEach((item, gi) => {
         if (dpSources.includes(item.category)) {
-          actions.push({ kind: 'action', gi, text: item.text, category: item.category });
+          actions.push({ kind: 'action', gi, text: item.text, category: item.category, inPerson: item.inPerson });
         }
       });
     }
@@ -316,6 +316,18 @@ export default function DailyScreen() {
           </Text>
         </View>
 
+        {/* LDR banner: many picks are written for co-located couples.
+            Nudge LDR pairs to Yes-vote in-person items and save them to
+            their Together List for the next visit, rather than expecting
+            everything to be do-able today. */}
+        {!!couple?.isLongDistance && (
+          <View style={styles.ldrBanner}>
+            <Text style={styles.ldrBannerText}>
+              🌐 Some picks are for when you're together. Yes-vote to save them for your next visit.
+            </Text>
+          </View>
+        )}
+
         {/* Rows — spread-interleaved via interleaveRows: warmup band of
             actions then alternating with questions. See helper for pattern. */}
         {rows.map((row) => (
@@ -333,6 +345,7 @@ export default function DailyScreen() {
                 bothAddedToList={alreadyAdded(row.gi)}
                 onVote={handleVote}
                 onAdd={handleAddToList}
+                showInPersonPill={!!couple?.isLongDistance && !!row.inPerson}
               />
             : <QuestionCard
                 key={`q-${row.gi}`}
@@ -470,7 +483,7 @@ function pickCategoryPartnerAheadOf(
 }
 
 function ActionCard({
-  gi, text, partnerName, vote, theyVoted, didMatch, iAdded, theyAdded, bothAddedToList, onVote, onAdd,
+  gi, text, partnerName, vote, theyVoted, didMatch, iAdded, theyAdded, bothAddedToList, onVote, onAdd, showInPersonPill,
 }: {
   gi: number;
   text: string;
@@ -483,11 +496,19 @@ function ActionCard({
   bothAddedToList: boolean;
   onVote: (gi: number, v: DailyVote) => void;
   onAdd: (gi: number) => void;
+  showInPersonPill?: boolean;
 }) {
   return (
     <View style={[styles.card, styles.actionCard, didMatch && styles.cardMatched]}>
-      <View style={styles.typePill}>
-        <Text style={styles.typePillText}>PICK</Text>
+      <View style={styles.pillRow}>
+        <View style={styles.typePill}>
+          <Text style={styles.typePillText}>PICK</Text>
+        </View>
+        {showInPersonPill && (
+          <View style={styles.inPersonPill}>
+            <Text style={styles.inPersonPillText}>IN-PERSON</Text>
+          </View>
+        )}
       </View>
       <Text style={styles.cardText}>{text}</Text>
       {didMatch ? (
@@ -697,10 +718,25 @@ const styles = StyleSheet.create({
   // keeps it label-shaped (not chip-shaped) so the pill doesn't compete
   // with card content. Category identity still comes from card background
   // + left border colour; the pill just says "this is a pick / a question".
+  pillRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   typePill: {
     alignSelf: 'flex-start', paddingVertical: 2, paddingHorizontal: 8,
     backgroundColor: Colors.burgundy, borderRadius: Radius.full,
   },
+  inPersonPill: {
+    paddingVertical: 2, paddingHorizontal: 8,
+    backgroundColor: 'rgba(136,14,79,0.12)', borderRadius: Radius.full,
+  },
+  inPersonPillText: { fontFamily: Fonts.bodyBold, fontSize: 9, color: Colors.burgundy, letterSpacing: 0.8 },
+  // LDR banner sits above the row list to set expectation once, so the
+  // per-card IN-PERSON pill reads as an inline label, not a warning.
+  ldrBanner: {
+    backgroundColor: '#FFF4E8', borderRadius: Radius.md,
+    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1, borderColor: 'rgba(136,14,79,0.10)',
+  },
+  ldrBannerText: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.text, lineHeight: 18 },
   typePillText: { fontFamily: Fonts.bodyBold, fontSize: 9, color: Colors.cream, letterSpacing: 0.8 },
 
   // Action states

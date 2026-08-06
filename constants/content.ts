@@ -1962,6 +1962,12 @@ export interface DailyWishItem {
   id: string;
   text: string;
   category: DailyWishCategory;
+  // Optional flag for items that inherently require being in the same
+  // room (e.g. "cook dinner together", "bath together", "plant something").
+  // Consumed by daily.tsx to show a small "IN-PERSON" pill for LDR pairs,
+  // so they can still vote Yes and save the match to their Together List
+  // for the next visit, without expecting to do it today.
+  inPerson?: boolean;
 }
 
 export const DAILY_WISH_CATEGORY_CONFIG: Record<DailyWishCategory, { label: string; emoji: string; color: string; textColor: string }> = {
@@ -2404,75 +2410,75 @@ export const FANTASY_WISHES_PRESETS: FantasyWishesItem[] = [
 
 // ─── DAILY WISH ITEMS ──────────────────────────────────────────────────────────
 
-const sw = (text: string): DailyWishItem => ({ id: `sw-${text.slice(0,20)}`, text, category: 'sweet' });
-const fl = (text: string): DailyWishItem => ({ id: `fl-${text.slice(0,20)}`, text, category: 'flirty' });
-const sp = (text: string): DailyWishItem => ({ id: `sp-${text.slice(0,20)}`, text, category: 'spicy' });
-const dp = (text: string): DailyWishItem => ({ id: `dp-${text.slice(0,20)}`, text, category: 'deep' });
+const sw = (text: string, inPerson?: boolean): DailyWishItem => ({ id: `sw-${text.slice(0,20)}`, text, category: 'sweet', ...(inPerson ? { inPerson: true } : {}) });
+const fl = (text: string, inPerson?: boolean): DailyWishItem => ({ id: `fl-${text.slice(0,20)}`, text, category: 'flirty', ...(inPerson ? { inPerson: true } : {}) });
+const sp = (text: string, inPerson?: boolean): DailyWishItem => ({ id: `sp-${text.slice(0,20)}`, text, category: 'spicy', ...(inPerson ? { inPerson: true } : {}) });
+const dp = (text: string, inPerson?: boolean): DailyWishItem => ({ id: `dp-${text.slice(0,20)}`, text, category: 'deep', ...(inPerson ? { inPerson: true } : {}) });
 // sx (old 'sexual') was merged into spicy in July 2026 — items that used sx
 // now go through sp() but keep an 'sx-' id prefix so old Firestore matches
 // don't collide with existing sp-prefixed ids.
-const sx = (text: string): DailyWishItem => ({ id: `sx-${text.slice(0,20)}`, text, category: 'spicy' });
+const sx = (text: string, inPerson?: boolean): DailyWishItem => ({ id: `sx-${text.slice(0,20)}`, text, category: 'spicy', ...(inPerson ? { inPerson: true } : {}) });
 
 export const DAILY_WISH_ITEMS: DailyWishItem[] = [
   // ── Sweet ────────────────────────────────────────────────────────────────
   sw("Wake up early just to watch the sunrise together"),
   sw("Spend an entire day without checking your phones"),
-  sw("Cook a new recipe together from scratch"),
+  sw("Cook a new recipe together from scratch", true),
   sw("Write each other a letter and read them aloud at the same time"),
   sw("Take a long walk with no destination"),
-  sw("Build a blanket fort and spend the evening inside it"),
-  sw("Give each other a 30-minute massage without rushing"),
+  sw("Build a blanket fort and spend the evening inside it", true),
+  sw("Give each other a 30-minute massage without rushing", true),
   sw("Plan a mystery date and surprise each other"),
   sw("Recreate your first date exactly"),
-  sw("Spend a full Sunday in bed doing nothing"),
+  sw("Spend a full Sunday in bed doing nothing", true),
   sw("Make a scrapbook of your favorite memories together"),
   sw("Learn something new together, a skill, a language, a craft"),
   sw("Go stargazing far from the city"),
   sw("Write a bucket list of 30 things to do together"),
-  sw("Spend one evening completely offline, candlelight only"),
+  sw("Spend one evening completely offline, candlelight only", true),
   sw("Make a playlist that tells the story of your relationship"),
-  sw("Plant something together and watch it grow"),
+  sw("Plant something together and watch it grow", true),
   sw("Visit somewhere neither of you has ever been"),
   sw("Create a couple's ritual, something only the two of you do"),
   sw("Buy each other a small, thoughtful gift for no reason"),
-  sw("Spend a morning in bed talking about your dreams"),
-  sw("Take a couples portrait photo and frame it"),
-  sw("Cook breakfast in bed and stay there until noon"),
+  sw("Spend a morning in bed talking about your dreams", true),
+  sw("Take a couples portrait photo and frame it", true),
+  sw("Cook breakfast in bed and stay there until noon", true),
   sw("Watch an old film you both loved before you met"),
   sw("Walk somewhere beautiful and talk only about the future"),
   sw("Write down 10 things you love about each other and exchange"),
-  sw("Go to a farmers market and cook everything you buy"),
-  sw("Take a bath together by candlelight"),
+  sw("Go to a farmers market and cook everything you buy", true),
+  sw("Take a bath together by candlelight", true),
   sw("Read the same book and discuss each chapter"),
   sw("Spend one evening asking questions you've never asked before"),
   sw("Create a playlist for every mood you share"),
-  sw("Take a weekend road trip with no plan"),
+  sw("Take a weekend road trip with no plan", true),
   sw("Find a new cafe and spend the afternoon there"),
   sw("Make a time capsule, open it in a year"),
   sw("Go to a live music event neither of you has seen"),
   sw("Take an evening walk in a neighbourhood neither of you knows"),
-  sw("Make homemade pizza completely from scratch"),
-  sw("Go to bed two hours early just to talk"),
-  sw("Dance together in the kitchen to no particular song"),
-  sw("Make a meal from a country neither of you has visited"),
+  sw("Make homemade pizza completely from scratch", true),
+  sw("Go to bed two hours early just to talk", true),
+  sw("Dance together in the kitchen to no particular song", true),
+  sw("Make a meal from a country neither of you has visited", true),
   sw("Watch the sunset together with drinks and nothing else"),
   sw("Spend one day saying only kind things to each other"),
-  sw("Bake something and eat it straight from the oven"),
+  sw("Bake something and eat it straight from the oven", true),
   sw("Tell each other three things you've never said before"),
   sw("Create a tradition you'll keep every year"),
   sw("Write each other a note to open on a difficult day"),
   sw("Make a vision board for your life together"),
-  sw("Take a long drive with no destination and good music"),
-  sw("Spend a morning at a market buying things for each other"),
+  sw("Take a long drive with no destination and good music", true),
+  sw("Spend a morning at a market buying things for each other", true),
   sw("Visit a place that was significant in your partner's life before you met"),
-  sw("Have dinner by candlelight at home, dress up for it"),
-  sw("Spend an hour doing something your partner loves that you normally skip"),
-  sw("Make a couples cocktail together, name it after your relationship"),
+  sw("Have dinner by candlelight at home, dress up for it", true),
+  sw("Spend an hour doing something your partner loves that you normally skip", true),
+  sw("Make a couples cocktail together, name it after your relationship", true),
   sw("Go to bed at the same time every night for 30 days"),
   sw("Look through old photos and share the stories behind them"),
-  sw("Plan an overnight stay in a place neither of you has been"),
-  sw("Go on a spontaneous picnic"),
-  sw("Hold hands continuously for an entire date"),
+  sw("Plan an overnight stay in a place neither of you has been", true),
+  sw("Go on a spontaneous picnic", true),
+  sw("Hold hands continuously for an entire date", true),
   sw("Make a scrapbook page for every year you've been together"),
   sw("Spend one evening watching your favorite films from childhood"),
 

@@ -279,6 +279,36 @@ If any two of these signal "yes", enrich top-15 items handwritten (2-3h). Ship. 
 
 ---
 
+## Full LDR audit + LDR-safe daily action items (raised August 2026)
+
+### What
+
+Two content passes for LDR pairs:
+
+1. **Full LDR audit of existing content pools:** review every entry in `DAILY_WISH_ITEMS` (254), `TRUTHS` (310), `DARES` (~141), `FANTASY_WISHES_PRESETS` (394), `WYR_QUESTIONS` (191), `BINGO_ACTIVITIES` (55), and `CHALLENGE_PROGRAMS` (120) and tag every item that inherently requires being in the same room with `inPerson: true`. Currently only the most obvious ~20 Sweet Daily items are tagged.
+
+2. **Write 40-60 LDR-safe daily action items:** the current pool is ~90% co-located by nature (cook together, share a bath, blanket fort, etc.). Even with the IN-PERSON pill informing LDR users, they see mostly items to save for later. Add new items that work at distance: sync-play episodes, video-dinner rituals, timed voice notes, shared playlists, letter-writing swaps, morning spark chains. Target ~15 items per Daily category (Sweet, Flirty, Deep) so LDR pairs have enough do-able-today content in each tab.
+
+### Why deferred
+
+- Same authoring rule as [feedback_defer_content_authoring.md](../memory/feedback_defer_content_authoring.md): ship-clean-then-enrich-top-N-from-analytics.
+- Full audit of ~1400 items = ~6-8h focused review just to tag; writing new content is another ~4-6h.
+- Current shipped state: `inPerson?: boolean` field on DailyWishItem, ~20 obvious Sweet items tagged, LDR banner at top of Daily explains save-to-list flow. LDR pairs can vote Yes → save match → do on next visit. Not broken, just not optimal.
+
+### Decision criteria for revisiting
+
+- LDR pair segment ≥ 15% of active couples
+- Reviews from LDR users specifically mention "everything is written for people living together"
+- Together List analytics show LDR pairs accumulating high match counts but low completion rate (they're saving for visits and never getting to them)
+
+### Effort estimate
+
+- Full inPerson tagging pass across pools: ~6-8h
+- 40-60 new LDR-safe daily items: ~4-6h focused writing
+- **Total content pass: ~10-14h**
+
+---
+
 ## LDR-tagged content across more games (raised August 2026)
 
 ### What
