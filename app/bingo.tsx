@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Animated } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { ActivityCardsSession, MAX_PASSES, MAX_RECEIVER_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
+import { ActivityCardsSession, MAX_RECEIVER_PASSES, subscribeActivityCards, flipCard, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -17,10 +17,8 @@ export default function ActivityCardsScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<ActivityCardsSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [revealIndex, setRevealIndex] = useState<number | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [undoCard, setUndoCard] = useState<{ index: number; text: string } | null>(null);
-  const scaleAnim = useRef(new Animated.Value(0)).current;
   const help = useHelp('bingo');
 
   const coupleId = profile?.coupleId;
@@ -34,39 +32,22 @@ export default function ActivityCardsScreen() {
     return subscribeActivityCards(coupleId, uid, (s) => { setSession(s); setLoading(false); });
   }, [coupleId, uid]);
 
-  // Animate reveal modal
-  useEffect(() => {
-    if (revealIndex !== null) {
-      scaleAnim.setValue(0);
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 80, friction: 8 }).start();
-    }
-  }, [revealIndex]);
-
-  const handleCardTap = (index: number) => {
-    if (!session || !isMyTurn) return;
+  // Tap-to-commit: no more reveal-then-accept two-step. Picker chooses
+  // a card and it flies to the partner as pending. Removes the "double
+  // confirm" cognitive load users flagged as confusing, and drops the
+  // picker-side pass system that was only needed to back out of a
+  // preview modal that no longer exists.
+  const handleCardTap = async (index: number) => {
+    if (!session || !coupleId || !partnerId) return;
+    const iAmActivePicker = session.turnUid === uid && (session.pendingCard === null || session.pendingCard === undefined);
+    if (!iAmActivePicker) return;
     if ((session.revealed ?? []).includes(index)) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setRevealIndex(index);
-  };
-
-  const handleAccept = async () => {
-    if (!coupleId || !session || revealIndex === null || !partnerId) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const activity = session.squares[revealIndex];
-    await flipCard(coupleId, uid, revealIndex, partnerId);
+    const activity = session.squares[index];
+    await flipCard(coupleId, uid, index, partnerId);
     notifyPartner(coupleId, uid, 'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${activity}", your turn!`).catch(() => {});
-    setRevealIndex(null);
   };
 
-  const handlePass = async () => {
-    if (!coupleId || !session) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await usePass(coupleId, uid, session);
-    setRevealIndex(null);
-  };
-
-  const passesUsed = session?.passes?.[uid] ?? 0;
-  const passesLeft = MAX_PASSES - passesUsed;
   const receiverPassesUsed = session?.receiverPasses?.[uid] ?? 0;
   const receiverPassesLeft = MAX_RECEIVER_PASSES - receiverPassesUsed;
   const completed = session?.completed ?? [];
@@ -137,13 +118,8 @@ export default function ActivityCardsScreen() {
           </Text>
         </View>
 
-        {/* Progress + passes */}
+        {/* Progress */}
         <Text style={styles.progressText}>{revealed.length} of 25 flipped · {remaining} remaining</Text>
-        {isMyTurn && (
-          <Text style={styles.passesText}>
-            {passesLeft > 0 ? `${passesLeft} pass${passesLeft !== 1 ? 'es' : ''} left` : 'No passes left, must accept next card'}
-          </Text>
-        )}
 
         {/* 5×5 Card grid */}
         <View style={styles.grid}>
@@ -151,7 +127,7 @@ export default function ActivityCardsScreen() {
             const isDone = completedSet.has(index);
             const isPending = session.pendingCard === index;
             const isRevealed = revealedSet.has(index);
-            const canTap = isMyTurn && !isRevealed && !isReceiver;
+            const canTap = isMyTurn && !isRevealed && !isReceiver && !hasPendingCard;
 
             return (
               <TouchableOpacity
@@ -217,29 +193,6 @@ export default function ActivityCardsScreen() {
         </View>
       </Modal>
 
-      {/* Reveal modal */}
-      <Modal visible={revealIndex !== null} transparent animationType="fade" onRequestClose={() => setRevealIndex(null)}>
-        <View style={styles.revealOverlay}>
-          <Animated.View style={[styles.revealCard, { transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.revealLabel}>Your challenge</Text>
-            <Text style={styles.revealActivity}>
-              {revealIndex !== null ? session.squares[revealIndex] : ''}
-            </Text>
-            <Text style={styles.revealHint}>Do this together, then it's {partnerName}'s turn</Text>
-            <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.acceptBtnText}>✓ Accept this challenge</Text>
-            </TouchableOpacity>
-            {passesLeft > 0 ? (
-              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handlePass} accessibilityRole="button">
-                <Text style={styles.cancelRevealText}>Pass — put it back ({passesLeft} left)</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.noPassesText}>No passes left — you must accept</Text>
-            )}
-          </Animated.View>
-        </View>
-      </Modal>
-
       {/* Undo completed card */}
       {undoCard && (
         <Modal visible transparent animationType="fade">
@@ -295,8 +248,8 @@ export default function ActivityCardsScreen() {
         description="25 face-down cards, each with an intimate activity. Take turns picking one, you never know what you'll get!"
         tips={[
           "Take turns picking a face-down card",
-          "Tap 'Accept this challenge' to flip it and pass the turn",
-          "Do the activity together whenever you're ready",
+          "One tap flips it and sends the challenge to your partner",
+          "Do the activity together, then confirm to pass the turn",
           "Tap '↺ New' for a fresh deck any time",
         ]}
         onDismiss={help.dismiss}
