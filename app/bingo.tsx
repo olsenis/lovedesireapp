@@ -80,15 +80,21 @@ export default function ActivityCardsScreen() {
   const handleMarkDone = async () => {
     if (!coupleId || !session || !partnerId) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await markCardDone(coupleId, session.pendingCard!, partnerId);
-    notifyPartner(coupleId, uid, 'Activity Cards ✓', `${profile?.name ?? 'Your partner'} marked the challenge as done, your turn!`).catch(() => {});
+    // Alternation: whoever just confirmed the challenge picks the next
+    // card. Previously nextTurn was set back to partnerId, which meant
+    // the original picker kept picking every round and the receiver
+    // never got to choose. Passing `uid` makes turns alternate cleanly.
+    await markCardDone(coupleId, session.pendingCard!, uid);
+    notifyPartner(coupleId, uid, 'Activity Cards ✓', `${profile?.name ?? 'Your partner'} confirmed the challenge, they're picking next`).catch(() => {});
   };
 
   const handleSkipReceived = async () => {
     if (!coupleId || !session || !partnerId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await skipReceivedCard(coupleId, uid, session, partnerId);
-    notifyPartner(coupleId, uid, 'Activity Cards', `${profile?.name ?? 'Your partner'} skipped this one, your turn to pick again`).catch(() => {});
+    // Same alternation as markCardDone — skipping still counts as
+    // resolving the round, so the next pick belongs to the receiver.
+    await skipReceivedCard(coupleId, uid, session, uid);
+    notifyPartner(coupleId, uid, 'Activity Cards', `${profile?.name ?? 'Your partner'} skipped this one, they're picking next`).catch(() => {});
   };
 
   const handleReset = async () => {
