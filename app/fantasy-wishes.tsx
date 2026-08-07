@@ -219,8 +219,13 @@ export default function FantasyWishesScreen() {
   const loadMore = () => {
     const alreadyShown = new Set(shownUnvotedIds);
     const votedIds = new Set(allVoted.map(i => i.id));
+    // Sort candidates newest-first so user-added wishes surface at the top
+    // of the next Load-more batch. Bulk-loaded presets share near-identical
+    // createdAt timestamps so their relative order stays roughly stable.
+    // Previously createdAt-asc buried every custom wish under 300+ presets.
     const next5 = items
       .filter(i => !votedIds.has(i.id) && !alreadyShown.has(i.id))
+      .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 5)
       .map(i => i.id);
     setShownUnvotedIds(prev => [...prev, ...next5]);
