@@ -89,6 +89,17 @@ export default function ActivityCardsScreen() {
     notifyPartner(coupleId, uid, 'Activity Cards ✓', `${profile?.name ?? 'Your partner'} confirmed the challenge, they're picking next`).catch(() => {});
   };
 
+  // Two-phase acceptance: "Let's do this now" commits the round + turn,
+  // then a lightweight follow-up asks about capturing a photo. Splitting
+  // the ex-double-primary ("We did it!" + "Capture this moment") means
+  // capturing is a bonus offered after the commitment, not a competing
+  // primary CTA that made the modal feel busy.
+  const [showCaptureQ, setShowCaptureQ] = useState(false);
+  const handleDoItNow = async () => {
+    await handleMarkDone();
+    setShowCaptureQ(true);
+  };
+
   const handleSkipReceived = async () => {
     if (!coupleId || !session || !partnerId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -233,11 +244,8 @@ export default function ActivityCardsScreen() {
             <Text style={styles.revealActivity}>
               {hasPendingCard ? session.squares[session.pendingCard!] : ''}
             </Text>
-            <TouchableOpacity style={styles.acceptBtn} onPress={handleMarkDone} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.acceptBtnText}>✓ We did it!</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.captureBtn} onPress={async () => { await handleMarkDone(); router.push('/moments' as any); }} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.captureBtnText}>📸 We did it, capture this moment</Text>
+            <TouchableOpacity style={styles.acceptBtn} onPress={handleDoItNow} activeOpacity={0.85} accessibilityRole="button">
+              <Text style={styles.acceptBtnText}>✨ Let's do this now</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveLaterBtn} onPress={handleSaveForLater} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.saveLaterBtnText}>💾 Save to Together List for later</Text>
@@ -247,9 +255,29 @@ export default function ActivityCardsScreen() {
                 <Text style={styles.cancelRevealText}>Skip, not for us ({receiverPassesLeft} left)</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={styles.noPassesText}>No skips left, must complete or save</Text>
+              <Text style={styles.noPassesText}>No skips left, must do or save</Text>
             )}
           </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Follow-up capture modal — fires after "Let's do this now" so
+          capturing a memory is offered as a bonus rather than a
+          competing primary CTA in the initial challenge modal. */}
+      <Modal visible={showCaptureQ} transparent animationType="fade" onRequestClose={() => setShowCaptureQ(false)}>
+        <View style={styles.revealOverlay}>
+          <View style={styles.revealCard}>
+            <Text style={styles.revealLabel}>Nice one</Text>
+            <Text style={[styles.revealActivity, { fontSize: 24 }]}>
+              Want to capture this moment together?
+            </Text>
+            <TouchableOpacity style={styles.acceptBtn} onPress={() => { setShowCaptureQ(false); router.push('/moments' as any); }} activeOpacity={0.85} accessibilityRole="button">
+              <Text style={styles.acceptBtnText}>📸 Yes, capture it</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelRevealBtn} onPress={() => setShowCaptureQ(false)} accessibilityRole="button">
+              <Text style={styles.cancelRevealText}>Not this time</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
