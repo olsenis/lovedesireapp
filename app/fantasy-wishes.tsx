@@ -135,8 +135,13 @@ export default function FantasyWishesScreen() {
     // added. If we added the item locally, handleAdd already showed
     // "Added ✓" and we'd otherwise race two toasts against each other,
     // causing both to flash so fast neither could be read.
+    // Both guards needed:
+    //  - isLocallyAddingRef closes the timing gap during the await
+    //  - locallyAddedIdsRef is a longer-tail net for later subscription
+    //    fires (server-confirmed after the optimistic one) once the flag
+    //    has already been cleared.
     const partnerOnlyIds = newIds.filter((id) => !locallyAddedIdsRef.current.has(id));
-    if (partnerOnlyIds.length > 0 && !toastActive) {
+    if (partnerOnlyIds.length > 0 && !toastActive && !isLocallyAddingRef.current) {
       showToast('✨ New wish below', false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,21 +163,32 @@ export default function FantasyWishesScreen() {
   // reads this to skip firing its own toast for local additions,
   // otherwise "Partner added a wish" races over "Added ✓" and both
   // flash so fast the user can't read either.
+  //
+  // isLocallyAddingRef closes the timing gap: Firestore's onSnapshot fires
+  // optimistically DURING the await, before the id can be added to
+  // locallyAddedIdsRef. The flag flips true before the await so the
+  // auto-inject effect knows to skip its toast for the whole write window.
   const locallyAddedIdsRef = useRef<Set<string>>(new Set());
+  const isLocallyAddingRef = useRef(false);
   const handleAdd = async () => {
     if (!newText.trim() || !coupleId) return;
-    const newId = await addFantasyWishesItem(coupleId, newText.trim());
-    locallyAddedIdsRef.current.add(newId);
-    // Inject the new wish into the current locked batch immediately so the
-    // user sees it right below the existing 5, not somewhere down after
-    // Load 5 more. Previously the toast said "You'll see it after this
-    // batch" but Load 5 more's .slice(0, 5) picks the oldest unvoted items
-    // by createdAt, so the just-added (newest) wish never surfaced until
-    // hundreds of presets had been voted on.
-    setShownUnvotedIds((prev) => [...prev, newId]);
-    setNewText('');
-    setShowAdd(false);
-    showToast('Added ✓ · Just below', false);
+    isLocallyAddingRef.current = true;
+    try {
+      const newId = await addFantasyWishesItem(coupleId, newText.trim());
+      locallyAddedIdsRef.current.add(newId);
+      // Inject the new wish into the current locked batch immediately so the
+      // user sees it right below the existing 5, not somewhere down after
+      // Load 5 more. Previously the toast said "You'll see it after this
+      // batch" but Load 5 more's .slice(0, 5) picks the oldest unvoted items
+      // by createdAt, so the just-added (newest) wish never surfaced until
+      // hundreds of presets had been voted on.
+      setShownUnvotedIds((prev) => [...prev, newId]);
+      setNewText('');
+      setShowAdd(false);
+      showToast('Added ✓ · Just below', false);
+    } finally {
+      isLocallyAddingRef.current = false;
+    }
   };
 
   const loadPresets = async () => {
