@@ -39,3 +39,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Sex Ed vault: raw transcripts and in-progress drafts stay local only
+# (copyright concerns + private research notes). Publish-ready tips
+# under sex-ed/tips/ ARE committed and feed the app via the sync
+# script.
+sex-ed/transcripts/
+sex-ed/drafts/
