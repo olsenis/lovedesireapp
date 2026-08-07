@@ -131,14 +131,13 @@ export default function FantasyWishesScreen() {
     if (newIds.length === 0) return;
     newIds.forEach((id) => seenItemIdsRef.current.add(id));
     setShownUnvotedIds((prev) => [...prev, ...newIds.filter((id) => !prev.includes(id))]);
-    // Only show the partner-added toast when the addition wasn't triggered
-    // by the local user (they already saw "Added ✓" in handleAdd). Toast
-    // guards against double-firing by checking toastActive.
-    if (!toastActive) {
-      const partnerAdded = items.find((i) => i.id === newIds[0]);
-      if (partnerAdded) {
-        showToast('Partner added a wish · below', false);
-      }
+    // Only fire the partner-added toast for items the partner (not us)
+    // added. If we added the item locally, handleAdd already showed
+    // "Added ✓" and we'd otherwise race two toasts against each other,
+    // causing both to flash so fast neither could be read.
+    const partnerOnlyIds = newIds.filter((id) => !locallyAddedIdsRef.current.has(id));
+    if (partnerOnlyIds.length > 0 && !toastActive) {
+      showToast('✨ New wish below', false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
@@ -155,9 +154,15 @@ export default function FantasyWishesScreen() {
     }
   };
 
+  // Ids the local user just added. The partner-added-detection effect
+  // reads this to skip firing its own toast for local additions,
+  // otherwise "Partner added a wish" races over "Added ✓" and both
+  // flash so fast the user can't read either.
+  const locallyAddedIdsRef = useRef<Set<string>>(new Set());
   const handleAdd = async () => {
     if (!newText.trim() || !coupleId) return;
     const newId = await addFantasyWishesItem(coupleId, newText.trim());
+    locallyAddedIdsRef.current.add(newId);
     // Inject the new wish into the current locked batch immediately so the
     // user sees it right below the existing 5, not somewhere down after
     // Load 5 more. Previously the toast said "You'll see it after this
