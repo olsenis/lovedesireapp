@@ -231,7 +231,14 @@ export default function FantasyWishesScreen() {
   const myVote = (item: FantasyWishesItem): FWVote | null =>
     item.votes[uid] as FWVote ?? null;
 
-  const matched = items.filter((i) => partnerId && isFWMatch(i, uid, partnerId));
+  // Matches list ordered newest-first so recent agreements surface at the
+  // top. Uses item.createdAt as a proxy for match recency — we don't track
+  // when both partners YES-voted, but user-added items get their own
+  // timestamps and presets share bulk-load times so ordering stays stable
+  // for the preset cohort while custom wishes rise to the top.
+  const matched = items
+    .filter((i) => partnerId && isFWMatch(i, uid, partnerId))
+    .sort((a, b) => b.createdAt - a.createdAt);
   const allVoted = items.filter((i) => myVote(i) !== null);
   // Locked batch: items in shownUnvotedIds that are still unvoted
   const currentBatch = items.filter((i) => shownUnvotedIds.includes(i.id) && myVote(i) === null);
