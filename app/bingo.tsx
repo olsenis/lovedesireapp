@@ -126,7 +126,7 @@ export default function ActivityCardsScreen() {
     } catch { /* non-fatal */ }
     await markCardDone(coupleId, session.pendingCard, uid);
     setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 3000);
+    setTimeout(() => setSavedToast(false), 6000);
     notifyPartner(coupleId, uid, 'Activity Cards 💾', `${profile?.name ?? 'Your partner'} saved this challenge to your Together List`).catch(() => {});
   };
 
