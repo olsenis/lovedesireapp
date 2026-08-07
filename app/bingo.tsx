@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { ActivityCardsSession, MAX_PASSES, MAX_RECEIVER_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
+import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
@@ -68,8 +68,6 @@ export default function ActivityCardsScreen() {
 
   const passesUsed = session?.passes?.[uid] ?? 0;
   const passesLeft = MAX_PASSES - passesUsed;
-  const receiverPassesUsed = session?.receiverPasses?.[uid] ?? 0;
-  const receiverPassesLeft = MAX_RECEIVER_PASSES - receiverPassesUsed;
   const completed = session?.completed ?? [];
   const completedSet = new Set(completed);
   const hasPendingCard = session?.pendingCard !== null && session?.pendingCard !== undefined;
@@ -250,13 +248,9 @@ export default function ActivityCardsScreen() {
             <TouchableOpacity style={styles.saveLaterBtn} onPress={handleSaveForLater} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.saveLaterBtnText}>💾 Save to Together List for later</Text>
             </TouchableOpacity>
-            {receiverPassesLeft > 0 ? (
-              <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived} accessibilityRole="button">
-                <Text style={styles.cancelRevealText}>Skip, not for us ({receiverPassesLeft} left)</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.noPassesText}>No skips left, must do or save</Text>
-            )}
+            <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived} accessibilityRole="button">
+              <Text style={styles.cancelRevealText}>Skip, not for us</Text>
+            </TouchableOpacity>
           </Animated.View>
         </View>
       </Modal>

@@ -157,8 +157,11 @@ export async function uncompleteCard(coupleId: string, index: number): Promise<v
   });
 }
 
-// Same double-tap race guard as usePass — transaction reads live counter so
-// the same tap can't debit twice.
+// Skip a received card. Skips are unlimited — pick pool + partner needs
+// don't warrant a cap, and the previous MAX_RECEIVER_PASSES=1 gate meant
+// couples felt punished for saying "not today" more than once per session.
+// Still tracks a counter so we can surface skip-heavy sessions in analytics
+// later if we want to. Transaction preserves the same-tap race guard.
 export async function skipReceivedCard(
   coupleId: string,
   uid: string,
@@ -171,7 +174,6 @@ export async function skipReceivedCard(
     if (!snap.exists()) return;
     const live = snap.data() as ActivityCardsSession;
     const current = live.receiverPasses?.[uid] ?? 0;
-    if (current >= MAX_RECEIVER_PASSES) return;
     tx.update(ref, {
       pendingCard: null,
       turnUid: nextTurnUid,
