@@ -111,6 +111,38 @@ export default function FantasyWishesScreen() {
     }
   }, [items.length, uid]);
 
+  // Auto-inject partner-added wishes into the current batch on the receiving
+  // side. Without this, when Óli hits +Add the new wish only appears on his
+  // own screen (via handleAdd's local setShownUnvotedIds); Ola's phone gets
+  // the item via subscription but it never surfaces in her current batch
+  // because Load-more's oldest-first sort keeps burying it. We snapshot every
+  // item id we've seen on mount, then any newer id that arrives afterwards
+  // gets appended to shownUnvotedIds so it shows up as the next card down.
+  const seenItemIdsRef = useRef<Set<string>>(new Set());
+  const initialSeenRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (items.length === 0) return;
+    if (!initialSeenRef.current) {
+      items.forEach((i) => seenItemIdsRef.current.add(i.id));
+      initialSeenRef.current = true;
+      return;
+    }
+    const newIds = items.filter((i) => !seenItemIdsRef.current.has(i.id)).map((i) => i.id);
+    if (newIds.length === 0) return;
+    newIds.forEach((id) => seenItemIdsRef.current.add(id));
+    setShownUnvotedIds((prev) => [...prev, ...newIds.filter((id) => !prev.includes(id))]);
+    // Only show the partner-added toast when the addition wasn't triggered
+    // by the local user (they already saw "Added ✓" in handleAdd). Toast
+    // guards against double-firing by checking toastActive.
+    if (!toastActive) {
+      const partnerAdded = items.find((i) => i.id === newIds[0]);
+      if (partnerAdded) {
+        showToast('Partner added a wish · below', false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
   const handleVote = async (item: FantasyWishesItem, vote: FWVote) => {
     if (!coupleId || !user) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
