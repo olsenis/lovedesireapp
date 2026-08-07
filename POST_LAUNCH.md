@@ -279,6 +279,145 @@ If any two of these signal "yes", enrich top-15 items handwritten (2-3h). Ship. 
 
 ---
 
+## Sex Ed section for paid subscribers (raised August 2026)
+
+### What
+
+Dedicated in-app library of short educational tips on intimacy, communication, and sexual wellbeing — paid tier only. Sits as a new section on the Us tab. Users browse by category, read short tips (40-70 words), tap to see a slightly longer detail view with source attribution back to the original creator.
+
+Content sourced from public educational material (YouTube channels, podcasts, published books) but ALWAYS paraphrased into the developer's own words — verbatim transcripts never ship. Fair-use pattern with mandatory credit to the original creator on every tip.
+
+### Content vault (already set up)
+
+Live at `sex-ed/` in the repo, alongside the Obsidian vault so raw research and publish-ready tips share the same workspace:
+
+```
+sex-ed/
+├── README.md              curation rules, format, copyright policy
+├── transcripts/           GITIGNORED — raw research (copyright)
+├── drafts/                GITIGNORED — WIP tip writing
+└── tips/{category}/*.md   COMMITTED — publish-ready tips
+```
+
+**Categories (working set of 8):**
+
+1. `understanding-pleasure/` — physiology, arousal, how bodies respond
+2. `presence-mindset/` — in body / out of head, less pressure
+3. `communication/` — talking about sex, needs, boundaries
+4. `techniques-touch/` — physical approach, what to try
+5. `overcoming-blocks/` — past experiences, tension, trust, healing
+6. `long-distance/` — LDR-specific
+7. `emotional-intimacy/` — connection outside/alongside sex
+8. `sexual-health/` — wellbeing, cycles, medical
+
+Tip files carry YAML frontmatter (`id`, `title`, `category`, `tags`, `sourceInspiration`, `sourceUrl`, `publish`, `createdAt`) + markdown body. See `sex-ed/README.md` for the full format spec and 5 seeded example tips (from an Alexey Welsh transcript on female orgasm suppressors).
+
+### Sync script (planned, not built)
+
+`scripts/sync-sexed.ts`:
+
+1. Recursively scan `sex-ed/tips/**/*.md`
+2. Parse YAML frontmatter with `gray-matter` (add to devDependencies)
+3. Filter items where `publish: true`
+4. Validate schema (all required fields present, category matches folder, id is unique)
+5. Sort by category then id
+6. Emit `constants/sexEd.ts`:
+
+```ts
+export interface SexEdTip {
+  id: string;
+  title: string;
+  category: SexEdCategory;
+  tags: string[];
+  body: string;              // markdown body from the .md file
+  sourceInspiration?: string;
+  sourceUrl?: string;
+}
+
+export type SexEdCategory = 'understanding-pleasure' | 'presence-mindset' | ...;
+
+export const SEX_ED_TIPS: SexEdTip[] = [...];
+export const SEX_ED_CATEGORY_CONFIG: Record<SexEdCategory, { label, emoji, description }> = {...};
+```
+
+Add `npm run sync-sexed` script alias. Run manually before commit; add to `predeploy` if we want it enforced.
+
+### In-app screens (planned, not built)
+
+- `app/sex-ed.tsx` — top-level list of categories with counts (e.g. `Understanding pleasure · 34 tips`)
+- `app/sex-ed/[category].tsx` — list of tip cards in the category (title + first sentence preview)
+- `app/sex-ed/tip/[id].tsx` — detail view with markdown-rendered body + "Inspired by [creator]" link at the bottom (tappable → opens sourceUrl externally)
+
+**Us tab addition** ([app/(tabs)/love.tsx](app/(tabs)/love.tsx)) — new section under Nurture:
+
+```
+Us tab
+├── Rituals
+├── Nurture (Intimacy Log, The Lovers, Sensate Focus, Sex Ed ← NEW)
+└── Discover yourselves
+```
+
+Card: `📚 Sex Ed — Short reads on connection, intimacy, and wellbeing`. Paid gate on tap (routes to `/upgrade` for free users).
+
+### MVP scope for first ship
+
+- 1 fully-populated category (e.g. `understanding-pleasure` with 15-20 tips)
+- Sync script + typed constants
+- 3 screens (index, category, detail)
+- Paid gate
+- Markdown rendering via `react-native-markdown-display` (add dep) or a small subset of markdown handled inline (bold, italic, paragraph breaks) to avoid the dep
+
+Ship this shape first, observe usage, then bulk-write remaining 7 categories.
+
+### Copyright / fair use guardrails
+
+Documented in `sex-ed/README.md`. Enforced by:
+- `.gitignore` blocking transcripts and drafts from ever reaching the repo
+- Tip file schema requiring `sourceInspiration` (creator name) on every tip
+- App UI surfacing that credit on every tip detail view
+- Never using paid course content (course terms typically forbid derivative work)
+
+### Why deferred
+
+- Not a launch differentiator. The paid tier already carries The Lovers, Sensate Focus, Fantasy Wishes, Activity Cards, Spicy Daily, Fire/Desire challenges. Sex Ed is depth polish, not a conversion hook.
+- Content authoring is real work — 200-500 tips is ~40-80h of focused writing + curation from source material.
+- The Obsidian workflow needs to be lived-in before we tune it. Better to fill up 20-30 real tips through the process first, then design the sync script + screens against real content shapes, not hypothetical ones.
+- Aligns with [feedback_defer_content_authoring.md](../memory/feedback_defer_content_authoring.md) principle: ship clean, enrich from analytics + user behaviour.
+
+### Decision criteria for revisiting
+
+Ship the MVP scope after launch if any of these hit:
+
+- Users specifically request "learn more" content in reviews or support
+- The Lovers / Sensate Focus paid features have high open rates, suggesting appetite for reflective content
+- Retention analytics show paid subscribers wanting more depth beyond games
+- The developer's content vault reaches ≥ 100 publish-ready tips across 3+ categories (means the workflow is proven and the content debt is manageable)
+
+If none of those hit within 3 months of launch, leave in deferred state and revisit only if content vault continues to grow (signalling the developer wants to ship it eventually).
+
+### Effort estimate (for MVP revisit)
+
+- Sync script + typed constants: **2h**
+- 3 screens + navigation: **4h**
+- Markdown rendering setup: **1h** (with lib) or **2h** (inline subset)
+- Paid gate + Us tab card: **30 min**
+- Testing + polish: **1-2h**
+- **Total dev time: ~8-10h** once content is ready
+
+Content authoring is separate and paced by the developer:
+- MVP category (15-20 tips): ~5-8h focused writing
+- Full 200-500 pool: **~40-80h** spread over months
+
+### Non-goals for MVP
+
+- No search / filter (defer)
+- No favorites / saved tips (defer)
+- No user-generated tips (never — moderation cost, wrong direction for a couples app)
+- No AI-generated tips (quality variance + brand tone risk, see [ai_research.md](../memory/ai_research.md))
+- No video/audio embeds (adds hosting cost, links to source is sufficient)
+
+---
+
 ## Full LDR audit + LDR-safe daily action items (raised August 2026)
 
 ### What
