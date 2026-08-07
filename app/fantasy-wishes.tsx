@@ -543,11 +543,14 @@ const styles = StyleSheet.create({
   voteBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   matchCard: { borderRadius: Radius.lg, padding: Spacing.lg, flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, backgroundColor: '#F3E5F5' },
   matchCardCelebrating: { borderColor: Colors.burgundy, borderWidth: 2, backgroundColor: '#FCE4EC' },
-  // Floating toast — sits below the info banner, above the list. High
-  // zIndex so it hovers above cards. Warm burgundy text on cream + border.
+  // Floating toast — sits just under the header, above the info banner
+  // and Explore/Matches tabs. High zIndex so it hovers above cards.
+  // Warm burgundy text on cream + border. Previously top: 168 landed
+  // directly on top of the tab row and hid the Explore/Matches labels
+  // during the 3s window — awkward every time a match toast fired.
   toast: {
     position: 'absolute',
-    top: 168,
+    top: 100,
     left: Spacing.lg,
     right: Spacing.lg,
     backgroundColor: Colors.cream,
