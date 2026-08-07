@@ -9,6 +9,11 @@ export interface FantasyWishesItem {
   votes: Record<string, FWVote>;
   addToList?: string[]; // uids who pressed "Add to Together List"
   createdAt: number;
+  // Stamped once, atomically, when the vote that completes the mutual
+  // YES lands. Absent on legacy matches from before this field was
+  // introduced — the Matches list sort falls back to createdAt for
+  // those so the ordering degrades gracefully instead of crashing.
+  matchedAt?: number;
 }
 
 export function subscribeFantasyWishes(coupleId: string, onChange: (items: FantasyWishesItem[]) => void): Unsubscribe {
@@ -31,9 +36,33 @@ export async function addFantasyWishesItem(coupleId: string, text: string): Prom
   return ref.id;
 }
 
-export async function voteOnFantasyWish(coupleId: string, itemId: string, uid: string, vote: FWVote): Promise<void> {
-  await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
-    [`votes.${uid}`]: vote,
+// Vote and, if this YES completes the mutual match, stamp matchedAt in the
+// same write so the Matches list can sort by true completion order rather
+// than the wish's creation date. Uses a transaction only for the completing
+// case so the common non-YES / no-partner-known write stays a cheap update.
+export async function voteOnFantasyWish(
+  coupleId: string,
+  itemId: string,
+  uid: string,
+  vote: FWVote,
+  partnerId?: string,
+): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'fantasyWishes', itemId);
+  if (vote !== 'yes' || !partnerId) {
+    await updateDoc(ref, { [`votes.${uid}`]: vote });
+    return;
+  }
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const data = snap.data() as FantasyWishesItem;
+    const partnerAlreadyYes = data.votes?.[partnerId] === 'yes';
+    const myPreviousVote = data.votes?.[uid];
+    const willBeNewMatch = partnerAlreadyYes && myPreviousVote !== 'yes';
+    tx.update(ref, {
+      [`votes.${uid}`]: 'yes',
+      ...(willBeNewMatch ? { matchedAt: Date.now() } : {}),
+    });
   });
 }
 

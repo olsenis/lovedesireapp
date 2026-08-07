@@ -150,7 +150,7 @@ export default function FantasyWishesScreen() {
   const handleVote = async (item: FantasyWishesItem, vote: FWVote) => {
     if (!coupleId || !user) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await voteOnFantasyWish(coupleId, item.id, uid, vote);
+    await voteOnFantasyWish(coupleId, item.id, uid, vote, partnerId);
     if (vote === 'yes' && partnerId) {
       const updated = { ...item, votes: { ...item.votes, [uid]: 'yes' as const } };
       if (isFWMatch(updated, uid, partnerId)) {
@@ -231,14 +231,13 @@ export default function FantasyWishesScreen() {
   const myVote = (item: FantasyWishesItem): FWVote | null =>
     item.votes[uid] as FWVote ?? null;
 
-  // Matches list ordered newest-first so recent agreements surface at the
-  // top. Uses item.createdAt as a proxy for match recency — we don't track
-  // when both partners YES-voted, but user-added items get their own
-  // timestamps and presets share bulk-load times so ordering stays stable
-  // for the preset cohort while custom wishes rise to the top.
+  // Matches list ordered by the moment the mutual YES completed (matchedAt),
+  // stamped atomically by voteOnFantasyWish when the second YES lands.
+  // Legacy matches from before matchedAt existed fall back to createdAt so
+  // ordering still works during the transition period.
   const matched = items
     .filter((i) => partnerId && isFWMatch(i, uid, partnerId))
-    .sort((a, b) => b.createdAt - a.createdAt);
+    .sort((a, b) => (b.matchedAt ?? b.createdAt) - (a.matchedAt ?? a.createdAt));
   const allVoted = items.filter((i) => myVote(i) !== null);
   // Locked batch: items in shownUnvotedIds that are still unvoted
   const currentBatch = items.filter((i) => shownUnvotedIds.includes(i.id) && myVote(i) === null);
