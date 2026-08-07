@@ -17,6 +17,14 @@ Consequences:
 
 All app UI text, strings, labels, and comments must be in **English**. The developer communicates in Icelandic but the app itself is entirely in English.
 
+## Repo root is also an Obsidian vault
+
+The Desire repo root (`G:\forrit\Desire\`) is opened as an Obsidian vault — `.obsidian/` config lives in the repo. That's why `.obsidian/workspace.json` shows as modified in `git status` between sessions (Obsidian rewrites it on open/close). Consequences:
+
+- All `.md` files in the repo (CLAUDE.md, POST_LAUNCH.md, TEST_LAUNCH.md, TEST_CHECKLIST.md, APP_MAP.md, README.md, memory/*, plans/*, and any future markdown docs) are simultaneously version-controlled AND readable/editable in Obsidian by the developer.
+- Do NOT stage `.obsidian/workspace.json` when making commits — it's noise from the editor, not intentional changes. Skip it with `git reset HEAD .obsidian/workspace.json` before committing.
+- The vault workflow is used for content curation (e.g. the planned `sex-ed/` folder). Raw research notes (transcripts, drafts) that shouldn't ship in the repo belong under `.gitignore` even though they live in the vault. Only publish-ready content gets committed.
+
 ## Commands
 
 ```bash
