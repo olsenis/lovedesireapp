@@ -102,6 +102,9 @@ export default function ActivityCardsScreen() {
   // can't be done in the moment. Instead of forcing "we did it" or losing
   // the card via skip, save it to the Together List for later. Card is
   // removed from the deck like a normal completion, turn alternates.
+  // Toast surfaces briefly so the user knows the save actually happened
+  // and where the item went — tap the toast to jump straight to the list.
+  const [savedToast, setSavedToast] = useState(false);
   const handleSaveForLater = async () => {
     if (!coupleId || !session || !partnerId) return;
     if (session.pendingCard === null || session.pendingCard === undefined) return;
@@ -111,7 +114,9 @@ export default function ActivityCardsScreen() {
       await addTodo(coupleId, activityText, 'intimacy', uid, 'activity-cards');
     } catch { /* non-fatal */ }
     await markCardDone(coupleId, session.pendingCard, uid);
-    notifyPartner(coupleId, uid, 'Activity Cards 💾', `${profile?.name ?? 'Your partner'} saved this challenge for later`).catch(() => {});
+    setSavedToast(true);
+    setTimeout(() => setSavedToast(false), 3000);
+    notifyPartner(coupleId, uid, 'Activity Cards 💾', `${profile?.name ?? 'Your partner'} saved this challenge to your Together List`).catch(() => {});
   };
 
   if (loading || !session) return null;
@@ -123,6 +128,18 @@ export default function ActivityCardsScreen() {
 
   return (
     <View style={styles.screen}>
+      {/* Save-to-list toast: tap to jump to the list where the item now lives. */}
+      {savedToast && (
+        <TouchableOpacity
+          style={styles.savedToast}
+          onPress={() => { setSavedToast(false); router.push('/todo' as any); }}
+          activeOpacity={0.9}
+          accessibilityRole="button"
+          accessibilityLabel="View Together List"
+        >
+          <Text style={styles.savedToastText}>💾 Saved to Together List — tap to view</Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
@@ -223,7 +240,7 @@ export default function ActivityCardsScreen() {
               <Text style={styles.captureBtnText}>📸 We did it, capture this moment</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveLaterBtn} onPress={handleSaveForLater} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.saveLaterBtnText}>💾 Save for later, plan it together</Text>
+              <Text style={styles.saveLaterBtnText}>💾 Save to Together List for later</Text>
             </TouchableOpacity>
             {receiverPassesLeft > 0 ? (
               <TouchableOpacity style={styles.cancelRevealBtn} onPress={handleSkipReceived} accessibilityRole="button">
@@ -406,6 +423,17 @@ const styles = StyleSheet.create({
   saveLaterBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   saveLaterBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
   deckModeText: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, textAlign: 'center', marginTop: 4 },
+  // Floating confirmation toast after Save to Together List — sits on top
+  // of the screen so it's visible whether the user is at the deck or has
+  // scrolled. Burgundy fill matches the celebratory Fantasy Wishes match
+  // toast so users learn one visual language for "action succeeded".
+  savedToast: {
+    position: 'absolute', top: 60, left: Spacing.lg, right: Spacing.lg,
+    backgroundColor: Colors.burgundy, borderRadius: Radius.full,
+    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg,
+    zIndex: 10, ...Shadow.md,
+  },
+  savedToastText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream, textAlign: 'center' },
   cancelRevealBtn: { paddingVertical: Spacing.xs },
   cancelRevealText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   noPassesText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.error, textAlign: 'center' },
