@@ -279,6 +279,48 @@ If any two of these signal "yes", enrich top-15 items handwritten (2-3h). Ship. 
 
 ---
 
+## UGC moderation infrastructure (deferred, revisit if App Store flags 1.2)
+
+### What
+
+App Store Guideline 1.2 says apps with user-generated content need filtering, reporting, blocking, and published contact. Our app has ~15 UGC surfaces where partners write free text to each other (Fantasy Wishes +Add, WYR custom questions, Journal entries, Love Notes, Together List, Countdowns, Milestones, etc.). None of them run through a content filter today. Full moderation build-out (client-side wordlist + Report button on partner content + `reports/{id}` Firestore collection + rules) is ~5h dev.
+
+### Why deferred
+
+The app is 1:1 opt-in: the only person who can send you UGC is a partner you personally invited via an out-of-band 6-digit code. There is no discovery, no public feed, no strangers. Apple's 1.2 rules were written for platforms where any user can push content at any other user; in a 1:1 pair-by-code app, the "block abusive user" primitive already exists as `disconnectFromCouple` in [services/authService.ts](services/authService.ts) (one tap in Profile).
+
+Reasoning:
+- Small couples apps in the same category (Paired, Between, Cover) ship with variable moderation depending on whether they have free-form messaging or curated prompts. Ours has both preset content (paywalled explicit stuff is scripted) and light UGC (mostly item names, reminders, etc.).
+- WhatsApp / Signal / iMessage all pass review despite being 1:1 or small-group — their block primitive is essentially the same as our disconnect.
+- Building a full Report button + queue creates operational obligation (someone has to actually watch the queue) that we can't honor pre-launch. Ships hollow compliance rather than real safety.
+
+### Plan if Apple flags 1.2
+
+Track B from the launch prep plan file (`~/.claude/plans/g-v-ri-til-shimmying-badger.md`): ship a client-side wordlist filter as `services/moderationService.ts` (~40 lines) + one-line gate on all ~15 UGC handlers. ~2h turnaround, resubmit within 24h of rejection. This is the "yes we heard you" move that satisfies reasonable readings of 1.2.
+
+If Apple STILL pushes back after Track B, escalate to Track C: add `<ReportButton>` on partner-created items in 5 highest-visibility renderers (Fantasy Wishes, WYR custom, Love Notes, Journal, Together List) + `reports/{id}` Firestore collection + admin-console review workflow. ~5h + ongoing manual review load.
+
+### Reviewer notes shipped at first submission
+
+App Store Connect submission form gets this text in "Notes for the reviewer" — pre-empts the 1.2 flag by explaining the architecture:
+
+> This app is a 1:1 couples experience — pairing requires a 6-digit invite code that partners share out-of-band (SMS, in person). There is no public feed, no discovery, no way for a stranger to send content to any user. The "block abusive user" primitive Guideline 1.2 requires exists as "Disconnect from partner" in Profile (one tap, immediate). Explicit content is behind a mandatory 18+ age attestation (declined = account deleted) plus paid subscription — non-subscribers cannot access any explicit content. All content is text-only, no visual pornography.
+
+### Decision criteria for revisiting
+
+- **App Store rejection citing 1.2** — build Track B immediately, resubmit
+- **User support requests for a Report flow** — genuine demand signal (probably won't happen in a 1:1 pair-by-code app, but if it does, build Track C)
+- **Growth beyond 1:1 pairing model** — e.g. if we ever add group features or public content, moderation becomes mandatory
+
+### Effort estimate (for revisit)
+
+- Track B (wordlist floor): **~2h**
+- Track C (Report + queue + rules): **~5h + ongoing review load**
+
+Full details of both tracks in `~/.claude/plans/g-v-ri-til-shimmying-badger.md`.
+
+---
+
 ## Sex Ed section for paid subscribers (raised August 2026)
 
 ### What

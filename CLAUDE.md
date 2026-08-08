@@ -237,6 +237,25 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Admin emails hardcoded for testing. Production will use RevenueCat. `isPremium: boolean` field on user Firestore doc also grants access.
 
+**Paid-feature gate pattern (defense in depth):** every paid screen (Fantasy Wishes, Sensate, Blueprint, Bingo, Intimacy Tracker, plus Fire/Desire challenge programs) enforces the paywall AT THE SCREEN, not just on the entry-point card. This covers Home nudges that route directly to the screen and would otherwise bypass the Discover/Us tab lock. Copy the pattern verbatim when adding a new paid screen:
+
+```tsx
+const { isSubscribed, isLoading: subLoading } = useSubscription();
+useEffect(() => {
+  if (!subLoading && !isSubscribed) router.replace('/upgrade' as any);
+}, [subLoading, isSubscribed]);
+// early return before rendering, so free users don't see the UI flash
+if (subLoading || !isSubscribed) return null;
+```
+
+For per-item gating (e.g. Challenge's Fire+Desire programs while Reconnect+Spark are free), gate the tap handler:
+
+```tsx
+if (PAID_PROGRAMS.has(program) && !isSubscribed) { router.push('/upgrade' as any); return; }
+```
+
+Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate is belt-and-suspenders.
+
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)
 - Daily: Playful category only — combines old Sweet Daily Picks (5/day) + old Playful Questions (3/day, incl. binary + scale variants). Flirty Daily Picks moved to Spicy tier July 2026 as part of the Daily merge.
