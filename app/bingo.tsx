@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
@@ -16,6 +17,15 @@ import { Spacing, Radius, Shadow } from '../constants/spacing';
 export default function ActivityCardsScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed, isLoading: subLoading } = useSubscription();
+  // Screen-level paywall gate — Discover card is gated but Home nudges
+  // route directly here and could bypass the paywall for non-subscribed
+  // users. Enforce at the screen so every entry point is covered.
+  useEffect(() => {
+    if (!subLoading && !isSubscribed) {
+      router.replace('/upgrade' as any);
+    }
+  }, [subLoading, isSubscribed]);
   const [session, setSession] = useState<ActivityCardsSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [revealIndex, setRevealIndex] = useState<number | null>(null);
@@ -128,6 +138,9 @@ export default function ActivityCardsScreen() {
     notifyPartner(coupleId, uid, 'Activity Cards 💾', `${profile?.name ?? 'Your partner'} saved this challenge to your Together List`).catch(() => {});
   };
 
+  // Don't render the deck while paywall check resolves or during redirect
+  // to /upgrade, otherwise a free user briefly sees the UI flash.
+  if (subLoading || !isSubscribed) return null;
   if (loading || !session) return null;
 
   const revealed = session.revealed ?? [];

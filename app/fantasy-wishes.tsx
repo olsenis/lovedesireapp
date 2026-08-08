@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
@@ -17,6 +18,16 @@ import { Spacing, Radius } from '../constants/spacing';
 export default function FantasyWishesScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed, isLoading: subLoading } = useSubscription();
+  // Screen-level paywall gate: this feature is paid-tier only. Guarding here
+  // (instead of only on the Discover card + Us tab card) covers every entry
+  // point — including Home nudges that route directly here — so a non-
+  // subscribed user cannot bypass the paywall via deep link.
+  useEffect(() => {
+    if (!subLoading && !isSubscribed) {
+      router.replace('/upgrade' as any);
+    }
+  }, [subLoading, isSubscribed]);
   const [items, setItems] = useState<FantasyWishesItem[]>([]);
   const [activeTab, setActiveTab] = useState<'explore' | 'matches'>('explore');
   const [showAdd, setShowAdd] = useState(false);
@@ -288,6 +299,11 @@ export default function FantasyWishesScreen() {
     }
     return list;
   }, [activeTab, matched, items.length, currentBatch, allVoted, canLoadMore]);
+
+  // While the paywall check resolves or the user is being redirected away,
+  // render nothing so a free user doesn't briefly see the FW UI flash
+  // before the router.replace to /upgrade takes effect.
+  if (subLoading || !isSubscribed) return null;
 
   return (
     <View style={styles.screen}>

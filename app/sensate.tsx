@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { SensateProgress, subscribeSensateProgress, completeStage } from '../services/sensateService';
@@ -93,6 +94,15 @@ const STAGES: Stage[] = [
 export default function SensateScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed, isLoading: subLoading } = useSubscription();
+  // Screen-level paywall gate — Us tab card is gated but Home nudges
+  // (Insight tip + "return to Sensate" nudge) route directly here and
+  // could bypass the paywall for non-subscribed users.
+  useEffect(() => {
+    if (!subLoading && !isSubscribed) {
+      router.replace('/upgrade' as any);
+    }
+  }, [subLoading, isSubscribed]);
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
   const [marked, setMarked] = useState(false);
   const [progress, setProgress] = useState<SensateProgress>({
@@ -288,6 +298,11 @@ export default function SensateScreen() {
   };
 
   const done = totalSeconds > 0 && elapsed >= totalSeconds;
+
+  // Don't render Sensate UI while paywall check resolves or during
+  // redirect to /upgrade — otherwise a free user briefly sees the stage
+  // picker flash before being sent away.
+  if (subLoading || !isSubscribed) return null;
 
   if (!activeStage) {
     return (

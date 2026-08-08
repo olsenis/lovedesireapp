@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { saveBlueprintResult, subscribeCoupleBlueprints, CoupleBlueprints } from '../services/blueprintService';
@@ -21,6 +22,15 @@ const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 export default function BlueprintScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed, isLoading: subLoading } = useSubscription();
+  // Screen-level paywall gate — Us tab card is gated but keeping the guard
+  // here as defense-in-depth in case a future entry point (deep link, nudge)
+  // routes directly to /blueprint without checking subscription.
+  useEffect(() => {
+    if (!subLoading && !isSubscribed) {
+      router.replace('/upgrade' as any);
+    }
+  }, [subLoading, isSubscribed]);
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<Record<BlueprintType, number>>({ sensual: 0, sexual: 0, energetic: 0, kinky: 0, shapeshifter: 0 });
   const [done, setDone] = useState(false);
@@ -70,6 +80,10 @@ export default function BlueprintScreen() {
   const compatibility: BlueprintCompatibilityEntry | null = partnerResult
     ? BLUEPRINT_COMPATIBILITY[myType]?.[partnerResult.type] ?? null
     : null;
+
+  // Don't render The Lovers quiz UI while paywall check resolves or during
+  // redirect to /upgrade, otherwise a free user briefly sees the quiz flash.
+  if (subLoading || !isSubscribed) return null;
 
   return (
     <View style={styles.screen}>
