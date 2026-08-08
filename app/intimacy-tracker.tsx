@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import {
   IntimacyEntry, IntimacyLocation, IntimacyType, IntimacyMood,
   subscribeIntimacyLog, addIntimacyEntry, deleteIntimacyEntry, getIntimacyStats,
@@ -76,6 +77,14 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 export default function IntimacyTrackerScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed, isLoading: subLoading } = useSubscription();
+  // Screen-level paywall gate — Us tab card is gated but future entry
+  // points (nudges, deep links) could bypass without this guard.
+  useEffect(() => {
+    if (!subLoading && !isSubscribed) {
+      router.replace('/upgrade' as any);
+    }
+  }, [subLoading, isSubscribed]);
   const [entries, setEntries] = useState<IntimacyEntry[]>([]);
   const [tab, setTab] = useState<'log' | 'stats'>('log');
   const [showSheet, setShowSheet] = useState(false);
@@ -102,6 +111,9 @@ export default function IntimacyTrackerScreen() {
     await deleteIntimacyEntry(coupleId, deleteConfirm.id);
     setDeleteConfirm(null);
   };
+
+  // Don't render the log while paywall check resolves or during redirect.
+  if (subLoading || !isSubscribed) return null;
 
   return (
     <>
