@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
@@ -17,10 +18,15 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
 const BASE_PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire', 'desire'];
+// Programs that require a paid subscription. Free users see them with 🔒
+// and get routed to /upgrade when they try to start one, per the free/paid
+// split documented in CLAUDE.md.
+const PAID_PROGRAMS: Set<ChallengeProgram> = new Set(['fire', 'desire']);
 
 export default function ChallengeScreen() {
   const { user, profile, loading: authLoading } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed } = useSubscription();
   const isLDR = !!couple?.isLongDistance;
   const PROGRAMS: ChallengeProgram[] = isLDR ? [...BASE_PROGRAMS, 'distance'] : BASE_PROGRAMS;
   const [state, setState] = useState<ChallengeState | null>(null);
@@ -49,6 +55,12 @@ export default function ChallengeScreen() {
 
   const handleStart = (program: ChallengeProgram) => {
     if (starting) return;
+    // Paywall: Fire + Desire are premium-only per CLAUDE.md free/paid split.
+    // Free users see the card with 🔒 and get sent to /upgrade if they tap it.
+    if (PAID_PROGRAMS.has(program) && !isSubscribed) {
+      router.push('/upgrade' as any);
+      return;
+    }
     // Show desire modal before coupleId check so warning always appears
     if (program === 'desire') { setPendingProgram(program); setDesireModal(true); return; }
     if (!coupleId) { setStartError('Account not ready yet, try again shortly.'); return; }
@@ -146,17 +158,22 @@ export default function ChallengeScreen() {
           <Text style={styles.pickerIntro}>A daily practice for 30 days. Each task builds on the last, choose your intensity.</Text>
           {PROGRAMS.map((p) => {
             const cfg = CHALLENGE_PROGRAM_CONFIG[p];
+            const locked = PAID_PROGRAMS.has(p) && !isSubscribed;
             return (
               <TouchableOpacity key={p} style={[styles.programCard, { backgroundColor: cfg.color, borderColor: cfg.color }, starting && { opacity: 0.6 }]}
                 onPress={() => handleStart(p)} activeOpacity={0.85} disabled={starting} accessibilityRole="button">
                 <View style={styles.programTop}>
                   <Text style={styles.programEmoji}>{cfg.emoji}</Text>
                   <View style={styles.programInfo}>
-                    <Text style={[styles.programLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
+                    <Text style={[styles.programLabel, { color: cfg.textColor }]}>
+                      {cfg.label}{locked ? '  🔒' : ''}
+                    </Text>
                     <Text style={styles.programDesc}>{cfg.description}</Text>
                   </View>
                 </View>
-                <Text style={[styles.programStart, { color: cfg.textColor }]}>{starting ? 'Starting…' : 'Start this program →'}</Text>
+                <Text style={[styles.programStart, { color: cfg.textColor }]}>
+                  {starting ? 'Starting…' : locked ? 'Premium, tap to unlock →' : 'Start this program →'}
+                </Text>
               </TouchableOpacity>
             );
           })}
