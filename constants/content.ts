@@ -1182,8 +1182,8 @@ export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
     { day: 25, text: "Write down the 5 best moments from the last year, share them." },
     { day: 26, text: "Hold hands for an entire evening at home, all of it." },
     { day: 27, text: "Ask them what a perfect night would look like, plan it for this week." },
-    { day: 28, text: "Take intimate photos together, private, playful, no judgment." },
-    { day: 29, text: "Spend an entire evening focused only on each other's pleasure." },
+    { day: 28, text: "Trade slow neck and shoulder massages, 10 minutes each, no phones." },
+    { day: 29, text: "Spend an evening with candles, music, and full attention on each other, no screens." },
     { day: 30, text: "Talk about what's changed between you, and what you want to create next." },
   ],
   fire: [
