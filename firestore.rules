@@ -62,17 +62,27 @@ service cloud.firestore {
       // Update: existing member, OR a non-member filling an empty partner slot.
       // Both slots can be filled by a non-member because a disconnect can leave
       // either slot empty (not just partner2).
-      allow update: if request.auth != null && (
-        isMemberOfCouple(coupleId) ||
-        (
-          resource.data.get('partner2Uid', null) == null &&
-          request.resource.data.partner2Uid == request.auth.uid
-        ) ||
-        (
-          resource.data.get('partner1Uid', null) == null &&
-          request.resource.data.partner1Uid == request.auth.uid
+      //
+      // BLOCKED FROM CLIENT WRITE: isPremium + premiumSince — subscription
+      // status lives on the couple doc but is authoritative only when written
+      // by the RevenueCat webhook (Cloud Function admin SDK, which bypasses
+      // rules). Prevents any client from unlocking paid features by editing
+      // its own couple doc. Same lock applies to non-member "filling a slot"
+      // path since that flow shouldn't touch subscription fields either.
+      allow update: if request.auth != null
+        && (
+          isMemberOfCouple(coupleId) ||
+          (
+            resource.data.get('partner2Uid', null) == null &&
+            request.resource.data.partner2Uid == request.auth.uid
+          ) ||
+          (
+            resource.data.get('partner1Uid', null) == null &&
+            request.resource.data.partner1Uid == request.auth.uid
+          )
         )
-      );
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['isPremium', 'premiumSince']);
 
       // ── Blueprint results: both partners can READ, only owner can WRITE ─────
       match /blueprints/{userId} {

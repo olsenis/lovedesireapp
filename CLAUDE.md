@@ -235,7 +235,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Content rules:** No em dashes (—) anywhere in UI strings — use commas instead. Dares must be physical actions (do something), not verbal (say/tell/describe). Spicy level = explicitly X-rated language.
 
-**Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Admin emails hardcoded for testing. Production will use RevenueCat. `isPremium: boolean` field on user Firestore doc also grants access.
+**Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Reads `couples/{coupleId}/isPremium` so **one subscription covers both partners**. RevenueCat webhook writes to the couple doc; QA test couples flipped manually in Firebase Console. Client cannot write `isPremium` or `premiumSince` (firestore.rules blocks the two fields explicitly). Legacy per-user `isPremium` on `users/{uid}` was deprecated Aug 2026 — any stale value is ignored by the hook.
 
 **Paid-feature gate pattern (defense in depth):** every paid screen (Fantasy Wishes, Sensate, Blueprint, Bingo, Intimacy Tracker, plus Fire/Desire challenge programs) enforces the paywall AT THE SCREEN, not just on the entry-point card. This covers Home nudges that route directly to the screen and would otherwise bypass the Discover/Us tab lock. Copy the pattern verbatim when adding a new paid screen:
 

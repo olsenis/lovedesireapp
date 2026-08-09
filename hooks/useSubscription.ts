@@ -1,17 +1,18 @@
 import { useAuth } from './useAuth';
+import { useCouple } from './useCouple';
 
-// Premium access logic.
+// Premium access logic — one subscription covers both partners.
 //
-// `isPremium` is the authoritative field, set by the RevenueCat webhook
-// (functions/src/index.ts) when a user starts a subscription, and locked
-// against client writes in firestore.rules. To grant premium to a tester
-// without a real subscription (e.g. for TestFlight QA), open Firebase Console
-// → Firestore → users/{uid} and set `isPremium: true` manually. The console
-// uses the admin SDK and bypasses the client-side lock.
+// Canonical field is `couples/{coupleId}/isPremium`. Written only by:
+//  - RevenueCat webhook (Cloud Function admin SDK) on subscription events
+//  - Firebase Console (admin SDK) for QA test couples
+// Client is locked out via firestore.rules; if either partner is a member
+// of a couple whose isPremium is true, both partners see the paid tier.
 //
-// We no longer hardcode admin emails behind __DEV__ — that pattern broke in
-// TestFlight (where __DEV__ is false) and silently denied premium to QA
-// testers, making the paywall flow impossible to verify before launch.
+// Kept the same hook shape so all existing paywall gates
+// (Fantasy Wishes / Sensate / Blueprint / Activity Cards / Intimacy Tracker
+// / Fire+Desire challenge / Spicy tabs) work unchanged — they just now
+// resolve to the couple's status instead of the user's.
 
 export interface SubscriptionState {
   isSubscribed: boolean;
@@ -19,11 +20,13 @@ export interface SubscriptionState {
 }
 
 export function useSubscription(): SubscriptionState {
-  const { profile, loading } = useAuth();
-  const isPremium = profile?.isPremium === true;
-
+  const { user, profile, loading: authLoading } = useAuth();
+  const { couple, loading: coupleLoading } = useCouple(user?.uid, profile?.coupleId);
+  const isSubscribed = couple?.isPremium === true;
   return {
-    isSubscribed: isPremium,
-    isLoading: loading,
+    isSubscribed,
+    // Both loads must resolve before we can trust the answer — otherwise
+    // paid screens would flash for a beat before the redirect fires.
+    isLoading: authLoading || coupleLoading,
   };
 }

@@ -26,6 +26,15 @@ export interface Couple {
   isLongDistance?: boolean; // LDR toggle — changes home screen, roulette, notes, etc.
   nextVisitDate?: number; // timestamp of next planned reunion (only when isLongDistance)
   partnerBirthdays?: Record<string, string>; // uid -> 'DD.MM' — entered for partner by other partner in onboarding; partner's own UserProfile.birthday takes precedence
+  // Subscription lives on the couple, not the individual — one paid tier
+  // covers both partners. Written by the RevenueCat webhook (Cloud Function
+  // admin SDK) via post-purchase flow, plus manually via Firebase Console
+  // for QA. Client cannot write this field; firestore.rules enforces.
+  isPremium?: boolean;
+  // Timestamp when the current subscription becomes active or was set. Used
+  // by the admin flow to distinguish a fresh subscription from a grandfathered
+  // test flag. Absent = never set.
+  premiumSince?: number;
 }
 
 // Exclude visually ambiguous characters (0/O, 1/I/L) for easier sharing verbally
