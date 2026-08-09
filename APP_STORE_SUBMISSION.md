@@ -11,6 +11,27 @@ Ready-to-paste text and decisions for App Store Connect. Update this file whenev
 - **Primary category:** Lifestyle
 - **Secondary category:** Social Networking
 
+## Subscription pricing
+
+Decided August 2026.
+
+- **Monthly:** **$9.99** — matches Paired, mid-market standard for couples apps
+- **Annual:** **$59.99/yr** — ~50% off effective vs monthly ($5/mo), sub-averse win
+- **Free trial:** **7 days** — Apple standard, needed because both partners must pair + try
+- **Launch introductory offer:** **First month $4.99** (50% off) — reduces friction for early adopters, expires after ~90 days per Apple intro-rate rules
+- **Lifetime tier:** none at launch — revisit post-launch if enough users ask
+- **Revenue split:** Apple takes 30% first year, 15% after. Net: ~$6.99-$8.49/mo, ~$41.99-$50.99/yr
+
+### App Store Connect setup
+
+- Create subscription group: `Love Desire Premium`
+- Base subscription: `com.desire.app.premium.monthly` at $9.99
+- Auto-renewable subscription: `com.desire.app.premium.annual` at $59.99
+- **Introductory offer** on both: 7 days free (`FREE_TRIAL`), for new subscribers only
+- **Promotional offer** (launch campaign, ~first 90 days): "First month $4.99" — `PAY_AS_YOU_GO` for 1 month at $4.99
+
+RevenueCat wraps both. Webhook writes to `couples/{coupleId}/isPremium` per the couple-level subscription pattern.
+
 ## Age rating
 
 Answer the App Store Age Rating questionnaire as:

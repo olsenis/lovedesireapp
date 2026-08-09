@@ -3,19 +3,19 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import StoreBadge from '../components/StoreBadge.astro';
 
 const free = [
-  'Mood check-ins + Spark',
+  'Mood check-ins and Spark',
   'Sunday Check-in',
   'Moments (daily photo ritual)',
-  'Love Notes (timed + mood-triggered)',
+  'Love Notes (timed and mood-triggered)',
   'Journal',
   'Together List',
-  'Tease (24h ephemeral photos / voice)',
-  'Countdowns + Reminders',
+  'Tease (24h ephemeral photos, videos, voice)',
+  'Countdowns and Reminders',
   'Daily: Playful category',
-  'Truth or Dare: Sweet + Flirty',
-  'Would You Rather: Playful + Romantic',
+  'Truth or Dare: Sweet and Flirty',
+  'Would You Rather: Playful and Romantic',
   "Tonight's Date",
-  '30-Day Challenge: Reconnect + Spark',
+  '30-Day Challenge: Reconnect and Spark',
   'Love Language Quiz',
   'Relationship Pulse (with trend chart)',
   'Long-distance mode',
@@ -23,16 +23,16 @@ const free = [
 
 const paid = [
   'Everything in free',
-  'Daily: Deep + Spicy categories',
+  'Daily: Deep and Spicy categories',
   'Truth or Dare: Spicy level',
   'Would You Rather: Spicy level',
   'Fantasy Wishes (400+ items, double-blind voting)',
   'Activity Cards (25 cards, refresh monthly)',
-  'The Lovers (5-type intimacy quiz + couple compatibility)',
+  'The Lovers (5-type intimacy quiz and couple compatibility)',
   'Sensate Focus (guided touch sessions)',
   'Intimacy Log (with stats)',
-  '30-Day Challenge: Fire + Desire',
-  'Kinky + Horny moods',
+  '30-Day Challenge: Fire and Desire',
+  'Kinky and Horny moods',
 ];
 ---
 
@@ -47,8 +47,17 @@ const paid = [
       <em class="font-normal">both partners</em>.
     </h1>
     <p class="text-lg text-burgundy/80 mt-6 max-w-xl mx-auto leading-relaxed">
-      No per-user pricing. No hidden currency packs. If either of you subscribes, you both get everything.
+      No per-user pricing. No coins or currency packs. If either of you subscribes, you both get everything.
     </p>
+  </section>
+
+  <!-- Launch promo banner -->
+  <section class="max-w-4xl mx-auto px-6 pb-8">
+    <div class="bg-rose/40 border border-burgundy/20 rounded-2xl p-5 text-center">
+      <p class="text-xs uppercase tracking-[0.35em] text-burgundy font-bold mb-1">Launch offer</p>
+      <p class="font-heading text-2xl text-burgundy">7 days free, then $4.99 for your first month.</p>
+      <p class="text-sm text-burgundy/70 italic mt-1">Regular pricing resumes on renewal. Cancel anytime.</p>
+    </div>
   </section>
 
   <!-- Tiers -->
@@ -76,7 +85,8 @@ const paid = [
       <div>
         <p class="text-xs uppercase tracking-[0.35em] text-cream/60 font-bold mb-2">Premium</p>
         <h2 class="font-heading text-4xl text-cream">Go deeper</h2>
-        <p class="text-3xl font-bold text-cream mt-3">Coming soon</p>
+        <p class="text-3xl font-bold text-cream mt-3">$9.99<span class="text-lg font-normal text-cream/70">/mo</span></p>
+        <p class="text-sm text-cream/70 mt-1">or $59.99/year (save $60)</p>
         <p class="text-sm text-cream/70 italic mt-1">One subscription covers both partners</p>
       </div>
       <ul class="flex flex-col gap-2 text-sm text-cream/85">
@@ -93,7 +103,7 @@ const paid = [
       <h3 class="font-heading text-2xl text-burgundy">What you'll never see</h3>
       <ul class="flex flex-col gap-2 text-burgundy/80 text-sm leading-relaxed">
         <li>· Ads or sponsored content</li>
-        <li>· In-app currency packs or "coins"</li>
+        <li>· In-app currency packs or 'coins'</li>
         <li>· Weekly subscription pricing</li>
         <li>· Two-tier plans that confuse what you get</li>
         <li>· Different pricing for each partner</li>
