@@ -279,6 +279,50 @@ If any two of these signal "yes", enrich top-15 items handwritten (2-3h). Ship. 
 
 ---
 
+## Deferred code-review findings from review #5 (raised August 2026)
+
+Three real findings from an outside code review that are correctness/cost concerns worth fixing, but not launch-blockers. Priority ordered.
+
+### N7 — Flashes leak Firestore docs + Storage blobs after expiry
+
+`flashService.ts` sets `expiresAt: now + 86400000` and the client filters expired ones out in `subscribeFlashes`, but nothing actually deletes them. Firestore docs and Storage blobs accumulate forever.
+
+- **Impact:** cost leak + GDPR concern (user expected the content to disappear; it didn't). ~365 stale docs + 365 stale blobs per active couple per year.
+- **Fix:** Scheduled Cloud Function (`onSchedule('every 24 hours')`) that queries `flashes` where `expiresAt < now`, deletes doc + associated Storage blob at `couples/{coupleId}/flashes/{ts}_{uid}.{ext}`.
+- **Effort:** 1–2h — new cloud function, deployment, verify one couple's data cleans up correctly. Also add same cleanup pass for old Moments if we want an ephemeral tier for those.
+- **Revisit trigger:** any GDPR user request, or Firebase cost approaching free-tier ceiling.
+
+### N3 — updateWYRRecordIfBest read-then-write without transaction
+
+`wyrService.ts:154-176` reads current best, compares, writes. Two partners saving best-scores on the same tick could both see the same "old best" and last-write-wins the lower one. Very rare (needs simultaneous separate WYR sessions in the same couple).
+
+- **Impact:** low. Best-of-record for gamification, not data loss for anything important.
+- **Fix:** wrap the read+compare+write in `runTransaction` following the same pattern used in `answerWYR` / `saveMatchToList` / `voteOnFantasyWish` — the utility is already imported.
+- **Effort:** 15 min.
+- **Revisit trigger:** any user reports "my best score reverted" or comes up in analytics.
+
+### N6 — Home tab spawns 15 concurrent Firestore listeners on mount
+
+`app/(tabs)/index.tsx` subscribes to challenge, notes, fantasyWishes, dailyQuestions, dailyWishes, wyr, intimacyLog, sparks, memories, flashes, moments, stateUnion, activityCards, todos, sensate — all as `onSnapshot` on Home mount. Per-user cost: ~15 doc-reads on every cold-open. A busy user opening/closing the app 20 times a day burns ~300 reads/day just on Home.
+
+- **Impact:** cost concern that scales with user base. Not a bug — Home renders "Waiting for you" nudges from all these subscriptions and needs the data.
+- **Fix options:**
+  - Group listeners by AppState (unsub while backgrounded, resub on foreground)
+  - Lazy-load below-fold flow cards
+  - Merge multiple couple subcollections into a single "home summary" doc updated by a cloud function
+- **Effort:** 2–3h for AppState refactor, more for cloud function summary doc.
+- **Revisit trigger:** Firestore read count approaches free-tier ceiling in a given day, or reviewer/user notices Home tab cold-start latency.
+
+Rejected findings from the same review (documented so we don't re-litigate):
+- **N8 mood dedup** — misread; mood history is a designed feature, not a duplicate-write bug
+- **N9 delete without owner check** — deliberate design decision for 1:1 opt-in trust model
+- **N10 pairing 2500ms magic number** — no longer present in codebase (reviewer flagged stale code)
+- **N4 useCouple dead-code** — real code smell, not a bug; single-line cleanup if we ever touch that file
+- **N11 momentService createdAt overwrite** — cosmetic ordering nit with no functional impact
+- **N12 versusService over-fetch of 45 docs** — over-fetch not a bug; 45 is fine at current scale
+
+---
+
 ## UGC moderation infrastructure (deferred, revisit if App Store flags 1.2)
 
 ### What
@@ -643,3 +687,42 @@ If none of those hit within 3 months of launch, park indefinitely.
 ```
 
 Keep entries tight. If the entry stops making sense on re-read six months later, delete it.
+
+---
+
+## Bug backlog from review pass (raised 2026-08)
+
+Non-blocking correctness / cost items surfaced during review. Ship without, revisit as noted.
+
+### WYR `updateWYRRecordIfBest` race
+
+**What**: `services/wyrService.ts:154-176` reads existing best, compares, writes without a transaction. If both partners simultaneously trigger from concurrent WYR sessions, one write can silently clobber the other.
+
+**Why deferred**: Requires both partners playing WYR on separate devices and both crossing the best-record threshold in the same tick. Vanishingly rare at MVP scale.
+
+**Revisit criteria**: If a user reports losing a best-ever record, or if concurrent WYR play becomes common.
+
+**Effort**: ~15 min — wrap in `runTransaction`.
+
+### Flash Firestore + Storage cleanup
+
+**What**: `services/flashService.ts:sendFlash` sets `expiresAt: now + 86400000`; client filters expired flashes out of the UI, but nothing deletes the Firestore doc or Storage blob. After 1 year of daily use: ~365 stale docs + blobs per couple.
+
+**Why deferred**: Zero user-facing impact — expired flashes are already invisible in-app. Cost creep is small at MVP scale.
+
+**Revisit criteria**:
+- Before we make GDPR / data-deletion claims in App Store copy (users expect "disappearing" content to actually disappear)
+- If Storage or Firestore costs start showing meaningful flash-blob spend
+
+**Effort**: 1-2h — scheduled Cloud Function `onSchedule('every 24 hours')` deleting `flashes` where `expiresAt < now` + cascading Storage delete.
+
+### Home tab spawns 15 concurrent Firestore listeners
+
+**What**: `app/(tabs)/index.tsx:289-307` — every home mount subscribes to challenge, notes, fantasyWishes, dailyQuestions, dailyWishes, wyr, intimacyLog, sparks, memories, flashes, moments, stateUnion, activityCards, todos, sensate. Even a single spark-send round trip loads all 15 flows.
+
+**Why deferred**: At MVP scale the read volume is well inside free-tier. UX is fine — it's a cost concern, not a functional one.
+
+**Revisit criteria**: When Firestore read-per-user metrics get hot in production, or when the free tier stops covering active DAU.
+
+**Effort**: 2-3h — lazy-load flow listeners keyed to which home cards are actually mounted / visible.
+

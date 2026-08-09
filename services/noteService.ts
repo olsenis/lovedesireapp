@@ -18,11 +18,50 @@ export interface LoveNote {
 }
 
 export function subscribeNotes(coupleId: string, onChange: (notes: LoveNote[]) => void): Unsubscribe {
-  // Cap at 50 most recent — old notes are rarely revisited
-  const q = query(collection(db, 'couples', coupleId, 'notes'), orderBy('createdAt', 'desc'), limit(50));
-  return onSnapshot(q, (snap) => {
-    onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as LoveNote)));
+  // Two-query approach so the auto-unlock flow works at any couple lifetime:
+  //  1. Recent 50 by createdAt desc — bounded display list for the UI
+  //  2. All unopened, no limit — catches auto-unlock notes older than the
+  //     50-doc window that would otherwise silently receive an openAt
+  //     update and never reappear for the recipient. Unopened is a small
+  //     subset in practice, and the query hits an existing index on the
+  //     `opened` field.
+  // Union both streams by id, sort by createdAt desc, emit combined list.
+  // Previously used a single query with limit(50)-then-200 which just
+  // delayed the same bug — auto-unlock on a 201st-oldest note would still
+  // vanish from view.
+  const recentQ = query(
+    collection(db, 'couples', coupleId, 'notes'),
+    orderBy('createdAt', 'desc'),
+    limit(50),
+  );
+  const unopenedQ = query(
+    collection(db, 'couples', coupleId, 'notes'),
+    where('opened', '==', false),
+  );
+
+  let recent: Map<string, LoveNote> = new Map();
+  let unopened: Map<string, LoveNote> = new Map();
+  const emit = () => {
+    const merged = new Map<string, LoveNote>();
+    for (const [id, note] of recent) merged.set(id, note);
+    for (const [id, note] of unopened) merged.set(id, note);
+    const list = Array.from(merged.values()).sort((a, b) => b.createdAt - a.createdAt);
+    onChange(list);
+  };
+
+  const unsubRecent = onSnapshot(recentQ, (snap) => {
+    recent = new Map(snap.docs.map((d) => [d.id, { id: d.id, ...d.data() } as LoveNote]));
+    emit();
   });
+  const unsubUnopened = onSnapshot(unopenedQ, (snap) => {
+    unopened = new Map(snap.docs.map((d) => [d.id, { id: d.id, ...d.data() } as LoveNote]));
+    emit();
+  });
+
+  return () => {
+    unsubRecent();
+    unsubUnopened();
+  };
 }
 
 export async function createNote(

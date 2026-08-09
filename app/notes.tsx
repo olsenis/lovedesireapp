@@ -54,8 +54,25 @@ function getOccasionTime(label: string): number {
   return Date.now();
 }
 
-function timeLabel(openAt: number): string {
-  const diff = openAt - Date.now();
+// Sentinel openAt used by createNote for auto-unlock (sad/visit) notes so
+// the time-based path never fires. Kept in sync with noteService.
+const AUTO_UNLOCK_SENTINEL = 32503680000000; // year 9999
+
+function timeLabel(note: LoveNote): string {
+  // Condition-driven notes never open on a clock — surface what actually
+  // unlocks them so the sender doesn't see the raw 2.9-billion-day countdown.
+  if (note.openAt >= AUTO_UNLOCK_SENTINEL) {
+    if (note.openCondition === 'sad') {
+      const emoji = note.triggerEmoji ?? '😢';
+      const label = MOOD_LABELS[emoji as MoodEmoji] ?? 'that mood';
+      return `Unlocks when partner feels ${label}`;
+    }
+    if (note.openCondition === 'visit') return 'Unlocks on next visit';
+    if (note.openCondition === 'missing') return 'For when you miss them';
+    if (note.openCondition === 'sleepless') return "For when you can't sleep";
+    return 'Unlocks on a condition';
+  }
+  const diff = note.openAt - Date.now();
   if (diff <= 0) return 'Ready to open';
   if (diff < 60000) return 'Opens very soon';
   const d = Math.floor(diff / 86400000);
@@ -158,7 +175,7 @@ export default function NotesScreen() {
     if (note.openCondition === 'visit')     return 'Unlocks on your next visit';
     if (note.openCondition === 'missing')   return "In partner's Open When... stash";
     if (note.openCondition === 'sleepless') return "In partner's Open When... stash";
-    return timeLabel(note.openAt);
+    return timeLabel(note);
   };
 
 
@@ -248,7 +265,7 @@ export default function NotesScreen() {
                       <Text style={styles.noteText}>{note.message}</Text>
                     ) : (
                       <>
-                        <Text style={styles.noteLockedText}>{canOpen ? 'Tap to open' : timeLabel(note.openAt)}</Text>
+                        <Text style={styles.noteLockedText}>{canOpen ? 'Tap to open' : timeLabel(note)}</Text>
                         {!canOpen && <Text style={styles.noteTime}>A message is waiting for you</Text>}
                       </>
                     )}
