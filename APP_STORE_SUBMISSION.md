@@ -107,14 +107,34 @@ Privacy Policy and Terms of Service must be hosted at a public URL before submis
 - **Build:** auto-incremented by EAS
 - **Copyright:** © 2026 Love Desire
 
-## Submission checklist
+## Domain + brand acquisition (do first, before submission)
+
+Based on [BRAND_RESEARCH.md](BRAND_RESEARCH.md) — "Love Desire" is clear of trademark blocks and the primary domain is available. Execute in this order:
+
+- [ ] **Register `lovedesireapp.com`** at Namecheap / Cloudflare Registrar / Vercel Domains (~$12/yr). Cloudflare is at-cost pricing, no upsells — probably the best value.
+- [ ] **Defensively register `lovedesire.app` + `lovedesire.io`** (~$20-40/yr each). Prevents anyone squatting them mid-launch. Point at the same Vercel deployment or leave dark.
+- [ ] **Do NOT chase `lovedesire.com`** — it's held by HugeDomains (squatter since 2003), premium price. `lovedesireapp.com` covers the App Store field without the squatter markup.
+- [ ] **Register social handles** `@lovedesireapp` on:
+  - [ ] Instagram
+  - [ ] TikTok
+  - [ ] Twitter/X (closest existing `@LoveDesire_info` is a defunct 2015-2019 Japanese band — safe to co-exist)
+  - [ ] YouTube
+- [ ] **DNS setup at Vercel:** once domain is registered, add it as a custom domain on Vercel project #2 (the `web/` marketing site). Vercel provisions SSL automatically.
+- [ ] **Update `web/astro.config.mjs`** if the site URL differs from the default `lovedesireapp.com`.
+
+## Post-launch trademark (3-6 months in)
+
+- [ ] File USPTO trademark for "Love Desire" in Class 9 (downloadable software) + Class 42 (SaaS). ~$350 base filing fee per class. Only worth it if the app gets meaningful US traction. EU/EUIPO filing is a separate ~€200 if we want pan-EU coverage.
+
+## App Store submission checklist
 
 - [ ] All required screenshots taken (6.5" + 5.5")
 - [ ] App icon 1024x1024 PNG (no alpha)
-- [ ] Privacy Policy URL live on Vercel
-- [ ] Terms of Service URL live on Vercel
-- [ ] Test account credentials created + verified
-- [ ] Age rating questionnaire completed
+- [ ] Privacy Policy URL live on Vercel (`https://lovedesireapp.com/privacy-policy`)
+- [ ] Terms of Service URL live on Vercel (`https://lovedesireapp.com/terms-of-service`)
+- [ ] Support URL live on Vercel (`https://lovedesireapp.com/support`)
+- [ ] Test account credentials created + verified (see reviewer notes above)
+- [ ] Age rating questionnaire completed (see this doc)
 - [ ] Reviewer notes pasted from this doc
 - [ ] Keywords set from this doc
 - [ ] Description pasted from this doc
