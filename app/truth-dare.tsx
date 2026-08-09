@@ -235,22 +235,43 @@ export default function TruthDareScreen() {
     await resetTruthDare(coupleId);
   };
 
-  // Direct tap on a half. No wheel rotation — user knows what they picked,
-  // spin animation would be fake theater. Brief scale pulse feedback + result.
+  // Direct tap on Truth or Dare half. Spins the wheel for anticipation and
+  // hides the previous result during the spin, then reveals the drawn card.
+  // The outcome KIND is what the user picked (not random), but the specific
+  // Truth/Dare text underneath is still a fresh pick — so the wheel spin is
+  // still doing meaningful work as a "pick + reveal" moment, not fake theater.
   const handleSoloTap = (kind: 'truth' | 'dare') => {
     if (soloSpinning) return;
     if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const pulseVal = kind === 'truth' ? truthPulse : darePulse;
-    Animated.sequence([
-      Animated.timing(pulseVal, { toValue: 0.93, duration: 100, useNativeDriver: true }),
-      Animated.timing(pulseVal, { toValue: 1, duration: 150, useNativeDriver: true }),
-    ]).start();
     const pool = kind === 'truth'
       ? TRUTHS.filter(t => t.level === soloLevel)
       : DARES.filter(d => d.level === soloLevel);
     if (pool.length === 0) return;
-    setSoloResult({ kind, text: pickRandom(pool).text });
+    const picked = pickRandom(pool);
+
+    // Micro-pulse on the tapped half for tactile "you pressed it" feedback,
+    // then start the spin. Pulse runs in parallel with the spin start.
+    const pulseVal = kind === 'truth' ? truthPulse : darePulse;
+    Animated.sequence([
+      Animated.timing(pulseVal, { toValue: 0.93, duration: 90, useNativeDriver: true }),
+      Animated.timing(pulseVal, { toValue: 1, duration: 140, useNativeDriver: true }),
+    ]).start();
+
+    setSoloSpinning(true);
+    setSoloResult(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    soloSpinAnim.setValue(0);
+    Animated.timing(soloSpinAnim, {
+      toValue: 1440, // 4 full turns — ends at 0° so labels rest upright
+      duration: 1200, // Slightly quicker than Surprise (1600ms) since the
+                     // outcome kind is already known — pure reveal drama.
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      setSoloResult({ kind, text: picked.text });
+      setSoloSpinning(false);
+    });
   };
 
   // Surprise = actual spin. Outcome is genuinely random from the mixed pool,
