@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LegalSection from '../components/LegalSection.astro';
+---
+
+<BaseLayout
+  title="Privacy Policy — Love Desire"
+  description="How Love Desire collects, uses, and protects your personal data."
+>
+  <section class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+    <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-3">Legal</p>
+    <h1 class="font-heading text-5xl text-burgundy leading-tight">Privacy Policy</h1>
+    <p class="text-sm italic text-muted mt-2">Last updated: May 2026</p>
+
+    <p class="mt-8 text-burgundy/85 leading-relaxed">
+      Love Desire ("we", "us", "our") is a couples intimacy app designed exclusively for use between two consenting adults in a relationship. This Privacy Policy explains how we collect, use, and protect your personal data.
+    </p>
+
+    <div class="mt-12 flex flex-col gap-8">
+
+      <LegalSection title="1. Who we are">
+        Love Desire is an independent app. By using Love Desire, you agree to this Privacy Policy. This app is intended for users aged 18 and older. If you are under 18, please do not use this app.
+      </LegalSection>
+
+      <LegalSection title="2. Data we collect">
+        When you use Love Desire, we collect and store the following data:
+
+        • Account data: email address, display name, profile photo
+        • Couple data: your relationship start date, shared todos, moods, memories, love notes, countdowns, flirt reminders
+        • Game and activity data: answers to questions, activity card history, relationship pulse scores, intimacy log entries (if enabled)
+        • Communication data: sparks sent to your partner, photos shared in memories
+        • Device data: push notification token (for sending notifications to your partner)
+        • Birthday (optional, day/month/year)
+
+        We do not collect location data, contacts, or any data beyond what you explicitly provide.
+      </LegalSection>
+
+      <LegalSection title="3. How we use your data">
+        Your data is used exclusively to provide the features of the app:
+
+        • To connect you with your partner and sync shared content in real time
+        • To send notifications to your partner on your behalf (e.g. when you log a mood or send a spark)
+        • To show countdowns and history within the app
+        • To personalise your experience (e.g. using your birthday to display your partner\'s countdown)
+
+        We do not use your data for advertising, profiling, or any purpose beyond operating the app.
+      </LegalSection>
+
+      <LegalSection title="4. Who can see your data">
+        Your personal content is only accessible to you and your paired partner.
+
+        We do not sell your personal data. We do not share your personal data with third parties for marketing, advertising, or profiling purposes.
+
+        Love Desire staff may have technical access to the database infrastructure for the purpose of operating, maintaining, and securing the service. All such access is restricted to authorised personnel who require it to perform their role, and all personnel are bound by strict confidentiality obligations. We do not read, access, or use your personal content beyond what is necessary to provide the service.
+
+        We may disclose your data if required to do so by law, court order, or governmental authority. We will notify you of such a request where permitted by law.
+
+        The premium tier includes sensitive sexual content. This content is stored with the same security controls as all other data and is never shared outside your couple.
+      </LegalSection>
+
+      <LegalSection title="5. Third-party services">
+        Love Desire uses the following third-party services to operate:
+
+        • Google Firebase (Authentication, Firestore database, Cloud Storage) — for user accounts, data storage, and photo uploads. Firebase processes data on our behalf and is bound by data processing agreements. Firebase is GDPR compliant.
+        • Expo Push Notifications — for delivering partner notifications. Only your device push token is shared with Expo; your personal content is never transmitted.
+
+        These service providers are not permitted to use your data for their own purposes. We do not use analytics SDKs, advertising networks, or tracking tools.
+      </LegalSection>
+
+      <LegalSection title="6. Data retention">
+        Your data is retained only for as long as necessary to provide the service.
+
+        • Account deletion: your personal data (name, email, profile photo, birthday) is deleted immediately upon account deletion.
+        • Shared couple data (memories, todos, notes, etc.) may persist until your partner also removes their account, as this data is jointly owned. You may request deletion of all data by contacting us.
+        • We retain certain data for longer periods where required by law or for legitimate security purposes (e.g. fraud prevention).
+
+        You can request deletion of all your data at any time by contacting us at the email below.
+      </LegalSection>
+
+      <LegalSection title="7. Your rights (GDPR)">
+        If you are located in the European Economic Area, you have the following rights:
+
+        • Right to access: request a copy of your data
+        • Right to rectification: correct inaccurate data
+        • Right to erasure: request deletion of your data
+        • Right to data portability: receive your data in a portable format
+        • Right to object: object to processing of your data
+
+        To exercise any of these rights, contact us at the email address below. We will respond within 30 days.
+      </LegalSection>
+
+      <LegalSection title="8. Data security">
+        We take security seriously:
+
+        • All data is transmitted over encrypted HTTPS connections
+        • Firestore security rules ensure only your couple can access your data
+        • Passwords are managed by Firebase Authentication and are never stored in plain text
+        • Photos are stored in Firebase Storage with access controls
+
+        Despite these measures, no system is completely secure. Please use a strong password and keep your login credentials private.
+      </LegalSection>
+
+      <LegalSection title="9. Children's privacy">
+        Love Desire is not intended for users under the age of 18. We do not knowingly collect data from anyone under 18. If you believe a minor has created an account, please contact us and we will delete the account promptly.
+      </LegalSection>
+
+      <LegalSection title="10. Changes to this policy">
+        We may update this Privacy Policy from time to time. We will notify you of significant changes through the app. Continued use of Love Desire after changes constitutes acceptance of the updated policy.
+      </LegalSection>
+
+      <LegalSection title="11. Contact">
+        If you have questions, concerns, or requests regarding your privacy, please contact us at:
+
+        olsenis@gmail.com
+      </LegalSection>
+    </div>
+
+    <p class="text-xs italic text-muted mt-16 text-center">© 2026 Love Desire. All rights reserved.</p>
+  </section>
+</BaseLayout>

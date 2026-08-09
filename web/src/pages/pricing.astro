@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StoreBadge from '../components/StoreBadge.astro';
+
+const free = [
+  'Mood check-ins + Spark',
+  'Sunday Check-in',
+  'Moments (daily photo ritual)',
+  'Love Notes (timed + mood-triggered)',
+  'Journal',
+  'Together List',
+  'Tease (24h ephemeral photos / voice)',
+  'Countdowns + Reminders',
+  'Daily: Playful category',
+  'Truth or Dare: Sweet + Flirty',
+  'Would You Rather: Playful + Romantic',
+  'Tonight\'s Date',
+  '30-Day Challenge: Reconnect + Spark',
+  'Love Language Quiz',
+  'Relationship Pulse (with trend chart)',
+  'Long-distance mode',
+];
+
+const paid = [
+  'Everything in free',
+  'Daily: Deep + Spicy categories',
+  'Truth or Dare: Spicy level',
+  'Would You Rather: Spicy level',
+  'Fantasy Wishes (400+ items, double-blind voting)',
+  'Activity Cards (25 cards, refresh monthly)',
+  'The Lovers (5-type intimacy quiz + couple compatibility)',
+  'Sensate Focus (guided touch sessions)',
+  'Intimacy Log (with stats)',
+  '30-Day Challenge: Fire + Desire',
+  'Kinky + Horny moods',
+];
+---
+
+<BaseLayout
+  title="Pricing — Love Desire"
+  description="One subscription covers both partners. Simple, honest pricing."
+>
+  <section class="max-w-4xl mx-auto px-6 pt-20 pb-8 text-center">
+    <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-3">Pricing</p>
+    <h1 class="font-heading text-5xl md:text-6xl leading-tight text-burgundy">
+      One subscription,<br />
+      <em class="font-normal">both partners</em>.
+    </h1>
+    <p class="text-lg text-burgundy/80 mt-6 max-w-xl mx-auto leading-relaxed">
+      No per-user pricing. No hidden currency packs. If either of you subscribes, you both get everything.
+    </p>
+  </section>
+
+  <!-- Tiers -->
+  <section class="max-w-5xl mx-auto px-6 pb-20 grid md:grid-cols-2 gap-6">
+    <!-- Free tier -->
+    <div class="bg-blush rounded-3xl p-8 flex flex-col gap-6">
+      <div>
+        <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-2">Free</p>
+        <h2 class="font-heading text-4xl text-burgundy">Get started</h2>
+        <p class="text-3xl font-bold text-burgundy mt-3">$0</p>
+        <p class="text-sm text-burgundy/70 italic mt-1">Forever, both partners</p>
+      </div>
+      <ul class="flex flex-col gap-2 text-sm text-burgundy/85">
+        {free.map(item => (
+          <li class="flex gap-2"><span>✓</span><span>{item}</span></li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- Paid tier -->
+    <div class="bg-burgundy text-cream rounded-3xl p-8 flex flex-col gap-6 relative">
+      <div class="absolute top-6 right-6 bg-cream text-burgundy text-xs uppercase tracking-widest font-bold px-3 py-1 rounded-full">
+        Premium
+      </div>
+      <div>
+        <p class="text-xs uppercase tracking-[0.35em] text-cream/60 font-bold mb-2">Premium</p>
+        <h2 class="font-heading text-4xl text-cream">Go deeper</h2>
+        <p class="text-3xl font-bold text-cream mt-3">Coming soon</p>
+        <p class="text-sm text-cream/70 italic mt-1">One subscription covers both partners</p>
+      </div>
+      <ul class="flex flex-col gap-2 text-sm text-cream/85">
+        {paid.map(item => (
+          <li class="flex gap-2"><span>✓</span><span>{item}</span></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- Honest pricing explainer -->
+  <section class="max-w-3xl mx-auto px-6 pb-20">
+    <div class="border-l-4 border-rose pl-6 py-2 flex flex-col gap-4">
+      <h3 class="font-heading text-2xl text-burgundy">What you'll never see</h3>
+      <ul class="flex flex-col gap-2 text-burgundy/80 text-sm leading-relaxed">
+        <li>· Ads or sponsored content</li>
+        <li>· In-app currency packs or "coins"</li>
+        <li>· Weekly subscription pricing</li>
+        <li>· Two-tier plans that confuse what you get</li>
+        <li>· Different pricing for each partner</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="border-t border-border">
+    <div class="max-w-6xl mx-auto px-6 py-20 md:py-24 text-center flex flex-col items-center gap-6">
+      <h2 class="font-heading text-4xl md:text-5xl text-burgundy max-w-xl leading-tight">
+        Start free.
+      </h2>
+      <div class="pt-2">
+        <StoreBadge />
+      </div>
+    </div>
+  </section>
+</BaseLayout>

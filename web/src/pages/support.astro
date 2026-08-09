@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Support — Love Desire"
+  description="Get help with pairing, account, subscription, or bugs."
+>
+  <section class="max-w-3xl mx-auto px-6 pt-20 pb-16">
+    <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-3 text-center">Support</p>
+    <h1 class="font-heading text-5xl md:text-6xl leading-tight text-burgundy text-center">
+      We're <em class="font-normal">here</em>.
+    </h1>
+
+    <div class="mt-12 flex flex-col gap-10 text-burgundy/85 leading-relaxed">
+
+      <!-- Email -->
+      <div class="bg-blush rounded-3xl p-8 flex flex-col gap-4">
+        <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold">Email</p>
+        <p class="text-lg">The fastest way to reach us:</p>
+        <a
+          href="mailto:olsenis@gmail.com"
+          class="inline-flex items-center gap-2 bg-burgundy text-cream px-6 py-3 rounded-full font-body font-bold text-sm self-start hover:shadow-lg transition-shadow"
+        >
+          <span></span>
+          <span>olsenis@gmail.com</span>
+        </a>
+        <p class="text-sm text-burgundy/70 italic">
+          Typical reply within 1–2 days. Critical issues (subscription problems, sign-in blockers) get faster turnaround.
+        </p>
+      </div>
+
+      <!-- Common issues -->
+      <div>
+        <h2 class="font-heading text-3xl text-burgundy mb-6">Before you email — quick fixes</h2>
+        <div class="flex flex-col gap-6">
+          <div>
+            <h3 class="font-heading text-xl text-burgundy mb-2">Can't sign in?</h3>
+            <p class="text-sm">Use "Forgot password" on the login screen. If the email doesn\'t arrive within 5 minutes, check your spam folder. Still no luck? Email us — we\'ll reset it manually.</p>
+          </div>
+          <div>
+            <h3 class="font-heading text-xl text-burgundy mb-2">Pairing invite code isn't working?</h3>
+            <p class="text-sm">Codes expire after 7 days. Generate a fresh one from the Pairing screen and try again. Codes exclude look-alike characters (0/O, 1/L) so type carefully.</p>
+          </div>
+          <div>
+            <h3 class="font-heading text-xl text-burgundy mb-2">Subscription question?</h3>
+            <p class="text-sm">Subscription is managed via the App Store (iOS) or on our Android page for Android. Cancel, restore, or view your billing there. If something\'s wrong on our side, email us with your account email + partner\'s email if relevant.</p>
+          </div>
+          <div>
+            <h3 class="font-heading text-xl text-burgundy mb-2">Something feels broken?</h3>
+            <p class="text-sm">Email us a short description of what happened — what you tapped, what you expected, what you got. Screenshots help. Include your phone model + OS version if you have it handy.</p>
+          </div>
+          <div>
+            <h3 class="font-heading text-xl text-burgundy mb-2">Want to delete your account?</h3>
+            <p class="text-sm">In-app: Profile → Delete account. Your personal data is removed immediately. Shared couple content may persist until your partner also deletes. You can also email us to request a full data export first (GDPR right for European users).</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reporting -->
+      <div class="border-l-4 border-rose pl-6 py-2">
+        <h3 class="font-heading text-xl text-burgundy mb-2">Reporting something serious</h3>
+        <p class="text-sm">
+          If you experience harassment, abuse, or safety concerns from your partner in-app, use "Disconnect from partner" in Profile to end the couple bond immediately. If you need to reach us about something more serious, email <a href="mailto:olsenis@gmail.com" class="underline">olsenis@gmail.com</a> with "Safety" in the subject line — we\'ll respond within 24 hours.
+        </p>
+      </div>
+
+      <!-- Legal links -->
+      <div>
+        <h3 class="font-heading text-xl text-burgundy mb-2">Legal</h3>
+        <p class="text-sm">
+          Read our <a href="/privacy-policy" class="underline">Privacy Policy</a> and <a href="/terms-of-service" class="underline">Terms of Service</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
