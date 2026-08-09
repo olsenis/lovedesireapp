@@ -22,11 +22,22 @@ export interface SubscriptionState {
 export function useSubscription(): SubscriptionState {
   const { user, profile, loading: authLoading } = useAuth();
   const { couple, loading: coupleLoading } = useCouple(user?.uid, profile?.coupleId);
+  // Close the transient window where profile.coupleId has arrived but the
+  // couple snapshot hasn't yet. During that render, useCouple still holds
+  // its previous (loading:false, couple:null) state because state from its
+  // effect only lands on the NEXT render — and paid-screen guards would
+  // otherwise see isLoading:false + isSubscribed:false and bounce a
+  // premium couple to /upgrade before Firestore has answered.
+  //
+  // Deriving expectingCouple from the current profile shape (not from an
+  // effect result) closes the window regardless of effect scheduling.
+  // Also correctly handles unpaired users: no coupleId → expectingCouple
+  // false → coupleReady true → resolves as not-subscribed as expected.
+  const expectingCouple = !!profile?.coupleId;
+  const coupleReady = !expectingCouple || !!couple;
   const isSubscribed = couple?.isPremium === true;
   return {
     isSubscribed,
-    // Both loads must resolve before we can trust the answer — otherwise
-    // paid screens would flash for a beat before the redirect fires.
-    isLoading: authLoading || coupleLoading,
+    isLoading: authLoading || coupleLoading || !coupleReady,
   };
 }
