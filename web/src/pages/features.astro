@@ -5,65 +5,62 @@ import StoreBadge from '../components/StoreBadge.astro';
 
 const rituals = [
   { emoji: '🌅', title: 'Mood check-ins',
-    body: 'Tap one of 12 emojis to show how you\'re feeling. Your partner sees it on their home screen with a soft nudge when it changes. No words needed.' },
+    body: "Tap one of 12 emojis to show how you're feeling. Your partner sees it on their home screen with a soft nudge when it changes. No words needed." },
   { emoji: '📅', title: 'Sunday Check-in',
-    body: 'Five relationship questions each week. Answer privately, reveal together — nobody sees the other\'s answer until you both finish.' },
+    body: "Five questions each week. Neither of you sees the other's answers until you've both finished." },
   { emoji: '📸', title: 'Moments',
-    body: 'Your daily photo ritual. Take yours, your partner takes theirs, both reveal side-by-side. No filters, no likes.' },
+    body: "Your daily photo ritual. Take yours, your partner takes theirs, both reveal side-by-side. No filters, no likes." },
   { emoji: '💌', title: 'Love Notes',
-    body: 'Write notes that unlock on a specific date, or when your partner picks a certain mood. "Open when you\'re sad" — actually delivered when they need it.' },
+    body: "Write notes that unlock on a specific date, or when your partner picks a certain mood. 'Open when you're sad' actually delivered when they need it." },
 ];
 
 const games = [
   { emoji: '💫', title: 'Daily',
-    body: 'Three curated categories every day: Playful (free), Deep, and Spicy. Vote on picks, answer questions, matches surface when you both agree.' },
+    body: "Three categories every day: Playful (free), Deep, and Spicy. Vote on picks, answer questions, matches surface when you both agree." },
   { emoji: '🎯', title: 'Truth or Dare',
-    body: 'Two ways to play. "Together right here" spins a wheel on one phone. "Wherever you are" runs turn-based across two phones with audio answers.' },
+    body: "Two ways to play. 'Together right here' spins a wheel on one phone. 'Wherever you are' runs turn-based across two phones with audio answers." },
   { emoji: '🤔', title: 'Would You Rather',
-    body: 'Both answer at the same time, then reveal. Three levels, level packs for themed evenings, best-ever score across sessions.' },
+    body: "Both answer at the same time, then reveal. Three levels, level packs for themed evenings, best-ever score across sessions." },
   { emoji: '🃏', title: 'Activity Cards',
-    body: '25 face-down cards, take turns picking one. Do it now, save to your Together List for later, or skip. Cards refresh monthly.' },
+    body: "25 face-down cards, take turns picking one. Do it now, save to your Together List for later, or skip. Cards refresh monthly." },
   { emoji: '✨', title: 'Fantasy Wishes',
-    body: 'Double-blind voting on 400+ scenarios. You never see individual votes — only the ones you both said Yes to appear as matches.' },
+    body: "Double-blind voting on 400+ scenarios. You never see individual votes, only the ones you both said Yes to appear as matches." },
   { emoji: '🆚', title: 'Versus',
-    body: 'How well do you know your partner? Guess their answers to questions they\'ve already answered. Unlocks after enough Daily history to make it fair.' },
+    body: "How well do you know your partner? Guess their answers to questions they've already answered. Unlocks once your partner has answered five or so binary questions in Daily." },
 ];
 
 const insight = [
   { emoji: '🧬', title: 'The Lovers',
-    body: 'A 15-question quiz that maps you to one of five intimacy types — Feeling, Sexual, Spark, Kinky, Explorer. See your type + your partner\'s + how you fit together.' },
+    body: "A 15-question quiz that maps you to one of five intimacy types: Feeling, Sexual, Spark, Kinky, Explorer. See your type, your partner's type, and how you fit together." },
   { emoji: '🫁', title: 'Sensate Focus',
-    body: 'Three guided mindful-touch sessions from sex therapy. Timer, rotating prompts, cycle tracking. Presence over performance.' },
+    body: "Three guided mindful-touch sessions from sex therapy. Timer, rotating prompts, cycle tracking." },
   { emoji: '📊', title: 'Relationship Pulse',
-    body: 'A 10-question private satisfaction check. Take it monthly. Trend chart shows where you\'re growing and where you\'re slipping.' },
+    body: "A 10-question private satisfaction check. Take it monthly. Trend chart shows where you're growing and where you're slipping." },
   { emoji: '💭', title: 'Love Language',
-    body: 'Classic 10-question quiz. Your result surfaces on your partner\'s home screen as a daily tip rotation, so they always know how to love you best.' },
+    body: "Classic 10-question quiz. Your result lands on your partner's home screen as a rotating daily tip." },
 ];
 
 const ldr = [
   { emoji: '🌍', title: 'Long Distance mode',
-    body: 'Partner\'s local time on your home screen, next-visit countdown, virtual date filter, LDR-tagged questions, and the Distance challenge program.' },
+    body: "Partner's local time on your home screen, next-visit countdown, virtual date filter, LDR-tagged questions, and the Distance challenge program." },
   { emoji: '📸', title: 'Tease',
-    body: '24-hour ephemeral photos, videos, and voice notes. For the moment. For each other.' },
+    body: "24-hour photos, videos, and voice notes. Gone by morning." },
   { emoji: '📝', title: 'Together List',
-    body: 'Shared todo across daily life, dates, intimacy, and goals. Matches from Fantasy Wishes and Activity Cards land here for later.' },
+    body: "Shared todo across daily life, dates, intimacy, and goals. Matches from Fantasy Wishes and Activity Cards land here for later." },
 ];
 ---
 
 <BaseLayout
-  title="Features — Love Desire"
+  title="Features, Love Desire"
   description="Rituals, games, insight tools, and long-distance features for two."
 >
   <!-- Page hero -->
   <section class="max-w-6xl mx-auto px-6 pt-20 pb-12 text-center">
     <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-3">Features</p>
     <h1 class="font-heading text-5xl md:text-6xl leading-tight text-burgundy">
-      Everything you need,<br />
-      <em class="font-normal">nothing you don\'t</em>.
+      Rituals, games,<br />
+      and quiet insight tools.
     </h1>
-    <p class="text-lg text-burgundy/80 mt-6 max-w-2xl mx-auto leading-relaxed">
-      Love Desire is built around real intimacy — the everyday rhythms that keep a couple close, and the moments of play that keep it alive.
-    </p>
   </section>
 
   <!-- Rituals -->
@@ -98,7 +95,7 @@ const ldr = [
 
   <!-- LDR + more -->
   <section class="max-w-6xl mx-auto px-6 pb-20">
-    <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-6">Long distance & more</p>
+    <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-6">Long distance and more</p>
     <div class="grid md:grid-cols-3 gap-6">
       {ldr.map(f => (
         <FeatureCard emoji={f.emoji} title={f.title} body={f.body} accent="blush" />
