@@ -90,6 +90,10 @@ export async function joinCouple(inviteCode: string, joinerUid: string): Promise
     if (e?.code === 'functions/resource-exhausted') {
       throw new Error('Too many attempts. Please wait a moment and try again.');
     }
+    // Network failures surface as functions/internal with no server log — usually the client couldn't reach the endpoint.
+    if (e?.code === 'functions/internal' || e?.message === 'internal') {
+      return { couple: null, reason: 'no_connection' };
+    }
     return { couple: null, reason: e?.message ?? 'unknown_error' };
   }
 }

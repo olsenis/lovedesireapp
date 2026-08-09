@@ -707,6 +707,85 @@ If none of those hit within 3 months of launch, park indefinitely.
 
 ---
 
+## E2EE ephemeral chat between partners (raised August 2026)
+
+### What
+
+True end-to-end encrypted ephemeral chat surface between paired partners. Not another messaging tab that duplicates WhatsApp — a privacy-first intimate content channel positioned like Just Between Us. Messages exist client-side only; Firestore relays encrypted blobs that we cannot read. Screenshot detection with partner notification. Content-less push notifications (payload wakes the app, decrypted body renders locally). Ephemeral by default with 24h auto-delete. App lock (Face ID / PIN) as an optional layer. Panic mode for quick local wipe.
+
+Positioning is the differentiation, not the messaging itself:
+
+- **1:1 pair-only** — no risk of sending to the wrong person (Just Between Us pitch)
+- **Integrated with existing Desire surfaces** — chat can reference moods / question answers / sparks contextually
+- **Ephemeral by default** — not opt-in like WhatsApp's disappearing messages
+- **Cryptographically enforced privacy** — real E2EE, honest marketing, not "encrypted at rest" theatre
+
+### Why deferred
+
+Two independent reasons stack:
+
+1. **Scope pushes launch too far.** Signal-Protocol integration (via `react-native-libsignal-protocol` or a Matrix client), key exchange grafted onto the existing `rateLimitedJoin` pairing flow, multi-device sync, screenshot detection on both platforms, content-less push, panic mode, backup/recovery is 2-4 wk of focused work. Launch is 2-3 wk out already.
+
+2. **Wait for real DAU signal before building.** If daily engagement on rituals/games is weak post-launch, chat won't save the app; if engagement is strong, chat becomes a meaningful moat. Building blind risks a chat feature nobody uses (see Couple.me, Tuned, Official — all shut down).
+
+Research context (from [memory/features_research.md](../memory/features_research.md) and [memory/ldr_research.md](../memory/ldr_research.md)): pure-messaging couples apps have consistently failed. Locket (80M downloads, 9M DAU) and Candle (300k users, $1M ARR) both grow with zero messaging. The counter-signal: Just Between Us survives on the privacy-for-sexting angle specifically, and Snapchat itself proves ephemeral photo/video sharing scales to 400M DAU. Privacy is the #1 blocker for intimate content sharing in LDR pairs. That combination — LDR privacy pain + Just Between Us proof of concept + Snapchat's ephemeral mechanic — is the case for building it *eventually*.
+
+### Design considerations to spec before building
+
+- **Signal Protocol integration** — pick between `react-native-libsignal-protocol` (proven, closer to the reference impl) and a Matrix client (broader features, more overhead)
+- **Key exchange during pairing** — extend `rateLimitedJoin` to also exchange initial identity keys; keys stored in device secure enclave (iOS Keychain / Android Keystore), never in Firestore
+- **Multi-device sync** — user reinstalls or gets a new phone → key recovery flow. Hardest part; get wrong and users lose all history
+- **Screenshot detection** — iOS `UIApplicationUserDidTakeScreenshotNotification`, Android `MediaContentObserver` on the media store; fire an encrypted "screenshot" system message to partner
+- **Content-less push notifications** — Expo Push payload = `{ type: "new_message" }`, body encrypted client-side and stored locally; notification just wakes the app to fetch/decrypt
+- **App lock** — separate optional biometric / PIN layer for the chat screen specifically, not the whole app
+- **Panic mode** — quick tap to wipe all local encrypted message stores; needs to also revoke server-relay-side blobs if possible
+- **Backup and recovery** — Firebase Auth handles account recovery; user-controlled backup key (24-word phrase style) needed for message history recovery on new device
+
+### Risks
+
+- **Legal liability if E2EE claim is broken.** If Firestore rules allow admin reads, or Cloud Function logs contain plaintext, or a debug build ever exfiltrates content, the "E2EE" claim becomes fraud-adjacent. Must be air-tight before marketing anything.
+- **Firestore relay cost.** Every encrypted blob written + read is a Firestore operation. Cost scales with message volume, not user count — heavy chatters could push into paid tier fast.
+- **Multi-device sync is the hardest part.** Get it wrong and users lose message history when they change phones. Signal itself has re-implemented this multiple times.
+- **Marketing must be honest.** Every public surface (App Store description, `/support`, `/privacy-policy`) needs to be reviewed by someone who understands the crypto claim, not just writing copy that sounds nice. Never claim E2EE if partially implemented.
+
+### Alternative paths rejected
+
+Documented so we don't re-litigate the discussion:
+
+- **Path B (privacy-lite Firebase-stored ephemeral chat)** — rejected. Marketing "privacy" without real E2EE is fraud-adjacent; reviewers and press catch it.
+- **Path C (photo drop only, no chat thread)** — rejected. User wants text conversation, not just photos. Locket-style mutual presence is a different product.
+- **Skip messaging entirely** — rejected. Privacy angle is genuinely differentiated and fits Desire's brand as an intimate couples app; the space is unmet.
+
+### Decision criteria for revisiting
+
+Revisit 4 weeks post-launch if BOTH of these hit:
+
+- DAU on daily rituals (Question of the Day, Sparks, moods) is > 30% at week 4 — meaning the app has real habitual use, not just novelty opens
+- Any user survey response or support message asks for private messaging / expresses distrust of WhatsApp for intimate content
+
+If only one signal fires, wait another 4 weeks and revisit. If neither fires by month 3, park indefinitely.
+
+### Effort estimate (for revisit)
+
+- Signal Protocol wiring + key exchange: **~1 wk**
+- Message envelope + Firestore relay + local encrypted store: **~3-4 days**
+- Screenshot detection (both platforms): **~2 days**
+- Content-less push + notification handling: **~1 day**
+- App lock + panic mode: **~1-2 days**
+- Backup / recovery flow: **~2-3 days**
+- Design + QA + marketing copy review: **~2-3 days**
+- **Total: 2-4 wk focused work**, plus rolling security review
+
+### Non-goals
+
+- No Snapchat filters, lenses, or Stories — those are what makes Snapchat's *social* app retain, they don't map to a 1:1 couples app
+- No group chats — always 1:1 with paired partner, never expandable
+- No streaks or gamification — turns intimate messaging into "homework with anxiety" (LDR research anti-pattern)
+- No discovery / friend graph — this is a couples app, not a social platform
+- No unencrypted fallback — E2EE only, if the crypto path fails the message doesn't send
+
+---
+
 ## Template for future entries
 
 ```

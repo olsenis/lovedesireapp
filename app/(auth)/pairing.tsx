@@ -104,6 +104,7 @@ export default function PairingScreen() {
           result.reason === 'taken' ? 'This couple is already full.' :
           result.reason === 'expired' ? 'This invite code has expired.' :
           result.reason === 'not_found' ? 'Code not found. Double-check the 8 characters.' :
+          result.reason === 'no_connection' ? 'No internet connection. Check your connection and try again.' :
           `Could not join (reason: ${result.reason ?? 'unknown'})`;
         setJoinError(msg);
         return;

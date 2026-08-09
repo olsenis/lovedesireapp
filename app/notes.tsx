@@ -9,6 +9,7 @@ import { Colors as C } from '../constants/colors';
 import { notifyPartner } from '../services/notificationService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -18,11 +19,14 @@ type Occasion = { label: string; offset: number; condition?: Condition };
 
 // 'sad' is the generic mood-trigger occasion — user picks which mood unlocks it from a sub-grid
 const SAD_OCCASION_LABEL = "When you're feeling...";
+// Custom-date occasion — user picks a specific day from the calendar picker
+const CUSTOM_DATE_LABEL = "Pick a date...";
 
 const OCCASIONS: Occasion[] = [
   { label: "Right now", offset: 0 },
   { label: "Tonight at 8pm", offset: 0 },
   { label: "This weekend", offset: -1 },
+  { label: CUSTOM_DATE_LABEL, offset: 0 },
   { label: SAD_OCCASION_LABEL, offset: 0, condition: 'sad' },
 ];
 
@@ -93,6 +97,7 @@ export default function NotesScreen() {
   const help = useHelp('love-notes');
   const [message, setMessage] = useState('');
   const [occasion, setOccasion] = useState(OCCASIONS[0].label);
+  const [customDate, setCustomDate] = useState<Date | null>(null);
   const [moodPick, setMoodPick] = useState<MoodEmoji>('😢');
   const [openedNote, setOpenedNote] = useState<LoveNote | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -117,21 +122,31 @@ export default function NotesScreen() {
   const resetComposer = () => {
     setMessage('');
     setOccasion(OCCASIONS[0].label);
+    setCustomDate(null);
     setMoodPick('😢');
     setEditingNoteId(null);
   };
 
   const handleCreate = async () => {
     if (!message.trim() || !profile?.coupleId || !user) return;
+    if (occasion === CUSTOM_DATE_LABEL && !customDate) return;
     const occ = occasions.find(o => o.label === occasion);
     const openCondition = occ?.condition;
     const triggerEmoji = openCondition === 'sad' ? moodPick : undefined;
+    let openAt: number;
+    if (occasion === CUSTOM_DATE_LABEL && customDate) {
+      const d = new Date(customDate);
+      d.setHours(9, 0, 0, 0);
+      openAt = d.getTime();
+    } else {
+      openAt = getOccasionTime(occasion);
+    }
 
     if (editingNoteId) {
       // Edit existing — no notification re-fired
-      await updateNote(profile.coupleId, editingNoteId, message.trim(), getOccasionTime(occasion), openCondition, triggerEmoji);
+      await updateNote(profile.coupleId, editingNoteId, message.trim(), openAt, openCondition, triggerEmoji);
     } else {
-      await createNote(profile.coupleId, user.uid, message.trim(), getOccasionTime(occasion), openCondition, triggerEmoji);
+      await createNote(profile.coupleId, user.uid, message.trim(), openAt, openCondition, triggerEmoji);
       const moodLabel = triggerEmoji ? MOOD_LABELS[triggerEmoji].toLowerCase() : '';
       const subtitle =
         openCondition === 'sad'      ? `A note will unlock when you feel ${moodLabel}` :
@@ -154,6 +169,12 @@ export default function NotesScreen() {
       setMoodPick(note.triggerEmoji ?? '😢');
     } else if (note.openCondition && CONDITION_META[note.openCondition]) {
       setOccasion(CONDITION_META[note.openCondition].label);
+    } else if (note.openAt > Date.now() + 60000) {
+      // Future openAt without a condition — surface it in the date picker so
+      // the user can see what they picked, keep it, or change it. Preserves
+      // the exact chosen day instead of collapsing to 'Right now'.
+      setOccasion(CUSTOM_DATE_LABEL);
+      setCustomDate(new Date(note.openAt));
     } else {
       setOccasion('Right now');
     }
@@ -365,6 +386,23 @@ export default function NotesScreen() {
                 );
               })}
             </View>
+            {occasion === CUSTOM_DATE_LABEL && (
+              <View style={{ gap: Spacing.sm, marginTop: 4 }}>
+                <BrandDatePicker
+                  value={customDate}
+                  onChange={setCustomDate}
+                  placeholder="When should it open?"
+                  minimumDate={new Date(Date.now() + 24 * 60 * 60 * 1000)}
+                />
+                {customDate ? (
+                  <Text style={styles.sadHint}>
+                    Opens {customDate.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })} at 9am
+                  </Text>
+                ) : (
+                  <Text style={styles.sadHint}>Pick any future day. The note opens at 9am that morning.</Text>
+                )}
+              </View>
+            )}
             {occasion === SAD_OCCASION_LABEL && (
               <View style={styles.moodPickerWrap}>
                 <Text style={styles.moodPickerLabel}>Unlocks when they log this mood:</Text>
@@ -407,7 +445,12 @@ export default function NotesScreen() {
               >
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.sendBtn} onPress={handleCreate} accessibilityRole="button">
+              <TouchableOpacity
+                style={[styles.sendBtn, (!message.trim() || (occasion === CUSTOM_DATE_LABEL && !customDate)) && styles.sendBtnDisabled]}
+                onPress={handleCreate}
+                disabled={!message.trim() || (occasion === CUSTOM_DATE_LABEL && !customDate)}
+                accessibilityRole="button"
+              >
                 <Text style={styles.sendText}>{editingNoteId ? 'Save changes' : 'Send 💌'}</Text>
               </TouchableOpacity>
             </View>
@@ -563,6 +606,7 @@ const styles = StyleSheet.create({
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   sendBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
+  sendBtnDisabled: { opacity: 0.4 },
   sendText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   noteViewer: { flex: 1, backgroundColor: 'rgba(61,26,36,0.7)', alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
