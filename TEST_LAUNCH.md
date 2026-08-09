@@ -661,6 +661,12 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
   2. Phone A: try to access Moments, Notes, etc.
   - **Expected:** Empty states everywhere; no previous-couple data leaks. Pair with new partner → fresh start, no old data merged.
 
+- [ ] **Disconnect couple → premium survives for the buyer** 🔒 ⚠️ 📱 💰 (REQUIRES REVENUECAT)
+  1. Both premium via one partner's subscription (buyer = Óli)
+  2. Óli: Disconnect from partner
+  3. Óli: pair with a new partner (or re-pair with Ola)
+  - **Expected:** Óli's premium restores on the new couple doc automatically via the RevenueCat webhook (Apple/Google subscription is tied to Óli's account, not the couple). Ola (non-buyer) has no independent subscription so she reverts to free tier post-disconnect. Verify by opening a paid feature immediately after re-pair — should not require another Firebase Console flip. Skip this test entirely until RevenueCat is wired; pre-RevenueCat state (couple.isPremium manually flipped) does not exercise the buyer/non-buyer distinction.
+
 ---
 
 ## Tally
