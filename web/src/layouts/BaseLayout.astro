@@ -1,0 +1,91 @@
+---
+export interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const { title, description = 'For couples who want more', ogImage = '/og-image.png' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Love Desire" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(ogImage, Astro.site).toString()} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <!-- Fonts (matches mobile app's Cormorant Garamond + Lato) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,400&family=Lato:ital,wght@0,400;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="bg-cream text-burgundy font-body antialiased">
+    <!-- Nav -->
+    <nav class="border-b border-border">
+      <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+        <a href="/" class="font-heading text-2xl text-burgundy">
+          Love Desire
+        </a>
+        <div class="hidden md:flex items-center gap-8 text-sm text-burgundy/80">
+          <a href="/features" class="hover:text-burgundy transition">Features</a>
+          <a href="/pricing" class="hover:text-burgundy transition">Pricing</a>
+          <a href="/faq" class="hover:text-burgundy transition">FAQ</a>
+          <a href="/about" class="hover:text-burgundy transition">About</a>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-border mt-24">
+      <div class="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+        <div>
+          <p class="font-heading text-2xl text-burgundy">Love Desire</p>
+          <p class="text-sm italic text-muted mt-1">For couples who want more</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-12 gap-y-2 text-sm text-burgundy/80">
+          <a href="/features" class="hover:text-burgundy transition">Features</a>
+          <a href="/support" class="hover:text-burgundy transition">Support</a>
+          <a href="/pricing" class="hover:text-burgundy transition">Pricing</a>
+          <a href="/android" class="hover:text-burgundy transition">Android</a>
+          <a href="/faq" class="hover:text-burgundy transition">FAQ</a>
+          <a href="/privacy-policy" class="hover:text-burgundy transition">Privacy</a>
+          <a href="/about" class="hover:text-burgundy transition">About</a>
+          <a href="/terms-of-service" class="hover:text-burgundy transition">Terms</a>
+        </div>
+      </div>
+      <div class="border-t border-border">
+        <p class="max-w-6xl mx-auto px-6 py-6 text-xs text-muted">
+          © 2026 Love Desire. A private app for two.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

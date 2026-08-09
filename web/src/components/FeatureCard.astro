@@ -1,0 +1,16 @@
+---
+export interface Props {
+  emoji: string;
+  title: string;
+  body: string;
+  accent?: 'burgundy' | 'rose' | 'blush';
+}
+const { emoji, title, body, accent = 'blush' } = Astro.props;
+const bg = accent === 'burgundy' ? 'bg-burgundy text-cream' : accent === 'rose' ? 'bg-rose/40' : 'bg-blush';
+---
+
+<div class={`${bg} rounded-3xl p-8 flex flex-col gap-3`}>
+  <span class="text-4xl">{emoji}</span>
+  <h3 class={`font-heading text-2xl ${accent === 'burgundy' ? 'text-cream' : 'text-burgundy'}`}>{title}</h3>
+  <p class={`text-sm leading-relaxed ${accent === 'burgundy' ? 'text-cream/85' : 'text-burgundy/80'}`}>{body}</p>
+</div>

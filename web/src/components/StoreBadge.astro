@@ -1,0 +1,27 @@
+---
+// App Store + Android APK CTA row. Both link to appropriate destinations —
+// App Store link is a placeholder until the app is live in App Store Connect.
+export interface Props {
+  variant?: 'default' | 'compact';
+}
+const { variant = 'default' } = Astro.props;
+const scale = variant === 'compact' ? 'gap-3' : 'gap-4';
+---
+
+<div class={`flex flex-wrap items-center ${scale}`}>
+  <a
+    href="https://apps.apple.com/app/id0000000000"
+    class="inline-flex items-center gap-2 bg-burgundy text-cream px-6 py-3 rounded-full font-body font-bold text-sm shadow-md hover:shadow-lg transition-shadow"
+  >
+    <span></span>
+    <span>Download for iOS</span>
+  </a>
+
+  <a
+    href="/android"
+    class="inline-flex items-center gap-2 border border-burgundy text-burgundy px-6 py-3 rounded-full font-body font-bold text-sm hover:bg-burgundy/5 transition-colors"
+  >
+    <span>▾</span>
+    <span>Android APK</span>
+  </a>
+</div>

@@ -1,0 +1,77 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import FeatureCard from '../components/FeatureCard.astro';
+import StoreBadge from '../components/StoreBadge.astro';
+---
+
+<BaseLayout title="Love Desire — For couples who want more">
+  <!-- Hero -->
+  <section class="max-w-6xl mx-auto px-6 pt-20 pb-16 md:pt-28 md:pb-24 grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+    <div class="flex flex-col gap-6">
+      <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold">A private app for two</p>
+      <h1 class="font-heading text-5xl md:text-6xl leading-tight text-burgundy">
+        Keep choosing<br />
+        <em class="font-normal">each other</em>.
+      </h1>
+      <p class="text-lg text-burgundy/80 leading-relaxed max-w-md">
+        Weekly rituals, daily conversation starters, playful games, and quiet insight tools. All in one place. Just for the two of you.
+      </p>
+      <div class="pt-2">
+        <StoreBadge />
+      </div>
+      <p class="text-xs text-muted italic mt-2">One subscription covers both partners.</p>
+    </div>
+
+    <!-- Hero visual — replace with real screenshot when available -->
+    <div class="relative aspect-[9/16] max-w-sm mx-auto md:mx-0 md:ml-auto rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-burgundy via-burgundy to-[#5a0932] shadow-2xl">
+      <div class="absolute inset-0 flex items-center justify-center p-10">
+        <p class="font-heading text-cream text-3xl text-center leading-snug italic">
+          "Screenshots<br />will land here"
+        </p>
+      </div>
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-24 h-1 bg-cream/30 rounded-full"></div>
+    </div>
+  </section>
+
+  <!-- Top 3 features -->
+  <section class="max-w-6xl mx-auto px-6 pb-20 md:pb-28">
+    <div class="max-w-2xl mx-auto text-center mb-14">
+      <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-3">What's inside</p>
+      <h2 class="font-heading text-4xl md:text-5xl text-burgundy">Three ways to feel close.</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <FeatureCard
+        emoji="🌅"
+        title="Daily rhythm"
+        body="Mood check-ins, a shared photo Moment, and the Sunday Check-in — 5 questions each week, answered privately, revealed together."
+        accent="blush"
+      />
+      <FeatureCard
+        emoji="🎯"
+        title="Playful games"
+        body="Truth or Dare, Would You Rather, Fantasy Wishes, Activity Cards. Two phones, real-time, no scoreboard."
+        accent="rose"
+      />
+      <FeatureCard
+        emoji="🫂"
+        title="Quiet insight"
+        body="The Lovers intimacy quiz, Relationship Pulse, Sensate Focus, Love Language. For when you want the map, not the game."
+        accent="burgundy"
+      />
+    </div>
+  </section>
+
+  <!-- Closing CTA -->
+  <section class="border-t border-border">
+    <div class="max-w-6xl mx-auto px-6 py-20 md:py-28 text-center flex flex-col items-center gap-6">
+      <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold">Ready?</p>
+      <h2 class="font-heading text-4xl md:text-5xl text-burgundy max-w-2xl leading-tight">
+        Try it with the person you're already choosing.
+      </h2>
+      <div class="pt-2">
+        <StoreBadge />
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -46,3 +46,12 @@ yarn-error.*
 # script.
 sex-ed/transcripts/
 sex-ed/drafts/
+# Repo-root transcript/ folder used by the developer as a raw research
+# stash — also copyright-sensitive, keep local only.
+transcript/
+
+# Marketing site (web/) build artifacts + local dependencies.
+# Source under web/src/ IS committed; only compiled output stays local.
+web/dist/
+web/node_modules/
+web/.astro/
