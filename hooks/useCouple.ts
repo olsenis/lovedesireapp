@@ -23,6 +23,14 @@ export function useCouple(myUid: string | null | undefined, coupleId: string | n
       return;
     }
 
+    // Reset to loading whenever coupleId changes (e.g. profile arrives after
+    // mount). Without this, a component using useSubscription can briefly
+    // see loading:false + couple:null (stale from prior run) and treat a
+    // premium user as non-subscribed — triggering an incorrect /upgrade
+    // redirect during the tiny window between coupleId becoming available
+    // and the snapshot resolving.
+    setState((s) => ({ ...s, loading: true }));
+
     let seq = 0;
 
     const unsubscribe = onSnapshot(doc(db, 'couples', coupleId), async (snap) => {
