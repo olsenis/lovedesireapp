@@ -71,7 +71,7 @@ export default function PrivacyPolicyScreen() {
         </Section>
 
         <Section title="11. Contact">
-          {`If you have questions, concerns, or requests regarding your privacy, please contact us at:\n\nolsenis@gmail.com`}
+          {`If you have questions, concerns, or requests regarding your privacy, please contact us at:\n\nsupport@lovedesireapp.com`}
         </Section>
 
         <Text style={styles.footer}>© 2026 Desire App. All rights reserved.</Text>

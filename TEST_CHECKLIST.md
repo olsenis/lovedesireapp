@@ -3653,7 +3653,7 @@ Profile screen controls, payment paywall, help system, legal viewers.
 
 - [ ] **Contact email shown**
   1. Scroll Section 11
-  - **Expected:** Body includes 'olsenis@gmail.com'.
+  - **Expected:** Body includes 'support@lovedesireapp.com'.
 
 - [ ] **Back returns to Profile**
   1. Tap ‹ Back

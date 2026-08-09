@@ -75,7 +75,7 @@ export default function TermsOfServiceScreen() {
         </Section>
 
         <Section title="12. Contact">
-          {`If you have questions about these Terms of Service, contact us at:\n\nolsenis@gmail.com`}
+          {`If you have questions about these Terms of Service, contact us at:\n\nsupport@lovedesireapp.com`}
         </Section>
 
         <Text style={styles.footer}>© 2026 Desire App. All rights reserved.</Text>
