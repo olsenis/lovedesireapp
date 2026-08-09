@@ -279,6 +279,38 @@ If any two of these signal "yes", enrich top-15 items handwritten (2-3h). Ship. 
 
 ---
 
+## Moments deep history (pagination + FlatList refactor)
+
+### What
+
+The Moments grid currently loads the last 120 daily docs (bumped from 30 in Aug 2026). Beyond 4 months, older moments are in Firestore but not surfaced. For couples using the app past a year, this becomes noticeable — the "photo album" metaphor implies you should be able to keep scrolling back.
+
+### Why deferred
+
+- 120 covers the vast majority of first-year use
+- Any real solution needs UX design (infinite scroll vs "See older →" button vs month-grouped accordion) plus a `FlatList` refactor for virtualization once the grid reaches ~200+ image cells (each cell renders 2 `<Image>`s)
+- Rendering all history in a plain `<ScrollView>` + `.map()` starts to bite memory on lower-end Android above ~300 concurrent image mounts
+- No user has asked; ship at 120 and observe
+
+### Options if we revisit
+
+- **B (flat 365-day bump):** simplest step up but pushes ScrollView + Image render past comfortable limits without FlatList
+- **C (Load-more button):** paged `where('createdAt', '<', earliestSeenAt)` follow-up query, appends a batch of 60-120 to the state. Simple UX, low code cost, works with either ScrollView or FlatList.
+- **D (month-grouped timeline):** group by YYYY-MM header, collapsed by default, expand to see that month's grid. Prettiest, needs the most design work.
+
+### Decision criteria for revisiting
+
+- User feedback mentions missing older moments
+- Couples that hit 4+ months of active use churn or complain
+- Analytics show high scroll-depth on the Past moments section (users looking for more)
+
+### Effort estimate
+
+- Option C (Load-more + FlatList): **~2-3h** (state + query + button + virtualization migration)
+- Option D (month-grouped): **~4-5h** (design + section list + collapse UX)
+
+---
+
 ## Deferred code-review findings from review #5 (raised August 2026)
 
 Three real findings from an outside code review that are correctness/cost concerns worth fixing, but not launch-blockers. Priority ordered.

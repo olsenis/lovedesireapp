@@ -20,10 +20,16 @@ export function subscribeMoments(
   coupleId: string,
   onChange: (moments: MomentEntry[]) => void
 ): Unsubscribe {
+  // 120 = ~4 months of daily moments. Anything older stays in Firestore
+  // but drops out of the grid. Bumped from 30 (~1 month) because that
+  // felt like the "past moments are gone" for couples using the app more
+  // than a month. Pagination / FlatList virtualization for deeper
+  // history is tracked as a post-launch enhancement — 120 fits comfortably
+  // in ScrollView + .map() without rendering pressure.
   const q = query(
     collection(db, 'couples', coupleId, 'moments'),
     orderBy('createdAt', 'desc'),
-    limit(30)
+    limit(120)
   );
   return onSnapshot(q, (snap) => {
     onChange(snap.docs.map(d => ({ date: d.id, ...d.data() } as MomentEntry)));
