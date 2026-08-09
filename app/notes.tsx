@@ -133,14 +133,9 @@ export default function NotesScreen() {
     const occ = occasions.find(o => o.label === occasion);
     const openCondition = occ?.condition;
     const triggerEmoji = openCondition === 'sad' ? moodPick : undefined;
-    let openAt: number;
-    if (occasion === CUSTOM_DATE_LABEL && customDate) {
-      const d = new Date(customDate);
-      d.setHours(9, 0, 0, 0);
-      openAt = d.getTime();
-    } else {
-      openAt = getOccasionTime(occasion);
-    }
+    const openAt = occasion === CUSTOM_DATE_LABEL && customDate
+      ? customDate.getTime()
+      : getOccasionTime(occasion);
 
     if (editingNoteId) {
       // Edit existing — no notification re-fired
@@ -392,14 +387,15 @@ export default function NotesScreen() {
                   value={customDate}
                   onChange={setCustomDate}
                   placeholder="When should it open?"
-                  minimumDate={new Date(Date.now() + 24 * 60 * 60 * 1000)}
+                  mode="datetime"
+                  minimumDate={new Date(Date.now() + 5 * 60 * 1000)}
                 />
                 {customDate ? (
                   <Text style={styles.sadHint}>
-                    Opens {customDate.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })} at 9am
+                    Opens {customDate.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })} at {customDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
                   </Text>
                 ) : (
-                  <Text style={styles.sadHint}>Pick any future day. The note opens at 9am that morning.</Text>
+                  <Text style={styles.sadHint}>Pick any future date and time.</Text>
                 )}
               </View>
             )}

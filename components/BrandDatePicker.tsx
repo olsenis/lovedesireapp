@@ -13,6 +13,10 @@ type Props = {
   minimumDate?: Date;
   // Show day + month only (used for birthday where year is irrelevant)
   hideYear?: boolean;
+  // 'date' (default) shows date only. 'datetime' also collects a time — iOS
+  // uses a combined spinner; Android chains a date picker then a time picker;
+  // web uses <input type="datetime-local">.
+  mode?: 'date' | 'datetime';
 };
 
 export function BrandDatePicker({
@@ -22,24 +26,36 @@ export function BrandDatePicker({
   maximumDate,
   minimumDate,
   hideYear = false,
+  mode = 'date',
 }: Props) {
   const [show, setShow] = useState(false);
+  // Android needs two sequential dialogs for datetime — track which step and
+  // hold the intermediate date so the time step can be merged onto it.
+  const [androidStep, setAndroidStep] = useState<'date' | 'time'>('date');
+  const [androidDate, setAndroidDate] = useState<Date | null>(null);
 
-  const format = (d: Date) =>
-    hideYear
-      ? d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long' })
-      : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const format = (d: Date) => {
+    if (hideYear) return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long' });
+    const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    if (mode === 'datetime') {
+      const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `${dateStr}, ${timeStr}`;
+    }
+    return dateStr;
+  };
 
-  // Web fallback uses native HTML5 date input; the community picker is mobile-only
+  // Web fallback uses native HTML5 input; the community picker is mobile-only
   if (Platform.OS === 'web') {
-    const iso = value ? value.toISOString().slice(0, 10) : '';
-    const max = maximumDate ? maximumDate.toISOString().slice(0, 10) : undefined;
-    const min = minimumDate ? minimumDate.toISOString().slice(0, 10) : undefined;
+    const inputType = mode === 'datetime' ? 'datetime-local' : 'date';
+    const slice = mode === 'datetime' ? 16 : 10;
+    const iso = value ? value.toISOString().slice(0, slice) : '';
+    const max = maximumDate ? maximumDate.toISOString().slice(0, slice) : undefined;
+    const min = minimumDate ? minimumDate.toISOString().slice(0, slice) : undefined;
     return (
       // <input type="date"> is a web DOM element rendered fine via react-native-web; cast lets us pass DOM-only props.
       // @ts-ignore
       <input
-        type="date"
+        type={inputType}
         value={iso}
         max={max}
         min={min}
@@ -62,17 +78,54 @@ export function BrandDatePicker({
     );
   }
 
-  const handleChange = (_event: { type: string }, date?: Date) => {
-    if (Platform.OS === 'android') setShow(false);
-    // Android also fires onChange with type 'dismissed' when user cancels — guard for it
+  const openPicker = () => {
+    setAndroidStep('date');
+    setAndroidDate(null);
+    setShow(true);
+  };
+
+  const closePicker = () => {
+    setShow(false);
+    setAndroidStep('date');
+    setAndroidDate(null);
+  };
+
+  const handleIOSChange = (_event: { type: string }, date?: Date) => {
     if (date && _event.type !== 'dismissed') onChange(date);
+  };
+
+  const handleAndroidChange = (event: { type: string }, date?: Date) => {
+    if (event.type === 'dismissed') {
+      closePicker();
+      return;
+    }
+    if (!date) {
+      closePicker();
+      return;
+    }
+    // For datetime, first dialog collects date; keep the picker open and swap
+    // to time mode so the user immediately picks time. For date-only, we're done.
+    if (mode === 'datetime' && androidStep === 'date') {
+      setAndroidDate(date);
+      setAndroidStep('time');
+      return;
+    }
+    // datetime + time step: merge the picked time onto the stored date
+    if (mode === 'datetime' && androidStep === 'time' && androidDate) {
+      const merged = new Date(androidDate);
+      merged.setHours(date.getHours(), date.getMinutes(), 0, 0);
+      onChange(merged);
+    } else {
+      onChange(date);
+    }
+    closePicker();
   };
 
   return (
     <>
       <TouchableOpacity
         style={styles.field}
-        onPress={() => setShow(true)}
+        onPress={openPicker}
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={value ? format(value) : placeholder}
@@ -89,16 +142,16 @@ export function BrandDatePicker({
             <View style={styles.modalSheet}>
               <DateTimePicker
                 value={value ?? new Date()}
-                mode="date"
+                mode={mode}
                 display="spinner"
-                onChange={handleChange}
+                onChange={handleIOSChange}
                 maximumDate={maximumDate}
                 minimumDate={minimumDate}
                 themeVariant="light"
               />
               <TouchableOpacity
                 style={styles.doneBtn}
-                onPress={() => setShow(false)}
+                onPress={closePicker}
                 activeOpacity={0.85}
                 accessibilityRole="button"
               >
@@ -111,12 +164,12 @@ export function BrandDatePicker({
 
       {show && Platform.OS === 'android' && (
         <DateTimePicker
-          value={value ?? new Date()}
-          mode="date"
+          value={androidDate ?? value ?? new Date()}
+          mode={mode === 'datetime' && androidStep === 'time' ? 'time' : 'date'}
           display="default"
-          onChange={handleChange}
-          maximumDate={maximumDate}
-          minimumDate={minimumDate}
+          onChange={handleAndroidChange}
+          maximumDate={androidStep === 'date' ? maximumDate : undefined}
+          minimumDate={androidStep === 'date' ? minimumDate : undefined}
         />
       )}
     </>
