@@ -100,9 +100,12 @@ export default function DailyScreen() {
   // rest. Answered/voted cards stay visible so the reveal / matched state
   // is seen before advancing. Reset on category switch — each tab is its
   // own deck. `skipped` uses row identity (kind + gi) so category changes
-  // don't leak skips across decks.
+  // don't leak skips across decks. `deckInitialized` gates the auto-jump
+  // to first-unhandled: without it, the user always lands on card 1 even
+  // if they've already answered 5 and reopened the app.
   const [deckPos, setDeckPos] = useState(0);
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
+  const [deckInitialized, setDeckInitialized] = useState(false);
 
   // Deep-link default: /daily with no ?category= → Playful. Never default
   // to a paid category — a free user tapping a push notification would hit
@@ -191,11 +194,12 @@ export default function DailyScreen() {
   }, [rows, skipped]);
 
   // Reset deck position + skipped set when the user switches category —
-  // each tab is its own deck experience. Also clamp deckPos if the deck
-  // shrinks (e.g. Firestore subscription trims a row somehow).
+  // each tab is its own deck experience. `deckInitialized` reset lets the
+  // auto-jump-to-first-unhandled effect fire again for the new category.
   useEffect(() => {
     setSkipped(new Set());
     setDeckPos(0);
+    setDeckInitialized(false);
   }, [selectedCat]);
   useEffect(() => {
     if (deck.length > 0 && deckPos >= deck.length) setDeckPos(deck.length - 1);
@@ -277,6 +281,21 @@ export default function DailyScreen() {
 
   const allHandled = rows.length > 0 && rows.every(isHandled);
   const currentCard = deck[deckPos];
+
+  // On first useful render for a category (or after category switch), jump
+  // to the first unhandled card so users reopening the app land where they
+  // left off instead of always at card 1. Uses `deckInitialized` guard so
+  // manual navigation isn't stomped on afterwards.
+  useEffect(() => {
+    if (deckInitialized) return;
+    if (rows.length === 0) return;
+    if (!wishDoc || !qDoc) return;
+    const firstUnhandled = deck.findIndex((r) => !isHandled(r));
+    if (firstUnhandled > 0) setDeckPos(firstUnhandled);
+    setDeckInitialized(true);
+    // isHandled is a closure over wishDoc/qDoc — including those in deps is
+    // enough; adding the function itself would fire on every render.
+  }, [deck, deckInitialized, wishDoc, qDoc, rows.length]);
   // Combined completion counter — the split (voted/actionCount +
   // answered/questionCount) read as "you're done" the moment either half
   // hit its own denominator (5/5 shown next to 0/3 felt contradictory to
@@ -394,6 +413,7 @@ export default function DailyScreen() {
             totalCount={totalCount}
             partnerName={partnerName}
             partnerDoneCount={partnerDoneCount}
+            isSubscribed={isSubscribed}
             onOpenMatches={() => setShowMatches(true)}
           />
         ) : currentCard ? (
@@ -603,6 +623,7 @@ function DoneState({
   totalCount,
   partnerName,
   partnerDoneCount,
+  isSubscribed,
   onOpenMatches,
 }: {
   matchesCount: number;
@@ -610,6 +631,7 @@ function DoneState({
   totalCount: number;
   partnerName: string;
   partnerDoneCount: number;
+  isSubscribed: boolean;
   onOpenMatches: () => void;
 }) {
   const partnerBehind = partnerDoneCount < totalCount;
@@ -640,6 +662,13 @@ function DoneState({
           <Text style={styles.doneMatchesBtnText}>View all matches ›</Text>
         </TouchableOpacity>
       )}
+      {/* Tomorrow copy differs by tier — free users hit a daily cap and wait;
+          paid users are told the pool refreshes with an implied "more coming"
+          note. Actual "draw more now" button lands in a follow-up commit
+          once dailyWishesService / dailyQuestionsService support bonus draws. */}
+      <Text style={styles.doneComeBack}>
+        {isSubscribed ? 'Fresh set every morning ✨' : 'Come back tomorrow for a fresh set ✨'}
+      </Text>
     </View>
   );
 }
@@ -972,6 +1001,7 @@ const styles = StyleSheet.create({
   donePartnerHint: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
   doneMatchesBtn: { marginTop: Spacing.lg, backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full },
   doneMatchesBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  doneComeBack: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.md },
 
   // Matches modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.55)', justifyContent: 'flex-end' },
