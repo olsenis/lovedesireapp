@@ -459,6 +459,7 @@ export default function DailyScreen() {
             isSubscribed={isSubscribed}
             bonusDrawsLeft={bonusDrawsLeft}
             onDrawMore={handleDrawMore}
+            onUpsell={() => router.push('/upgrade' as any)}
             onOpenMatches={() => setShowMatches(true)}
           />
         ) : currentCard ? (
@@ -546,8 +547,6 @@ export default function DailyScreen() {
             </View>
           </>
         ) : null}
-
-        <Text style={styles.refreshHint}>Fresh set every day ✨</Text>
       </ScrollView>
 
       {/* All-matches modal (unchanged from Daily Picks) */}
@@ -671,6 +670,7 @@ function DoneState({
   isSubscribed,
   bonusDrawsLeft,
   onDrawMore,
+  onUpsell,
   onOpenMatches,
 }: {
   matchesCount: number;
@@ -681,6 +681,7 @@ function DoneState({
   isSubscribed: boolean;
   bonusDrawsLeft: number;
   onDrawMore: () => void;
+  onUpsell: () => void;
   onOpenMatches: () => void;
 }) {
   const partnerBehind = partnerDoneCount < totalCount;
@@ -718,13 +719,25 @@ function DoneState({
           <Text style={styles.drawMoreBtnHint}>{bonusDrawsLeft} of {MAX_ACTION_DRAWS} draws left today</Text>
         </TouchableOpacity>
       )}
-      {/* Tomorrow copy varies by tier + draw state. Free users see the cap
-          language; paid users who still have draws see the button above +
-          simpler tomorrow line; paid users who used all draws see "you've
-          drawn everything today" as a subtle daily-cap reminder. */}
+      {/* Free-user upsell — placed at the natural high-desire moment (just
+          finished the daily). Copy stays warm rather than pushy; the concrete
+          number of extra cards conveys the value more than a generic "unlock
+          premium" would. Routes to /upgrade like every other paywall gate. */}
+      {!isSubscribed && (
+        <TouchableOpacity style={styles.upsellCard} onPress={onUpsell} accessibilityRole="button" accessibilityLabel="Unlock Deep, Spicy, and up to 3 extra draws per day with Premium">
+          <Text style={styles.upsellTitle}>Want more today?</Text>
+          <Text style={styles.upsellBody}>
+            Premium unlocks Deep + Spicy categories and up to 3 extra draws per day.
+          </Text>
+          <View style={styles.upsellCta}>
+            <Text style={styles.upsellCtaText}>Try Premium →</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+      {/* Tomorrow copy varies by tier + draw state. */}
       <Text style={styles.doneComeBack}>
         {!isSubscribed
-          ? 'Come back tomorrow for a fresh set ✨'
+          ? 'Or come back tomorrow for a fresh set ✨'
           : bonusDrawsLeft > 0
             ? 'Fresh set every morning ✨'
             : "You've drawn everything today, fresh set tomorrow ✨"}
@@ -1064,6 +1077,15 @@ const styles = StyleSheet.create({
   drawMoreBtn: { marginTop: Spacing.md, backgroundColor: Colors.blush, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, alignItems: 'center', gap: 2, borderWidth: 1, borderColor: Colors.rose },
   drawMoreBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   drawMoreBtnHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
+  // Upsell card — visually different from Draw More (paid) so free users
+  // don't mistake it for a "you already have this" state. Warmer burgundy
+  // background, cream text, and a chevron-ish CTA at bottom to signal
+  // "this leads somewhere new" rather than an inline action.
+  upsellCard: { marginTop: Spacing.lg, backgroundColor: Colors.burgundy, paddingVertical: Spacing.lg, paddingHorizontal: Spacing.lg, borderRadius: Radius.xl, alignItems: 'center', gap: Spacing.sm, maxWidth: 340, ...Shadow.sm },
+  upsellTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.cream },
+  upsellBody: { fontFamily: Fonts.body, fontSize: 14, color: Colors.blush, textAlign: 'center', lineHeight: 20 },
+  upsellCta: { marginTop: Spacing.sm, backgroundColor: Colors.cream, paddingVertical: 10, paddingHorizontal: Spacing.lg, borderRadius: Radius.full },
+  upsellCtaText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
   doneComeBack: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.md },
 
   // Matches modal
