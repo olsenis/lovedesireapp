@@ -10,10 +10,12 @@ import { HelpModal } from '../components/HelpModal';
 import {
   DailyWishDoc, DailyVote,
   subscribeDailyWishes, voteDailyWish, isMatch, markAddToListAtomic, bothWantToAdd,
+  drawMoreActions, MAX_BONUS_DRAWS as MAX_ACTION_DRAWS,
 } from '../services/dailyWishService';
 import {
   DailyQuestionDoc,
   subscribeDailyQuestions, submitAnswer, bothAnswered,
+  drawMoreQuestions, MAX_BONUS_DRAWS as MAX_QUESTION_DRAWS,
 } from '../services/dailyQuestionsService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
@@ -296,6 +298,47 @@ export default function DailyScreen() {
     // isHandled is a closure over wishDoc/qDoc — including those in deps is
     // enough; adding the function itself would fire on every render.
   }, [deck, deckInitialized, wishDoc, qDoc, rows.length]);
+
+  // When rows grows (typically because a bonus draw just landed), reset
+  // deckInitialized so the auto-jump effect above fires again and lands
+  // the user on the first NEW card. Skipped set + skip history preserved.
+  const prevRowCount = useRef(0);
+  useEffect(() => {
+    if (rows.length > prevRowCount.current && prevRowCount.current > 0) {
+      setDeckInitialized(false);
+    }
+    prevRowCount.current = rows.length;
+  }, [rows.length]);
+
+  // Bonus-draw state for DoneState button. Cap is symmetric across both
+  // services (MAX_ACTION_DRAWS === MAX_QUESTION_DRAWS = 3) — using max so
+  // whichever pool has been drawn from more is the source of truth. On a
+  // successful draw, both services get incremented together so they stay
+  // in sync.
+  const bonusDrawsUsed = Math.max(
+    wishDoc?.bonusDraws ?? 0,
+    qDoc?.bonusDraws ?? 0,
+  );
+  const bonusDrawsLeft = Math.max(0, Math.min(MAX_ACTION_DRAWS, MAX_QUESTION_DRAWS) - bonusDrawsUsed);
+  const isLDR = !!couple?.isLongDistance;
+
+  const handleDrawMore = async () => {
+    if (!coupleId) return;
+    if (bonusDrawsLeft === 0) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Fire both in parallel — they touch different Firestore docs so no
+    // ordering constraint. If one fails the other still lands; UI will
+    // show the successful pool's new items. Rare — both hit the same
+    // Firestore backend, either both succeed or neither.
+    try {
+      await Promise.all([
+        drawMoreQuestions(coupleId, isLDR),
+        drawMoreActions(coupleId),
+      ]);
+    } catch (e) {
+      console.error('[daily] drawMore failed:', e);
+    }
+  };
   // Combined completion counter — the split (voted/actionCount +
   // answered/questionCount) read as "you're done" the moment either half
   // hit its own denominator (5/5 shown next to 0/3 felt contradictory to
@@ -414,6 +457,8 @@ export default function DailyScreen() {
             partnerName={partnerName}
             partnerDoneCount={partnerDoneCount}
             isSubscribed={isSubscribed}
+            bonusDrawsLeft={bonusDrawsLeft}
+            onDrawMore={handleDrawMore}
             onOpenMatches={() => setShowMatches(true)}
           />
         ) : currentCard ? (
@@ -624,6 +669,8 @@ function DoneState({
   partnerName,
   partnerDoneCount,
   isSubscribed,
+  bonusDrawsLeft,
+  onDrawMore,
   onOpenMatches,
 }: {
   matchesCount: number;
@@ -632,9 +679,12 @@ function DoneState({
   partnerName: string;
   partnerDoneCount: number;
   isSubscribed: boolean;
+  bonusDrawsLeft: number;
+  onDrawMore: () => void;
   onOpenMatches: () => void;
 }) {
   const partnerBehind = partnerDoneCount < totalCount;
+  const canDrawMore = isSubscribed && bonusDrawsLeft > 0;
   return (
     <View style={styles.doneWrap}>
       <Text style={styles.doneEmoji}>✨</Text>
@@ -662,12 +712,22 @@ function DoneState({
           <Text style={styles.doneMatchesBtnText}>View all matches ›</Text>
         </TouchableOpacity>
       )}
-      {/* Tomorrow copy differs by tier — free users hit a daily cap and wait;
-          paid users are told the pool refreshes with an implied "more coming"
-          note. Actual "draw more now" button lands in a follow-up commit
-          once dailyWishesService / dailyQuestionsService support bonus draws. */}
+      {canDrawMore && (
+        <TouchableOpacity style={styles.drawMoreBtn} onPress={onDrawMore} accessibilityRole="button" accessibilityLabel={`Draw more cards. ${bonusDrawsLeft} draws left today`}>
+          <Text style={styles.drawMoreBtnText}>Draw more cards</Text>
+          <Text style={styles.drawMoreBtnHint}>{bonusDrawsLeft} of {MAX_ACTION_DRAWS} draws left today</Text>
+        </TouchableOpacity>
+      )}
+      {/* Tomorrow copy varies by tier + draw state. Free users see the cap
+          language; paid users who still have draws see the button above +
+          simpler tomorrow line; paid users who used all draws see "you've
+          drawn everything today" as a subtle daily-cap reminder. */}
       <Text style={styles.doneComeBack}>
-        {isSubscribed ? 'Fresh set every morning ✨' : 'Come back tomorrow for a fresh set ✨'}
+        {!isSubscribed
+          ? 'Come back tomorrow for a fresh set ✨'
+          : bonusDrawsLeft > 0
+            ? 'Fresh set every morning ✨'
+            : "You've drawn everything today, fresh set tomorrow ✨"}
       </Text>
     </View>
   );
@@ -1001,6 +1061,9 @@ const styles = StyleSheet.create({
   donePartnerHint: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
   doneMatchesBtn: { marginTop: Spacing.lg, backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full },
   doneMatchesBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  drawMoreBtn: { marginTop: Spacing.md, backgroundColor: Colors.blush, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, alignItems: 'center', gap: 2, borderWidth: 1, borderColor: Colors.rose },
+  drawMoreBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  drawMoreBtnHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
   doneComeBack: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.md },
 
   // Matches modal

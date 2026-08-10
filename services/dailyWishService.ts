@@ -9,7 +9,14 @@ export interface DailyWishDoc {
   items: DailyWishItem[];
   votes: Record<string, Record<number, DailyVote>>;
   addToList?: Record<number, string[]>; // globalIndex -> [uid, ...] who pressed "Add to List"
+  // Paid-only bonus draws stacked on top of base daily set. Each draw
+  // extends items by 2 per category. Capped at 3 to keep total pool sane.
+  bonusDraws?: number;
 }
+
+const BASE_PER_CAT = 5;
+const BONUS_PER_CAT = 2;
+export const MAX_BONUS_DRAWS = 3;
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -35,14 +42,37 @@ function deterministicShuffle(pool: DailyWishItem[], seedStr: string): DailyWish
 // indices 0-4, Flirty 5-9, Spicy 10-14 as before; Deep is the new
 // 15-19 slot.
 const CATEGORIES: DailyWishCategory[] = ['sweet', 'flirty', 'spicy', 'deep'];
-const EXPECTED_ITEM_COUNT = CATEGORIES.length * 5; // 4 cats × 5 picks = 20
 
-function pickDailyItems(date: string, coupleId: string): DailyWishItem[] {
+function expectedItemCount(bonusDraws: number): number {
+  const per = BASE_PER_CAT + Math.max(0, Math.min(bonusDraws, MAX_BONUS_DRAWS)) * BONUS_PER_CAT;
+  return CATEGORIES.length * per;
+}
+
+// Build the daily item list. Base pass fills the well-known indices
+// (sweet 0-4, flirty 5-9, spicy 10-14, deep 15-19). Each bonus draw
+// APPENDS additional items to the end grouped by category, so existing
+// vote / addToList indices never shift when a partner draws more.
+// Layout for draws=2:
+//   [sweet_0..4, flirty_0..4, spicy_0..4, deep_0..4,     // base, 20 items
+//    sweet_5..6, flirty_5..6, spicy_5..6, deep_5..6,     // draw 1, +8
+//    sweet_7..8, flirty_7..8, spicy_7..8, deep_7..8]     // draw 2, +8
+function pickDailyItems(date: string, coupleId: string, bonusDraws = 0): DailyWishItem[] {
+  const draws = Math.max(0, Math.min(bonusDraws, MAX_BONUS_DRAWS));
   const result: DailyWishItem[] = [];
+  // Base pass
   for (const cat of CATEGORIES) {
     const pool = DAILY_WISH_ITEMS.filter((i) => i.category === cat);
     const shuffled = deterministicShuffle(pool, date + coupleId + cat);
-    result.push(...shuffled.slice(0, 5));
+    result.push(...shuffled.slice(0, BASE_PER_CAT));
+  }
+  // Bonus passes appended at end, preserving base indices
+  for (let d = 1; d <= draws; d++) {
+    for (const cat of CATEGORIES) {
+      const pool = DAILY_WISH_ITEMS.filter((i) => i.category === cat);
+      const shuffled = deterministicShuffle(pool, date + coupleId + cat);
+      const startAt = BASE_PER_CAT + (d - 1) * BONUS_PER_CAT;
+      result.push(...shuffled.slice(startAt, startAt + BONUS_PER_CAT));
+    }
   }
   return result;
 }
@@ -51,11 +81,10 @@ function pickDailyItems(date: string, coupleId: string): DailyWishItem[] {
 // 20 items for 4 cats (sweet/flirty/spicy/sexual), then 15 for 3 cats
 // after 'sexual' merged into 'spicy' July 2026, now 20 again for 4 cats
 // after Deep actions added August 2026 (deep appended at end so old
-// vote indices survive). Also catches any lingering item with a
-// category that isn't in the current CATEGORIES set (e.g. legacy
-// 'sexual').
-function isStaleDoc(items: DailyWishItem[]): boolean {
-  if (items.length !== EXPECTED_ITEM_COUNT) return true;
+// vote indices survive). Aug 2026 also added bonusDraws — expected
+// count now depends on the doc's own bonusDraws value.
+function isStaleDoc(items: DailyWishItem[], bonusDraws: number): boolean {
+  if (items.length !== expectedItemCount(bonusDraws)) return true;
   return items.some((i) => !CATEGORIES.includes(i.category));
 }
 
@@ -65,7 +94,8 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
   return onSnapshot(ref, async (snap) => {
     if (snap.exists()) {
       const existing = snap.data() as DailyWishDoc;
-      if (isStaleDoc(existing.items)) {
+      const bonus = existing.bonusDraws ?? 0;
+      if (isStaleDoc(existing.items, bonus)) {
         // Regenerate with current schema. Preserve existing votes/addToList
         // as-is — safer than wiping them under partner races (comment said
         // preserve, but the code was overwriting {}). Sweet + Flirty pools
@@ -74,12 +104,13 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
         // happens is a "you voted yes" showing for an item that changed —
         // user can override with a fresh vote. Wiping meant total data loss
         // for both partners on the migration day.
-        const items = pickDailyItems(date, coupleId);
+        const items = pickDailyItems(date, coupleId, bonus);
         const migrated: DailyWishDoc = {
           date,
           items,
           votes: existing.votes ?? {},
           addToList: existing.addToList ?? {},
+          bonusDraws: bonus,
         };
         await setDoc(ref, migrated);
         onChange(migrated);
@@ -88,10 +119,34 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
       }
     } else {
       const items = pickDailyItems(date, coupleId);
-      const newDoc: DailyWishDoc = { date, items, votes: {}, addToList: {} };
+      const newDoc: DailyWishDoc = { date, items, votes: {}, addToList: {}, bonusDraws: 0 };
       await setDoc(ref, newDoc);
       onChange(newDoc);
     }
+  });
+}
+
+// Increments bonusDraws + regenerates items to include the extra slice.
+// Preserves votes/addToList — new items append at the end (per category)
+// so existing indices don't shift. Transactional so partner race can't
+// double-draw. Caller must gate on paid subscription; service enforces
+// nothing on the paywall front. Returns new bonusDraws count.
+export async function drawMoreActions(coupleId: string): Promise<{ bonusDraws: number; capped: boolean }> {
+  const date = todayKey();
+  const ref = doc(db, 'couples', coupleId, 'dailyWishes', date);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.exists() ? (snap.data() as DailyWishDoc).bonusDraws ?? 0 : 0;
+    if (current >= MAX_BONUS_DRAWS) return { bonusDraws: current, capped: true };
+    const next = current + 1;
+    const items = pickDailyItems(date, coupleId, next);
+    if (snap.exists()) {
+      const data = snap.data() as DailyWishDoc;
+      tx.update(ref, { items, bonusDraws: next, votes: data.votes ?? {}, addToList: data.addToList ?? {} });
+    } else {
+      tx.set(ref, { date, items, votes: {}, addToList: {}, bonusDraws: next });
+    }
+    return { bonusDraws: next, capped: false };
   });
 }
 

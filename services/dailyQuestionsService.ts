@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 
@@ -7,7 +7,17 @@ export interface DailyQuestionDoc {
   items: Question[];
   discussed: Record<string, number[]>;
   answers: Record<string, Record<string, string>>; // uid -> { "gi": answer }
+  // Paid-only bonus draws stacked on top of the base daily set. Each draw
+  // extends items by 3 per category (playful/deep/spicy). Capped at 3.
+  bonusDraws?: number;
 }
+
+// Base picks per category + how many are added per bonus draw. Both partners
+// see the same items because the shuffle seed is date+coupleId+cat — bonus
+// draws just extend the slice length. Cap at 3 bonus draws total (12 per cat).
+const BASE_PER_CAT = 3;
+const BONUS_PER_CAT = 3;
+export const MAX_BONUS_DRAWS = 3;
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -29,17 +39,27 @@ function deterministicShuffle(pool: Question[], seedStr: string): Question[] {
 
 const CATEGORIES: QuestionCategory[] = ['playful', 'deep', 'spicy'];
 
-function pickDailyQuestions(date: string, coupleId: string, isLDR: boolean): Question[] {
+// Base pass fills known indices (playful 0-2, deep 3-5, spicy 6-8). Bonus
+// draws APPEND items grouped by category so existing answer indices never
+// shift when a partner draws more mid-day.
+function pickDailyQuestions(date: string, coupleId: string, isLDR: boolean, bonusDraws = 0): Question[] {
+  const draws = Math.max(0, Math.min(bonusDraws, MAX_BONUS_DRAWS));
   const result: Question[] = [];
+  const poolFor = (cat: QuestionCategory) => QUESTIONS.filter((q) => {
+    if (q.category !== cat) return false;
+    if (!isLDR && q.tags?.includes('ldr')) return false;
+    return true;
+  });
   for (const cat of CATEGORIES) {
-    const pool = QUESTIONS.filter((q) => {
-      if (q.category !== cat) return false;
-      // LDR-tagged questions are gibberish for cohabiting couples
-      if (!isLDR && q.tags?.includes('ldr')) return false;
-      return true;
-    });
-    const shuffled = deterministicShuffle(pool, date + coupleId + cat);
-    result.push(...shuffled.slice(0, 3));
+    const shuffled = deterministicShuffle(poolFor(cat), date + coupleId + cat);
+    result.push(...shuffled.slice(0, BASE_PER_CAT));
+  }
+  for (let d = 1; d <= draws; d++) {
+    for (const cat of CATEGORIES) {
+      const shuffled = deterministicShuffle(poolFor(cat), date + coupleId + cat);
+      const startAt = BASE_PER_CAT + (d - 1) * BONUS_PER_CAT;
+      result.push(...shuffled.slice(startAt, startAt + BONUS_PER_CAT));
+    }
   }
   return result;
 }
@@ -64,13 +84,15 @@ export function subscribeDailyQuestions(
       const data = snap.data() as DailyQuestionDoc;
       if (hasStaleCategories(data.items ?? [])) {
         // Regenerate with current schema. Keep existing answers/discussed so
-        // any progress today isn't lost.
-        const items = pickDailyQuestions(date, coupleId, isLDR);
+        // any progress today isn't lost. Preserve bonusDraws so a paid user
+        // who drew more today doesn't lose their extra cards on a hot migration.
+        const items = pickDailyQuestions(date, coupleId, isLDR, data.bonusDraws ?? 0);
         const migrated: DailyQuestionDoc = {
           date,
           items,
           discussed: data.discussed ?? {},
           answers: data.answers ?? {},
+          bonusDraws: data.bonusDraws ?? 0,
         };
         await setDoc(ref, migrated);
         onChange(migrated);
@@ -79,10 +101,38 @@ export function subscribeDailyQuestions(
       onChange(data);
     } else {
       const items = pickDailyQuestions(date, coupleId, isLDR);
-      const newDoc: DailyQuestionDoc = { date, items, discussed: {}, answers: {} };
+      const newDoc: DailyQuestionDoc = { date, items, discussed: {}, answers: {}, bonusDraws: 0 };
       await setDoc(ref, newDoc);
       onChange(newDoc);
     }
+  });
+}
+
+// Increments bonusDraws + regenerates items to include the additional slice.
+// Idempotent race protection via transaction — if two clients race the
+// increment, only one draw is added, and both see the resulting item set.
+// Caller must gate on paid subscription; service does not enforce paywall.
+// Returns the new bonusDraws count for UI feedback (e.g. "1 of 3 draws used").
+export async function drawMoreQuestions(
+  coupleId: string,
+  isLDR: boolean,
+): Promise<{ bonusDraws: number; capped: boolean }> {
+  const date = todayKey();
+  const ref = doc(db, 'couples', coupleId, 'dailyQuestions', date);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.exists() ? (snap.data() as DailyQuestionDoc).bonusDraws ?? 0 : 0;
+    if (current >= MAX_BONUS_DRAWS) return { bonusDraws: current, capped: true };
+    const next = current + 1;
+    const items = pickDailyQuestions(date, coupleId, isLDR, next);
+    if (snap.exists()) {
+      tx.update(ref, { items, bonusDraws: next });
+    } else {
+      // Doc might not exist yet if user hits Draw More before the subscribe
+      // effect committed the initial generation. Create it in-transaction.
+      tx.set(ref, { date, items, discussed: {}, answers: {}, bonusDraws: next });
+    }
+    return { bonusDraws: next, capped: false };
   });
 }
 
