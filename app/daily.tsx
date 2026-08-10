@@ -95,6 +95,15 @@ export default function DailyScreen() {
   const [showMatches, setShowMatches] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
+  // Deck-per-screen navigation. User sees one card at a time; skip pushes
+  // the card to the back of the deck so it comes around again after the
+  // rest. Answered/voted cards stay visible so the reveal / matched state
+  // is seen before advancing. Reset on category switch — each tab is its
+  // own deck. `skipped` uses row identity (kind + gi) so category changes
+  // don't leak skips across decks.
+  const [deckPos, setDeckPos] = useState(0);
+  const [skipped, setSkipped] = useState<Set<string>>(new Set());
+
   // Deep-link default: /daily with no ?category= → Playful. Never default
   // to a paid category — a free user tapping a push notification would hit
   // the paywall instead of any content. Validate the param against the
@@ -169,6 +178,29 @@ export default function DailyScreen() {
       : interleaveRows(questions, actions);
   }, [wishDoc, qDoc, selectedCat]);
 
+  const rowId = (r: Row): string => `${r.kind}-${r.gi}`;
+
+  // Deck order: not-skipped first (in original interleaved order), then
+  // skipped at the end. Skipped cards come around again after the user
+  // has passed through everything else — matches "skip for now" mental
+  // model.
+  const deck = useMemo<Row[]>(() => {
+    const notSk = rows.filter((r) => !skipped.has(rowId(r)));
+    const sk = rows.filter((r) => skipped.has(rowId(r)));
+    return [...notSk, ...sk];
+  }, [rows, skipped]);
+
+  // Reset deck position + skipped set when the user switches category —
+  // each tab is its own deck experience. Also clamp deckPos if the deck
+  // shrinks (e.g. Firestore subscription trims a row somehow).
+  useEffect(() => {
+    setSkipped(new Set());
+    setDeckPos(0);
+  }, [selectedCat]);
+  useEffect(() => {
+    if (deck.length > 0 && deckPos >= deck.length) setDeckPos(deck.length - 1);
+  }, [deck.length, deckPos]);
+
   // Action helpers — mirror daily-wishes.tsx behavior verbatim so vote
   // and save-to-list races stay covered by the existing atomic transaction
   // in markAddToListAtomic.
@@ -224,6 +256,27 @@ export default function DailyScreen() {
   const questionCount = rows.filter((r) => r.kind === 'question').length;
   const votedCount = rows.filter((r) => r.kind === 'action' && myVote(r.gi) !== null).length;
   const answeredCount = rows.filter((r) => r.kind === 'question' && !!myAnswer(r.gi)).length;
+  const isHandled = (r: Row): boolean =>
+    r.kind === 'action' ? myVote(r.gi) !== null : !!myAnswer(r.gi);
+  const revealedCount = rows.filter((r) => r.kind === 'question' && revealed(r.gi)).length;
+
+  // Partner progress for the current category — used by DoneState to nudge
+  // partner-still-catching-up messaging. Mirrors handled-check logic.
+  const partnerDoneCount = useMemo(() => {
+    if (!partnerId) return 0;
+    let count = 0;
+    const dpSources = DP_SOURCES[selectedCat];
+    wishDoc?.items.forEach((item, gi) => {
+      if (dpSources.includes(item.category) && wishDoc.votes[partnerId]?.[gi] !== undefined) count++;
+    });
+    qDoc?.items.forEach((q, gi) => {
+      if (q.category === selectedCat && qDoc.answers?.[partnerId]?.[String(gi)]) count++;
+    });
+    return count;
+  }, [partnerId, selectedCat, wishDoc, qDoc]);
+
+  const allHandled = rows.length > 0 && rows.every(isHandled);
+  const currentCard = deck[deckPos];
   // Combined completion counter — the split (voted/actionCount +
   // answered/questionCount) read as "you're done" the moment either half
   // hit its own denominator (5/5 shown next to 0/3 felt contradictory to
@@ -328,44 +381,106 @@ export default function DailyScreen() {
           </View>
         )}
 
-        {/* Rows — spread-interleaved via interleaveRows: warmup band of
-            actions then alternating with questions. See helper for pattern. */}
-        {rows.map((row) => (
-          row.kind === 'action'
-            ? <ActionCard
-                key={`a-${row.gi}`}
-                gi={row.gi}
-                text={row.text}
+        {/* Deck view — one card at a time. Rows come from interleaveRows
+            (same order as before), we just render deck[deckPos] instead of
+            the full scroll. Skipped cards live at the end of deck via the
+            deck memo above, so passing through them again is automatic. */}
+        {rows.length === 0 ? (
+          <Text style={styles.emptyText}>Nothing for this category today.</Text>
+        ) : allHandled ? (
+          <DoneState
+            matchesCount={totalMatchCount}
+            revealedCount={revealedCount}
+            totalCount={totalCount}
+            partnerName={partnerName}
+            partnerDoneCount={partnerDoneCount}
+            onOpenMatches={() => setShowMatches(true)}
+          />
+        ) : currentCard ? (
+          <>
+            <Text style={styles.deckCounter}>
+              Card {deckPos + 1} of {deck.length}
+            </Text>
+
+            {currentCard.kind === 'action' ? (
+              <ActionCard
+                key={`a-${currentCard.gi}`}
+                gi={currentCard.gi}
+                text={currentCard.text}
                 partnerName={partnerName}
-                vote={myVote(row.gi)}
-                theyVoted={partnerVoted(row.gi)}
-                didMatch={matched(row.gi)}
-                iAdded={myAddedToList(row.gi)}
-                theyAdded={partnerAddedToList(row.gi)}
-                bothAddedToList={alreadyAdded(row.gi)}
+                vote={myVote(currentCard.gi)}
+                theyVoted={partnerVoted(currentCard.gi)}
+                didMatch={matched(currentCard.gi)}
+                iAdded={myAddedToList(currentCard.gi)}
+                theyAdded={partnerAddedToList(currentCard.gi)}
+                bothAddedToList={alreadyAdded(currentCard.gi)}
                 onVote={handleVote}
                 onAdd={handleAddToList}
-                showInPersonPill={!!couple?.isLongDistance && !!row.inPerson}
+                showInPersonPill={!!couple?.isLongDistance && !!currentCard.inPerson}
               />
-            : <QuestionCard
-                key={`q-${row.gi}`}
-                gi={row.gi}
-                q={row.q}
+            ) : (
+              <QuestionCard
+                key={`q-${currentCard.gi}`}
+                gi={currentCard.gi}
+                q={currentCard.q}
                 partnerName={partnerName}
-                mine={myAnswer(row.gi)}
-                theirs={partnerAnswer(row.gi)}
-                both={revealed(row.gi)}
-                draft={drafts[row.gi] ?? ''}
-                onDraftChange={(t) => setDrafts((d) => ({ ...d, [row.gi]: t }))}
-                onSubmit={() => handleSubmit(row.gi)}
-                onQuickSubmit={(value) => submitValue(row.gi, value)}
+                mine={myAnswer(currentCard.gi)}
+                theirs={partnerAnswer(currentCard.gi)}
+                both={revealed(currentCard.gi)}
+                draft={drafts[currentCard.gi] ?? ''}
+                onDraftChange={(t) => setDrafts((d) => ({ ...d, [currentCard.gi]: t }))}
+                onSubmit={() => handleSubmit(currentCard.gi)}
+                onQuickSubmit={(value) => submitValue(currentCard.gi, value)}
                 cardBg={cfg.color}
               />
-        ))}
+            )}
 
-        {rows.length === 0 && (
-          <Text style={styles.emptyText}>Nothing for this category today.</Text>
-        )}
+            {/* Progress dots — visual position + which cards are handled */}
+            <View style={styles.dotsRow}>
+              {deck.map((r, i) => (
+                <View
+                  key={`dot-${r.kind}-${r.gi}`}
+                  style={[
+                    styles.dot,
+                    isHandled(r) && styles.dotHandled,
+                    i === deckPos && styles.dotActive,
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Skip (always) + Next (enabled after user handles the card).
+                Skip is a soft push to end of deck — comes around again. */}
+            <View style={styles.deckBtnRow}>
+              <TouchableOpacity
+                style={styles.skipBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const id = rowId(currentCard);
+                  setSkipped((s) => new Set([...s, id]));
+                  // deckPos stays; adding to skipped rebuilds `deck` so the
+                  // next unhandled card slides into this position naturally.
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Skip this card for now"
+              >
+                <Text style={styles.skipBtnText}>Skip for now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.nextBtn, !isHandled(currentCard) && styles.nextBtnDisabled]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setDeckPos((p) => Math.min(p + 1, deck.length - 1));
+                }}
+                disabled={!isHandled(currentCard)}
+                accessibilityRole="button"
+                accessibilityLabel="Next card"
+              >
+                <Text style={styles.nextBtnText}>Next →</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : null}
 
         <Text style={styles.refreshHint}>Fresh set every day ✨</Text>
       </ScrollView>
@@ -480,6 +595,53 @@ function pickCategoryPartnerAheadOf(
   // Sort: q behind first, then actions behind. First non-zero wins.
   results.sort((a, b) => b.qBehind - a.qBehind || b.aBehind - a.aBehind);
   return results[0].cat;
+}
+
+function DoneState({
+  matchesCount,
+  revealedCount,
+  totalCount,
+  partnerName,
+  partnerDoneCount,
+  onOpenMatches,
+}: {
+  matchesCount: number;
+  revealedCount: number;
+  totalCount: number;
+  partnerName: string;
+  partnerDoneCount: number;
+  onOpenMatches: () => void;
+}) {
+  const partnerBehind = partnerDoneCount < totalCount;
+  return (
+    <View style={styles.doneWrap}>
+      <Text style={styles.doneEmoji}>✨</Text>
+      <Text style={styles.doneTitle}>Done for today</Text>
+      <View style={styles.doneStatsRow}>
+        <View style={styles.doneStat}>
+          <Text style={styles.doneStatNum}>{matchesCount}</Text>
+          <Text style={styles.doneStatLabel}>{matchesCount === 1 ? 'match' : 'matches'}</Text>
+        </View>
+        <View style={styles.doneStatDivider} />
+        <View style={styles.doneStat}>
+          <Text style={styles.doneStatNum}>{revealedCount}</Text>
+          <Text style={styles.doneStatLabel}>revealed</Text>
+        </View>
+      </View>
+      {partnerBehind ? (
+        <Text style={styles.donePartnerHint}>
+          {partnerName} still has {totalCount - partnerDoneCount} to go
+        </Text>
+      ) : (
+        <Text style={styles.donePartnerHint}>You&apos;re both caught up ✓</Text>
+      )}
+      {matchesCount > 0 && (
+        <TouchableOpacity style={styles.doneMatchesBtn} onPress={onOpenMatches} accessibilityRole="button">
+          <Text style={styles.doneMatchesBtnText}>View all matches ›</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 }
 
 function ActionCard({
@@ -784,6 +946,32 @@ const styles = StyleSheet.create({
 
   refreshHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
   emptyText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', paddingVertical: Spacing.xl },
+
+  // Deck navigation — dots row + skip/next buttons under the current card.
+  deckCounter: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textAlign: 'center', letterSpacing: 0.6, textTransform: 'uppercase' },
+  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: Spacing.sm },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.border },
+  dotHandled: { backgroundColor: Colors.success, opacity: 0.5 },
+  dotActive: { width: 24, backgroundColor: Colors.burgundy, opacity: 1 },
+  deckBtnRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
+  skipBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
+  skipBtnText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+  nextBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
+  nextBtnDisabled: { opacity: 0.35 },
+  nextBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream },
+
+  // Done state — end-of-deck summary shown when every row is handled.
+  doneWrap: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xxl, paddingHorizontal: Spacing.lg },
+  doneEmoji: { fontSize: 56 },
+  doneTitle: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
+  doneStatsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, marginTop: Spacing.sm },
+  doneStat: { alignItems: 'center', gap: 2, minWidth: 80 },
+  doneStatNum: { fontFamily: Fonts.heading, fontSize: 32, color: Colors.text },
+  doneStatLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, letterSpacing: 0.4, textTransform: 'uppercase' },
+  doneStatDivider: { width: 1, height: 40, backgroundColor: Colors.border },
+  donePartnerHint: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
+  doneMatchesBtn: { marginTop: Spacing.lg, backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full },
+  doneMatchesBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   // Matches modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.55)', justifyContent: 'flex-end' },
