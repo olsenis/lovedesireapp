@@ -61,41 +61,52 @@ export const rateLimitedJoin = onCall({ invoker: 'public' }, async (req) => {
   // Find couple by invite code
   const q = await db.collection('couples').where('inviteCode', '==', code).limit(1).get();
   if (q.empty) return { joined: false };
-  const coupleDoc = q.docs[0];
-  const couple = coupleDoc.data();
+  const coupleRef = q.docs[0].ref;
 
-  // Slot accounting — either slot may be empty (initial pairing, or one
-  // partner disconnected and the remaining partner is sharing the code for
-  // re-pair). Fill whichever slot is empty.
-  const slot1Filled = !!couple.partner1Uid;
-  const slot2Filled = !!couple.partner2Uid;
+  // Wrap slot check + write in a transaction so two concurrent joins with
+  // the same code can't both pass the "slot open" check before either
+  // writes. Prior version had a read-then-write gap where an attacker
+  // could race a legitimate joiner and end up in the slot while the
+  // legit joiner's client thought they succeeded (M2 in Aug 2026 review).
+  // Transaction retries automatically on conflict; the losing caller sees
+  // `taken` instead of a silent overwrite.
+  return await db.runTransaction(async (tx) => {
+    const snap = await tx.get(coupleRef);
+    if (!snap.exists) return { joined: false };
+    const couple = snap.data()!;
 
-  // Both slots filled by someone else → couple is full
-  if (slot1Filled && slot2Filled && couple.partner1Uid !== uid && couple.partner2Uid !== uid) {
-    return { joined: false, reason: 'taken' };
-  }
-  // Already a member of this couple
-  if (couple.partner1Uid === uid || couple.partner2Uid === uid) {
-    return { joined: false, reason: 'own' };
-  }
-  // Expiry only matters before the first partner joins (couple is "open" for
-  // initial pairing). Once any partner is in, the code stays usable for
-  // re-pair scenarios after one disconnects, and there is no expiry.
-  if (couple.inviteExpiresAt && couple.inviteExpiresAt < now && !slot1Filled && !slot2Filled) {
-    return { joined: false, reason: 'expired' };
-  }
+    // Slot accounting — either slot may be empty (initial pairing, or one
+    // partner disconnected and the remaining partner is sharing the code for
+    // re-pair). Fill whichever slot is empty.
+    const slot1Filled = !!couple.partner1Uid;
+    const slot2Filled = !!couple.partner2Uid;
 
-  // Fill the empty slot — prefer partner2 to preserve original creator's
-  // partner1 position when this is the initial pairing.
-  const updates = slot2Filled ? { partner1Uid: uid } : { partner2Uid: uid };
-  // NOTE: we no longer clear inviteCode here. Clearing on first join broke
-  // every re-pair scenario after a disconnect because the code lookup would
-  // miss. The code now stays active throughout the couple's lifetime;
-  // disconnectFromCouple regenerates it so old codes can't be reused by
-  // anyone who only had the original code.
-  await coupleDoc.ref.update(updates);
+    // Both slots filled by someone else → couple is full
+    if (slot1Filled && slot2Filled && couple.partner1Uid !== uid && couple.partner2Uid !== uid) {
+      return { joined: false, reason: 'taken' };
+    }
+    // Already a member of this couple
+    if (couple.partner1Uid === uid || couple.partner2Uid === uid) {
+      return { joined: false, reason: 'own' };
+    }
+    // Expiry only matters before the first partner joins (couple is "open" for
+    // initial pairing). Once any partner is in, the code stays usable for
+    // re-pair scenarios after one disconnects, and there is no expiry.
+    if (couple.inviteExpiresAt && couple.inviteExpiresAt < now && !slot1Filled && !slot2Filled) {
+      return { joined: false, reason: 'expired' };
+    }
 
-  return { joined: true, coupleId: coupleDoc.id };
+    // Fill the empty slot — prefer partner2 to preserve original creator's
+    // partner1 position when this is the initial pairing.
+    // NOTE: we no longer clear inviteCode here. Clearing on first join broke
+    // every re-pair scenario after a disconnect because the code lookup would
+    // miss. The code now stays active throughout the couple's lifetime;
+    // disconnectFromCouple regenerates it so old codes can't be reused by
+    // anyone who only had the original code.
+    const updates = slot2Filled ? { partner1Uid: uid } : { partner2Uid: uid };
+    tx.update(coupleRef, updates);
+    return { joined: true, coupleId: coupleRef.id };
+  });
 });
 
 // ─── Tier 1.6: GDPR delete-user cascade ─────────────────────────────────────
@@ -256,12 +267,30 @@ export const cleanupExpiredFlashes = onSchedule('every 60 minutes', async () => 
 
     for (const flashDoc of expired.docs) {
       const data = flashDoc.data();
-      // Best-effort delete the media file from Storage
+      // Best-effort delete the media file from Storage.
+      //
+      // SECURITY: mediaURL is client-written and could point anywhere in the
+      // bucket (any couple's photos, any user's profile.jpg). Because this
+      // cleanup runs with admin SDK — which bypasses Storage rules — we MUST
+      // verify the extracted path lives under this couple's flashes prefix
+      // before deleting. Without the guard, a paired user could write a
+      // flash to their own couple with `mediaURL` pointing at a victim's
+      // moment / memory / profile photo and cause cross-couple data loss
+      // once the cleanup fires (H1 in the Aug 2026 security review).
       const url = data.mediaURL as string | undefined;
       if (url) {
         try {
           const path = extractStoragePath(url);
-          if (path) await storage.file(path).delete().catch(() => {});
+          const allowedPrefix = `couples/${coupleDoc.id}/flashes/`;
+          if (path && path.startsWith(allowedPrefix)) {
+            await storage.file(path).delete().catch(() => {});
+          } else if (path) {
+            // Log so we can spot exploit attempts. The flash doc still gets
+            // deleted below — no reason to retain a doc that couldn't be
+            // cleaned up correctly — but we intentionally do NOT delete the
+            // out-of-prefix Storage path.
+            console.warn(`[cleanupExpiredFlashes] Skipped path outside couple prefix: flash=${flashDoc.id} couple=${coupleDoc.id} path=${path}`);
+          }
         } catch {
           // ignore
         }

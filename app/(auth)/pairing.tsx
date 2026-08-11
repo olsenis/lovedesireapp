@@ -9,6 +9,7 @@ import {
   Platform,
   ScrollView,
   KeyboardAvoidingView,
+  Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -34,6 +35,13 @@ export default function PairingScreen() {
   const [joinError, setJoinError] = useState('');
   const [copied, setCopied] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  // Confirmation gate for QR-scanned codes. Scans used to fire joinWithCode
+  // immediately — a malicious QR sticker or DM'd screenshot would silently
+  // pair the victim to an attacker's couple. Now we hold the code in state
+  // and require a tap-to-confirm before joining (L2 in Aug 2026 security
+  // review). Manual code entry via TextInput still commits on the Join
+  // button — no gate needed there since the user typed the code themselves.
+  const [pendingScannedCode, setPendingScannedCode] = useState<string | null>(null);
   // The in-flight createCouple promise (or verify-existing promise). Skip
   // button awaits this so slow networks don't route the user off the pairing
   // screen while the couple doc is still being written. Previously we slept
@@ -131,8 +139,17 @@ export default function PairingScreen() {
     await joinWithCode(partnerCode);
   };
 
-  const handleScannedCode = async (code: string) => {
+  const handleScannedCode = (code: string) => {
+    // Just close scanner + stage the code. Actual join happens after user
+    // confirms in the modal below. See pendingScannedCode comment above.
     setScannerOpen(false);
+    setPendingScannedCode(code);
+  };
+
+  const confirmScannedCode = async () => {
+    if (!pendingScannedCode) return;
+    const code = pendingScannedCode;
+    setPendingScannedCode(null);
     setPartnerCode(code);
     await joinWithCode(code);
   };
@@ -226,6 +243,37 @@ export default function PairingScreen() {
         onClose={() => setScannerOpen(false)}
         onCode={handleScannedCode}
       />
+
+      {/* Confirmation gate for QR-scanned codes. Prevents a hostile QR sticker
+          or DM'd screenshot from silently pairing the victim to an attacker's
+          couple. */}
+      <Modal visible={!!pendingScannedCode} transparent animationType="fade" onRequestClose={() => setPendingScannedCode(null)}>
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>Join couple with this code?</Text>
+            <Text style={styles.confirmCode}>{pendingScannedCode}</Text>
+            <Text style={styles.confirmHint}>
+              Only accept if this code came from someone you trust. Joining shares your name, photo, and mood with them.
+            </Text>
+            <View style={styles.confirmBtns}>
+              <TouchableOpacity
+                style={styles.confirmCancelBtn}
+                onPress={() => setPendingScannedCode(null)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmJoinBtn}
+                onPress={confirmScannedCode}
+                accessibilityRole="button"
+              >
+                <Text style={styles.confirmJoinText}>Join</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -348,4 +396,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.burgundy,
   },
+  // QR confirmation modal — matches the visual language of other confirms
+  // in the app (rgba burgundy overlay, cream card, burgundy primary + muted
+  // ghost secondary).
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(61,26,36,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  confirmCard: {
+    backgroundColor: Colors.cream,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 380,
+    gap: Spacing.md,
+    ...Shadow.md,
+  },
+  confirmTitle: {
+    fontFamily: Fonts.heading,
+    fontSize: 22,
+    color: Colors.burgundy,
+    textAlign: 'center',
+  },
+  confirmCode: {
+    fontFamily: Fonts.heading,
+    fontSize: 32,
+    color: Colors.burgundy,
+    letterSpacing: 8,
+    textAlign: 'center',
+    marginVertical: Spacing.sm,
+  },
+  confirmHint: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.muted,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+  confirmBtns: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  confirmCancelBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  confirmCancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
+  confirmJoinBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderRadius: Radius.full,
+    backgroundColor: Colors.burgundy,
+  },
+  confirmJoinText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 });

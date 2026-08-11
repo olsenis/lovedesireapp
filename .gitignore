@@ -49,9 +49,17 @@ sex-ed/drafts/
 # Repo-root transcript/ folder used by the developer as a raw research
 # stash — also copyright-sensitive, keep local only.
 transcript/
+# Personal study notes distilled from transcript/ — private, not app content.
+learning/
 
 # Marketing site (web/) build artifacts + local dependencies.
 # Source under web/src/ IS committed; only compiled output stays local.
 web/dist/
 web/node_modules/
 web/.astro/
+
+# Cloud Functions build output — TypeScript compiled to lib/ by the
+# predeploy hook in firebase.json. Never commit these; a stale committed
+# lib/ would ship out-of-date function code even if src/ was fresh.
+functions/lib/
+functions/node_modules/

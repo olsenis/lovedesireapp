@@ -786,6 +786,79 @@ If only one signal fires, wait another 4 weeks and revisit. If neither fires by 
 
 ---
 
+## Cloud Logging PII scrub + retention policy (raised August 2026)
+
+### What
+
+`deleteUserCascade` in [functions/src/index.ts](functions/src/index.ts) logs `uid`, `otherUid`, and `coupleId` in plaintext at multiple points. Cloud Logging default retention is 30 days for regular logs, 400 days for admin activity — after a user requests GDPR Article 17 erasure, those log entries still contain identifiers linking them to a couple.
+
+### Why deferred
+
+Log entries don't contain content (mood notes, message bodies, photos) — only identifiers + operational events. GDPR Article 17 has a "system integrity" exception commonly interpreted to cover application logs used for security / audit. Not a blocking issue at MVP scale, but should be tightened before the app has any real user base or first legal audit.
+
+### Fix approach (for revisit)
+
+Two steps:
+
+1. Replace `uid` / `coupleId` in `console.log` / `console.warn` calls with a stable one-way hash: `sha256(uid).slice(0, 12)`. Same input always produces same hash so ops debugging still works ("all events for this hash come from the same account") but the reverse mapping needs Firestore access — a compromised logs.viewer role no longer leaks user identities.
+
+2. Document in Privacy Policy that system logs are retained up to 30 days for regular activity and excluded from Article 17 erasure requests. Legal safe harbor.
+
+### Decision criteria for revisiting
+
+- First GDPR erasure request received
+- Any external security audit or legal review
+- App crosses ~1000 active users (compliance scrutiny scales with reach)
+
+### Effort estimate
+
+- Hash utility + swap logging sites: **~20 minutes**
+- Privacy Policy paragraph: **~10 minutes**
+- **Total: ~30 minutes**
+
+---
+
+## Firebase App Check (raised August 2026)
+
+### What
+
+Wire the Firebase App Check SDK with Play Integrity (Android) + DeviceCheck / App Attest (iOS) providers. App Check adds a cryptographic device-attestation token to every Firestore / Storage / Cloud Functions request, which the backend verifies before executing. Blocks requests from spoofed clients that pass Firebase Auth but don't come from a genuine app install.
+
+### Why deferred
+
+Not a security breach — Firestore rules + Cloud Functions auth checks are strong, so a spoofed client can still only do what a real client's user could. App Check is primarily a **cost-abuse defense**: without it, someone could stand up a bot farm that opens real Firebase Auth accounts and hammers Firestore / Storage from a custom client, running up our bill. At current MVP scale, cost surface is negligible.
+
+Also has real-device testing quirks (debug providers, CI integration, Play Store review with attestation enabled) that add friction — not worth spending pre-launch cycles on.
+
+### Fix approach (for revisit)
+
+- Install `expo-firebase-recaptcha` for the web debug provider fallback, `@react-native-firebase/app-check` for native
+- Register both provider keys in Firebase Console (Play Integrity for Android, App Attest for iOS)
+- `initializeAppCheck(app, { provider, isTokenAutoRefreshEnabled: true })` at Firebase init in `services/firebase.ts`
+- Debug provider for local dev + Expo Go — real providers only work in EAS-built binaries
+- Enable Enforcement in Firebase Console per-service after ~1 week of unenforced monitoring to confirm no legitimate requests fail
+
+### Decision criteria for revisiting
+
+- Firebase costs approach the free tier ceiling in a suspicious way (many writes from one uid, unusually high storage reads)
+- Any public news of scraping or bot activity against a similar app
+- After ~10k users, or 30 days post-launch, whichever comes first
+
+### Risks
+
+- Debug provider requires a debug secret that must be baked into non-production builds — leak of the secret means anyone can bypass App Check in "debug mode"
+- Play Integrity fails on rooted Android devices — real user segment (small but non-zero) will be excluded
+
+### Effort estimate
+
+- SDK integration + init: **~1h**
+- Provider registration + Firebase Console config: **~30 min**
+- Real-device testing on both platforms + debug provider setup: **~1h**
+- Monitoring + gradual enforcement rollout: **~30 min ongoing**
+- **Total: ~2-3h focused work + gradual enforcement**
+
+---
+
 ## Template for future entries
 
 ```
