@@ -13,6 +13,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 const TYPE_COLORS = { home: '#FFF9C4', out: '#E8F5E9', adventure: '#E3F2FD' };
 const TYPE_LABELS = { home: 'At Home 🏠', out: 'Going Out ✨', adventure: 'Adventure 🌟' };
@@ -92,6 +93,7 @@ export default function RouletteScreen() {
       setResult(picked);
       setSpinning(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      trackEvent('roulette_spun');
     });
   };
 

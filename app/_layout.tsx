@@ -19,6 +19,7 @@ import { useAuth } from '../hooks/useAuth';
 import { createUserProfile } from '../services/authService';
 import { getConsent, confirmConsent } from '../services/consentService';
 import { getOnboardingState } from '../services/onboardingService';
+import { markCoupleActive } from '../services/statsService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -180,6 +181,14 @@ export default function RootLayout() {
       // Intl may be unavailable in rare environments — silent fail
     }
   }, [loading, user, profile?.timezone]);
+
+  // Mark this couple as active in the current month. Fire-and-forget,
+  // idempotent (same doc written every session, merges silently). Powers
+  // the admin MAU counter without leaking per-couple usage patterns.
+  useEffect(() => {
+    if (loading || !user || !profile?.coupleId) return;
+    markCoupleActive(profile.coupleId);
+  }, [loading, user, profile?.coupleId]);
 
   if (!fontsLoaded && !fontError) return null;
 

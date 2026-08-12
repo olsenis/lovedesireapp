@@ -1,5 +1,6 @@
 import { collection, doc, addDoc, updateDoc, onSnapshot, query, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export interface SparkEntry {
   id: string;
@@ -45,6 +46,7 @@ export async function sendSpark(
     createdAt: Date.now(),
     seen: false,
   });
+  trackEvent('spark_sent');
 }
 
 export async function markSparkSeen(coupleId: string, sparkId: string): Promise<void> {

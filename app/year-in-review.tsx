@@ -8,6 +8,7 @@ import { aggregateYearSummary, YearSummary } from '../services/yearInReviewServi
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -33,6 +34,7 @@ export default function YearInReviewScreen() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  useTrackScreen('year_in_review');
 
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;

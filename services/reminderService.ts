@@ -2,6 +2,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, Unsubscribe 
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export interface FlirtReminder {
   id: string;
@@ -40,6 +41,7 @@ export async function addReminder(
 ): Promise<FlirtReminder> {
   const createdAt = Date.now();
   const ref = await addDoc(collection(db, 'couples', coupleId, 'reminders'), { ...reminder, createdAt });
+  trackEvent('reminder_created');
   return { ...reminder, id: ref.id, createdAt };
 }
 

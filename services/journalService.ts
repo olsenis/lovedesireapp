@@ -11,6 +11,7 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export interface JournalEntry {
   id: string;
@@ -49,6 +50,7 @@ export async function addJournalEntry(
     createdAt: Date.now(),
     ...(mood ? { mood } : {}),
   });
+  trackEvent('journal_entry_added');
 }
 
 export async function updateJournalEntry(

@@ -15,6 +15,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 export default function FantasyWishesScreen() {
   const { user, profile } = useAuth();
@@ -27,6 +28,7 @@ export default function FantasyWishesScreen() {
   // subscribed user cannot bypass the paywall via deep link.
   useEffect(() => {
     if (!subLoading && !isSubscribed) {
+      trackEvent('upgrade_cta_tapped');
       router.replace('/upgrade' as any);
     }
   }, [subLoading, isSubscribed]);

@@ -1,6 +1,7 @@
 import { doc, setDoc, collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { BlueprintType } from '../constants/content';
+import { trackEvent } from './statsService';
 
 export interface BlueprintResult {
   type: BlueprintType;
@@ -39,4 +40,5 @@ export async function saveBlueprintResult(
     // Fallback if coupleId not yet available
     await setDoc(doc(db, 'users', uid, 'private', 'blueprint'), data, { merge: true });
   }
+  trackEvent('blueprint_completed');
 }

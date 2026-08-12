@@ -12,6 +12,7 @@ import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 // Birthday is stored as 'DD.MM' (no year) — derive from a Date.
 function dateToBirthdayString(d: Date): string {
@@ -37,6 +38,7 @@ export default function OnboardingTourScreen() {
   const [nextVisit, setNextVisit] = useState<Date | null>(null);
   const [birthday, setBirthday] = useState<Date | null>(null);
   const [moodPicked, setMoodPicked] = useState<MoodEmoji | null>(null);
+  useTrackScreen('onboarding_tour');
 
   // Mood gating mirrors home screen — adult moods are paid-only
   const ADULT_MOODS: MoodEmoji[] = ['😈', '🥵'];

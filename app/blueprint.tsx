@@ -17,6 +17,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 
@@ -30,6 +31,7 @@ export default function BlueprintScreen() {
   // routes directly to /blueprint without checking subscription.
   useEffect(() => {
     if (!subLoading && !isSubscribed) {
+      trackEvent('upgrade_cta_tapped');
       router.replace('/upgrade' as any);
     }
   }, [subLoading, isSubscribed]);

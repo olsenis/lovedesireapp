@@ -16,6 +16,8 @@ import { CHALLENGE_PROGRAMS, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 const BASE_PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire', 'desire'];
 // Programs that require a paid subscription. Free users see them with 🔒
@@ -39,6 +41,7 @@ export default function ChallengeScreen() {
   const [editDay, setEditDay] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const help = useHelp('challenge');
+  useTrackScreen('challenge');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -58,6 +61,7 @@ export default function ChallengeScreen() {
     // Paywall: Fire + Desire are premium-only per CLAUDE.md free/paid split.
     // Free users see the card with 🔒 and get sent to /upgrade if they tap it.
     if (PAID_PROGRAMS.has(program) && !isSubscribed) {
+      trackEvent('upgrade_cta_tapped');
       router.push('/upgrade' as any);
       return;
     }

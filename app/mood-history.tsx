@@ -11,6 +11,7 @@ import { unlockMoodNotes } from '../services/noteService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const MOOD_COLORS: Partial<Record<MoodEmoji, string>> = {
   '😍': '#FCE4EC', '🥰': '#FCE4EC', '😊': '#E8F5E9', '😌': '#E3F2FD',
@@ -48,6 +49,7 @@ export default function MoodHistoryScreen() {
   const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [tab, setTab] = useState<'mine' | 'together'>('mine');
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
+  useTrackScreen('mood_history');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';

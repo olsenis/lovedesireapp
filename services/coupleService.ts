@@ -12,6 +12,7 @@ import {
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as Crypto from 'expo-crypto';
 import app, { db } from './firebase';
+import { trackEvent } from './statsService';
 
 const functions = getFunctions(app);
 
@@ -84,6 +85,7 @@ export async function joinCouple(inviteCode: string, joinerUid: string): Promise
     }
     const snap = await getDoc(doc(db, 'couples', result.data.coupleId));
     if (!snap.exists()) return { couple: null, reason: 'not_found' };
+    trackEvent('couple_paired');
     return { couple: snap.data() as Couple };
   } catch (e: any) {
     console.error('[joinCouple] error:', e);

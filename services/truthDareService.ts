@@ -1,6 +1,7 @@
 import { doc, setDoc, updateDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DareLevel } from '../constants/content';
+import { trackEvent } from './statsService';
 
 export type TDPhase = 'picking' | 'answering' | 'done';
 
@@ -55,6 +56,7 @@ export async function submitTruthAnswer(coupleId: string, uid: string, answer: s
     'card.answeredBy': uid,
     phase: 'done',
   });
+  trackEvent('truth_answered');
 }
 
 export async function confirmDare(coupleId: string, uid: string, _session: TruthDareSession): Promise<void> {
@@ -73,6 +75,7 @@ export async function confirmDare(coupleId: string, uid: string, _session: Truth
       ...(bothConfirmed ? { phase: 'done' } : {}),
     });
   });
+  trackEvent('dare_confirmed');
 }
 
 // Score goes to the CHALLENGED person (not the picker)

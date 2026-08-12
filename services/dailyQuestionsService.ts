@@ -1,6 +1,7 @@
 import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
+import { trackEvent } from './statsService';
 
 export interface DailyQuestionDoc {
   date: string;
@@ -145,6 +146,7 @@ export async function submitAnswer(
   await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
     [`answers.${uid}.${globalIndex}`]: answer,
   });
+  trackEvent('daily_question_answered');
 }
 
 export function bothAnswered(

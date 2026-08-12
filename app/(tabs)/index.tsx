@@ -1010,7 +1010,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ))}
             {!isSubscribed && ADULT_MOODS.map((emoji) => (
-              <TouchableOpacity key={emoji} style={[styles.moodBtn, { opacity: 0.4 }]} onPress={() => router.push('/upgrade' as any)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Locked mood, upgrade to unlock">
+              <TouchableOpacity key={emoji} style={[styles.moodBtn, { opacity: 0.4 }]} onPress={() => { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); }} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Locked mood, upgrade to unlock">
                 <Text style={styles.moodEmoji}>{emoji}</Text>
                 <Text style={styles.moodLabel}>🔒</Text>
               </TouchableOpacity>

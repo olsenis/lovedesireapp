@@ -2,6 +2,7 @@ import { doc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, order
 import { db } from './firebase';
 import { WYRLevel, WYRQuestion } from '../constants/content';
 import { TodoCategory } from './todoService';
+import { trackEvent } from './statsService';
 
 export type WYRAnswer = 'a' | 'b';
 
@@ -54,6 +55,7 @@ export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer
       ...(bothAnswered ? { revealed: true } : {}),
     });
   });
+  trackEvent('wyr_answered');
 }
 
 // Transaction so two rapid "Next question" taps (partner and me at reveal
@@ -61,23 +63,25 @@ export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer
 // to score.total from the same stale snapshot.
 export async function nextWYRQuestion(coupleId: string, _session: WYRSession, uids: [string, string]): Promise<void> {
   const ref = doc(db, 'couples', coupleId, 'wyr', 'active');
-  await runTransaction(db, async (tx) => {
+  const matched = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
-    if (!snap.exists()) return;
+    if (!snap.exists()) return false;
     const live = snap.data() as WYRSession;
     // Idempotency guard: if answers already cleared by the other partner, this
     // is a duplicate advance — no-op.
-    if (Object.keys(live.answers ?? {}).length === 0) return;
-    const matched = live.answers[uids[0]] === live.answers[uids[1]];
+    if (Object.keys(live.answers ?? {}).length === 0) return false;
+    const wasMatch = live.answers[uids[0]] === live.answers[uids[1]];
     tx.update(ref, {
       questionIndex: live.questionIndex + 1,
       answers: {},
       revealed: false,
       savedToList: false,
       'score.total': live.score.total + 1,
-      'score.match': live.score.match + (matched ? 1 : 0),
+      'score.match': live.score.match + (wasMatch ? 1 : 0),
     });
+    return wasMatch;
   });
+  if (matched) trackEvent('wyr_match');
 }
 
 // Save the current match's winning option to the Together List. Atomic:

@@ -1,6 +1,7 @@
 import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DAILY_WISH_ITEMS, DailyWishItem, DailyWishCategory } from '../constants/content';
+import { trackEvent } from './statsService';
 
 export type DailyVote = 'yes' | 'no';
 
@@ -155,6 +156,7 @@ export async function voteDailyWish(coupleId: string, uid: string, globalIndex: 
   await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', date), {
     [`votes.${uid}.${globalIndex}`]: vote,
   });
+  trackEvent('daily_wish_voted');
 }
 
 // Mark that this user wants to add this match to the Together List
@@ -176,7 +178,7 @@ export async function markAddToListAtomic(
 ): Promise<{ completedNow: boolean }> {
   const date = todayKey();
   const ref = doc(db, 'couples', coupleId, 'dailyWishes', date);
-  return runTransaction(db, async (tx) => {
+  const result = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) return { completedNow: false };
     const data = snap.data() as DailyWishDoc;
@@ -186,6 +188,8 @@ export async function markAddToListAtomic(
     tx.update(ref, { [`addToList.${globalIndex}`]: newList });
     return { completedNow: newList.includes(partnerId) };
   });
+  if (result.completedNow) trackEvent('daily_wish_match');
+  return result;
 }
 
 export function isMatch(doc: DailyWishDoc, index: number, uid1: string, uid2: string): boolean {

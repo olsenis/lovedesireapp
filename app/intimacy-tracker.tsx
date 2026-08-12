@@ -15,6 +15,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 
@@ -84,6 +85,7 @@ export default function IntimacyTrackerScreen() {
   // points (nudges, deep links) could bypass without this guard.
   useEffect(() => {
     if (!subLoading && !isSubscribed) {
+      trackEvent('upgrade_cta_tapped');
       router.replace('/upgrade' as any);
     }
   }, [subLoading, isSubscribed]);

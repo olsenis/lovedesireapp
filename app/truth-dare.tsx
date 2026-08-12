@@ -25,6 +25,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 const LEVELS: DareLevel[] = ['sweet', 'flirty', 'spicy'];
 
@@ -244,7 +245,7 @@ export default function TruthDareScreen() {
   // still doing meaningful work as a "pick + reveal" moment, not fake theater.
   const handleSoloTap = (kind: 'truth' | 'dare') => {
     if (soloSpinning) return;
-    if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
+    if (soloLevel === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
     const pool = kind === 'truth'
       ? TRUTHS.filter(t => t.level === soloLevel)
       : DARES.filter(d => d.level === soloLevel);
@@ -284,7 +285,7 @@ export default function TruthDareScreen() {
   // is purely anticipation/drama.
   const handleSurprise = () => {
     if (soloSpinning) return;
-    if (soloLevel === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; }
+    if (soloLevel === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
     const truthPool = TRUTHS.filter(t => t.level === soloLevel);
     const darePool = DARES.filter(d => d.level === soloLevel);
     const mixed = [
@@ -379,7 +380,7 @@ export default function TruthDareScreen() {
                   <TouchableOpacity
                     key={level}
                     style={[styles.soloLevelPill, active && styles.soloLevelPillActive, locked && styles.soloLevelPillLocked]}
-                    onPress={() => locked ? router.push('/upgrade' as any) : setSoloLevel(level)}
+                    onPress={() => locked ? (trackEvent('upgrade_cta_tapped'), router.push('/upgrade' as any)) : setSoloLevel(level)}
                     activeOpacity={0.8}
                     accessibilityRole="button"
                     accessibilityLabel={`Intensity: ${c.label}${locked ? ', premium' : ''}`}>
@@ -471,7 +472,7 @@ export default function TruthDareScreen() {
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             return (
-              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
@@ -531,7 +532,7 @@ export default function TruthDareScreen() {
                 key={level}
                 style={[styles.levelTab, active && { backgroundColor: c.color }, locked && { opacity: 0.55 }]}
                 onPress={async () => {
-                  if (locked) { router.push('/upgrade' as any); return; }
+                  if (locked) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
                   if (coupleId) { setDrawnCard(null); await startTruthDare(coupleId, uid, level); }
                 }}
                 activeOpacity={0.8}

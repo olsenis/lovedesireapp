@@ -24,6 +24,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 // The merged screen uses the QUESTION_CATEGORY_CONFIG naming (playful /
 // deep / spicy) as the surface identity — Daily Picks' original sweet /
@@ -391,7 +392,7 @@ export default function DailyScreen() {
               style={[styles.catTab, active && { backgroundColor: c.color }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (locked) { router.push('/upgrade' as any); return; }
+                if (locked) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
                 setAutoSelected(true); // Any manual tap disables auto-pick
                 setSelectedCat(cat);
                 scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -461,7 +462,7 @@ export default function DailyScreen() {
             isSubscribed={isSubscribed}
             bonusDrawsLeft={bonusDrawsLeft}
             onDrawMore={handleDrawMore}
-            onUpsell={() => router.push('/upgrade' as any)}
+            onUpsell={() => { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); }}
             onOpenMatches={() => setShowMatches(true)}
           />
         ) : currentCard ? (

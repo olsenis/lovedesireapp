@@ -1,5 +1,6 @@
 import { doc, setDoc, updateDoc, onSnapshot, query, collection, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export interface MomentPhoto {
   photoURL: string;
@@ -55,4 +56,5 @@ export async function submitMomentPhoto(
     },
     { merge: true },
   );
+  trackEvent('moment_added');
 }

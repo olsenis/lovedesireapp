@@ -1,5 +1,6 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export type FWVote = 'yes' | 'maybe' | 'no';
 
@@ -50,6 +51,7 @@ export async function voteOnFantasyWish(
   const ref = doc(db, 'couples', coupleId, 'fantasyWishes', itemId);
   if (vote !== 'yes' || !partnerId) {
     await updateDoc(ref, { [`votes.${uid}`]: vote });
+    trackEvent('fantasy_wish_voted');
     return;
   }
   await runTransaction(db, async (tx) => {
@@ -64,6 +66,7 @@ export async function voteOnFantasyWish(
       ...(willBeNewMatch ? { matchedAt: Date.now() } : {}),
     });
   });
+  trackEvent('fantasy_wish_voted');
 }
 
 export function isFWMatch(item: FantasyWishesItem, uid1: string, uid2: string): boolean {
@@ -83,7 +86,7 @@ export async function markFWAddToListAtomic(
   itemId: string,
 ): Promise<{ completedNow: boolean }> {
   const ref = doc(db, 'couples', coupleId, 'fantasyWishes', itemId);
-  return runTransaction(db, async (tx) => {
+  const result = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) return { completedNow: false };
     const data = snap.data() as FantasyWishesItem;
@@ -93,6 +96,8 @@ export async function markFWAddToListAtomic(
     tx.update(ref, { addToList: newList });
     return { completedNow: !!partnerId && newList.includes(partnerId) };
   });
+  if (result.completedNow) trackEvent('fantasy_wish_match');
+  return result;
 }
 
 export function fwBothWantToAdd(item: FantasyWishesItem, uid1: string, uid2: string): boolean {

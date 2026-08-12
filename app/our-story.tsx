@@ -18,6 +18,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 function formatYear(ts: number): string {
   return String(new Date(ts).getFullYear());
@@ -40,6 +41,7 @@ export default function OurStoryScreen() {
   const [emoji, setEmoji] = useState('👋');
   const [date, setDate] = useState<Date | null>(null);
   const [note, setNote] = useState('');
+  useTrackScreen('our_story');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';

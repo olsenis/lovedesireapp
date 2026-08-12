@@ -9,6 +9,7 @@ import {
 import { doc, setDoc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { generateInviteCode } from './coupleService';
+import { trackEvent } from './statsService';
 
 const INVITE_TTL_MS = 7 * 86400000;
 
@@ -42,6 +43,7 @@ export async function register(email: string, password: string): Promise<User> {
     name: '',
     createdAt: Date.now(),
   });
+  trackEvent('user_registered');
   // Send email verification (fire and forget — don't block signup if email fails)
   sendEmailVerification(credential.user).catch(() => {});
   return credential.user;
@@ -113,6 +115,7 @@ export async function disconnectFromCouple(uid: string): Promise<void> {
     coupleId: deleteField(),
     inviteCode: deleteField(),
   });
+  trackEvent('partner_disconnected');
 }
 
 export async function createUserProfile(

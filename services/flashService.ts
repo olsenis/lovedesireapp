@@ -1,5 +1,6 @@
 import { collection, doc, addDoc, updateDoc, onSnapshot, query, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export interface FlashEntry {
   id: string;
@@ -47,6 +48,7 @@ export async function sendFlash(
     expiresAt: now + 86400000,
     viewed: false,
   });
+  trackEvent('flash_sent');
 }
 
 export async function markFlashViewed(coupleId: string, flashId: string): Promise<void> {

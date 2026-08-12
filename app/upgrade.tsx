@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 // Ordered lead-first: the three load-bearing paid features (Fantasy Wishes,
 // Sensate Focus, Fire+Desire challenges) go up top per Aug 2026 review —
@@ -19,6 +20,7 @@ const FEATURES = [
 ];
 
 export default function UpgradeScreen() {
+  useTrackScreen('upgrade');
   return (
     <View style={styles.screen}>
       <View style={styles.header}>

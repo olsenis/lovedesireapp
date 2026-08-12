@@ -1,5 +1,6 @@
 import { doc, setDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export interface StageProgress {
   count: number;
@@ -56,7 +57,7 @@ export async function completeStage(
   const ref = doc(db, 'couples', coupleId, 'sensate', 'progress');
   const stageKey = `stage${stageId}` as 'stage1' | 'stage2' | 'stage3';
   const today = new Date().toISOString().slice(0, 10);
-  return runTransaction(db, async (tx) => {
+  const result = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     const live: SensateProgress = snap.exists() ? (snap.data() as SensateProgress) : empty();
     // Mark stage as completed in the current cycle. Falsy default handles
@@ -82,4 +83,6 @@ export async function completeStage(
     tx.set(ref, next);
     return { cycleJustCompleted: allDone, cyclesCompleted };
   });
+  if (result.cycleJustCompleted) trackEvent('sensate_cycle_completed');
+  return result;
 }

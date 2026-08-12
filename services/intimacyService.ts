@@ -1,5 +1,6 @@
 import { collection, doc, addDoc, deleteDoc, onSnapshot, query, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export type IntimacyLocation =
   | 'bedroom' | 'living_room' | 'bathroom_shower' | 'kitchen' | 'other_home'
@@ -93,6 +94,7 @@ export async function addIntimacyEntry(
     loggedBy: uid,
     createdAt: createdAt ?? Date.now(),
   });
+  trackEvent('intimacy_log_added');
   return ref.id;
 }
 

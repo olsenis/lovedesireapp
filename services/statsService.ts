@@ -38,3 +38,18 @@ export async function trackEvent(name: string): Promise<void> {
 export async function trackScreen(name: string): Promise<void> {
   return trackEvent(`screen_${name}`);
 }
+
+// Mark a couple as active in the current month. Enables MAU / WAU counts
+// without leaking per-couple usage patterns — admin dashboard just counts
+// docs, never inspects individual coupleId activity. Idempotent by design:
+// same doc written every session, merges silently, aggregate is just a
+// count query. Fire-and-forget with silent catch.
+export async function markCoupleActive(coupleId: string): Promise<void> {
+  if (!coupleId) return;
+  try {
+    const ref = doc(db, 'activeCouples', currentMonthKey(), 'couples', coupleId);
+    await setDoc(ref, { active: true }, { merge: true });
+  } catch {
+    // Silent — telemetry must never affect app behaviour.
+  }
+}

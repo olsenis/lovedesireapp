@@ -1,5 +1,6 @@
 import { collection, addDoc, deleteDoc, doc, onSnapshot, orderBy, query, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
 
 export interface ImportantDate {
   id: string;
@@ -34,6 +35,7 @@ export async function addImportantDate(
     createdAt: Date.now(),
     ...(secret ? { secret: true } : {}),
   });
+  trackEvent('countdown_added');
 }
 
 export async function deleteImportantDate(coupleId: string, dateId: string): Promise<void> {

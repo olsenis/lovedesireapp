@@ -1,6 +1,7 @@
 import { doc, setDoc, updateDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { ChallengeProgram } from '../constants/content';
+import { trackEvent } from './statsService';
 
 export interface ChallengeState {
   program: ChallengeProgram | null;
@@ -41,6 +42,7 @@ export async function startChallenge(coupleId: string, program: ChallengeProgram
 // Move from setup to active, anyone can trigger this
 export async function activateChallenge(coupleId: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'challenge', 'active'), { phase: 'active' });
+  trackEvent('challenge_started');
 }
 
 // Edit a day's task during setup phase. Uses a transaction so two rapid
@@ -93,6 +95,7 @@ export async function markDayComplete(coupleId: string, uid: string, day: number
       currentDay: nextDay,
     });
   });
+  trackEvent('challenge_day_completed');
 }
 
 // Veto skips the current day for both partners automatically.

@@ -68,6 +68,7 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 export default function FlashesScreen() {
   const { user, profile } = useAuth();
@@ -85,6 +86,7 @@ export default function FlashesScreen() {
   const [tick, setTick] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  useTrackScreen('flashes');
 
   useEffect(() => {
     if (!coupleId) return;

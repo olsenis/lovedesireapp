@@ -10,6 +10,7 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 // Both options share the same soft blush so neither draws the eye more
 // than the other. Previously A was pink and B was cream, which biased
@@ -27,6 +28,7 @@ export default function QuizScreen() {
   // breakdown, so we hide the bars and show a plain result card.
   const [viewingSaved, setViewingSaved] = useState(false);
   const help = useHelp('love-language');
+  useTrackScreen('love_language_quiz');
 
   // Auto-restore should fire ONCE when the profile arrives on mount.
   // Without this guard, pressing "Retake quiz" would immediately snap

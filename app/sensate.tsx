@@ -103,6 +103,7 @@ export default function SensateScreen() {
   // could bypass the paywall for non-subscribed users.
   useEffect(() => {
     if (!subLoading && !isSubscribed) {
+      trackEvent('upgrade_cta_tapped');
       router.replace('/upgrade' as any);
     }
   }, [subLoading, isSubscribed]);

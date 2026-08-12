@@ -1,6 +1,7 @@
 import { doc, setDoc, updateDoc, arrayUnion, arrayRemove, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { BINGO_ACTIVITIES, BingoActivity } from '../constants/content';
+import { trackEvent } from './statsService';
 
 export const MAX_PASSES = 2;
 export const MAX_RECEIVER_PASSES = 1;
@@ -136,6 +137,7 @@ export async function flipCard(
     pendingCard: index,
     turnUid: nextTurnUid,
   });
+  trackEvent('bingo_card_flipped');
 }
 
 export async function markCardDone(
@@ -148,6 +150,7 @@ export async function markCardDone(
     pendingCard: null,
     turnUid: nextTurnUid,
   });
+  trackEvent('bingo_card_completed');
 }
 
 // Undo a completed card — used when the recipient mis-tapped "we did it"

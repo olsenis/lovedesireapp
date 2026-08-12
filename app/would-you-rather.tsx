@@ -16,6 +16,7 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 const LEVELS: WYRLevel[] = ['playful', 'romantic', 'spicy'];
 
@@ -309,7 +310,7 @@ export default function WouldYouRatherScreen() {
           {LEVELS.map(level => {
             const cfg = WYR_LEVEL_CONFIG[level];
             return (
-              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: cfg.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: cfg.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.levelEmoji}>{cfg.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
@@ -450,7 +451,7 @@ export default function WouldYouRatherScreen() {
                 key={pack.id}
                 style={styles.packCard}
                 onPress={() => {
-                  if (locked) { router.push('/upgrade' as any); return; }
+                  if (locked) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
                   const primaryLevel: WYRLevel = pack.questions[0]?.level ?? 'playful';
                   handleStart(primaryLevel, pack.id);
                 }}
