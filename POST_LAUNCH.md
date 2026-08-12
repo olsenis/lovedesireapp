@@ -460,7 +460,66 @@ export const SEX_ED_CATEGORY_CONFIG: Record<SexEdCategory, { label, emoji, descr
 
 Add `npm run sync-sexed` script alias. Run manually before commit; add to `predeploy` if we want it enforced.
 
-### In-app screens (planned, not built)
+### Three design problems settled in the Aug 2026 discussion
+
+**1. The source stash is one-directional.** All 28 transcripts in `transcript/`
+teach a man how to please or attract a woman. Building the MVP straight off it
+would leave half the user base out, and both partners see the same screens.
+Resolution: every tip is written second-person about "your partner", never
+"her"/"him", and no category ships more than 60% tipped toward one anatomy.
+Full triage in `sex-ed/drafts/SOURCE_TRIAGE.md`.
+
+**2. The app does not know who is reading.** `UserProfile` has no gender field
+and must not gain one — gender and sexual orientation are special-category data
+under GDPR Art. 9 and would drag the privacy policy and our data-minimisation
+posture with them. Resolution: tips carry an `anatomy: any | vulva | penis` tag,
+the reader picks a display preference locally, and nothing is written to
+Firestore or shared with the partner. Default and strong preference is `any`.
+
+**3. Blanket attribution is a brand risk.** "Always credit the creator" reads as
+the safe policy, but it puts source names inside the product. "Inspired by Talk
+Sex With Annette" is fine; "Inspired by STOIC ICON" is not. Resolution: credit
+named experts (clinicians, educators, authors) only; for established concepts
+cite the originating researcher rather than the channel that restated it; never
+credit a Tier 3 source, and if a tip can only be attributed to one, it does not
+ship. Legally this is also the stronger position — ideas are not copyrightable,
+wording is.
+
+### Delivery phases (revised — embedded surfaces before library)
+
+The original plan was library-first: browse by category, read. That is the right
+home for the content but the wrong front door — the user has to decide to go to
+the classroom. Reordered so the content meets people inside features they
+already use.
+
+**Phase 1 — embedded tips (~25-30 tips, no new navigation).**
+
+Tips surface inside existing features at the moment they apply:
+
+- Sensate Focus stage 2 → "more intensity isn't more pleasure"
+- The Lovers result → 3 reads per type (`lovers-feeling`, `lovers-sexual`, …).
+  The quiz already computes 5 types and 25 compatibility pairs; this makes the
+  result keep paying out, and no competitor appears to personalise this way.
+- Fantasy Wishes → asking for something new without it landing as a verdict on
+  what you have been doing
+- Daily Spicy → pacing
+
+Per-feature authoring (8 features × 3-5 tips), **not** the per-item authoring
+warned about earlier in this file. Also validates the Obsidian workflow against
+real content before the sync script is designed around hypothetical shapes.
+
+**Phase 2 — the library** (screens as originally specced below) once the pool
+passes ~60 tips and browsing is actually worth doing.
+
+**Phase 3 — "Try this" actions.** Each tip detail gets a deep link that turns
+the read into use: add to Together List, open Sensate, start a Daily category.
+This is the real differentiator. Anyone can publish an article library; Desire
+already owns the activities the article should push you into.
+
+**Phase 4 — weekly read on Home.** One rotating tip card, weekly not daily.
+Daily already carries three categories and two dimensions; do not add a fourth.
+
+### Library screens (Phase 2)
 
 - `app/sex-ed.tsx` — top-level list of categories with counts (e.g. `Understanding pleasure · 34 tips`)
 - `app/sex-ed/[category].tsx` — list of tip cards in the category (title + first sentence preview)
@@ -477,15 +536,16 @@ Us tab
 
 Card: `📚 Sex Ed — Short reads on connection, intimacy, and wellbeing`. Paid gate on tap (routes to `/upgrade` for free users).
 
-### MVP scope for first ship
+Markdown rendering via `react-native-markdown-display` (add dep) or a small subset handled inline (bold, italic, paragraph breaks) to avoid the dep.
 
-- 1 fully-populated category (e.g. `understanding-pleasure` with 15-20 tips)
-- Sync script + typed constants
-- 3 screens (index, category, detail)
-- Paid gate
-- Markdown rendering via `react-native-markdown-display` (add dep) or a small subset of markdown handled inline (bold, italic, paragraph breaks) to avoid the dep
+### Realistic content volume
 
-Ship this shape first, observe usage, then bulk-write remaining 7 categories.
+The existing stash yields **50-80 tips**, not the 200-500 sketched below, and
+they cluster in `understanding-pleasure` + `techniques-touch`. Four categories
+(`communication`, `long-distance`, `emotional-intimacy`, `sexual-health`) have
+no usable source material yet — `sexual-health` in particular needs clinical
+sources only. Plan sourcing for those separately rather than assuming the stash
+covers the map.
 
 ### Copyright / fair use guardrails
 
@@ -511,9 +571,24 @@ Ship the MVP scope after launch if any of these hit:
 - Retention analytics show paid subscribers wanting more depth beyond games
 - The developer's content vault reaches ≥ 100 publish-ready tips across 3+ categories (means the workflow is proven and the content debt is manageable)
 
+Note that the phase split changes this calculus: **Phase 1 does not need any of
+these triggers**. 25-30 tips embedded into features that already ship is a small
+enough bet to take on its own, and it produces the usage signal that decides
+whether Phase 2 is worth building. The triggers above now gate Phase 2 (the
+library), not the feature as a whole.
+
 If none of those hit within 3 months of launch, leave in deferred state and revisit only if content vault continues to grow (signalling the developer wants to ship it eventually).
 
-### Effort estimate (for MVP revisit)
+### Effort estimate
+
+**Phase 1 (embedded tips):**
+- Sync script + typed constants: **2h**
+- Inline tip component (reused across surfaces): **2h**
+- Wiring into 4 surfaces (Sensate, Lovers result, Fantasy Wishes, Daily Spicy): **2-3h**
+- Anatomy display preference (local only, no Firestore): **1h**
+- **Total: ~7-8h**, no new routes, no paid-gate work (all four surfaces are already gated)
+
+**Phase 2 (library) — original estimate:**
 
 - Sync script + typed constants: **2h**
 - 3 screens + navigation: **4h**
@@ -885,18 +960,6 @@ Batch of small polish / prevention items from the outside security review, none 
 
 ---
 
-### NV9 — `deleteUserData` walks `users/{uid}/private` only one level
-
-**What.** `functions/src/index.ts:242-245` deletes docs directly under `private/` but doesn't recurse into `private/{doc}/subcollection/`. Currently no service writes nested paths under `private/`, so this is prevention-only.
-
-**Fix.** Use the existing `deleteNestedSubcollection` pattern (or wrap in a generic recursive-delete helper) if any nested `private` path lands in the future.
-
-**Revisit trigger.** Any new feature adding a subcollection under `users/{uid}/private/*/`. Set a lint rule / PR check to flag this pattern if possible.
-
-**Effort:** ~15 min when needed.
-
----
-
 ### NV10 — QR regex accepts characters not in invite code alphabet
 
 **What.** `components/QRScannerModal.tsx` regex `/^[A-Z0-9]{8}$/` accepts `0/1/O/I/L` — the actual `CODE_ALPHABET` in `services/coupleService.ts:32` excludes them for legibility. Not exploitable — codes not in alphabet just return `not_found` at the server. Nit.
@@ -918,6 +981,127 @@ Batch of small polish / prevention items from the outside security review, none 
 **Revisit trigger.** Any Storage cost anomaly investigation or if the H1 flash cleanup path guard ever changes.
 
 **Effort:** 5 min.
+
+---
+
+## Security / robustness sweep v3 (2026-08-12)
+
+Fresh pass over `firestore.rules`, `storage.rules` and `functions/src/index.ts`
+after the v2 round. The rules themselves held up — the dot-path spoofing guards,
+the `isPremium` lock on both user and couple docs, the stateUnion completedAt
+guard and the H1 flash prefix guard are all sound. Everything below is about
+code that does not exist yet, or about scale rather than access control.
+
+### S1 — The RevenueCat webhook is the highest-risk unwritten code in the project
+
+**What.** `firestore.rules` blocks clients from writing `isPremium` /
+`premiumSince` on both `users/{uid}` and `couples/{coupleId}`, with comments
+describing the RevenueCat webhook as the authoritative writer. **That webhook
+does not exist.** `functions/src/index.ts` exports only `rateLimitedJoin`,
+`deleteUserCascade`, `cleanupExpiredFlashes` and `cleanupOldTruthDareAudio`.
+Nothing, anywhere, writes `isPremium`.
+
+Two separate consequences:
+
+1. **Launch blocker.** A user who pays gets nothing. Premium can currently only
+   be set by hand in the Firebase console. Known (CLAUDE.md lists RevenueCat as
+   outstanding) but the rules comments read as though it shipped, which is how
+   this kind of gap survives a review.
+2. **This is where a real vulnerability will appear.** The webhook is by nature
+   a public, unauthenticated HTTP endpoint whose entire job is granting paid
+   access. When it is written it must:
+   - verify the RevenueCat `Authorization` header against a shared secret held
+     in secret config, and reject before doing any work if it does not match
+   - resolve `app_user_id` to a real couple and refuse unknown ids rather than
+     creating documents
+   - handle the full event set (`INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`,
+     `EXPIRATION`, `REFUND`, `BILLING_ISSUE`) — a webhook that only grants and
+     never revokes means one month paid equals permanent premium
+   - be idempotent on redelivery (RevenueCat retries)
+   - never trust a client-supplied `coupleId` in the body
+
+**Action.** Do not let this be written in a hurry against a launch deadline.
+It deserves its own review pass.
+
+### S3 — `cleanupOldTruthDareAudio` full-bucket scan will not scale
+
+**What.** Runs daily, calls `storage.getFiles({ prefix: 'couples/' })` — which
+lists **every** object under `couples/`, i.e. all memories, moments, flashes and
+audio for every couple — then filters in JS for `/truthDare/` and issues a
+separate `getMetadata()` round trip per surviving file.
+
+At 1000 couples averaging 50 objects that is 50k listed objects plus tens of
+thousands of metadata calls per day, all loaded into one function invocation's
+memory. It will hit the function timeout and the memory ceiling well before it
+hits any interesting user count.
+
+**Fix options,** cheapest first:
+- Move audio to a top-level `truthDareAudio/{coupleId}/…` prefix and apply a
+  GCS Object Lifecycle rule (age 30 days, `matchesPrefix`). Zero function code.
+  Lifecycle rules match prefixes only, which is exactly why the current nested
+  path cannot use them.
+- Or record audio blobs in Firestore with an `expiresAt` and query that instead
+  of listing the bucket.
+
+### S4 — `cleanupExpiredFlashes` fans out one query per couple, hourly
+
+**What.** Reads the entire `couples` collection every 60 minutes and then runs a
+separate `where('expiresAt','<',now)` query per couple. Cost scales linearly
+with total couples, not with the number of expired flashes, and it runs 24x a
+day whether or not anything expired.
+
+**Fix.** One `collectionGroup('flashes').where('expiresAt','<',now)` query.
+Needs a collectionGroup index. Bonus: the couple id for the prefix guard then
+comes from `doc.ref.parent.parent.id`, which is more trustworthy than today's
+loop variable because it is derived from the document's real path.
+
+### S5 — `deleteUserCascade` is on a 1st-gen auth trigger
+
+**What.** `auth.user().onDelete` from `firebase-functions/v1`. Firebase
+documents that this trigger does **not** fire for bulk deletions via the Admin
+SDK `deleteUsers()` path. If accounts are ever removed in bulk — a support
+sweep, a test-data cleanup, a migration — the cascade silently does not run and
+leaves orphaned couple documents and Storage objects behind. That is a GDPR
+exposure that produces no error anywhere.
+
+**Fix.** Route deliberate deletions through an explicit callable that performs
+the cascade itself, and/or add a scheduled orphan sweep that looks for couple
+docs whose partner uids no longer resolve in Auth. Verify the exact bulk-delete
+behaviour against current Firebase docs before relying on either.
+
+### S6 — NV2 (push token) should be promoted out of "deferred info"
+
+**What.** Re-raising [NV2](#nv2--push-token-stalker-path-separate-entry--deferred-pending-explicit-fix-decision)
+with a stronger argument than it got in v2. `notifyPartner` reads the partner's
+`pushToken` from `users/{partnerId}` and POSTs directly to `exp.host` with no
+auth. The 10-second cooldown is a client-side `Map` — a custom client ignores it
+entirely.
+
+The reason this is not a generic info item: **for a couples intimacy app, the
+ex-partner is the threat model.** Every other item in this file is about an
+abstract attacker. This one describes a person who already had access, retains a
+working push token after the couple disconnects, and can push arbitrary text to
+someone who left them, indefinitely, until they reinstall. That is the specific
+harm pattern this product category gets criticised for.
+
+**Note for whoever fixes it:** moving `pushToken` under `users/{uid}/private/`
+also hides `notificationsEnabled` from the partner, so the new Cloud Function
+has to check the opt-out server-side too, not just the token.
+
+### S7 — 100 MB Storage ceiling amplifies the missing App Check
+
+**What.** Storage rules cap uploads at 100 MB and restrict content types (both
+good, from NV4). But any authenticated user can self-signup and pair two of
+their own accounts, at which point they are a legitimate couple member and may
+write 100 MB objects at will. App Check is already logged as a cost-abuse
+concern elsewhere in this file; the 100 MB per-object ceiling sets the magnitude
+of that abuse. Worth reading the two notes together when App Check is revisited.
+
+### Documentation drift found in this pass
+
+The "Flash Firestore + Storage cleanup" entry in the bug backlog below states
+that nothing deletes expired flashes. That was fixed — `cleanupExpiredFlashes`
+has shipped in `functions/src/index.ts`. Entry corrected in place.
 
 ---
 
@@ -950,17 +1134,13 @@ Non-blocking correctness / cost items surfaced during review. Ship without, revi
 
 **Effort**: ~15 min — wrap in `runTransaction`.
 
-### Flash Firestore + Storage cleanup
+### ~~Flash Firestore + Storage cleanup~~ — RESOLVED
 
-**What**: `services/flashService.ts:sendFlash` sets `expiresAt: now + 86400000`; client filters expired flashes out of the UI, but nothing deletes the Firestore doc or Storage blob. After 1 year of daily use: ~365 stale docs + blobs per couple.
+**Was**: `services/flashService.ts:sendFlash` sets `expiresAt: now + 86400000`; client filtered expired flashes out of the UI, but nothing deleted the Firestore doc or Storage blob.
 
-**Why deferred**: Zero user-facing impact — expired flashes are already invisible in-app. Cost creep is small at MVP scale.
+**Resolved**: `cleanupExpiredFlashes` in `functions/src/index.ts` now runs hourly, deletes expired docs and their Storage blobs, with a prefix guard against the H1 cross-couple delete exploit. The "disappears after 24h" claim in the Privacy Policy is now actually enforced.
 
-**Revisit criteria**:
-- Before we make GDPR / data-deletion claims in App Store copy (users expect "disappearing" content to actually disappear)
-- If Storage or Firestore costs start showing meaningful flash-blob spend
-
-**Effort**: 1-2h — scheduled Cloud Function `onSchedule('every 24 hours')` deleting `flashes` where `expiresAt < now` + cascading Storage delete.
+**Remaining**: the implementation's per-couple fan-out is a scale concern, tracked as S4 in the v3 sweep above.
 
 ### Home tab spawns 15 concurrent Firestore listeners
 

@@ -186,72 +186,64 @@ async function batchDeleteDocs(docs: FirebaseFirestore.QueryDocumentSnapshot[]):
   await Promise.all(batches.map((b) => b.commit()));
 }
 
-// Firestore batch delete doesn't recurse into subcollections. For each parent doc under
-// couples/{coupleId}/{parent}/, walk its named nested subcollection and delete those first.
-// Used for stateUnion/{weekId}/entries which holds per-user Sunday Check-in answers, and
-// timeCapsules/{id}/sealed as a legacy safety net (feature was removed July 2026 but any
-// pre-launch test data still needs to cascade cleanly on account deletion).
-async function deleteNestedSubcollection(coupleId: string, parent: string, nested: string): Promise<void> {
-  const parentSnap = await db.collection(`couples/${coupleId}/${parent}`).get();
-  for (const p of parentSnap.docs) {
-    const nestedSnap = await p.ref.collection(nested).get();
-    if (nestedSnap.empty) continue;
-    await batchDeleteDocs(nestedSnap.docs);
+// Recursively delete every subcollection under a doc, then batch-delete the
+// docs themselves. Uses admin SDK listCollections() so we discover children
+// dynamically — no hand-maintained allowlist to keep in sync with the client
+// codebase, and nested subcollections at any depth cascade automatically.
+//
+// This replaces the prior hardcoded 28-name allowlist + explicit nested-walk
+// pattern (S2 in security review v3, Aug 2026). Also covers NV9 (previous
+// deleteUserData walked users/{uid}/private only one level; the new recursion
+// handles any depth that lands under private/ in the future).
+//
+// Ordering: recurse into each doc's subcollections BEFORE deleting the doc.
+// batchDeleteDocs handles the 400-per-commit chunking.
+async function deleteDocDescendants(docRef: FirebaseFirestore.DocumentReference): Promise<void> {
+  const subs = await docRef.listCollections();
+  for (const sub of subs) {
+    const snap = await sub.get();
+    for (const child of snap.docs) {
+      await deleteDocDescendants(child.ref);
+    }
+    if (snap.docs.length > 0) {
+      await batchDeleteDocs(snap.docs);
+    }
   }
 }
 
 async function deleteCoupleData(coupleId: string): Promise<void> {
-  // Delete all subcollections under this couple. Every path a service writes to
-  // must be in this list — otherwise data survives GDPR erasure.
-  // Grep verified against services/ writes on 2026-07-03.
-  const subcollections = [
-    'todos', 'moods', 'memories', 'notes', 'wishlist', 'fantasy', 'fantasyWishes',
-    'reminders', 'dates', 'challenge', 'blueprints', 'wyr', 'bingo', 'truthDare',
-    'dailyWishes', 'dailyQuestions', 'streaks', 'sensate', 'flashes', 'moments',
-    'sparks', 'pulse', 'intimacyLog', 'dateRatings',
-    // Added 2026-07-03 (Bug #2 in the GDPR audit) — these were writing docs
-    // that survived the cascade before.
-    'journal', 'timeCapsules', 'stateUnion', 'milestones',
-    // Added 2026-08-11 (NV1 in security review v2) — wyrCustom holds
-    // user-authored Would You Rather questions, may include intimate content.
-    // Survived past deletions before this add; verify via collectionGroup
-    // query if there's any concern about orphans from pre-fix deletions.
-    'wyrCustom',
-  ];
+  const coupleRef = db.doc(`couples/${coupleId}`);
 
-  // Nested subcollections FIRST so their parent docs still exist during the walk.
-  // stateUnion/{weekId}/entries/{uid} holds the per-user Gottman check-in answers.
-  // timeCapsules/{id}/sealed is a legacy safety net — feature was removed July 2026
-  // but any pre-launch test seals still need this walk to cascade cleanly.
-  await deleteNestedSubcollection(coupleId, 'timeCapsules', 'sealed');
-  await deleteNestedSubcollection(coupleId, 'stateUnion', 'entries');
+  // Walk every subcollection Firestore knows about under this couple, at any
+  // depth. Automatically covers current + future collections without allowlist
+  // maintenance. The old allowlist missed wyrCustom (NV1) — this design closes
+  // the entire class of "forgot to add the new collection to the allowlist" bug.
+  await deleteDocDescendants(coupleRef);
 
-  for (const sub of subcollections) {
-    const snap = await db.collection(`couples/${coupleId}/${sub}`).get();
-    if (snap.empty) continue;
-    await batchDeleteDocs(snap.docs);
-  }
-
-  // Delete storage files under couples/{coupleId}/
+  // Storage files under couples/{coupleId}/ — separate deletion path since
+  // Storage doesn't live under Firestore.
   try {
     await storage.deleteFiles({ prefix: `couples/${coupleId}/` });
   } catch (e) {
     console.error(`Storage delete failed for ${coupleId}:`, e);
   }
 
-  // Delete the couple doc
-  await db.doc(`couples/${coupleId}`).delete();
+  // The couple doc itself.
+  await coupleRef.delete();
 }
 
 async function deleteUserData(uid: string): Promise<void> {
-  // Private subcollection
-  const priv = await db.collection(`users/${uid}/private`).get();
-  await Promise.all(priv.docs.map((d) => d.ref.delete()));
+  const userRef = db.doc(`users/${uid}`);
 
-  // User doc
-  await db.doc(`users/${uid}`).delete();
+  // Recurse into any subcollection under users/{uid}/, at any depth.
+  // Today that's just private/, but future features adding nested paths
+  // under private/ are covered without touching this code.
+  await deleteDocDescendants(userRef);
 
-  // User's profile photo
+  // The user doc itself.
+  await userRef.delete();
+
+  // User's profile photo + any other Storage under users/{uid}/.
   try {
     await storage.deleteFiles({ prefix: `users/${uid}/` });
   } catch (e) {
