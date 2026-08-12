@@ -1,6 +1,49 @@
-import { collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, query, getDoc, getDocs, orderBy, limit, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { Question } from '../constants/content';
+
+// Persistent stats across sessions — best score / longest streak the couple
+// has ever hit. Encourages return visits ("beat our record") without the
+// forced-daily anxiety of a full streak-shame mechanic. Written on game end.
+export interface VersusStats {
+  bestScorePct: number;      // best % correct in a single game (0-100)
+  bestStreak: number;         // longest consecutive-correct in any game
+  gamesPlayed: number;
+  lastPlayedAt: number;
+}
+
+export async function loadVersusStats(coupleId: string): Promise<VersusStats> {
+  const snap = await getDoc(doc(db, 'couples', coupleId, 'versus', 'stats'));
+  if (!snap.exists()) {
+    return { bestScorePct: 0, bestStreak: 0, gamesPlayed: 0, lastPlayedAt: 0 };
+  }
+  const data = snap.data() as Partial<VersusStats>;
+  return {
+    bestScorePct: data.bestScorePct ?? 0,
+    bestStreak: data.bestStreak ?? 0,
+    gamesPlayed: data.gamesPlayed ?? 0,
+    lastPlayedAt: data.lastPlayedAt ?? 0,
+  };
+}
+
+// Updates stats after a completed game, taking max of prior/new for records
+// and incrementing gamesPlayed. Idempotent-ish — if the same game is
+// finalized twice (rare, e.g. duplicate tap on "See result"), gamesPlayed
+// double-counts but records aren't corrupted (max preserves).
+export async function updateVersusStats(
+  coupleId: string,
+  scorePct: number,
+  streak: number,
+): Promise<void> {
+  const current = await loadVersusStats(coupleId);
+  const next: VersusStats = {
+    bestScorePct: Math.max(current.bestScorePct, scorePct),
+    bestStreak: Math.max(current.bestStreak, streak),
+    gamesPlayed: current.gamesPlayed + 1,
+    lastPlayedAt: Date.now(),
+  };
+  await setDoc(doc(db, 'couples', coupleId, 'versus', 'stats'), next);
+}
 
 export interface VersusItem {
   question: Question;
