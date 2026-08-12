@@ -669,6 +669,100 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
 
 ---
 
+## 13. Post-deploy verification (Aug 2026 refactor batch)
+
+Runs ONCE after the Aug 2026 changes land on production Cloud Functions +
+Storage rules. Catches regressions specific to those diffs. Once green, this
+section moves to `TEST_CHECKLIST.md` for periodic re-runs.
+
+### App-side (Vercel deploys instantly on push, test via any device)
+
+- [ ] **Love Notes: Pick a date... chip appears + datetime picker opens**
+  1. Phone A: `/notes` → Write → observe chip row under "When can it be opened?"
+  2. Tap "Pick a date..." → picker opens
+  - **Expected:** Chip is the 4th option in the row. Picker allows date + time. Selected value displays as "Opens Friday, 15 Aug at 18:30". Send button is disabled until a date is picked.
+
+- [ ] **Love Notes: custom datetime note opens at chosen moment** 📱
+  1. Phone A: create a note, pick tomorrow at a specific time (say 14:00)
+  2. Phone B: wait for that time, refresh
+  - **Expected:** Note becomes tappable at the exact chosen minute, not 9am default.
+
+- [ ] **Daily deck: one card per screen + skip pushes to end**
+  1. Phone A: `/daily` → Playful tab → expect ONE card visible, "Card 1 of 8" counter, Skip + Next buttons at bottom
+  2. Tap Skip on first card
+  - **Expected:** Second card slides into position 1. Skipped card returns later when everything else is passed. Counter dots update (grey = pending, green = handled, burgundy = active).
+
+- [ ] **Daily deck: reopen jumps to first unhandled card** 📱
+  1. Phone A: `/daily` → answer/vote 3 cards → close app
+  2. Reopen `/daily`
+  - **Expected:** Lands on card 4 (first unhandled), not card 1. Category tab switch resets to first unhandled of that category.
+
+- [ ] **Daily done state: paid user Draw more works** 💰 📱
+  1. Phone A (paid): finish all 8 cards in Playful → observe Done state
+  2. Tap "Draw more cards"
+  - **Expected:** Rose button shows "N of 3 draws left today". After tap, deck grows by 2 actions + 3 questions per category (5 new cards for playful), phone lands on first new card. Phone B sees the same new cards.
+
+- [ ] **Daily done state: free user sees upsell** 💰
+  1. Phone B (free): finish all Playful cards → Done state
+  - **Expected:** Burgundy "Want more today?" card with cream "Try Premium →" CTA. Tap routes to `/upgrade`. No Draw more button visible.
+
+- [ ] **Offline join error shows friendly message** ⚠️
+  1. Phone A: enable flight mode
+  2. Try to enter a partner invite code + Join
+  - **Expected:** Error reads "No internet connection. Check your connection and try again." NOT "Could not join (reason: internal)".
+
+- [ ] **Password reset shows unified message regardless of email** 🔒
+  1. Login screen → Forgot password? → enter `nonexistent@example.com`
+  2. Repeat with a real registered email
+  - **Expected:** Both cases show "If an account exists with that email, we sent a reset link." Only invalid format (`not-an-email`) shows the format error. No `auth/user-not-found` message ever visible.
+
+- [ ] **New account onboarding photo persists** 🔒 📱
+  1. Register a fresh account, upload a profile photo in onboarding
+  2. Sign in on Phone B (partner-paired account) → view partner's profile
+  - **Expected:** Partner sees the photo. `users/{uid}.photoURL` in Firestore is an HTTPS URL starting with `https://firebasestorage.googleapis.com/`, NOT a `file://` URI.
+
+- [ ] **QR pairing shows confirm modal before joining** 🔒
+  1. Phone A: Profile → Get invite code → let Phone B scan the QR
+  2. Phone B: scans successfully
+  - **Expected:** Modal shows "Join couple with this code? XXXXXXXX" with Cancel + Join buttons. Tapping outside dismisses. Tap Cancel = no pair. Tap Join = pairs normally.
+
+### Backend-side (needs `firebase deploy --only functions,storage` first)
+
+- [ ] **Photo upload succeeds after storage rules deploy** 🔒 📱
+  1. Any upload surface — Profile photo change, Moment upload, Flash send
+  - **Expected:** Upload succeeds. Reads the file back correctly. If it fails with `storage/unauthorized`, the NV4 rule is rejecting the request — check that the corresponding `uploadBytes` call passes explicit `contentType` in [storageService.ts](services/storageService.ts).
+
+- [ ] **Oversize file blocked** ⚠️ 🔒
+  1. Modify local `MAX_PHOTO_BYTES` to 200 MB temporarily, attempt to upload a 150 MB file
+  2. Restore MAX_PHOTO_BYTES to 5 MB after test
+  - **Expected:** Client-side assertUnderLimit passes (temporarily); server rejects with `storage/unauthorized` because 150 MB > 100 MB rule cap. Confirms NV4 rule is enforced. If it succeeds, storage rules didn't deploy — check Firebase Console → Storage → Rules.
+
+- [ ] **Wrong content-type blocked** ⚠️ 🔒 (optional — needs custom client)
+  1. Via Firebase console REST API or a Node script, upload a file with `contentType: 'application/octet-stream'` to `couples/{coupleId}/flashes/test.dat`
+  - **Expected:** Rejected with 403. Real client uploads all pass because contentType is set explicitly per surface.
+
+- [ ] **Delete test account cascades all subcollections** 🔒 (requires test account with data)
+  1. Create a fresh test couple: Óli-test + Ola-test
+  2. Both use every feature at least once: mood, note, todo, memory, moment, flash, WYR custom question, sensate session, sparks, etc.
+  3. Delete Óli-test's Firebase Auth account from Firebase Console
+  4. Wait ~30s, then in Firestore console: search for any doc still referencing Óli-test's uid OR the couple's coupleId
+  - **Expected:** Zero remaining docs under `couples/{coupleId}/` OR `users/{oli-test-uid}/`. `wyrCustom` collection is empty (was surviving previously per NV1). `users/{uid}/private/` cleared (any depth per NV9). The couple doc itself is deleted. Storage files under both prefixes are gone.
+
+- [ ] **Pairing race: two concurrent joins with same code** 🔒 ⚠️ 📱 (advanced)
+  1. Set up two accounts with fresh invite code from a third couple
+  2. Trigger both joins within ~100ms (open two windows, hit Join simultaneously — or use two devices with prepared code)
+  - **Expected:** ONE join succeeds with `joined: true`, other returns `reason: 'taken'`. Never both succeed. Previous behavior had race + silent overwrite (M2 in security review v1).
+
+- [ ] **Cross-couple flash cleanup path-traversal blocked** 🔒 ⚠️ (advanced)
+  1. From Firestore console: create a flash doc under Couple A with `mediaURL` pointing at a photo path in Couple B (e.g. `https://.../o/couples%2FCOUPLE_B_ID%2Fmoments%2F2026-08-10.jpg`)
+  2. Set `expiresAt: 0` so it's immediately expired
+  3. Wait for the next `cleanupExpiredFlashes` hourly run OR trigger manually via Cloud Functions shell
+  4. Check Storage — Couple B's photo should still exist
+  5. Check Cloud Functions logs — should see warning `[cleanupExpiredFlashes] Skipped path outside couple prefix`
+  - **Expected:** Couple B's photo intact. Warning log fired. Attacker flash doc deleted. Previous behavior would have destroyed Couple B's photo (H1 in security review v1).
+
+---
+
 ## Tally
 
 **Coverage targets:**
