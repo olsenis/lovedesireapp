@@ -181,24 +181,32 @@ Privacy Policy + Terms of Service both mention the aggregate stats collection. S
 
 ## Implementation phases
 
-When we start building (separate session, not the design one):
+**Phase 1: Stats counter foundation — ✅ SHIPPED Aug 2026**
+- Commits `3497d50` (baseline) + `e64ee82` (wave 2 — active-couples counter + ~30 more events)
+- `services/statsService.ts` — `trackEvent` / `trackScreen` / `markCoupleActive` (all fire-and-forget with silent catch, monthly UTC bucket)
+- `hooks/useTrackScreen.ts` — mount-only hook wrapper
+- `firestore.rules` — `/stats/{month}` (write-only) + `/activeCouples/{month}/couples/{coupleId}` (write gated on isMemberOfCouple)
+- Instrumentation across 34 screens + ~40 key actions (see full list in commit `e64ee82` body)
+- MAU/WAU via `activeCouples/{month}/couples/*` count query, no per-couple leakage
 
-**Phase 1: Stats counter foundation (~2h)**
-- `statsService.ts` + Firestore rules block
-- Instrumentation across ~32 sites (screen mounts + key actions)
-- tsc + build + commit + push
+**Phase 2: Admin callables — ✅ SHIPPED Aug 2026**
+- Commit `e320080`, deployed to `us-central1`
+- `functions/src/index.ts`: `ADMIN_UIDS` allowlist Set + `assertAdmin(req)` helper + 5 callables:
+  - `adminGetOverview` — parallel `.count().get()` for totalUsers, totalCouples, pairedCouples, paidCouples, activeCouplesThisMonth, signupsThisMonth, mrrEstimate
+  - `adminGetStats(month)` — reads `stats/{month}` doc, bypasses client read block
+  - `adminGrantPremium(coupleId)` — writes `isPremium=true` + `premiumSince` serverTimestamp, increments `admin_grants` audit counter
+  - `adminRevokePremium(coupleId)` — inverse, increments `admin_revokes`
+  - `adminSearchUser(email)` — `admin.auth().getUserByEmail` + Firestore profile + partner lookup; rate-limited 10/min per admin via existing `rateLimits` collection
+- `services/adminService.ts`: typed `httpsCallable` wrappers + `isCurrentUserAdmin(uid)` UX helper
+- All callables use `invoker: 'public'` per the Cloud Run IAM requirement documented in `memory/firebase_functions_v2_iam.md`
 
-**Phase 2: Admin callables (~1.5h)**
-- 5 Cloud Functions in `functions/src/index.ts`
-- `adminService.ts` client wrappers
-- `firebase deploy --only functions`
-
-**Phase 3: Admin UI (~2h)**
+**Phase 3: Admin UI — pending**
 - `app/admin.tsx` dashboard screen
-- Sections: overview / feature usage / user search / actions
+- Sections: overview strip / feature usage table / user search / grant/revoke buttons
+- Route guard via `isCurrentUserAdmin(user?.uid)` — hides the screen from non-admins for UX (real gate is server-side)
 - tsc + build + commit + push
 
-**Total: ~5-6h across 3 phases.** Ships in 3 separate commits so each phase can be reviewed/tested independently.
+**Total actual time so far: ~4h across 2 phases + wave 2 stats extension.**
 
 ---
 

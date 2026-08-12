@@ -95,16 +95,15 @@ Currently the /upgrade screen is a placeholder ("Coming soon"). Before launch:
 - Verify SSL auto-provisions
 - Update Support URL + Privacy Policy URL in App Store Connect
 
-### 7a. Aggregate stats counter
-Anonymous per-feature usage counter so post-launch prioritisation isn't guessing. Never stores uid/coupleId/content — only integer counts per month per feature. GDPR-safe by construction. Enables "Dares got 3 opens per couple → drop it" vs "Voice Notes got 40 → invest more" decisions from real data instead of hunches.
-- Full design in [ADMIN_DASHBOARD.md § Piece 1](ADMIN_DASHBOARD.md)
-- Scope: ~2h (statsService + Firestore rules + ~32 instrumentation sites)
-- Privacy Policy + Terms already updated to disclose
+### 7a. Aggregate stats counter — ✅ SHIPPED
+Commits `3497d50` + `e64ee82`. Anonymous per-feature counter at `stats/{yyyy-mm}` (write-only from client) + active-couples marker at `activeCouples/{month}/couples/{coupleId}` for MAU. 34 screens + ~40 actions instrumented. Full design + inventory in [ADMIN_DASHBOARD.md](ADMIN_DASHBOARD.md).
 
-### 7b. Admin dashboard
-Protected `/admin` route (hidden, not linked in nav) that surfaces the aggregate stats + subscription counts + a small set of privileged actions (grant/revoke premium, view user, search by email). Cloud Functions with `assertAdmin` uid allowlist enforce access. Replaces manual Firestore Console edits for support/QA operations pre-RevenueCat and covers ongoing admin needs after.
-- Full design in [ADMIN_DASHBOARD.md § Piece 2](ADMIN_DASHBOARD.md)
-- Scope: ~3.5h across two phases (5 Cloud Functions + `app/admin.tsx` UI)
+### 7b. Admin callables (Phase 2 of admin dashboard) — ✅ SHIPPED
+Commit `e320080`, deployed to `us-central1`. 5 `assertAdmin`-gated callables: `adminGetOverview` / `adminGetStats` / `adminGrantPremium` / `adminRevokePremium` / `adminSearchUser`. Client wrappers in `services/adminService.ts` + `isCurrentUserAdmin` UX helper. Full design in [ADMIN_DASHBOARD.md § Piece 2](ADMIN_DASHBOARD.md).
+
+### 7c. Admin dashboard UI (Phase 3 of admin dashboard) — pending
+Protected `/admin` route (hidden, not linked in nav) that surfaces the aggregate stats + subscription counts + a small set of privileged actions. Wired to the Phase 2 callables. Route guard via `isCurrentUserAdmin(user?.uid)` — real gate stays server-side.
+- Scope: ~2h — one screen file (`app/admin.tsx`), four sections (overview strip / feature usage table / user search / grant/revoke).
 - MVP scope: read-only overview + grant/revoke premium + user search. Delete-user + data export deferred to v1.1.
 
 ### 8. Android APK build + hosting
