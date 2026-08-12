@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { subscribeNotes, createNote, openNote, updateNote, deleteNote, LoveNote } from '../services/noteService';
+import { subscribeNotes, createNote, openNote, updateNote, deleteNote, renameNote, LoveNote } from '../services/noteService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji } from '../services/moodService';
 import { Colors as C } from '../constants/colors';
 import { notifyPartner } from '../services/notificationService';
@@ -65,6 +65,43 @@ function getOccasionTime(label: string): number {
 // the time-based path never fires. Kept in sync with noteService.
 const AUTO_UNLOCK_SENTINEL = 32503680000000; // year 9999
 
+// Display title for a voice note in the list. Text notes render their
+// message inline so they don't need this helper.
+//
+// Priority chain:
+//  1. Recipient's manual label if set (via long-press → Rename)
+//  2. Author's optional caption (message field)
+//  3. Auto-generated context label — condition-based first, then date-based
+//  4. Generic "Voice note" fallback
+//
+// Reason for auto-generation: if a couple exchanges 5+ voice notes over
+// weeks, all captioned "" and all shown as "Voice note", the list becomes
+// indistinguishable. Contextual labels ("For 😍 days", "For your next visit")
+// give each one a memorable identity without requiring the recipient to
+// rename anything.
+function voiceNoteTitle(note: LoveNote): string {
+  if (note.label?.trim()) return note.label.trim();
+  if (note.message?.trim()) return note.message.trim();
+  if (note.openCondition === 'sad') {
+    const emoji = note.triggerEmoji ?? '😢';
+    return `For ${emoji} days`;
+  }
+  if (note.openCondition === 'visit') return 'For when you arrive';
+  if (note.openCondition === 'missing') return 'For when you miss me';
+  if (note.openCondition === 'sleepless') return 'For sleepless nights';
+  // Time-scheduled with a meaningful future openAt — show the target date.
+  // Skip sentinel (auto-unlock notes above already handled) and skip notes
+  // where openAt is within an hour of createdAt (those are "right now" notes
+  // and have no time-context worth showing).
+  if (note.openAt < AUTO_UNLOCK_SENTINEL && note.openAt > note.createdAt + 60 * 60 * 1000) {
+    const d = new Date(note.openAt);
+    const dateStr = d.toLocaleDateString('en-GB', { month: 'short', day: '2-digit' });
+    const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `For ${dateStr} at ${timeStr}`;
+  }
+  return 'Voice note';
+}
+
 function timeLabel(note: LoveNote): string {
   // Condition-driven notes never open on a clock — surface what actually
   // unlocks them so the sender doesn't see the raw 2.9-billion-day countdown.
@@ -113,6 +150,11 @@ export default function NotesScreen() {
   const [mediaType, setMediaType] = useState<'text' | 'voice'>('text');
   const [voiceUri, setVoiceUri] = useState<string | null>(null);
   const [uploadingVoice, setUploadingVoice] = useState(false);
+  // Rename modal state — user long-presses a voice note to change its label.
+  // renameTarget=null when modal is closed; the LoveNote when active. Draft
+  // holds the pending new label; empty string on save clears any existing label.
+  const [renameTarget, setRenameTarget] = useState<LoveNote | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -216,6 +258,21 @@ export default function NotesScreen() {
     setDeleteConfirm(null);
   };
 
+  // Long-press handler for voice notes — opens the rename modal seeded with
+  // the current display title (label / caption / auto-title) so the user can
+  // tweak rather than start from a blank field.
+  const startRename = (note: LoveNote) => {
+    setRenameTarget(note);
+    setRenameDraft(note.label ?? note.message ?? '');
+  };
+
+  const confirmRename = async () => {
+    if (!renameTarget || !profile?.coupleId) return;
+    await renameNote(profile.coupleId, renameTarget.id, renameDraft);
+    setRenameTarget(null);
+    setRenameDraft('');
+  };
+
   const myNoteStatus = (note: LoveNote): string => {
     if (note.opened) return 'Opened ✓';
     if (note.openCondition === 'sad') {
@@ -304,6 +361,8 @@ export default function NotesScreen() {
                   key={note.id}
                   style={[styles.noteCard, canOpen && !note.opened ? styles.noteReady : note.opened ? styles.noteOpened : styles.noteLocked]}
                   onPress={() => handleOpen(note)}
+                  onLongPress={note.mediaType === 'voice' ? () => startRename(note) : undefined}
+                  delayLongPress={400}
                   disabled={!canOpen}
                   activeOpacity={0.85}
                  accessibilityRole="button">
@@ -317,14 +376,16 @@ export default function NotesScreen() {
                   <View style={styles.noteInfo}>
                     {note.opened ? (
                       note.mediaType === 'voice' ? (
-                        <Text style={styles.noteText} numberOfLines={1}>🎤 Voice note{note.message ? `: ${note.message}` : ''}</Text>
+                        <Text style={styles.noteText} numberOfLines={1}>🎤 {voiceNoteTitle(note)}</Text>
                       ) : (
                         <Text style={styles.noteText}>{note.message}</Text>
                       )
                     ) : (
                       <>
                         <Text style={styles.noteLockedText}>
-                          {canOpen ? (note.mediaType === 'voice' ? 'Tap to hear' : 'Tap to open') : timeLabel(note)}
+                          {canOpen
+                            ? (note.mediaType === 'voice' ? `Tap to hear · ${voiceNoteTitle(note)}` : 'Tap to open')
+                            : timeLabel(note)}
                         </Text>
                         {!canOpen && (
                           <Text style={styles.noteTime}>
@@ -344,13 +405,20 @@ export default function NotesScreen() {
           <>
             <Text style={styles.groupLabel}>Notes you wrote ✍️</Text>
             {myNotes.map((note) => (
-              <View key={note.id} style={[styles.noteCard, styles.mySent]}>
+              <TouchableOpacity
+                key={note.id}
+                style={[styles.noteCard, styles.mySent]}
+                onLongPress={note.mediaType === 'voice' ? () => startRename(note) : undefined}
+                delayLongPress={400}
+                activeOpacity={note.mediaType === 'voice' ? 0.85 : 1}
+                accessibilityRole={note.mediaType === 'voice' ? 'button' : undefined}
+              >
                 <View style={styles.noteIconWrap}>
                   <Text style={styles.noteLockEmoji}>{note.mediaType === 'voice' ? '🎤' : '📝'}</Text>
                 </View>
                 <View style={styles.noteInfo}>
                   <Text style={styles.noteText} numberOfLines={2}>
-                    {note.mediaType === 'voice' ? (note.message ? `🎤 ${note.message}` : '🎤 Voice note') : note.message}
+                    {note.mediaType === 'voice' ? `🎤 ${voiceNoteTitle(note)}` : note.message}
                   </Text>
                   <Text style={styles.noteTime}>{myNoteStatus(note)}</Text>
                 </View>
@@ -376,7 +444,7 @@ export default function NotesScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             ))}
           </>
         )}
@@ -587,21 +655,70 @@ export default function NotesScreen() {
       )}
 
       {/* Opened note viewer. Voice notes show the player prominently + the
-          caption below (may be empty). Text notes show the message only. */}
+          title (label/caption/auto) + caption below when both exist. Text
+          notes show the message only. Rename link available for voice notes. */}
       {openedNote && (
         <Modal visible transparent animationType="fade">
           <TouchableOpacity style={styles.noteViewer} onPress={() => setOpenedNote(null)} activeOpacity={1} accessibilityRole="button">
             <View style={styles.noteViewerCard}>
               <Text style={styles.noteViewerEmoji}>{openedNote.mediaType === 'voice' ? '🎤' : '💌'}</Text>
               {openedNote.mediaType === 'voice' && openedNote.audioURL && (
-                <VoicePlayer uri={openedNote.audioURL} size="large" idleLabel="Tap to hear" />
+                <>
+                  <Text style={styles.noteViewerTitle}>{voiceNoteTitle(openedNote)}</Text>
+                  <VoicePlayer uri={openedNote.audioURL} size="large" idleLabel="Tap to hear" />
+                  {/* Show caption below player if it differs from the display title
+                      (i.e., user has a custom label and author's caption is separate) */}
+                  {openedNote.label && openedNote.message && openedNote.message !== openedNote.label && (
+                    <Text style={styles.noteViewerCaption}>&ldquo;{openedNote.message}&rdquo;</Text>
+                  )}
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation(); const target = openedNote; setOpenedNote(null); startRename(target); }}
+                    style={styles.renameLink}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.renameLinkText}>✎ Rename</Text>
+                  </TouchableOpacity>
+                </>
               )}
-              {openedNote.message ? (
+              {openedNote.mediaType !== 'voice' && openedNote.message ? (
                 <Text style={styles.noteViewerMsg}>{openedNote.message}</Text>
               ) : null}
               <Text style={styles.noteViewerHint}>Tap anywhere to close</Text>
             </View>
           </TouchableOpacity>
+        </Modal>
+      )}
+
+      {/* Rename modal — long-press on a voice note in the list, OR Rename link
+          from the opened viewer. Empty save clears any existing label so the
+          display falls back to caption / auto-title. */}
+      {renameTarget && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setRenameTarget(null)}>
+          <View style={styles.overlay}>
+            <View style={[styles.modal, { gap: Spacing.md }]}>
+              <Text style={styles.modalTitle}>Rename this voice note</Text>
+              <Text style={styles.deleteHint}>
+                Give it a name that makes it easy to find later. Leave empty to reset.
+              </Text>
+              <TextInput
+                style={[styles.textarea, { minHeight: 48, textAlignVertical: 'center' }]}
+                placeholder={voiceNoteTitle(renameTarget)}
+                placeholderTextColor={Colors.muted}
+                value={renameDraft}
+                onChangeText={setRenameDraft}
+                maxLength={80}
+                autoFocus
+              />
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setRenameTarget(null)} accessibilityRole="button">
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sendBtn} onPress={confirmRename} accessibilityRole="button">
+                  <Text style={styles.sendText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         </Modal>
       )}
 
@@ -746,5 +863,9 @@ const styles = StyleSheet.create({
   noteViewerCard: { backgroundColor: Colors.cream, borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', gap: Spacing.lg, maxWidth: 360, width: '100%' },
   noteViewerEmoji: { fontSize: 60 },
   noteViewerMsg: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.text, textAlign: 'center', lineHeight: 34 },
+  noteViewerTitle: { fontFamily: Fonts.headingItalic, fontSize: 20, color: Colors.burgundy, textAlign: 'center' },
+  noteViewerCaption: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
+  renameLink: { paddingVertical: 6 },
+  renameLinkText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.burgundy },
   noteViewerHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 });

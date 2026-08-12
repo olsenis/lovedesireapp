@@ -18,6 +18,12 @@ export interface LoveNote {
   // as text for backwards compatibility.
   mediaType?: 'text' | 'voice';
   audioURL?: string;
+  // Optional user-set display label. Recipient can rename a voice note after
+  // opening so it's distinguishable from other voice notes in the list ("For
+  // our anniversary" beats "Voice note"). Shared field — both partners see
+  // the same label. Display priority in the UI: label > message caption >
+  // auto-generated context title (mood trigger, visit, datetime).
+  label?: string;
   fromUid: string;
   opened: boolean;
   createdAt: number;
@@ -162,4 +168,14 @@ export async function updateNote(
 
 export async function deleteNote(coupleId: string, noteId: string): Promise<void> {
   await deleteDoc(doc(db, 'couples', coupleId, 'notes', noteId));
+}
+
+// Rename a note (set or clear its display label). Either partner can call —
+// label is a shared field. Empty string clears the label so display falls
+// back to caption / auto-generated context title.
+export async function renameNote(coupleId: string, noteId: string, label: string): Promise<void> {
+  const trimmed = label.trim();
+  await updateDoc(doc(db, 'couples', coupleId, 'notes', noteId), {
+    label: trimmed ? trimmed : deleteField(),
+  });
 }
