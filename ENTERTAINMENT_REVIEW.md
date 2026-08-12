@@ -260,7 +260,7 @@ Reordered from the reviewer's ROI ranking (below) under "quality + shareability 
 | 3 | **Async Dares** (D3) | Partner-set challenges with deadline + photo confirmation. Reuses Bingo turn state + Moments photo + Notes conditions. | 6-8h | Pending |
 | **4** | **Versus** fix | Streaks + persistent records + "talk about it" prompt + better empty state. Starter pool deferred to v2. | 2h (of 3-4h scope) | ✅ **Shipped** (e2ff651) — starter pool below |
 | 5 | **Journal** redesign | Rotating prompts (~20-30) + weekly retro summary + 3-day streak-lite. | 3-4h | Pending |
-| 6 | **Pulse** redesign | 10→5 questions, plain-language interpretation, routes to related features (low fun → Roulette, low closeness → Sensate). | 2-3h | Pending |
+| **6** | **Pulse** redesign | 10→5 questions, trend comparison ("stronger/softer than 4 weeks ago"), routes to related features per softest dimension. Cadence hint in intro copy. | 2h | ✅ **Shipped** |
 | 7 | **Intimacy Log** narrative | Auto-generated 1st-of-month "story" summary. Ties to Sensate + Daily via one-tap logging prompts. | 4-6h | Pending |
 | 8 | **Love Language** weekly nudge | Home card that rotates weekly focus + 3 concrete micro-actions. Extends existing `getLanguageTip`. | 2-3h | Pending |
 | 9 | **Calendar** reposition | "Anniversary + special-days ledger" — no calendar-sync competition. | 30 min | Pending |
