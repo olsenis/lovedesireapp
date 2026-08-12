@@ -392,13 +392,25 @@ export default function HomeScreen() {
     }
   }
 
-  // Love Notes: unread notes ready to open
+  // Love Notes: unread notes ready to open. Differentiates voice notes
+  // (🎤 + "voice message" copy) so they read distinctly from text notes
+  // in the nudge stack. "Just unlocked" phrasing on very recent unlocks
+  // (<5 min) creates the moment-of-magic the silent unlock would otherwise
+  // miss — user picks mood, comes back to Home, sees "🎤 just unlocked".
   const readyNotes = notes.filter(n => n.fromUid !== uid && Date.now() >= n.openAt && !n.opened);
   if (readyNotes.length > 0) {
+    const hasVoice = readyNotes.some((n) => n.mediaType === 'voice');
+    const justUnlocked = readyNotes.some((n) => Date.now() - n.openAt < 5 * 60 * 1000);
+    const mediaWord = hasVoice
+      ? (readyNotes.length > 1 ? 'messages' : 'A voice message')
+      : (readyNotes.length > 1 ? `${readyNotes.length} messages` : 'A message');
+    const verb = justUnlocked ? 'just unlocked' : 'is ready';
     list.push({
-      emoji: '💌',
-      title: `Love note${readyNotes.length > 1 ? 's' : ''} waiting`,
-      subtitle: `${readyNotes.length > 1 ? `${readyNotes.length} messages` : 'A message'} from ${partner?.name ?? 'your partner'} is ready`,
+      emoji: hasVoice ? '🎤' : '💌',
+      title: hasVoice
+        ? `Voice note${readyNotes.length > 1 ? 's' : ''} waiting`
+        : `Love note${readyNotes.length > 1 ? 's' : ''} waiting`,
+      subtitle: `${mediaWord} from ${partner?.name ?? 'your partner'} ${verb}`,
       route: '/notes',
       bg: Colors.blush,
     });
