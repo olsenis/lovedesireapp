@@ -200,13 +200,17 @@ Privacy Policy + Terms of Service both mention the aggregate stats collection. S
 - `services/adminService.ts`: typed `httpsCallable` wrappers + `isCurrentUserAdmin(uid)` UX helper
 - All callables use `invoker: 'public'` per the Cloud Run IAM requirement documented in `memory/firebase_functions_v2_iam.md`
 
-**Phase 3: Admin UI — pending**
-- `app/admin.tsx` dashboard screen
-- Sections: overview strip / feature usage table / user search / grant/revoke buttons
-- Route guard via `isCurrentUserAdmin(user?.uid)` — hides the screen from non-admins for UX (real gate is server-side)
-- tsc + build + commit + push
+**Phase 3: Admin UI — ✅ SHIPPED Aug 2026**
+- Commit `4903b93`, `app/admin.tsx` (~490 lines) — single-file screen, no new components
+- Route guard `isCurrentUserAdmin(user?.uid)` bounces non-admins to `/(tabs)` silently
+- Three sections in a ScrollView with pull-to-refresh:
+  - Overview strip: 6 stat tiles (users, couples, paired, paid, active, new-this-month) + MRR card, loaded via `adminGetOverview()`
+  - Feature usage: tabbed (Screens / Actions / Admin), pre-sorted by count desc, MoM % coloured — `<10` opens red-flagged, `≥+20%` green, `≤−20%` red, `NEW` when previous month is zero; loads via parallel `adminGetStats(cur)` + `adminGetStats(prev)`
+  - User lookup: email search + result card with pill + Grant/Revoke buttons gated on the existing `ConfirmModal` (destructive variant for revoke)
+- No functions redeploy — pure UI + Vercel web preview auto-deploys client
+- Full launch flow ends here for the stats + admin track
 
-**Total actual time so far: ~4h across 2 phases + wave 2 stats extension.**
+**Total actual time: ~5h across 3 phases + wave 2 stats extension.**
 
 ---
 
