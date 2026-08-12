@@ -1105,6 +1105,53 @@ has shipped in `functions/src/index.ts`. Entry corrected in place.
 
 ---
 
+## Pulse suggestions: expand pool + add research citations (raised August 2026)
+
+### What
+
+The Pulse redesign (Aug 2026) ships with 30 curated suggestions (6 per dimension across 5 dimensions). They're original, warm, and reference existing app features but are **not** attributed to any research framework. Potential enhancements:
+
+- **Expand to 50-60 per dimension** so at 4-week cadence users hit no-repeat for 4-5 years instead of ~6 months
+- **Add optional research citation** on hover / expand — "Based on Gottman's 'small things often' principle" / "Adapted from Esther Perel's 'Mating in Captivity' framing" / etc
+- **Structural coverage** — audit current 30 against established relationship-therapy frameworks (Gottman's Sound Relationship House, Chapman's 5 Love Languages, Perel's Erotic Intelligence, Hendrix's Imago) to identify missing angles
+- **Cadence intelligence** — for repeat softest-dimension picks (fun scored lowest 3 times in a row), rotate through *different tips within category* AND ideally different frameworks (behavioral this time, reflective next, action-oriented after)
+
+### Why deferred
+
+- Not shipping-critical — current 30 tips cover ~6 months no-repeat at healthy cadence, which is longer than most users will use the app before we can iterate based on real signal
+- Research citation adds credibility but risks "textbook" feel that undermines the app's warm-friend voice — needs careful voice calibration
+- Content authoring is real work — 60 tips × 5 dimensions = 300 total, roughly 8-12h focused writing at quality bar we've set
+- Aligns with [feedback_defer_content_authoring.md](../memory/feedback_defer_content_authoring.md) — ship clean, enrich top-N from analytics
+
+### Fix approach (for revisit)
+
+1. **Framework audit** — map current 30 tips to Gottman/Perel/Chapman/Hendrix quadrants. Identify gaps.
+2. **Write to gaps** — draft 30-30 new tips per dimension emphasizing missing angles (e.g., if all "communication" tips are behavioral, add reflective ones).
+3. **Optional citation format** — small italic line under tip: *"Gottman calls this 'turning towards bids for connection'"* — inline in same box, not a separate card. Keeps voice warm; citation is context, not authority.
+4. **Reuse Sex Ed vault workflow** — same triage pattern (`sex-ed/README.md`) could apply. Publish-ready tips committed, drafts + transcripts gitignored.
+
+### Revisit trigger
+
+- User survey / support message mentions Pulse feels repetitive or shallow
+- 6+ months post-launch with users actively re-checking Pulse (analytics: repeat-visit rate > 40%)
+- Content-authoring bandwidth freed up (e.g., after main content pools stabilize)
+
+### Effort estimate
+
+- Framework audit + gap analysis: **~2h research + notes**
+- 30 new tips per dimension (150 total, doubling current pool): **~6-8h focused writing**
+- Optional citation layer: **+2h if inline sourcing added**
+- Wire to code: **~30 min** (just extend the suggestions dict in `app/pulse.tsx`, no schema change)
+- **Total: ~10-12h** for the deeper research-informed pool
+
+### Non-goals
+
+- No standalone "Learn about Gottman" content section — that's the Sex Ed vault's job if we ever build it as full feature
+- No AI-generated tips — quality variance + brand tone risk (see [ai_research.md](../memory/ai_research.md))
+- No changing the 5-dimension structure — that's baked into the schema and history compatibility
+
+---
+
 ## Template for future entries
 
 ```
