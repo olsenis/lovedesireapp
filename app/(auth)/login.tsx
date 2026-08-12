@@ -30,15 +30,23 @@ export default function LoginScreen() {
     }
     setError('');
     setResetMsg('');
+    // Only expose invalid-email format as an error (helpful UX, doesn't leak
+    // account existence). Everything else — user-not-found, transient errors —
+    // gets swallowed and the same success message shows. Prevents email
+    // enumeration via reset flow (NV5 in Aug 2026 security review v2).
+    // Especially sensitive for an intimate-content app where confirmed
+    // account existence is itself embarrassing information.
     try {
       await resetPassword(email);
-      setResetMsg('Password reset email sent. Check your inbox.');
     } catch (e: any) {
       const code = e?.code ?? '';
-      if (code === 'auth/user-not-found') setError('No account with that email.');
-      else if (code === 'auth/invalid-email') setError('Please enter a valid email.');
-      else setError('Could not send reset email. Try again.');
+      if (code === 'auth/invalid-email') {
+        setError('Please enter a valid email.');
+        return;
+      }
+      // fall through to the same success message for user-not-found / etc.
     }
+    setResetMsg('If an account exists with that email, we sent a reset link.');
   };
 
   const handleLogin = async () => {

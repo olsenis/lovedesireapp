@@ -212,6 +212,11 @@ async function deleteCoupleData(coupleId: string): Promise<void> {
     // Added 2026-07-03 (Bug #2 in the GDPR audit) — these were writing docs
     // that survived the cascade before.
     'journal', 'timeCapsules', 'stateUnion', 'milestones',
+    // Added 2026-08-11 (NV1 in security review v2) — wyrCustom holds
+    // user-authored Would You Rather questions, may include intimate content.
+    // Survived past deletions before this add; verify via collectionGroup
+    // query if there's any concern about orphans from pre-fix deletions.
+    'wyrCustom',
   ];
 
   // Nested subcollections FIRST so their parent docs still exist during the walk.

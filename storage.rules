@@ -27,9 +27,22 @@ service firebase.storage {
     }
 
     // ── Couple shared storage ─────────────────────────────────────────────────
-    // Memories, Truth or Dare audio — only couple members can read/write
+    // Memories, Truth or Dare audio, flashes, moments — only couple members
+    // can read/write. Write is size + content-type guarded to prevent a
+    // custom-client attacker from bypassing client-side assertUnderLimit and
+    // uploading arbitrarily large blobs (NV4 in Aug 2026 security review v2).
+    //
+    // 100 MB cap comfortably fits our largest legit payload (60 MB video
+    // ceiling in storageService.assertUnderLimit) with headroom for future
+    // features. Content-type limited to image/*, video/*, audio/* — no
+    // application/octet-stream or arbitrary blob types. Reads stay unrestricted
+    // by size/type so existing content keeps rendering.
     match /couples/{coupleId}/{allPaths=**} {
-      allow read, write: if request.auth != null && isMemberOfCouple(coupleId);
+      allow read: if request.auth != null && isMemberOfCouple(coupleId);
+      allow write: if request.auth != null
+        && isMemberOfCouple(coupleId)
+        && request.resource.size < 100 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|video/.*|audio/.*');
     }
   }
 }

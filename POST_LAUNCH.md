@@ -859,6 +859,68 @@ Also has real-device testing quirks (debug providers, CI integration, Play Store
 
 ---
 
+## Security review v2 — deferred info items (raised August 2026)
+
+Batch of small polish / prevention items from the outside security review, none launch-blocking. All verified in the review pass and consciously deferred with revisit criteria.
+
+### NV2 — Push token stalker path (SEPARATE ENTRY — deferred pending explicit fix decision)
+
+**What.** `services/notificationService.ts` fetches `https://exp.host/--/api/v2/push/send` directly from the client with a partner's pushToken and no auth. Firestore rules allow a paired user to read `users/{partnerId}.pushToken`. After a couple disconnects, the previously-paired party retains the token and can push spoofed content indefinitely (until the app is reinstalled).
+
+**Fix scope.** ~1-2 hours. Move `pushToken` from `users/{uid}` to `users/{uid}/private/pushToken` (partner can't read anymore), add a new Cloud Function `sendPushToPartner(coupleId, title, body)` that verifies the caller is currently paired to the target, and route `notifyPartner` through the function via httpsCallable instead of direct exp.host fetch. Requires a one-time migration for existing tokens.
+
+**Revisit trigger.** Any user report of unwanted post-breakup notifications, or before any marketing push emphasizing safety / privacy.
+
+---
+
+### NV8 — Dead `expo-secure-store` dependency
+
+**What.** `expo-secure-store` is listed in `app.json` plugins + `package.json` but has zero imports across `.ts`/`.tsx`. Firebase Auth refresh tokens live in plaintext `AsyncStorage` — recoverable via unencrypted device backup or jailbreak/root.
+
+**Fix.** Either wire SecureStore for Firebase auth persistence (needs custom Persistence implementation because Firebase JS SDK doesn't natively support it) OR drop the dependency to keep the plugin list honest. If wiring, needs test coverage on both platforms since the plugin doesn't work in Expo Go.
+
+**Revisit trigger.** Any auth-token-related security concern, or when reviewing the plugin list before EAS builds.
+
+**Effort:** ~5 min to drop, or ~2h to wire properly.
+
+---
+
+### NV9 — `deleteUserData` walks `users/{uid}/private` only one level
+
+**What.** `functions/src/index.ts:242-245` deletes docs directly under `private/` but doesn't recurse into `private/{doc}/subcollection/`. Currently no service writes nested paths under `private/`, so this is prevention-only.
+
+**Fix.** Use the existing `deleteNestedSubcollection` pattern (or wrap in a generic recursive-delete helper) if any nested `private` path lands in the future.
+
+**Revisit trigger.** Any new feature adding a subcollection under `users/{uid}/private/*/`. Set a lint rule / PR check to flag this pattern if possible.
+
+**Effort:** ~15 min when needed.
+
+---
+
+### NV10 — QR regex accepts characters not in invite code alphabet
+
+**What.** `components/QRScannerModal.tsx` regex `/^[A-Z0-9]{8}$/` accepts `0/1/O/I/L` — the actual `CODE_ALPHABET` in `services/coupleService.ts:32` excludes them for legibility. Not exploitable — codes not in alphabet just return `not_found` at the server. Nit.
+
+**Fix.** Tighten regex to `/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/`.
+
+**Revisit trigger.** Any user report of QR scanner accepting weird codes, or general polish sweep before launch.
+
+**Effort:** 1 min.
+
+---
+
+### NV11 — Silent `.catch(() => {})` on flash cleanup delete
+
+**What.** `functions/src/index.ts:286` — the allowed-prefix Storage delete swallows all errors silently. If the prefix guard is ever weakened by regression, out-of-prefix successful deletes leave no trace. Also legitimate failures (file already gone, transient permission blip) disappear.
+
+**Fix.** Replace `.catch(() => {})` with `.catch((e) => console.error(...))` inside the allowed path. Keeps behavior identical (never crash cleanup) but surfaces unexpected failures.
+
+**Revisit trigger.** Any Storage cost anomaly investigation or if the H1 flash cleanup path guard ever changes.
+
+**Effort:** 5 min.
+
+---
+
 ## Template for future entries
 
 ```

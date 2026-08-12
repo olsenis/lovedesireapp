@@ -13,6 +13,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useAuth } from '../../hooks/useAuth';
 import { createUserProfile } from '../../services/authService';
+import { uploadProfilePhoto } from '../../services/storageService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius } from '../../constants/spacing';
@@ -46,9 +47,24 @@ export default function OnboardingScreen() {
     setError('');
     setLoading(true);
     try {
+      // Upload to Firebase Storage first — passing the raw file:// URI
+      // through to Firestore would persist a device-local path that
+      // resolves nowhere on the partner's phone (NV7 in Aug 2026 security
+      // review v2). uploadProfilePhoto returns the persistent HTTPS
+      // download URL, which is what should live on the profile doc.
+      let photoURL: string | undefined;
+      if (photoURI) {
+        try {
+          photoURL = await uploadProfilePhoto(user.uid, photoURI);
+        } catch {
+          // If upload fails, save the profile without a photo rather than
+          // blocking the whole onboarding flow. User can retry from Profile.
+          photoURL = undefined;
+        }
+      }
       await createUserProfile(user.uid, {
         name: name.trim(),
-        photoURL: photoURI ?? undefined,
+        photoURL,
       });
       router.replace('/(auth)/pairing');
     } catch {
