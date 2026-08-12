@@ -10,6 +10,9 @@ import { notifyPartner } from '../services/notificationService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { BrandDatePicker } from '../components/BrandDatePicker';
+import { VoiceRecorder } from '../components/VoiceRecorder';
+import { VoicePlayer } from '../components/VoicePlayer';
+import { uploadVoiceNote } from '../services/storageService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -102,6 +105,14 @@ export default function NotesScreen() {
   const [openedNote, setOpenedNote] = useState<LoveNote | null>(null);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<LoveNote | null>(null);
+  // Voice-mode composer state (Aug 2026). mediaType toggles between text
+  // and voice; voiceUri holds the local file:// path from VoiceRecorder
+  // between record + Send. Uploaded to Firebase Storage on Send only, so
+  // discarding before Send costs no bandwidth. Message field is still
+  // rendered in voice mode as an optional caption.
+  const [mediaType, setMediaType] = useState<'text' | 'voice'>('text');
+  const [voiceUri, setVoiceUri] = useState<string | null>(null);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -125,10 +136,17 @@ export default function NotesScreen() {
     setCustomDate(null);
     setMoodPick('😢');
     setEditingNoteId(null);
+    setMediaType('text');
+    setVoiceUri(null);
+    setUploadingVoice(false);
   };
 
   const handleCreate = async () => {
-    if (!message.trim() || !profile?.coupleId || !user) return;
+    if (!profile?.coupleId || !user) return;
+    // Voice mode requires a recorded clip. Text mode requires message text.
+    // Voice with an optional text caption is fine — caption is empty allowed.
+    if (mediaType === 'voice' && !voiceUri) return;
+    if (mediaType === 'text' && !message.trim()) return;
     if (occasion === CUSTOM_DATE_LABEL && !customDate) return;
     const occ = occasions.find(o => o.label === occasion);
     const openCondition = occ?.condition;
@@ -138,18 +156,34 @@ export default function NotesScreen() {
       : getOccasionTime(occasion);
 
     if (editingNoteId) {
-      // Edit existing — no notification re-fired
+      // Edit path only touches text + timing/condition. Voice notes can have
+      // their caption + timing edited but not re-recorded (see updateNote).
       await updateNote(profile.coupleId, editingNoteId, message.trim(), openAt, openCondition, triggerEmoji);
     } else {
-      await createNote(profile.coupleId, user.uid, message.trim(), openAt, openCondition, triggerEmoji);
+      let audioURL: string | undefined;
+      if (mediaType === 'voice' && voiceUri) {
+        setUploadingVoice(true);
+        try {
+          audioURL = await uploadVoiceNote(profile.coupleId, user.uid, voiceUri);
+        } catch (e) {
+          console.warn('Voice note upload failed', e);
+          setUploadingVoice(false);
+          return; // Don't create the doc without the audio blob
+        }
+        setUploadingVoice(false);
+      }
+      await createNote(profile.coupleId, user.uid, message.trim(), openAt, openCondition, triggerEmoji, audioURL);
       const moodLabel = triggerEmoji ? MOOD_LABELS[triggerEmoji].toLowerCase() : '';
+      const mediaWord = mediaType === 'voice' ? 'voice note' : 'note';
       const subtitle =
-        openCondition === 'sad'      ? `A note will unlock when you feel ${moodLabel}` :
-        openCondition === 'visit'    ? 'A note for when you arrive' :
-        openCondition === 'missing'  ? 'A note for when you miss me' :
-        openCondition === 'sleepless'? 'A note for when you can\'t sleep' :
-        'A message is waiting for you';
-      notifyPartner(profile.coupleId, user.uid, 'You have a love note 💌', subtitle).catch(() => {});
+        openCondition === 'sad'      ? `A ${mediaWord} will unlock when you feel ${moodLabel}` :
+        openCondition === 'visit'    ? `A ${mediaWord} for when you arrive` :
+        openCondition === 'missing'  ? `A ${mediaWord} for when you miss me` :
+        openCondition === 'sleepless'? `A ${mediaWord} for when you can\'t sleep` :
+        mediaType === 'voice'        ? 'A voice message is waiting for you' :
+                                       'A message is waiting for you';
+      const title = mediaType === 'voice' ? 'You have a voice note 🎤' : 'You have a love note 💌';
+      notifyPartner(profile.coupleId, user.uid, title, subtitle).catch(() => {});
     }
 
     resetComposer();
@@ -274,15 +308,29 @@ export default function NotesScreen() {
                   activeOpacity={0.85}
                  accessibilityRole="button">
                   <View style={[styles.noteIconWrap, canOpen ? styles.noteIconReady : styles.noteIconLocked]}>
-                    <Text style={styles.noteLockEmoji}>{note.opened ? '💌' : canOpen ? '✉️' : '🔒'}</Text>
+                    <Text style={styles.noteLockEmoji}>
+                      {note.mediaType === 'voice' && !note.opened
+                        ? (canOpen ? '🎤' : '🔒')
+                        : (note.opened ? '💌' : canOpen ? '✉️' : '🔒')}
+                    </Text>
                   </View>
                   <View style={styles.noteInfo}>
                     {note.opened ? (
-                      <Text style={styles.noteText}>{note.message}</Text>
+                      note.mediaType === 'voice' ? (
+                        <Text style={styles.noteText} numberOfLines={1}>🎤 Voice note{note.message ? `: ${note.message}` : ''}</Text>
+                      ) : (
+                        <Text style={styles.noteText}>{note.message}</Text>
+                      )
                     ) : (
                       <>
-                        <Text style={styles.noteLockedText}>{canOpen ? 'Tap to open' : timeLabel(note)}</Text>
-                        {!canOpen && <Text style={styles.noteTime}>A message is waiting for you</Text>}
+                        <Text style={styles.noteLockedText}>
+                          {canOpen ? (note.mediaType === 'voice' ? 'Tap to hear' : 'Tap to open') : timeLabel(note)}
+                        </Text>
+                        {!canOpen && (
+                          <Text style={styles.noteTime}>
+                            {note.mediaType === 'voice' ? 'A voice note is waiting for you' : 'A message is waiting for you'}
+                          </Text>
+                        )}
                       </>
                     )}
                   </View>
@@ -298,10 +346,12 @@ export default function NotesScreen() {
             {myNotes.map((note) => (
               <View key={note.id} style={[styles.noteCard, styles.mySent]}>
                 <View style={styles.noteIconWrap}>
-                  <Text style={styles.noteLockEmoji}>📝</Text>
+                  <Text style={styles.noteLockEmoji}>{note.mediaType === 'voice' ? '🎤' : '📝'}</Text>
                 </View>
                 <View style={styles.noteInfo}>
-                  <Text style={styles.noteText} numberOfLines={2}>{note.message}</Text>
+                  <Text style={styles.noteText} numberOfLines={2}>
+                    {note.mediaType === 'voice' ? (note.message ? `🎤 ${note.message}` : '🎤 Voice note') : note.message}
+                  </Text>
                   <Text style={styles.noteTime}>{myNoteStatus(note)}</Text>
                 </View>
                 {!note.opened && (
@@ -335,7 +385,7 @@ export default function NotesScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>💌</Text>
             <Text style={styles.emptyTitle}>No notes yet</Text>
-            <Text style={styles.emptyText}>Write a timed message your partner will love</Text>
+            <Text style={styles.emptyText}>Save a note or voice message for a moment yet to come.</Text>
             <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowCreate(true)} accessibilityRole="button">
               <Text style={styles.emptyBtnText}>Write a note</Text>
             </TouchableOpacity>
@@ -348,15 +398,61 @@ export default function NotesScreen() {
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>{editingNoteId ? 'Edit Love Note' : 'Write a Love Note'}</Text>
-            <TextInput
-              style={styles.textarea}
-              placeholder="Write something from the heart..."
-              placeholderTextColor={Colors.muted}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              autoFocus
-            />
+
+            {/* Mode toggle — only offered on new notes. Editing keeps the
+                original media type since re-recording isn't supported in
+                edit mode (see updateNote comment). */}
+            {!editingNoteId && (
+              <View style={styles.modeToggle}>
+                <TouchableOpacity
+                  style={[styles.modeBtn, mediaType === 'text' && styles.modeBtnActive]}
+                  onPress={() => setMediaType('text')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Text note"
+                >
+                  <Text style={[styles.modeBtnText, mediaType === 'text' && styles.modeBtnTextActive]}>✎ Text</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modeBtn, mediaType === 'voice' && styles.modeBtnActive]}
+                  onPress={() => setMediaType('voice')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Voice note"
+                >
+                  <Text style={[styles.modeBtnText, mediaType === 'voice' && styles.modeBtnTextActive]}>🎤 Voice</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {mediaType === 'voice' && !editingNoteId ? (
+              <View style={styles.voiceComposeWrap}>
+                <VoiceRecorder
+                  currentUri={voiceUri}
+                  onRecorded={setVoiceUri}
+                  onCleared={() => setVoiceUri(null)}
+                />
+                {voiceUri && (
+                  <TextInput
+                    style={[styles.textarea, { minHeight: 60 }]}
+                    placeholder="Add a caption (optional)"
+                    placeholderTextColor={Colors.muted}
+                    value={message}
+                    onChangeText={setMessage}
+                    multiline
+                    maxLength={280}
+                  />
+                )}
+              </View>
+            ) : (
+              <TextInput
+                style={styles.textarea}
+                placeholder="Write something from the heart..."
+                placeholderTextColor={Colors.muted}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                autoFocus={!editingNoteId}
+              />
+            )}
             <Text style={styles.modalLabel}>When can it be opened?</Text>
             <View style={styles.occasionRow}>
               {occasions.map((o) => {
@@ -442,12 +538,25 @@ export default function NotesScreen() {
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.sendBtn, (!message.trim() || (occasion === CUSTOM_DATE_LABEL && !customDate)) && styles.sendBtnDisabled]}
+                style={[
+                  styles.sendBtn,
+                  ((mediaType === 'text' && !message.trim()) ||
+                    (mediaType === 'voice' && !editingNoteId && !voiceUri) ||
+                    (occasion === CUSTOM_DATE_LABEL && !customDate) ||
+                    uploadingVoice) && styles.sendBtnDisabled,
+                ]}
                 onPress={handleCreate}
-                disabled={!message.trim() || (occasion === CUSTOM_DATE_LABEL && !customDate)}
+                disabled={
+                  (mediaType === 'text' && !message.trim()) ||
+                  (mediaType === 'voice' && !editingNoteId && !voiceUri) ||
+                  (occasion === CUSTOM_DATE_LABEL && !customDate) ||
+                  uploadingVoice
+                }
                 accessibilityRole="button"
               >
-                <Text style={styles.sendText}>{editingNoteId ? 'Save changes' : 'Send 💌'}</Text>
+                <Text style={styles.sendText}>
+                  {uploadingVoice ? 'Uploading...' : editingNoteId ? 'Save changes' : mediaType === 'voice' ? 'Send 🎤' : 'Send 💌'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -477,13 +586,19 @@ export default function NotesScreen() {
         </Modal>
       )}
 
-      {/* Opened note viewer */}
+      {/* Opened note viewer. Voice notes show the player prominently + the
+          caption below (may be empty). Text notes show the message only. */}
       {openedNote && (
         <Modal visible transparent animationType="fade">
           <TouchableOpacity style={styles.noteViewer} onPress={() => setOpenedNote(null)} activeOpacity={1} accessibilityRole="button">
             <View style={styles.noteViewerCard}>
-              <Text style={styles.noteViewerEmoji}>💌</Text>
-              <Text style={styles.noteViewerMsg}>{openedNote.message}</Text>
+              <Text style={styles.noteViewerEmoji}>{openedNote.mediaType === 'voice' ? '🎤' : '💌'}</Text>
+              {openedNote.mediaType === 'voice' && openedNote.audioURL && (
+                <VoicePlayer uri={openedNote.audioURL} size="large" idleLabel="Tap to hear" />
+              )}
+              {openedNote.message ? (
+                <Text style={styles.noteViewerMsg}>{openedNote.message}</Text>
+              ) : null}
               <Text style={styles.noteViewerHint}>Tap anywhere to close</Text>
             </View>
           </TouchableOpacity>
@@ -560,6 +675,28 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
+  // Mode toggle (Text | Voice) — segmented control at top of composer for
+  // new notes. Editing existing notes hides the toggle since re-recording
+  // isn't supported (see noteService.updateNote).
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: Colors.white,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 4,
+    gap: 4,
+  },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: Radius.full,
+  },
+  modeBtnActive: { backgroundColor: Colors.burgundy },
+  modeBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  modeBtnTextActive: { color: Colors.cream },
+  voiceComposeWrap: { gap: Spacing.md },
   textarea: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, minHeight: 120, borderWidth: 1, borderColor: Colors.border },
   modalLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   occasionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },

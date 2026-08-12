@@ -249,6 +249,34 @@ Paywall gates from `app/upgrade.tsx` + per-screen `isSubscribed` checks.
 
 ---
 
+## Active work roadmap (Aug 2026 — post-review sequencing)
+
+Reordered from the reviewer's ROI ranking (below) under "quality + shareability > launch speed" priority. Sequence progresses one feature at a time — change → test → approve loop before starting the next. Each item shows current status.
+
+| # | Feature | Change | Effort | Status |
+|---|---|---|---|---|
+| **1** | **Voice Notes** (D2) | Add voice recording as media type in Love Notes (in addition to text). Reuses ToD audio infra. | 4-6h | 🟡 In progress — code + tests done, awaiting user approval |
+| 2 | **Emotional Weather** (D1) | Passive cross-partner pattern detection. Weekly Cloud Function analyzes moods + Pulse + Sunday Check-in trends. Home surface. | 8-12h | Pending |
+| 3 | **Async Dares** (D3) | Partner-set challenges with deadline + photo confirmation. Reuses Bingo turn state + Moments photo + Notes conditions. | 6-8h | Pending |
+| 4 | **Versus** fix | Curated starter pool (~50 items) for cold-start + reveal-with-why prompt + streak/records. | 3-4h | Pending |
+| 5 | **Journal** redesign | Rotating prompts (~20-30) + weekly retro summary + 3-day streak-lite. | 3-4h | Pending |
+| 6 | **Pulse** redesign | 10→5 questions, plain-language interpretation, routes to related features (low fun → Roulette, low closeness → Sensate). | 2-3h | Pending |
+| 7 | **Intimacy Log** narrative | Auto-generated 1st-of-month "story" summary. Ties to Sensate + Daily via one-tap logging prompts. | 4-6h | Pending |
+| 8 | **Love Language** weekly nudge | Home card that rotates weekly focus + 3 concrete micro-actions. Extends existing `getLanguageTip`. | 2-3h | Pending |
+| 9 | **Calendar** reposition | "Anniversary + special-days ledger" — no calendar-sync competition. | 30 min | Pending |
+| 10 | **`/upgrade`** copy reorder | Lead with Fantasy Wishes + Sensate + Fire challenges. Blueprint + Adult moods secondary. | 30 min | Pending |
+
+**Total: ~35-50h focused work.** At 1-2 items per week: **~2-3 month roadmap**.
+
+**Ordering rationale:**
+- **Viral + emotional payoff first** (D2, D1, D3) — features people will TALK about
+- **Existing feature fixes after** (#4-8) — grounded in real weak spots per review
+- **Copy tweaks last** (#9-10) — highest hygiene/lowest wow
+
+**One rule: one at a time.** Each item ships fully (code → test → approve → commit → push) before starting the next. No parallel WIP branches. User verifies on 2 phones between each.
+
+---
+
 ## Post-launch entertainment ROI ranking
 
 Ordered by best expected lift per hour invested (for POST_LAUNCH.md prioritization):

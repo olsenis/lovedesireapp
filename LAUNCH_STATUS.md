@@ -4,6 +4,14 @@ Where we are, what's next, what's blocking. Update this file whenever a major li
 
 > **Last updated:** August 2026
 
+## 🎯 Current phase: Quality iteration (pre-launch)
+
+Launch pressure released — user decision to prioritise "app worth talking about" over ship-fast. Apple Dev enrollment deferred until app is solid. Ongoing:
+
+- **Entertainment redesign roadmap** — 10 items sequenced by viral / emotional-payoff impact. See [ENTERTAINMENT_REVIEW.md § Active work roadmap](ENTERTAINMENT_REVIEW.md). Currently in progress: **#1 Voice Notes in Love Notes**. One item at a time, change → test → approve → commit before next.
+- **Security review v3 fixes** landed: H1, M2, L2, L4, I2, NV1, NV3, NV4, NV5, NV6, NV7, S2 (auto-discovery cascade), NV9. Deferred: S1 (RC webhook, blocked on RC setup), S3/S4 (cleanup scaling), S5 (auth trigger), S6/NV2 (push token stalker path — reviewer strongly argued for promotion, deferred to post-real-device-testing), S7 (App Check).
+- **Bug bash** queued after entertainment redesign roadmap has 3-4 items shipped.
+
 ---
 
 ## ✅ Done

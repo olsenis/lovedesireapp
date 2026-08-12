@@ -81,6 +81,20 @@ export async function uploadMomentPhoto(coupleId: string, uid: string, uri: stri
 }
 
 
+// Voice notes for the Love Notes feature — persistent audio (not ephemeral
+// like Flashes). Stored under a dedicated /voiceNotes/ prefix per couple so
+// GCS lifecycle rules or listing operations can target them independently.
+// Path template mirrors the flashes pattern for consistency.
+export async function uploadVoiceNote(coupleId: string, uid: string, uri: string): Promise<string> {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  assertUnderLimit(blob, 'audio');
+  const filename = `${Date.now()}_${uid}.m4a`;
+  const storageRef = ref(storage, `couples/${coupleId}/voiceNotes/${filename}`);
+  await uploadBytes(storageRef, blob, { contentType: 'audio/mp4' });
+  return await getDownloadURL(storageRef);
+}
+
 export async function uploadFlashMedia(
   coupleId: string,
   uid: string,

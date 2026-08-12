@@ -278,8 +278,8 @@ export default function FlashesScreen() {
             </View>
             <Text style={styles.heroLead}>A little window into your day</Text>
             <Text style={styles.heroBody}>
-              Send {partner?.name ?? 'your partner'} a moment from right now.
-              {'\n'}Photos vanish in 24 hours.
+              Send {partner?.name ?? 'your partner'} a photo, video, or voice note from right now.
+              {'\n'}Everything vanishes in 24 hours.
             </Text>
             {sentToday > 0 && (
               <View style={styles.heroBadge}>

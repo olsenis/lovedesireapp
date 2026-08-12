@@ -12,6 +12,12 @@ export interface LoveNote {
   // missing   = LDR stash, recipient opens when missing partner (manual)
   // sleepless = LDR stash, recipient opens when can't sleep (manual)
   triggerEmoji?: MoodEmoji; // present when openCondition === 'sad'; defaults to '😢' for legacy notes
+  // Voice notes (Aug 2026) — a note may be either text (`mediaType` absent or
+  // 'text', message required) or voice ('voice', audioURL required, message
+  // acts as an optional caption). Existing notes without mediaType are treated
+  // as text for backwards compatibility.
+  mediaType?: 'text' | 'voice';
+  audioURL?: string;
   fromUid: string;
   opened: boolean;
   createdAt: number;
@@ -71,6 +77,9 @@ export async function createNote(
   openAt: number,
   openCondition?: 'sad' | 'visit' | 'missing' | 'sleepless',
   triggerEmoji?: MoodEmoji,
+  // Voice-mode fields (Aug 2026) — pass audioURL to make this a voice note.
+  // `message` becomes an optional caption when audioURL is present.
+  audioURL?: string,
 ): Promise<void> {
   // Only sad/visit are auto-unlocked — lock their openAt to year 9999 so time never triggers them.
   // missing/sleepless are stash letters openable anytime by the recipient.
@@ -80,6 +89,7 @@ export async function createNote(
     openAt: isAutoUnlock ? 32503680000000 : openAt,
     ...(openCondition ? { openCondition } : {}),
     ...(triggerEmoji ? { triggerEmoji } : {}),
+    ...(audioURL ? { mediaType: 'voice', audioURL } : {}),
     fromUid,
     opened: false,
     createdAt: Date.now(),
@@ -136,7 +146,12 @@ export async function updateNote(
   triggerEmoji?: MoodEmoji,
 ): Promise<void> {
   const isAutoUnlock = openCondition === 'sad' || openCondition === 'visit';
-  // deleteField() removes the property server-side when the user clears a condition or emoji
+  // deleteField() removes the property server-side when the user clears a condition or emoji.
+  // Edit path deliberately does NOT touch mediaType / audioURL — voice notes
+  // let the user only re-time / re-condition, not re-record. Re-recording
+  // would need to delete the old audio blob and upload a new one, which is
+  // more scope than the edit flow currently justifies. Text edits on voice
+  // notes update the caption only.
   await updateDoc(doc(db, 'couples', coupleId, 'notes', noteId), {
     message,
     openAt: isAutoUnlock ? 32503680000000 : openAt,
