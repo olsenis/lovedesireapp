@@ -46,7 +46,12 @@ export async function uploadProfilePhoto(uid: string, uri: string): Promise<stri
   const blob = await response.blob();
   assertUnderLimit(blob, 'photo');
   const storageRef = ref(storage, `users/${uid}/profile.jpg`);
-  await uploadBytes(storageRef, blob);
+  // Explicit contentType — in React Native, fetch(file://).blob() often
+  // returns a Blob without .type set, which Firebase then uploads as
+  // application/octet-stream. That would fail the storage.rules
+  // contentType.matches('image/.*|video/.*|audio/.*') guard added in
+  // security review v2 NV4. compressImage always outputs JPEG.
+  await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
   return await getDownloadURL(storageRef);
 }
 
@@ -58,7 +63,9 @@ export async function uploadTruthDareAudio(coupleId: string, uid: string, round:
   const blob = await response.blob();
   assertUnderLimit(blob, 'audio');
   const storageRef = ref(storage, `couples/${coupleId}/truthDare/${round}_${uid}.m4a`);
-  await uploadBytes(storageRef, blob);
+  // audio/mp4 is the MIME for .m4a container. Explicit for the NV4 rule
+  // (see uploadProfilePhoto for full rationale).
+  await uploadBytes(storageRef, blob, { contentType: 'audio/mp4' });
   return await getDownloadURL(storageRef);
 }
 
@@ -69,7 +76,7 @@ export async function uploadMomentPhoto(coupleId: string, uid: string, uri: stri
   assertUnderLimit(blob, 'photo');
   const date = new Date().toISOString().slice(0, 10);
   const storageRef = ref(storage, `couples/${coupleId}/moments/${date}_${uid}.jpg`);
-  await uploadBytes(storageRef, blob);
+  await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
   return await getDownloadURL(storageRef);
 }
 
@@ -88,6 +95,9 @@ export async function uploadFlashMedia(
   const ext = type === 'video' ? 'mp4' : type === 'voice' ? 'm4a' : 'jpg';
   const filename = `${Date.now()}_${uid}.${ext}`;
   const storageRef = ref(storage, `couples/${coupleId}/flashes/${filename}`);
-  await uploadBytes(storageRef, blob);
+  // Map type → MIME so the storage.rules contentType guard passes.
+  // photo=image/jpeg (compressImage output), video=video/mp4, voice=audio/mp4.
+  const contentType = type === 'photo' ? 'image/jpeg' : type === 'video' ? 'video/mp4' : 'audio/mp4';
+  await uploadBytes(storageRef, blob, { contentType });
   return await getDownloadURL(storageRef);
 }
