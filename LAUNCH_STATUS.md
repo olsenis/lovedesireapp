@@ -95,7 +95,19 @@ Currently the /upgrade screen is a placeholder ("Coming soon"). Before launch:
 - Verify SSL auto-provisions
 - Update Support URL + Privacy Policy URL in App Store Connect
 
-### 7. Android APK build + hosting
+### 7a. Aggregate stats counter
+Anonymous per-feature usage counter so post-launch prioritisation isn't guessing. Never stores uid/coupleId/content — only integer counts per month per feature. GDPR-safe by construction. Enables "Dares got 3 opens per couple → drop it" vs "Voice Notes got 40 → invest more" decisions from real data instead of hunches.
+- Full design in [ADMIN_DASHBOARD.md § Piece 1](ADMIN_DASHBOARD.md)
+- Scope: ~2h (statsService + Firestore rules + ~32 instrumentation sites)
+- Privacy Policy + Terms already updated to disclose
+
+### 7b. Admin dashboard
+Protected `/admin` route (hidden, not linked in nav) that surfaces the aggregate stats + subscription counts + a small set of privileged actions (grant/revoke premium, view user, search by email). Cloud Functions with `assertAdmin` uid allowlist enforce access. Replaces manual Firestore Console edits for support/QA operations pre-RevenueCat and covers ongoing admin needs after.
+- Full design in [ADMIN_DASHBOARD.md § Piece 2](ADMIN_DASHBOARD.md)
+- Scope: ~3.5h across two phases (5 Cloud Functions + `app/admin.tsx` UI)
+- MVP scope: read-only overview + grant/revoke premium + user search. Delete-user + data export deferred to v1.1.
+
+### 8. Android APK build + hosting
 Per [CLAUDE.md](CLAUDE.md) distribution strategy, Android is NOT on Google Play — the signed APK is hosted on our marketing site. Before launch:
 - Run `npx eas build --platform android --profile production` — outputs signed APK (not AAB — we want the direct-install format, not Play Store bundle)
 - Upload APK to `web/public/` (or Cloudflare R2 / other CDN if large)
