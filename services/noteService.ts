@@ -111,11 +111,26 @@ export async function unlockMoodNotes(coupleId: string, uid: string, emoji: Mood
     const noteEmoji: MoodEmoji = (data.triggerEmoji as MoodEmoji) ?? '😢';
     return noteEmoji === emoji;
   });
+  // Diagnostic — surfaces via console.error (preserved in production builds
+  // per babel.config transform-remove-console `exclude: ['error','warn']`).
+  // If unlock silently fails to affect the UI, this log tells us whether
+  // the query missed the note, the filter excluded it, or the updateDoc
+  // was rejected by rules.
+  console.error(
+    `[unlockMoodNotes] pick=${emoji} caller=${uid} candidates=${snap.docs.length} matched=${toUnlock.length}`,
+    toUnlock.map((d) => ({ id: d.id, mediaType: d.data().mediaType, triggerEmoji: d.data().triggerEmoji })),
+  );
   // Individual updates can throw "no such document" if the sender deletes a
   // note between our getDocs read and the update. That's benign — the note
-  // is gone, no unlock needed. Swallow per-item errors so one missing note
-  // doesn't take down the whole unlock batch and break the mood-pick flow.
-  await Promise.all(toUnlock.map((d) => updateDoc(d.ref, { openAt: Date.now() }).catch(() => {})));
+  // is gone, no unlock needed. Log failures loudly so rule rejections don't
+  // hide silently (Aug 2026 voice-note debug pass).
+  await Promise.all(
+    toUnlock.map((d) =>
+      updateDoc(d.ref, { openAt: Date.now() }).catch((e) => {
+        console.error(`[unlockMoodNotes] update failed for note=${d.id}:`, e);
+      }),
+    ),
+  );
 }
 
 // Called when the next visit date has arrived — unlocks any pending visit-condition notes from partner
