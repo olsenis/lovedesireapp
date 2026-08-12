@@ -22,6 +22,7 @@ import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkS
 import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
 import { MomentEntry, subscribeMoments } from '../../services/momentService';
 import { ActivityCardsSession, subscribeActivityCards } from '../../services/bingoService';
+import { Dare, subscribeDares } from '../../services/dareService';
 import { Todo, subscribeTodos } from '../../services/todoService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
 import {
@@ -269,6 +270,7 @@ export default function HomeScreen() {
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
+  const [dares, setDares] = useState<Dare[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -303,7 +305,8 @@ export default function HomeScreen() {
     const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
     const u15 = subscribeTodos(coupleId, setTodos);
     const u16 = subscribeSensateProgress(coupleId, setSensateProgress);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); };
+    const u17 = subscribeDares(coupleId, setDares);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u17(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -413,6 +416,38 @@ export default function HomeScreen() {
       subtitle: `${mediaWord} from ${partner?.name ?? 'your partner'} ${verb}`,
       route: '/notes',
       bg: Colors.blush,
+    });
+  }
+
+  // Async Dares — pending dares for me (partner sent a challenge) and
+  // recently-completed dares from partner (they just did the thing you dared
+  // them to). Both drive back to /dares. Pending count in title lets user
+  // triage without opening.
+  const pendingDaresForMe = dares.filter((d) => d.toUid === uid && d.status === 'pending');
+  const freshlyCompletedFromPartner = dares.filter((d) =>
+    d.fromUid === uid && d.status === 'completed' && d.completedAt && Date.now() - d.completedAt < 24 * 3600000
+  );
+  if (pendingDaresForMe.length > 0) {
+    const first = pendingDaresForMe[0];
+    list.push({
+      emoji: '🎁',
+      title: pendingDaresForMe.length > 1
+        ? `${pendingDaresForMe.length} dares from ${partner?.name ?? 'your partner'}`
+        : `A dare from ${partner?.name ?? 'your partner'}`,
+      subtitle: first.prompt.length > 60 ? first.prompt.slice(0, 57) + '...' : first.prompt,
+      route: '/dares',
+      bg: '#FFF3E0',
+    });
+  }
+  if (freshlyCompletedFromPartner.length > 0) {
+    list.push({
+      emoji: '🎉',
+      title: `${partner?.name ?? 'Your partner'} completed your dare`,
+      subtitle: freshlyCompletedFromPartner.length > 1
+        ? `${freshlyCompletedFromPartner.length} of your dares, tap to see`
+        : 'Tap to see how it went',
+      route: '/dares',
+      bg: '#F3E5F5',
     });
   }
 
@@ -728,7 +763,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress]);
+  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, dares]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

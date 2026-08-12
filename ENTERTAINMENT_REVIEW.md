@@ -257,7 +257,7 @@ Reordered from the reviewer's ROI ranking (below) under "quality + shareability 
 |---|---|---|---|---|
 | **1** | **Voice Notes** (D2) | Add voice recording as media type in Love Notes (in addition to text). Reuses ToD audio infra. Plus Home nudge distinction + auto-title + recipient rename. | 4-6h | ✅ **Shipped** (a36c526 / 5512732 / 646fc5a) |
 | 2 | **Emotional Weather** (D1) | Passive cross-partner pattern detection. Weekly Cloud Function analyzes moods + Pulse + Sunday Check-in trends. Home surface. | 8-12h | Deferred — needs historical data to be meaningful, revisit post-launch |
-| 3 | **Async Dares** (D3) | Partner-set challenges with deadline + photo confirmation. Reuses Bingo turn state + Moments photo + Notes conditions. | 6-8h | Pending |
+| **3** | **Async Dares** (D3) MVP | Partner-set text challenges with optional deadline + optional photo proof on completion. Accept / decline / mark-complete / withdraw flow. Discover tab card + Home nudges. Streaks, celebration animation, Together List integration deferred to v2. | 3-4h (MVP of 6-8h scope) | ✅ **Shipped** |
 | **4** | **Versus** fix | Streaks + persistent records + "talk about it" prompt + better empty state. Starter pool deferred to v2. | 2h (of 3-4h scope) | ✅ **Shipped** (e2ff651) — starter pool below |
 | 5 | **Journal** redesign | Rotating prompts (~20-30) + weekly retro summary + 3-day streak-lite. | 3-4h | Pending |
 | **6** | **Pulse** redesign | 10→5 questions, trend comparison ("stronger/softer than 4 weeks ago"), routes to related features per softest dimension. Cadence hint in intro copy. | 2h | ✅ **Shipped** |

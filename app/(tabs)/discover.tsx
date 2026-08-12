@@ -24,6 +24,7 @@ const GAMES: GameCard[] = [
   // Activity Cards' cards ask you to do things in the same room together.
   // LDR pairs get an "IN-PERSON" pill so they know before opening.
   { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true, inPerson: true },
+  { emoji: '🎁', title: 'Dares',                subtitle: 'Challenge your partner, they complete by a deadline', route: '/dares',   bg: '#FFF3E0', paid: false },
   { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5', paid: true },
 ];
 
