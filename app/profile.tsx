@@ -566,8 +566,8 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <TouchableOpacity style={styles.row} onPress={() => router.push('/calendar' as any)} accessibilityRole="button">
             <View style={styles.rowTextStack}>
-              <Text style={styles.rowLabel}>📅 Calendar</Text>
-              <Text style={styles.rowHint}>Month view of shared dates and countdowns</Text>
+              <Text style={styles.rowLabel}>✨ Special Days</Text>
+              <Text style={styles.rowHint}>Anniversaries, birthdays, first times — dates worth remembering</Text>
             </View>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>

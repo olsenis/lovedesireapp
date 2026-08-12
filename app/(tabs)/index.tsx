@@ -110,7 +110,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
       { tip: `Pick something from Playful in Daily and treat it like a small gift today.`, cta: 'Open Daily', route: '/daily?category=playful' },
     ],
     time: [
-      { tip: `Carve out 30 phone-free minutes with ${partnerName} today. Mark it on the Calendar so it's real.`, cta: 'Open Calendar', route: '/calendar' },
+      { tip: `Carve out 30 phone-free minutes with ${partnerName} today. Save it in Special Days so it's real.`, cta: 'Open Special Days', route: '/calendar' },
       { tip: `Do a slow Sunday Check-in tonight. Quality time is the love language and the check-in lives there.`, cta: 'Start the check-in', route: '/state-union' },
       { tip: `Spin Tonight's Date together. Pick something that lasts longer than dinner.`, cta: 'Draw a date', route: '/roulette' },
       { tip: `Play Daily tonight. Three questions, no phones, eye contact.`, cta: 'Open Daily', route: '/daily' },

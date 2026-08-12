@@ -255,16 +255,17 @@ Reordered from the reviewer's ROI ranking (below) under "quality + shareability 
 
 | # | Feature | Change | Effort | Status |
 |---|---|---|---|---|
-| **1** | **Voice Notes** (D2) | Add voice recording as media type in Love Notes (in addition to text). Reuses ToD audio infra. | 4-6h | 🟡 In progress — code + tests done, awaiting user approval |
-| 2 | **Emotional Weather** (D1) | Passive cross-partner pattern detection. Weekly Cloud Function analyzes moods + Pulse + Sunday Check-in trends. Home surface. | 8-12h | Pending |
+| **1** | **Voice Notes** (D2) | Add voice recording as media type in Love Notes (in addition to text). Reuses ToD audio infra. Plus Home nudge distinction + auto-title + recipient rename. | 4-6h | ✅ **Shipped** (a36c526 / 5512732 / 646fc5a) |
+| 2 | **Emotional Weather** (D1) | Passive cross-partner pattern detection. Weekly Cloud Function analyzes moods + Pulse + Sunday Check-in trends. Home surface. | 8-12h | Deferred — needs historical data to be meaningful, revisit post-launch |
 | 3 | **Async Dares** (D3) | Partner-set challenges with deadline + photo confirmation. Reuses Bingo turn state + Moments photo + Notes conditions. | 6-8h | Pending |
-| 4 | **Versus** fix | Curated starter pool (~50 items) for cold-start + reveal-with-why prompt + streak/records. | 3-4h | Pending |
+| **4** | **Versus** fix | Streaks + persistent records + "talk about it" prompt + better empty state. Starter pool deferred to v2. | 2h (of 3-4h scope) | ✅ **Shipped** (e2ff651) — starter pool below |
 | 5 | **Journal** redesign | Rotating prompts (~20-30) + weekly retro summary + 3-day streak-lite. | 3-4h | Pending |
 | 6 | **Pulse** redesign | 10→5 questions, plain-language interpretation, routes to related features (low fun → Roulette, low closeness → Sensate). | 2-3h | Pending |
 | 7 | **Intimacy Log** narrative | Auto-generated 1st-of-month "story" summary. Ties to Sensate + Daily via one-tap logging prompts. | 4-6h | Pending |
 | 8 | **Love Language** weekly nudge | Home card that rotates weekly focus + 3 concrete micro-actions. Extends existing `getLanguageTip`. | 2-3h | Pending |
 | 9 | **Calendar** reposition | "Anniversary + special-days ledger" — no calendar-sync competition. | 30 min | Pending |
 | 10 | **`/upgrade`** copy reorder | Lead with Fantasy Wishes + Sensate + Fire challenges. Blueprint + Adult moods secondary. | 30 min | Pending |
+| 4b | **Versus starter pool** (v2) | ~30-50 curated universal binary questions + in-Versus answering mode so brand-new couples with 0 Daily binary answers can play immediately. | ~2h | Deferred — revisit if cold-start bug surfaces post-launch |
 
 **Total: ~35-50h focused work.** At 1-2 items per week: **~2-3 month roadmap**.
 

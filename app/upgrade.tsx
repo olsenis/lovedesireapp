@@ -4,13 +4,18 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
+// Ordered lead-first: the three load-bearing paid features (Fantasy Wishes,
+// Sensate Focus, Fire+Desire challenges) go up top per Aug 2026 review —
+// they're the ones that earn a subscription on their own. Spicy content
+// unlocks and Activity Cards ride mid-list as good add-ons. Blueprint is
+// filler (one-time use) so it goes last.
 const FEATURES = [
-  { emoji: '🔥', title: 'Reignite desire', desc: 'Explicit dares, truths, and daily picks that take things further' },
-  { emoji: '🧬', title: 'Discover your blueprint', desc: 'Find out how you each experience pleasure, and how to match' },
-  { emoji: '🫁', title: 'Slow down and reconnect', desc: 'Guided Sensate Focus sessions from sex therapy practice' },
-  { emoji: '✨', title: 'Explore safely together', desc: '290+ fantasy scenarios revealed only when you both say yes' },
-  { emoji: '🌶️', title: 'Go deeper in conversation', desc: 'Spicy and Fantasy question categories unlocked' },
-  { emoji: '🎲', title: 'Push your edges', desc: 'Fire and Desire 30-day programs for sexual reconnection' },
+  { emoji: '✨', title: 'Fantasy Wishes', desc: '290+ scenarios, revealed only when you both say yes to the same one' },
+  { emoji: '🫁', title: 'Sensate Focus', desc: 'Guided 3-stage sessions from sex therapy practice, at your own pace' },
+  { emoji: '🎲', title: 'Fire & Desire challenges', desc: '30 days of committed prompts to reignite what habit has softened' },
+  { emoji: '🎴', title: 'Activity Cards', desc: '25 cards a month, take turns drawing what you do together next' },
+  { emoji: '🌶️', title: 'Spicy content everywhere', desc: 'Explicit truths, dares, daily picks, and Would You Rather unlocked across the app' },
+  { emoji: '🧬', title: 'The Lovers quiz', desc: 'Find out how you each experience pleasure — and what to reach for when you drift apart' },
 ];
 
 export default function UpgradeScreen() {
@@ -25,8 +30,8 @@ export default function UpgradeScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>💝</Text>
-          <Text style={styles.heroTitle}>Desire Premium</Text>
-          <Text style={styles.heroSub}>For couples who want to go further, together</Text>
+          <Text style={styles.heroTitle}>Love Desire Premium</Text>
+          <Text style={styles.heroSub}>Everything that keeps intimacy from going on autopilot</Text>
         </View>
 
         <View style={styles.featureList}>

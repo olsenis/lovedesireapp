@@ -130,7 +130,7 @@ export default function CalendarScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Calendar</Text>
+        <Text style={styles.title}>Special Days</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -199,7 +199,7 @@ export default function CalendarScreen() {
             .sort((a, b) => a.next.getTime() - b.next.getTime())
             .slice(0, 5);
           if (upcoming.length === 0) {
-            return <Text style={styles.emptyText}>No upcoming dates. Tap a day to add one.</Text>;
+            return <Text style={styles.emptyText}>Nothing on the ledger yet. Tap a day to add anniversaries, birthdays, or first-times worth remembering.</Text>;
           }
           return upcoming.map(({ date: d, next }) => {
             const daysUntil = Math.ceil((next.getTime() - now.getTime()) / 86400000);
@@ -233,7 +233,7 @@ export default function CalendarScreen() {
       <Modal visible={showAdd} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add a date</Text>
+            <Text style={styles.modalTitle}>Add a special day</Text>
             <Text style={styles.modalHint}>
               {selectedDay && `${MONTH_NAMES[viewMonth]} ${selectedDay}, ${viewYear}`}
             </Text>
@@ -253,7 +253,7 @@ export default function CalendarScreen() {
               <Text style={styles.modalHint}>Label</Text>
               <TextInput
                 style={styles.labelInput}
-                placeholder="What is this date?"
+                placeholder="What's this day about?"
                 placeholderTextColor={Colors.muted}
                 value={addLabel}
                 onChangeText={setAddLabel}
