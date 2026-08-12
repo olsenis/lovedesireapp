@@ -254,28 +254,6 @@ export default function NotesScreen() {
     return true;
   });
 
-  // Diagnostic (Aug 2026) — track why forMe might exclude an unlocked note.
-  // Only logs on state change to avoid spamming re-renders. Remove after
-  // voice-note unlock bug is resolved.
-  useEffect(() => {
-    if (!user) return;
-    console.error(
-      `[notes.tsx render] uid=${user.uid} notes.length=${notes.length} forMeAll.length=${forMeAll.length} forMe.length=${forMe.length}`,
-      {
-        allNotes: notes.map((n) => ({
-          id: n.id,
-          fromUid: n.fromUid,
-          openCondition: n.openCondition,
-          mediaType: n.mediaType,
-          opened: n.opened,
-          openAt: n.openAt,
-          isFuture: n.openAt > Date.now(),
-          triggerEmoji: n.triggerEmoji,
-        })),
-      },
-    );
-  }, [user, notes]);
-
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
