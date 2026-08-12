@@ -5,6 +5,8 @@
  * - deleteUserCascade: full GDPR delete when user account is removed (Tier 1.6)
  * - cleanupExpiredFlashes: scheduled deletion of flashes past 24h (Tier 1.7)
  * - cleanupOldTruthDareAudio: scheduled deletion of old audio (Tier 1.8)
+ * - adminGetOverview / adminGetStats / adminGrantPremium / adminRevokePremium /
+ *   adminSearchUser: admin dashboard callables (Aug 2026)
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
@@ -15,6 +17,26 @@ import * as admin from 'firebase-admin';
 admin.initializeApp();
 const db = admin.firestore();
 const storage = admin.storage().bucket();
+
+// ─── Admin allowlist ───────────────────────────────────────────────────────
+// Hardcoded set — small enough that a full custom-claims migration is not
+// worth it pre-launch. Post-launch upgrade path: swap for Firebase Auth
+// custom claims (admin: true) set once via Firebase Console.
+const ADMIN_UIDS = new Set<string>([
+  'fL9brG7iuSe0XNomrRkDZ3N7PAl1', // Óli (olsenis@gmail.com)
+]);
+
+function assertAdmin(req: { auth?: { uid: string } | null | undefined }): string {
+  if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in first.');
+  if (!ADMIN_UIDS.has(req.auth.uid)) {
+    throw new HttpsError('permission-denied', 'Admin only.');
+  }
+  return req.auth.uid;
+}
+
+function currentMonthKey(): string {
+  return new Date().toISOString().slice(0, 7); // "2026-08"
+}
 
 // ─── Tier 1.2: Rate-limited join ───────────────────────────────────────────
 // Client should call this instead of writing to /couples directly.
@@ -337,3 +359,171 @@ function extractStoragePath(url: string): string | null {
     return null;
   }
 }
+
+// ─── Admin dashboard callables (Aug 2026) ───────────────────────────────────
+// Every callable begins with assertAdmin(req) — the actual security gate.
+// invoker: 'public' matches the pattern documented on rateLimitedJoin above;
+// without it, Cloud Run rejects at the edge before Firebase Auth is checked.
+
+// Blended monthly rate used for MRR estimates until RevenueCat pricing is wired.
+const MRR_BLENDED_MONTHLY = 9.99;
+
+// Rate limit for adminSearchUser — protects against enumeration if allowlist leaks.
+const ADMIN_SEARCH_PER_MINUTE = 10;
+
+const COUPLE_ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
+const MONTH_RE = /^\d{4}-\d{2}$/;
+
+// ─── 1. Overview: top-strip counts for the dashboard ────────────────────────
+export const adminGetOverview = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const month = currentMonthKey();
+  const startOfMonth = new Date(month + '-01T00:00:00Z').getTime();
+
+  const users = db.collection('users');
+  const couples = db.collection('couples');
+  const activeCouples = db.collection('activeCouples').doc(month).collection('couples');
+
+  const [totalUsersSnap, totalCouplesSnap, pairedSnap, paidSnap, activeSnap, signupsSnap] =
+    await Promise.all([
+      users.count().get(),
+      couples.count().get(),
+      couples.where('partner2Uid', '!=', null).count().get(),
+      couples.where('isPremium', '==', true).count().get(),
+      activeCouples.count().get(),
+      users.where('createdAt', '>=', startOfMonth).count().get(),
+    ]);
+
+  const paidCouples = paidSnap.data().count;
+  return {
+    month,
+    totalUsers: totalUsersSnap.data().count,
+    totalCouples: totalCouplesSnap.data().count,
+    pairedCouples: pairedSnap.data().count,
+    paidCouples,
+    activeCouplesThisMonth: activeSnap.data().count,
+    signupsThisMonth: signupsSnap.data().count,
+    mrrEstimate: Math.round(paidCouples * MRR_BLENDED_MONTHLY * 100) / 100,
+  };
+});
+
+// ─── 2. Read the raw stats/{month} doc (client cannot read directly) ────────
+export const adminGetStats = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const month = String(req.data?.month ?? '').trim();
+  if (!MONTH_RE.test(month)) {
+    throw new HttpsError('invalid-argument', 'month must be yyyy-mm.');
+  }
+  const snap = await db.collection('stats').doc(month).get();
+  return { month, counts: (snap.exists ? snap.data() : {}) ?? {} };
+});
+
+// ─── 3. Grant premium to a couple (bypasses client-write block) ─────────────
+export const adminGrantPremium = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const coupleId = String(req.data?.coupleId ?? '').trim();
+  if (!COUPLE_ID_RE.test(coupleId)) {
+    throw new HttpsError('invalid-argument', 'Invalid coupleId.');
+  }
+  const ref = db.collection('couples').doc(coupleId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Couple not found.');
+
+  await ref.update({
+    isPremium: true,
+    premiumSince: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  // Audit trail — aggregate counter, no uid stored.
+  db.collection('stats').doc(currentMonthKey()).set(
+    { admin_grants: admin.firestore.FieldValue.increment(1) },
+    { merge: true },
+  ).catch(() => {});
+
+  return { ok: true, coupleId };
+});
+
+// ─── 4. Revoke premium from a couple ────────────────────────────────────────
+export const adminRevokePremium = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const coupleId = String(req.data?.coupleId ?? '').trim();
+  if (!COUPLE_ID_RE.test(coupleId)) {
+    throw new HttpsError('invalid-argument', 'Invalid coupleId.');
+  }
+  const ref = db.collection('couples').doc(coupleId);
+  const snap = await ref.get();
+  if (!snap.exists) throw new HttpsError('not-found', 'Couple not found.');
+
+  await ref.update({
+    isPremium: false,
+    premiumSince: admin.firestore.FieldValue.delete(),
+  });
+  db.collection('stats').doc(currentMonthKey()).set(
+    { admin_revokes: admin.firestore.FieldValue.increment(1) },
+    { merge: true },
+  ).catch(() => {});
+
+  return { ok: true, coupleId };
+});
+
+// ─── 5. Look up a user by exact email + partner if paired ───────────────────
+export const adminSearchUser = onCall({ invoker: 'public' }, async (req) => {
+  const adminUid = assertAdmin(req);
+  const email = String(req.data?.email ?? '').trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    throw new HttpsError('invalid-argument', 'Invalid email.');
+  }
+
+  // Rate limit per admin uid — reuse the rateLimits collection pattern.
+  const now = Date.now();
+  const rateRef = db.collection('rateLimits').doc(`admin_search_${adminUid}`);
+  const rateOk = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(rateRef);
+    const data = snap.exists ? (snap.data() as { attempts: number[] }) : { attempts: [] };
+    const recent = (data.attempts ?? []).filter((t) => now - t < 60_000);
+    if (recent.length >= ADMIN_SEARCH_PER_MINUTE) return false;
+    tx.set(rateRef, { attempts: [...recent, now] }, { merge: true });
+    return true;
+  });
+  if (!rateOk) throw new HttpsError('resource-exhausted', 'Too many searches. Try again shortly.');
+
+  let userRecord: admin.auth.UserRecord;
+  try {
+    userRecord = await admin.auth().getUserByEmail(email);
+  } catch (e: any) {
+    if (e?.code === 'auth/user-not-found') return { found: false };
+    throw new HttpsError('internal', 'Auth lookup failed.');
+  }
+
+  const uid = userRecord.uid;
+  const profileSnap = await db.collection('users').doc(uid).get();
+  const profile = profileSnap.exists ? profileSnap.data() ?? {} : {};
+
+  const coupleId = (profile as any).coupleId as string | undefined;
+  let couple: any = null;
+  let partner: { uid: string; name: string } | null = null;
+
+  if (coupleId) {
+    const coupleSnap = await db.collection('couples').doc(coupleId).get();
+    if (coupleSnap.exists) {
+      couple = coupleSnap.data();
+      const partnerUid =
+        couple.partner1Uid === uid ? couple.partner2Uid : couple.partner1Uid;
+      if (partnerUid) {
+        const partnerSnap = await db.collection('users').doc(partnerUid).get();
+        const partnerData = partnerSnap.exists ? (partnerSnap.data() ?? {}) : {};
+        partner = { uid: partnerUid, name: String((partnerData as any).name ?? '') };
+      }
+    }
+  }
+
+  return {
+    found: true,
+    uid,
+    email: userRecord.email ?? email,
+    name: String((profile as any).name ?? ''),
+    coupleId: coupleId ?? null,
+    isPremium: !!(couple?.isPremium),
+    joinedAt: (profile as any).createdAt ?? userRecord.metadata.creationTime,
+    partner,
+  };
+});
