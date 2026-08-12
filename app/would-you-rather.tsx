@@ -15,6 +15,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const LEVELS: WYRLevel[] = ['playful', 'romantic', 'spicy'];
 
@@ -77,6 +78,7 @@ export default function WouldYouRatherScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<WYRSession | null>(null);
   const [loading, setLoading] = useState(true);
+  useTrackScreen('would_you_rather');
   // Confirms a mid-session level change — hidden behind a modal because
   // resetWYR wipes the couple's score and current question index, which
   // an accidental tap on the level badge would otherwise silently

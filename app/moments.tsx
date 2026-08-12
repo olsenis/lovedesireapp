@@ -11,12 +11,14 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 export default function MomentsScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
+  useTrackScreen('moments');
   // Derive partner uid from couple doc, not partner.uid — legacy user docs
   // pre-dating the `uid` field write in authService.register have partner.uid
   // as empty string, which would key photos lookups against '' and permanently

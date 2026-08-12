@@ -33,6 +33,8 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 type Tab = 'for-me' | 'sent';
 
@@ -73,6 +75,7 @@ export default function DaresScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const help = useHelp('dares');
+  useTrackScreen('dares');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -127,6 +130,7 @@ export default function DaresScreen() {
     setSending(true);
     try {
       await createDare(coupleId, uid, partnerId, composePrompt, composeDeadline?.getTime() ?? null);
+      trackEvent('dare_created');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       notifyPartner(coupleId, uid, 'A dare from ' + (profile?.name ?? 'your partner') + ' 🎁', composePrompt.slice(0, 100)).catch(() => {});
       resetCompose();
@@ -141,6 +145,7 @@ export default function DaresScreen() {
     if (!coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await acceptDare(coupleId, dare.id);
+    trackEvent('dare_accepted');
   };
 
   const handleDecline = async (dare: Dare) => {
@@ -195,6 +200,7 @@ export default function DaresScreen() {
         }
       }
       await completeDare(coupleId, completeTarget.id, proofURL, proofNote);
+      trackEvent('dare_completed');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       notifyPartner(
         coupleId,

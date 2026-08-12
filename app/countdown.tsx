@@ -60,12 +60,14 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const EMOJIS = ['❤️', '💍', '🎂', '✈️', '🎉', '🌹', '⭐', '🏠', '🐾', '🌟'];
 
 export default function CountdownScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  useTrackScreen('countdown');
   const [dates, setDates] = useState<ImportantDate[]>([]);
   // Partner's own UserProfile.birthday wins; fall back to onboarding-supplied couple.partnerBirthdays.
   const partnerUid = couple?.partner1Uid === user?.uid ? couple?.partner2Uid : couple?.partner1Uid;

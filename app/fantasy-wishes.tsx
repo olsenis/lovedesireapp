@@ -14,11 +14,13 @@ import { FANTASY_WISHES_PRESETS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 export default function FantasyWishesScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
+  useTrackScreen('fantasy_wishes');
   // Screen-level paywall gate: this feature is paid-tier only. Guarding here
   // (instead of only on the Discover card + Us tab card) covers every entry
   // point — including Home nudges that route directly here — so a non-

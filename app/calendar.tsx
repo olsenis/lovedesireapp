@@ -8,6 +8,7 @@ import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = [
@@ -50,6 +51,7 @@ function buildMonthGrid(year: number, month: number): (number | null)[] {
 export default function CalendarScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  useTrackScreen('calendar');
   const [dates, setDates] = useState<ImportantDate[]>([]);
 
   const today = new Date();

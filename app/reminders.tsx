@@ -8,9 +8,11 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 export default function RemindersScreen() {
   const { user, profile } = useAuth();
+  useTrackScreen('reminders');
   const [reminders, setReminders] = useState<FlirtReminder[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [message, setMessage] = useState('');

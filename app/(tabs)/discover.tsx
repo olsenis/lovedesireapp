@@ -9,6 +9,7 @@ import { getFeatureUnlockState, markVersusUnlocked, isVersusUnlockRecent } from 
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
+import { useTrackScreen } from '../../hooks/useTrackScreen';
 
 type GameCard = {
   emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; inPerson?: boolean;
@@ -77,6 +78,8 @@ export default function DiscoverScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
+
+  useTrackScreen('discover');
 
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;

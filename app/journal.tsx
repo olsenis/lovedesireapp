@@ -16,6 +16,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const MOODS: { key: NonNullable<JournalEntry['mood']>; emoji: string; label: string }[] = [
   { key: 'reflective', emoji: '🌙', label: 'Reflective' },
@@ -44,6 +45,7 @@ function formatDate(ts: number): string {
 export default function JournalScreen() {
   const { user, profile } = useAuth();
   const { partner } = useCouple(user?.uid, profile?.coupleId);
+  useTrackScreen('journal');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [showCompose, setShowCompose] = useState(false);
   const [editing, setEditing] = useState<JournalEntry | null>(null);

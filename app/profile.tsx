@@ -21,10 +21,12 @@ import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 export default function ProfileScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  useTrackScreen('profile');
 
   const [editNameModal, setEditNameModal] = useState(false);
   const [editName, setEditName] = useState('');

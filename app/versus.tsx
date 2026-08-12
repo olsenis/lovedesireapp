@@ -11,6 +11,8 @@ import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 type Status = 'loading' | 'empty' | 'playing' | 'done';
 
@@ -18,6 +20,7 @@ export default function VersusScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const help = useHelp('versus');
+  useTrackScreen('versus');
   const [status, setStatus] = useState<Status>('loading');
   const [pool, setPool] = useState<VersusItem[]>([]);
   const [index, setIndex] = useState(0);
@@ -110,6 +113,7 @@ export default function VersusScreen() {
       .then(() => loadVersusStats(coupleId).then(setStats))
       .catch(() => {})
       .finally(() => setStatsSaved(true));
+    trackEvent('versus_played');
   }, [status, statsSaved, coupleId, pct, longestThisGame]);
 
   // "Talk about it" prompts — rotates through a few phrasings so the prompt

@@ -13,11 +13,13 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 export default function ActivityCardsScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
+  useTrackScreen('activity_cards');
   // Screen-level paywall gate — Discover card is gated but Home nudges
   // route directly here and could bypass the paywall for non-subscribed
   // users. Enforce at the screen so every entry point is covered.

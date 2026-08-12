@@ -37,6 +37,8 @@ import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 import { PartnerAvatar } from '../../components/PartnerAvatar';
+import { useTrackScreen } from '../../hooks/useTrackScreen';
+import { trackEvent } from '../../services/statsService';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -210,6 +212,7 @@ export default function HomeScreen() {
   const { user, profile } = useAuth();
   const { couple, partner, loading: coupleLoading } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
+  useTrackScreen('home');
   const ADULT_MOODS: MoodEmoji[] = ['😈', '🥵'];
   const visibleMoods = ALL_MOODS.filter(m => isSubscribed || !ADULT_MOODS.includes(m));
 
@@ -330,6 +333,7 @@ export default function HomeScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       await setMood(coupleId, user.uid, emoji);
+      trackEvent('mood_set');
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
       notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
       unlockMoodNotes(coupleId, user.uid, emoji).catch(() => {});

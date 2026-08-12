@@ -24,6 +24,8 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 function weekIdToLabel(weekId: string): string {
   // YYYY-WW → "Week WW · YYYY"
@@ -39,6 +41,7 @@ export default function StateUnionScreen() {
   const partnerName = partner?.name ?? 'Partner';
   const coupleId = profile?.coupleId;
   const weekId = useMemo(() => getCurrentWeekId(), []);
+  useTrackScreen('sunday_checkin');
 
   const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);
   const [myEntry, setMyEntry] = useState<StateUnionEntry | null>(null);
@@ -110,6 +113,7 @@ export default function StateUnionScreen() {
         await submitStateUnionAnswer(coupleId, weekId, uid, step, draftAnswer.trim());
       }
       await markStateUnionCompleted(coupleId, weekId, uid);
+      trackEvent('sunday_checkin_submitted');
       notifyPartner(
         coupleId,
         uid,

@@ -12,6 +12,7 @@ import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const TYPE_COLORS = { home: '#FFF9C4', out: '#E8F5E9', adventure: '#E3F2FD' };
 const TYPE_LABELS = { home: 'At Home 🏠', out: 'Going Out ✨', adventure: 'Adventure 🌟' };
@@ -37,6 +38,7 @@ const starStyles = StyleSheet.create({
 export default function RouletteScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
+  useTrackScreen('roulette');
   const [result, setResult] = useState<DateIdea | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [saved, setSaved] = useState(false);

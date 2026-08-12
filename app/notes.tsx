@@ -16,6 +16,8 @@ import { uploadVoiceNote } from '../services/storageService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 type Condition = 'sad' | 'visit' | 'missing' | 'sleepless';
 type Occasion = { label: string; offset: number; condition?: Condition };
@@ -132,6 +134,7 @@ export default function NotesScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const isLDR = !!couple?.isLongDistance;
   const occasions: Occasion[] = isLDR ? [...OCCASIONS, ...LDR_OCCASIONS] : OCCASIONS;
+  useTrackScreen('notes');
   const [notes, setNotes] = useState<LoveNote[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const help = useHelp('love-notes');
@@ -215,6 +218,7 @@ export default function NotesScreen() {
         setUploadingVoice(false);
       }
       await createNote(profile.coupleId, user.uid, message.trim(), openAt, openCondition, triggerEmoji, audioURL);
+      trackEvent(mediaType === 'voice' ? 'voice_note_created' : 'love_note_created');
       const moodLabel = triggerEmoji ? MOOD_LABELS[triggerEmoji].toLowerCase() : '';
       const mediaWord = mediaType === 'voice' ? 'voice note' : 'note';
       const subtitle =
@@ -290,6 +294,7 @@ export default function NotesScreen() {
     if (Date.now() < note.openAt) return;
     if (!profile?.coupleId) return;
     await openNote(profile.coupleId, note.id);
+    trackEvent(note.audioURL ? 'voice_note_opened' : 'love_note_opened');
     setOpenedNote(note);
   };
 

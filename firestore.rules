@@ -201,5 +201,19 @@ service cloud.firestore {
         allow delete: if request.auth != null && isMemberOfCouple(coupleId);
       }
     }
+
+    // ── Aggregate stats (Aug 2026) ────────────────────────────────────────
+    // Anonymous per-month usage counter. Docs at /stats/{yyyy-mm} hold
+    // integer counts per feature (screen_home, dare_created, etc). No uid,
+    // no coupleId, no content — pure aggregate. See ADMIN_DASHBOARD.md.
+    //
+    // Client can only WRITE (via increment via merge:true from
+    // services/statsService.ts). No reads from client — the admin
+    // dashboard uses a Cloud Function callable to read, so users can
+    // never see other users' event counts, aggregated or not.
+    match /stats/{month} {
+      allow read: if false;
+      allow write: if request.auth != null;
+    }
   }
 }

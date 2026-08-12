@@ -6,6 +6,7 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
+import { useTrackScreen } from '../../hooks/useTrackScreen';
 
 // Rituals — the recurring rhythm of shared attention. Daily/weekly cadence,
 // mutual reveal, mostly free tier. This is the emotional pull of the app.
@@ -84,6 +85,7 @@ export default function LoveScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
   const isLDR = !!couple?.isLongDistance;
+  useTrackScreen('us');
   const intimacyLogEnabled = profile?.features?.intimacyLog ?? false;
   const nurture = NURTURE.filter(f => f.route !== '/intimacy-tracker' || intimacyLogEnabled);
   return (

@@ -12,6 +12,7 @@ import { DATE_IDEAS } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
+import { useTrackScreen } from '../../hooks/useTrackScreen';
 
 const CATEGORIES: { key: TodoCategory; label: string; emoji: string; color: string }[] = [
   { key: 'daily',    label: 'Daily Life',  emoji: '🏠', color: '#FFF3E0' },
@@ -31,6 +32,7 @@ export default function TogetherScreen() {
   const [newCat, setNewCat] = useState<TodoCategory>('daily');
   const [newAsSuggestion, setNewAsSuggestion] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
+  useTrackScreen('together_list');
 
   // Drag-to-dismiss for the item detail sheet. Threshold: 100px OR >0.5 velocity.
   // Only vertical downward drag triggers dismiss; horizontal / upward drags are

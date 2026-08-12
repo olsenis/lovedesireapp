@@ -10,6 +10,8 @@ import { Spacing, Radius } from '../constants/spacing';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { PulseResult, subscribePulseHistory, savePulseResult, getPulseTrend } from '../services/pulseService';
+import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 // Aug 2026 redesign — cut from 10 to 5 dimensions per entertainment review.
 // The old set (10 sliders → single average) read as clinical form-filling
@@ -101,6 +103,7 @@ export default function HitaScreen() {
   const [resultsTab, setResultsTab] = useState<'results' | 'history'>('results');
   const [history, setHistory] = useState<PulseResult[]>([]);
   const help = useHelp('relationship-pulse');
+  useTrackScreen('pulse');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -120,6 +123,7 @@ export default function HitaScreen() {
   const submit = async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (coupleId) await savePulseResult(coupleId, uid, scores, avg);
+    trackEvent('pulse_submitted');
     setDone(true);
     setResultsTab('results');
   };

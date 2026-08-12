@@ -24,6 +24,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const LEVELS: DareLevel[] = ['sweet', 'flirty', 'spicy'];
 
@@ -36,6 +37,7 @@ export default function TruthDareScreen() {
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const [session, setSession] = useState<TruthDareSession | null>(null);
   const [loading, setLoading] = useState(true);
+  useTrackScreen('truth_dare');
 
   // Mode picker — 'picker' (default) | 'solo' (single-phone wheel) | 'multi' (level select for multiplayer)
   const [mode, setMode] = useState<'picker' | 'solo' | 'multi'>('picker');

@@ -23,6 +23,7 @@ import { DAILY_WISH_CATEGORY_CONFIG, QUESTION_CATEGORY_CONFIG, DailyWishCategory
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 // The merged screen uses the QUESTION_CATEGORY_CONFIG naming (playful /
 // deep / spicy) as the surface identity — Daily Picks' original sweet /
@@ -85,6 +86,7 @@ export default function DailyScreen() {
   const { isSubscribed } = useSubscription();
   const help = useHelp('daily');
   const params = useLocalSearchParams<{ category?: string }>();
+  useTrackScreen('daily');
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';

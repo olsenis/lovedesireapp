@@ -14,6 +14,7 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 
@@ -78,6 +79,7 @@ export default function IntimacyTrackerScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
+  useTrackScreen('intimacy_log');
   // Screen-level paywall gate — Us tab card is gated but future entry
   // points (nudges, deep links) could bypass without this guard.
   useEffect(() => {

@@ -16,6 +16,7 @@ import {
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 
@@ -23,6 +24,7 @@ export default function BlueprintScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
+  useTrackScreen('blueprint');
   // Screen-level paywall gate — Us tab card is gated but keeping the guard
   // here as defense-in-depth in case a future entry point (deep link, nudge)
   // routes directly to /blueprint without checking subscription.

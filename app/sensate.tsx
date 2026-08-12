@@ -13,6 +13,8 @@ import { SensateProgress, subscribeSensateProgress, completeStage } from '../ser
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { useTrackScreen } from '../hooks/useTrackScreen';
+import { trackEvent } from '../services/statsService';
 
 interface Stage {
   id: number;
@@ -95,6 +97,7 @@ export default function SensateScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
+  useTrackScreen('sensate');
   // Screen-level paywall gate — Us tab card is gated but Home nudges
   // (Insight tip + "return to Sensate" nudge) route directly here and
   // could bypass the paywall for non-subscribed users.
@@ -261,6 +264,7 @@ export default function SensateScreen() {
     cancelCompletionNotif();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const { cycleJustCompleted, cyclesCompleted } = await completeStage(coupleId, activeStage.id as 1 | 2 | 3, progress);
+    trackEvent('sensate_stage_completed');
     setMarked(true);
     // If this completion filled the last missing stage in the cycle,
     // show the cycle-completion moment. Held in state and rendered as
