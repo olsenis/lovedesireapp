@@ -1,10 +1,8 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import app from './firebase';
-
-const functions = getFunctions(app);
+import { httpsCallable } from 'firebase/functions';
+import { functions } from './firebase';
 
 // Client-side allowlist — mirrors ADMIN_UIDS in functions/src/index.ts.
-// This is purely a UX helper for hiding the /admin route from non-admins.
+// UX helper only for hiding the dashboard from non-admin auth accounts.
 // The real security gate is assertAdmin(req) inside each Cloud Function.
 // Do NOT rely on this for anything that matters.
 const ADMIN_UIDS = new Set<string>([

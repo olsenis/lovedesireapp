@@ -101,8 +101,8 @@ Commits `3497d50` + `e64ee82`. Anonymous per-feature counter at `stats/{yyyy-mm}
 ### 7b. Admin callables (Phase 2 of admin dashboard) — ✅ SHIPPED
 Commit `e320080`, deployed to `us-central1`. 5 `assertAdmin`-gated callables: `adminGetOverview` / `adminGetStats` / `adminGrantPremium` / `adminRevokePremium` / `adminSearchUser`. Client wrappers in `services/adminService.ts` + `isCurrentUserAdmin` UX helper. Full design in [ADMIN_DASHBOARD.md § Piece 2](ADMIN_DASHBOARD.md).
 
-### 7c. Admin dashboard UI (Phase 3 of admin dashboard) — ✅ SHIPPED
-Commit `4903b93`. Protected `/admin` route (hidden, not linked in nav) with route guard `isCurrentUserAdmin(user?.uid)`. Three sections in a ScrollView: overview strip (6 stat tiles + MRR), feature usage (tabbed Screens/Actions/Admin with MoM % + red-flag / green-flag colouring), user lookup (email search + Grant/Revoke via ConfirmModal). Pull-to-refresh reloads all three. Delete-user / reset-couple-data / data-export deferred to v1.1.
+### 7c. Admin dashboard UI — ✅ SHIPPED as standalone web app
+Originally shipped as an in-app screen (`4903b93`), then migrated to a standalone Vite + React SPA at `admin-web/` (Phase 4). Cleaner App Store submission (no admin code in mobile bundle), better ergonomics on desktop, faster iteration (no App Store rebuild for admin changes). Deployed as a separate Vercel project. Same three sections (overview / feature usage / user lookup), same Grant/Revoke via ConfirmModal. Firebase Auth email+password login. `isCurrentUserAdmin` client gate + `assertAdmin` server gate. Delete-user / reset-couple-data / data-export deferred to v1.1.
 
 ### 8. Android APK build + hosting
 Per [CLAUDE.md](CLAUDE.md) distribution strategy, Android is NOT on Google Play — the signed APK is hosted on our marketing site. Before launch:

@@ -200,17 +200,19 @@ Privacy Policy + Terms of Service both mention the aggregate stats collection. S
 - `services/adminService.ts`: typed `httpsCallable` wrappers + `isCurrentUserAdmin(uid)` UX helper
 - All callables use `invoker: 'public'` per the Cloud Run IAM requirement documented in `memory/firebase_functions_v2_iam.md`
 
-**Phase 3: Admin UI — ✅ SHIPPED Aug 2026**
-- Commit `4903b93`, `app/admin.tsx` (~490 lines) — single-file screen, no new components
-- Route guard `isCurrentUserAdmin(user?.uid)` bounces non-admins to `/(tabs)` silently
-- Three sections in a ScrollView with pull-to-refresh:
-  - Overview strip: 6 stat tiles (users, couples, paired, paid, active, new-this-month) + MRR card, loaded via `adminGetOverview()`
-  - Feature usage: tabbed (Screens / Actions / Admin), pre-sorted by count desc, MoM % coloured — `<10` opens red-flagged, `≥+20%` green, `≤−20%` red, `NEW` when previous month is zero; loads via parallel `adminGetStats(cur)` + `adminGetStats(prev)`
-  - User lookup: email search + result card with pill + Grant/Revoke buttons gated on the existing `ConfirmModal` (destructive variant for revoke)
-- No functions redeploy — pure UI + Vercel web preview auto-deploys client
-- Full launch flow ends here for the stats + admin track
+**Phase 3: In-app admin UI — SUPERSEDED (Aug 2026)**
+Shipped briefly at commit `4903b93` as `app/admin.tsx`. Reverted in Phase 4 after realising admin didn't belong inside the mobile bundle (App Store hygiene, admin ergonomics on desktop, iteration speed). Kept here for history.
 
-**Total actual time: ~5h across 3 phases + wave 2 stats extension.**
+**Phase 4: Standalone admin web app — ✅ SHIPPED Aug 2026**
+- Commit `TBD`, standalone Vite + React + TypeScript SPA at `admin-web/`
+- Deployed as a separate Vercel project pointing at `admin-web/` root directory
+- Same 5 Cloud Function callables from Phase 2 (unchanged, no redeploy)
+- Same three sections as Phase 3 (overview strip / feature usage / user lookup) but web-native (HTML/CSS, real tables, real keyboard, browser scroll)
+- Firebase Auth email + password login → `isCurrentUserAdmin` client gate → `assertAdmin` server gate
+- Zero admin code in the mobile bundle — `app/admin.tsx` + `services/adminService.ts` deleted, `metro.config.js` blocks `admin-web/`
+- Optional post-launch: attach `admin.lovedesireapp.com` subdomain, gate with Cloudflare Access
+
+**Total actual time: ~6h across 4 phases + wave 2 stats extension.**
 
 ---
 
