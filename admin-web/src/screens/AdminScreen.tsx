@@ -3,8 +3,9 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import {
   adminGetOverview, adminGetStats, adminGrantPremium, adminRevokePremium,
-  adminSearchUser,
+  adminSearchUser, adminGetSessionStats, adminGetTimeInsights,
   AdminOverview, AdminUserResult,
+  ScreenSessionStats, LeaderboardEntry,
 } from '../adminService';
 import { ConfirmModal } from '../components/ConfirmModal';
 
@@ -28,10 +29,23 @@ function formatJoined(v: number | string | undefined): string {
   return new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function formatDuration(sec: number | null | undefined): string {
+  if (sec === null || sec === undefined) return '—';
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return s === 0 ? `${m}m` : `${m}m ${s}s`;
+}
+
+const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 export function AdminScreen() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [curStats, setCurStats] = useState<Record<string, number>>({});
   const [prevStats, setPrevStats] = useState<Record<string, number>>({});
+  const [sessionStats, setSessionStats] = useState<ScreenSessionStats[]>([]);
+  const [heat, setHeat] = useState<number[][]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -50,14 +64,19 @@ export function AdminScreen() {
   const loadAll = async () => {
     setStatsError(null);
     try {
-      const [ov, cur, prev] = await Promise.all([
+      const [ov, cur, prev, sess, insights] = await Promise.all([
         adminGetOverview(),
         adminGetStats(currentMonthKey(0)),
         adminGetStats(currentMonthKey(-1)),
+        adminGetSessionStats(currentMonthKey(0)),
+        adminGetTimeInsights(currentMonthKey(0)),
       ]);
       setOverview(ov);
       setCurStats(cur.counts ?? {});
       setPrevStats(prev.counts ?? {});
+      setSessionStats(sess.screens ?? []);
+      setHeat(insights.heat ?? []);
+      setLeaderboard(insights.leaderboard ?? []);
     } catch (e: any) {
       setStatsError(e?.message ?? 'Could not load stats.');
     } finally {
@@ -138,6 +157,18 @@ export function AdminScreen() {
     });
   }, [curStats, prevStats, activeTab]);
 
+  const sessionByScreen = useMemo(() => {
+    const map = new Map<string, ScreenSessionStats>();
+    for (const s of sessionStats) map.set(s.screen, s);
+    return map;
+  }, [sessionStats]);
+
+  const heatMax = useMemo(() => {
+    let m = 0;
+    for (const row of heat) for (const v of row) if (v > m) m = v;
+    return m;
+  }, [heat]);
+
   return (
     <div className="admin-shell">
       <header className="admin-header">
@@ -199,14 +230,86 @@ export function AdminScreen() {
             if (deltaPct >= 20) deltaClass = 'delta-up';
             else if (deltaPct <= -20) deltaClass = 'delta-down';
           }
+          const timing = activeTab === 'screens' ? sessionByScreen.get(label) : undefined;
           return (
-            <div key={key} className="usage-row">
+            <div key={key} className={`usage-row${activeTab === 'screens' ? ' usage-row-with-timing' : ''}`}>
               <span className={`usage-label${isRedFlag ? ' red-flag' : ''}`}>{label}</span>
               <span className={`usage-count${isRedFlag ? ' red-flag' : ''}`}>{formatCount(count)}</span>
               <span className={`usage-delta ${deltaClass}`}>{deltaLabel}</span>
+              {activeTab === 'screens' && (
+                <>
+                  <span className="usage-time-cell">{formatDuration(timing?.avgSec ?? null)}</span>
+                  <span className="usage-time-cell muted">{formatDuration(timing?.minSec ?? null)}</span>
+                  <span className="usage-time-cell muted">{formatDuration(timing?.maxSec ?? null)}</span>
+                </>
+              )}
             </div>
           );
         })}
+      </div>
+      {activeTab === 'screens' && !statsLoading && rows.length > 0 && (
+        <div className="table-legend">count · MoM % · <strong>avg · min · max</strong> time per opening</div>
+      )}
+
+      {/* ─── Section 3: Time-of-day heatmap ─── */}
+      <div className="section-label">When couples use the app · {currentMonthKey(0)}</div>
+      <div className="heatmap-card">
+        {statsLoading && <div className="empty-row">Loading…</div>}
+        {!statsLoading && heatMax === 0 && (
+          <div className="empty-row">No session data yet for {currentMonthKey(0)}.</div>
+        )}
+        {!statsLoading && heatMax > 0 && (
+          <>
+            <div className="heatmap-grid">
+              <div className="heatmap-corner" />
+              {DOW_LABELS.map((d) => <div key={d} className="heatmap-dow-label">{d}</div>)}
+              {Array.from({ length: 24 }, (_, h) => (
+                <>
+                  <div key={`h-${h}`} className="heatmap-hour-label">{h.toString().padStart(2, '0')}</div>
+                  {DOW_LABELS.map((_, d) => {
+                    const v = heat[h]?.[d] ?? 0;
+                    const alpha = v === 0 ? 0 : Math.max(0.08, v / heatMax);
+                    return (
+                      <div
+                        key={`c-${h}-${d}`}
+                        className="heatmap-cell"
+                        style={{ backgroundColor: `rgba(136, 14, 79, ${alpha})` }}
+                        title={`${DOW_LABELS[d]} ${h}:00 · ${v} sessions`}
+                      />
+                    );
+                  })}
+                </>
+              ))}
+            </div>
+            <div className="heatmap-legend">
+              <span>Less</span>
+              <div className="heatmap-legend-gradient" />
+              <span>More ({heatMax} sessions in busiest hour)</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ─── Section 4: Per-couple leaderboard ─── */}
+      <div className="section-label">Most active couples · {currentMonthKey(0)}</div>
+      <div className="usage-card">
+        {statsLoading && <div className="empty-row">Loading…</div>}
+        {!statsLoading && leaderboard.length === 0 && (
+          <div className="empty-row">No active couples with session data yet.</div>
+        )}
+        {leaderboard.map((entry, i) => (
+          <div key={entry.coupleId} className="leaderboard-row">
+            <span className="leaderboard-rank">#{i + 1}</span>
+            <div className="leaderboard-body">
+              <div className="leaderboard-names">
+                {entry.names.length === 0 ? '(unknown couple)' : entry.names.join(' & ')}
+                {entry.isPremium && <span className="pill paid" style={{ marginLeft: 8 }}>✓ Paid</span>}
+              </div>
+              <div className="leaderboard-coupleid mono">{entry.coupleId}</div>
+            </div>
+            <span className="leaderboard-count">{formatCount(entry.sessionCount)}</span>
+          </div>
+        ))}
       </div>
 
       {/* ─── Section 3: User lookup ─── */}

@@ -293,6 +293,125 @@ input { font-family: inherit; }
   font-size: 13px;
   color: var(--muted);
 }
+.usage-row.usage-row-with-timing {
+  grid-template-columns: 1fr 70px 60px 60px 60px 60px;
+}
+.usage-time-cell {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.usage-time-cell.muted { color: var(--muted); font-weight: 400; }
+.table-legend {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  padding: 6px 4px 0;
+  font-style: italic;
+}
+
+/* ─── Section 3: Heatmap ─── */
+.heatmap-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(7, 1fr);
+  gap: 3px;
+  min-width: 480px;
+  overflow-x: auto;
+}
+.heatmap-corner { width: 40px; }
+.heatmap-dow-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  padding-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.heatmap-hour-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+  padding-right: 6px;
+  font-variant-numeric: tabular-nums;
+  line-height: 20px;
+}
+.heatmap-cell {
+  height: 20px;
+  border-radius: 3px;
+  background: var(--border);
+  transition: transform 100ms;
+}
+.heatmap-cell:hover { transform: scale(1.15); }
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.heatmap-legend-gradient {
+  flex: 0 0 120px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(
+    to right,
+    rgba(136, 14, 79, 0),
+    rgba(136, 14, 79, 1)
+  );
+}
+
+/* ─── Section 4: Leaderboard ─── */
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+}
+.leaderboard-row + .leaderboard-row { border-top: 1px solid var(--border); }
+.leaderboard-rank {
+  font-family: var(--heading);
+  font-size: 22px;
+  color: var(--burgundy);
+  text-align: center;
+}
+.leaderboard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.leaderboard-names {
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.leaderboard-coupleid {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.leaderboard-count {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
 
 /* ─── Section 3: User lookup ─── */
 .search-row {

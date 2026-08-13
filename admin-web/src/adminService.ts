@@ -40,6 +40,33 @@ export interface AdminUserResult {
   partner?: { uid: string; name: string } | null;
 }
 
+export interface ScreenSessionStats {
+  screen: string;
+  count: number;
+  totalSec: number;
+  avgSec: number;
+  minSec: number | null;
+  maxSec: number | null;
+}
+
+export interface AdminSessionStats {
+  month: string;
+  screens: ScreenSessionStats[];
+}
+
+export interface LeaderboardEntry {
+  coupleId: string;
+  sessionCount: number;
+  names: string[];
+  isPremium: boolean;
+}
+
+export interface AdminTimeInsights {
+  month: string;
+  heat: number[][]; // 24 hours × 7 days-of-week (Sun=0)
+  leaderboard: LeaderboardEntry[];
+}
+
 const _adminGetOverview = httpsCallable<void, AdminOverview>(functions, 'adminGetOverview');
 const _adminGetStats = httpsCallable<{ month: string }, AdminStats>(functions, 'adminGetStats');
 const _adminGrantPremium = httpsCallable<{ coupleId: string }, { ok: true; coupleId: string }>(
@@ -53,6 +80,14 @@ const _adminRevokePremium = httpsCallable<{ coupleId: string }, { ok: true; coup
 const _adminSearchUser = httpsCallable<{ email: string }, AdminUserResult>(
   functions,
   'adminSearchUser',
+);
+const _adminGetSessionStats = httpsCallable<{ month: string }, AdminSessionStats>(
+  functions,
+  'adminGetSessionStats',
+);
+const _adminGetTimeInsights = httpsCallable<{ month: string }, AdminTimeInsights>(
+  functions,
+  'adminGetTimeInsights',
 );
 
 export async function adminGetOverview(): Promise<AdminOverview> {
@@ -75,5 +110,15 @@ export async function adminRevokePremium(coupleId: string): Promise<void> {
 
 export async function adminSearchUser(email: string): Promise<AdminUserResult> {
   const res = await _adminSearchUser({ email });
+  return res.data;
+}
+
+export async function adminGetSessionStats(month: string): Promise<AdminSessionStats> {
+  const res = await _adminGetSessionStats({ month });
+  return res.data;
+}
+
+export async function adminGetTimeInsights(month: string): Promise<AdminTimeInsights> {
+  const res = await _adminGetTimeInsights({ month });
   return res.data;
 }
