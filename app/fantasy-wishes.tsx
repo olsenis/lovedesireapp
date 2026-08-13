@@ -490,6 +490,9 @@ export default function FantasyWishesScreen() {
 function ProgressRow({ votedCount, totalCount, matchesCount }: {
   votedCount: number; totalCount: number; matchesCount: number;
 }) {
+  // Bar still scales to true total so it stays honest, but we hide the
+  // 394-item denominator from the label — that number is overwhelming
+  // ("60 days at 5/day") and encourages grinding instead of pacing.
   const pct = totalCount === 0 ? 0 : Math.min(1, votedCount / totalCount);
   return (
     <View style={styles.progressRow}>
@@ -497,7 +500,7 @@ function ProgressRow({ votedCount, totalCount, matchesCount }: {
         <View style={[styles.progressBarFill, { width: `${pct * 100}%` }]} />
       </View>
       <Text style={styles.progressLabel}>
-        {votedCount} / {totalCount}
+        {votedCount} voted
         {matchesCount > 0 && <Text style={styles.progressMatches}>  ·  {matchesCount} ✨</Text>}
       </Text>
     </View>
@@ -587,7 +590,7 @@ function SessionPromptCard({ votedInSession, matchesCount, onKeepGoing, onSaveFo
   return (
     <View style={styles.pauseWrap}>
       <Text style={styles.pauseEmoji}>🌙</Text>
-      <Text style={styles.pauseTitle}>You've explored {votedInSession} tonight</Text>
+      <Text style={styles.pauseTitle}>You've explored {votedInSession} today</Text>
       {matchesCount > 0 && (
         <Text style={styles.pauseSub}>{matchesCount} match{matchesCount === 1 ? '' : 'es'} so far ✨</Text>
       )}
@@ -618,7 +621,7 @@ function SessionPausedState({ votedInSession, matchesCount, onContinue, onViewMa
       <Text style={styles.pauseEmoji}>💤</Text>
       <Text style={styles.pauseTitle}>See you tomorrow</Text>
       <Text style={styles.pauseSub}>
-        You explored {votedInSession} tonight
+        You explored {votedInSession} today
         {matchesCount > 0 && ` · ${matchesCount} match${matchesCount === 1 ? '' : 'es'} ✨`}
       </Text>
       <TouchableOpacity
