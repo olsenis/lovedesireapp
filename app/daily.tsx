@@ -7,7 +7,6 @@ import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { MatchCelebration } from '../components/MatchCelebration';
 import {
   DailyWishDoc, DailyVote,
   subscribeDailyWishes, voteDailyWish, isMatch, markAddToListAtomic, bothWantToAdd,
@@ -112,14 +111,6 @@ export default function DailyScreen() {
   const [deckPos, setDeckPos] = useState(0);
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
   const [deckInitialized, setDeckInitialized] = useState(false);
-  // Fresh-match celebration — tracks which action gi's we've already
-  // celebrated this session so re-renders on wishDoc updates don't
-  // re-fire. Populated on first snapshot with the historical matches
-  // so old ones don't retroactively celebrate on mount. State holds
-  // the full matched gi so the celebration modal can wire "Add to
-  // Together List" via handleAddToList(gi).
-  const celebratedActionGiRef = useRef<Set<number> | null>(null);
-  const [celebrateAction, setCelebrateAction] = useState<{ gi: number; text: string } | null>(null);
 
   // Deep-link default: /daily with no ?category= → Playful. Never default
   // to a paid category — a free user tapping a push notification would hit
@@ -228,29 +219,6 @@ export default function DailyScreen() {
   const myAddedToList = (gi: number): boolean => (wishDoc?.addToList?.[gi] ?? []).includes(uid);
   const partnerAddedToList = (gi: number): boolean => !!partnerId && (wishDoc?.addToList?.[gi] ?? []).includes(partnerId);
   const alreadyAdded = (gi: number): boolean => !!partnerId && !!wishDoc && bothWantToAdd(wishDoc, gi, uid, partnerId);
-
-  // Detect fresh mutual Yes matches on actions. On first snapshot we seed
-  // the historical set so already-existing matches don't retroactively
-  // celebrate. Any new gi that appears after that fires MatchCelebration.
-  useEffect(() => {
-    if (!wishDoc || !partnerId) return;
-    const now = new Set<number>();
-    wishDoc.items.forEach((_, gi) => {
-      if (isMatch(wishDoc, gi, uid, partnerId)) now.add(gi);
-    });
-    if (celebratedActionGiRef.current === null) {
-      celebratedActionGiRef.current = now;
-      return;
-    }
-    const fresh = [...now].filter((gi) => !celebratedActionGiRef.current!.has(gi));
-    if (fresh.length > 0) {
-      const gi = fresh[0];
-      const item = wishDoc.items[gi];
-      if (item) setCelebrateAction({ gi, text: item.text });
-    }
-    celebratedActionGiRef.current = now;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wishDoc, partnerId, uid]);
 
   const handleVote = async (gi: number, vote: DailyVote) => {
     if (!coupleId) return;
@@ -648,16 +616,6 @@ export default function DailyScreen() {
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
-      />
-
-      <MatchCelebration
-        visible={celebrateAction !== null}
-        content={celebrateAction?.text ?? ''}
-        partnerName={partner?.name ?? 'partner'}
-        onDismiss={() => setCelebrateAction(null)}
-        onAddToList={celebrateAction ? () => handleAddToList(celebrateAction.gi) : undefined}
-        addButtonLabel="Add to Together List"
-        alreadyAdded={celebrateAction ? alreadyAdded(celebrateAction.gi) : false}
       />
     </View>
   );

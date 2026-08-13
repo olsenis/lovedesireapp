@@ -7,7 +7,6 @@ import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { MatchCelebration } from '../components/MatchCelebration';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
 import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd } from '../services/fantasyWishesService';
@@ -43,12 +42,12 @@ export default function FantasyWishesScreen() {
   // the card to the back of the deck so the user can defer without either
   // saying yes/maybe/no or reloading the whole feature. Cleared on Reset.
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
-  // Match celebration: when a fresh mutual Yes lands we open a full-screen
-  // MatchCelebration modal (confetti + partner names + wish quote). The
-  // legacy card-highlight state is gone — the modal is the celebration.
-  //
-  // Kept: separate toast for +Add / partner-added-a-wish (small, passive).
-  const [celebrateItem, setCelebrateItem] = useState<FantasyWishesItem | null>(null);
+  // Match celebration: subtle. newMatchId names the wish card to render
+  // in glow-highlight mode for ~2s after a fresh mutual Yes, plus a
+  // small tappable toast that jumps to the Matches tab. Full-screen
+  // celebration was tried Aug 2026 and reverted — too loud, interrupted
+  // flow when matches happened rapidly.
+  const [newMatchId, setNewMatchId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [toastActive, setToastActive] = useState(false);
   // Whether the current toast should jump to the Matches tab on tap. Set
@@ -107,9 +106,12 @@ export default function FantasyWishesScreen() {
     if (freshMatchIds.length > 0) {
       const matchedItem = items.find((i) => i.id === freshMatchIds[0]);
       if (matchedItem) {
-        // MatchCelebration triggers its own success haptic + confetti; no
-        // parallel toast — a full-screen moment beats a floating banner.
-        setCelebrateItem(matchedItem);
+        setNewMatchId(matchedItem.id);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showToast("It's a Match! ✨ Tap to see", true);
+        // Clear the match highlight after the animation window so the
+        // Matches list card returns to its normal appearance.
+        setTimeout(() => setNewMatchId(null), 2200);
       }
     }
     prevMatchIdsRef.current = currentMatchIds;
@@ -379,8 +381,9 @@ export default function FantasyWishesScreen() {
             const iPressed = (item.addToList ?? []).includes(uid);
             const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
             const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
+            const celebrating = item.id === newMatchId;
             return (
-              <View style={styles.matchCard}>
+              <View style={[styles.matchCard, celebrating && styles.matchCardCelebrating]}>
                 <Text style={styles.matchEmoji}>✨</Text>
                 <View style={styles.matchInfo}>
                   <Text style={styles.matchText}>{item.text}</Text>
@@ -427,16 +430,6 @@ export default function FantasyWishesScreen() {
           </View>
         </View>
       </Modal>
-
-      <MatchCelebration
-        visible={celebrateItem !== null}
-        content={celebrateItem?.text ?? ''}
-        partnerName={partner?.name ?? 'partner'}
-        onDismiss={() => setCelebrateItem(null)}
-        onAddToList={celebrateItem ? () => handleAddToTogether(celebrateItem) : undefined}
-        addButtonLabel="Add to Together List"
-        alreadyAdded={celebrateItem ? fwBothWantToAdd(celebrateItem, uid, partnerId ?? '') : false}
-      />
 
       <HelpModal
         visible={help.visible}
