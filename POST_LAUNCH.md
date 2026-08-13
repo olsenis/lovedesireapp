@@ -6,6 +6,36 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## Multiple concurrent 30-day challenges (raised August 2026)
+
+### What
+Today `couples/{coupleId}/challenge/active` is a singular doc — one program at a time (Reconnect OR Spark OR Fire OR Desire). User asked whether two programs could run in parallel (e.g. Reconnect for emotional connection + Fire for heat, different moods addressed at different times of day).
+
+### Why deferred
+Original single-program design was intentional focus-first:
+- 30 days is a heavy commitment; running 2-3 in parallel = 2-3 tasks per day = burnout risk
+- Programs are progression-shaped (Reconnect → Spark → Fire → Desire, softest to hottest)
+- Edits (2) + vetoes (2) per person per program × N programs = too many escape hatches
+- User agreed to keep single-program for launch and revisit post-launch
+
+### Decision criteria for revisiting
+- Post-launch analytics show couples cycling through multiple programs sequentially → they might want parallel
+- Direct user asks (support inbox, App Store reviews) for "can I do X and Y at once"
+- Retention data shows drop-off inside a single program that parallel programs might rescue (unlikely but possible signal)
+
+### Migration cost when we do it
+- Schema: `couples/{coupleId}/challenge/{programId}` (plural collection instead of singular `active` doc)
+- `subscribeChallenge` returns array instead of single doc
+- Home nudges become per-program (more nudges = more noise, needs stacking or per-day-only-one rule)
+- Challenge screen: program picker + list of active programs
+- Migration: existing `active` doc renamed to `{programName}` doc on first read post-migration
+- Legacy support: readers before migration see both patterns for a release cycle
+
+### Effort estimate
+~3-4h once decided. Schema migration is the tricky part; UI + nudge changes are mechanical.
+
+---
+
 ## Rebalance Spicy tab count (raised August 2026)
 
 ### What

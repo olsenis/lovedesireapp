@@ -572,7 +572,17 @@ const TRACKED_SCREENS = [
 ];
 
 // Per-screen time distribution: uses Layer 1 for count+avg (one doc read
-// covers everything) + Layer 2 for min/max (one orderBy+limit read each).
+// covers everything). Min/max would ideally come from Layer 2 (Firestore
+// aggregate .min()/.max() don't exist; the classic .orderBy(field).limit(1)
+// trick requires a composite index (screen, durationSec) per screen — 32
+// screens × 2 directions = 64 indexes to maintain, not worth it).
+//
+// Instead we scan the month's session docs once and reduce in memory to
+// build the per-screen min/max map. Cost: one read per session doc in the
+// current month (typical: hundreds to low thousands, well under $0.01).
+// If reads ever become the bottleneck, cheapest upgrade is to add
+// time_{screen}_min_sec / _max_sec to the Layer 1 aggregate write path —
+// but for launch scale the one-time scan is simpler and correct.
 export const adminGetSessionStats = onCall({ invoker: 'public' }, async (req) => {
   assertAdmin(req);
   const month = String(req.data?.month ?? '').trim();
@@ -580,35 +590,50 @@ export const adminGetSessionStats = onCall({ invoker: 'public' }, async (req) =>
     throw new HttpsError('invalid-argument', 'month must be yyyy-mm.');
   }
 
-  const [statsSnap, ...perScreenMinMax] = await Promise.all([
+  const [statsSnap, sessionsSnap] = await Promise.all([
     db.collection('stats').doc(month).get(),
-    ...TRACKED_SCREENS.flatMap((screen) => [
-      db.collection('sessions').doc(month).collection('entries')
-        .where('screen', '==', screen).orderBy('durationSec', 'asc').limit(1).get(),
-      db.collection('sessions').doc(month).collection('entries')
-        .where('screen', '==', screen).orderBy('durationSec', 'desc').limit(1).get(),
-    ]),
+    db.collection('sessions').doc(month).collection('entries').get().catch((e: any) => {
+      console.error('adminGetSessionStats sessions scan failed:', e?.message ?? e);
+      return null;
+    }),
   ]);
 
   const stats = statsSnap.exists ? (statsSnap.data() ?? {}) : {};
-  const screens: Array<{
-    screen: string; count: number; totalSec: number;
-    avgSec: number; minSec: number | null; maxSec: number | null;
-  }> = [];
 
-  for (let i = 0; i < TRACKED_SCREENS.length; i++) {
-    const screen = TRACKED_SCREENS[i];
+  // Reduce sessions to per-screen min/max map. Skip entirely if the sessions
+  // subcollection doesn't exist yet this month — screens still surface with
+  // count+avg from Layer 1, min/max just come back null (UI shows dash).
+  const minMax = new Map<string, { min: number; max: number }>();
+  if (sessionsSnap && !sessionsSnap.empty) {
+    sessionsSnap.docs.forEach((doc) => {
+      const data = doc.data();
+      const screen = String(data.screen ?? '');
+      const dur = Number(data.durationSec ?? 0);
+      if (!screen || !isFinite(dur)) return;
+      const cur = minMax.get(screen);
+      if (!cur) {
+        minMax.set(screen, { min: dur, max: dur });
+      } else {
+        if (dur < cur.min) cur.min = dur;
+        if (dur > cur.max) cur.max = dur;
+      }
+    });
+  }
+
+  const screens = TRACKED_SCREENS.map((screen) => {
     const count = Number(stats[`time_${screen}_count`] ?? 0);
     const totalSec = Number(stats[`time_${screen}_total_sec`] ?? 0);
     const avgSec = count > 0 ? Math.round(totalSec / count) : 0;
-
-    const minSnap = perScreenMinMax[i * 2];
-    const maxSnap = perScreenMinMax[i * 2 + 1];
-    const minSec = minSnap.empty ? null : Number(minSnap.docs[0].data().durationSec);
-    const maxSec = maxSnap.empty ? null : Number(maxSnap.docs[0].data().durationSec);
-
-    screens.push({ screen, count, totalSec, avgSec, minSec, maxSec });
-  }
+    const mm = minMax.get(screen);
+    return {
+      screen,
+      count,
+      totalSec,
+      avgSec,
+      minSec: mm ? mm.min : null,
+      maxSec: mm ? mm.max : null,
+    };
+  });
 
   return { month, screens };
 });
@@ -623,10 +648,19 @@ export const adminGetTimeInsights = onCall({ invoker: 'public' }, async (req) =>
     throw new HttpsError('invalid-argument', 'month must be yyyy-mm.');
   }
 
+  // Heatmap is a plain doc read from stats/{month} — cheap and never fails.
+  // Leaderboard needs a Firestore .orderBy which requires a single-field
+  // index on sessionCount. If the collection doesn't exist yet (no sessions
+  // this month) OR the index isn't built yet, wrap so the heatmap still
+  // returns cleanly.
   const [statsSnap, leaderboardSnap] = await Promise.all([
     db.collection('stats').doc(month).get(),
     db.collection('activeCouples').doc(month).collection('couples')
-      .orderBy('sessionCount', 'desc').limit(20).get(),
+      .orderBy('sessionCount', 'desc').limit(20).get()
+      .catch((e: any) => {
+        console.error('adminGetTimeInsights leaderboard query failed:', e?.message ?? e);
+        return null;
+      }),
   ]);
 
   const stats = statsSnap.exists ? (statsSnap.data() ?? {}) : {};
@@ -639,23 +673,30 @@ export const adminGetTimeInsights = onCall({ invoker: 'public' }, async (req) =>
   }
 
   // Enrich leaderboard entries with couple + partner names for the UI.
-  const leaderboard = await Promise.all(
-    leaderboardSnap.docs.map(async (doc) => {
-      const coupleId = doc.id;
-      const sessionCount = Number(doc.data().sessionCount ?? 0);
-      const coupleSnap = await db.collection('couples').doc(coupleId).get();
-      if (!coupleSnap.exists) {
-        return { coupleId, sessionCount, names: [], isPremium: false };
-      }
-      const couple = coupleSnap.data() ?? {};
-      const uids = [couple.partner1Uid, couple.partner2Uid].filter(Boolean) as string[];
-      const partnerSnaps = await Promise.all(
-        uids.map((uid) => db.collection('users').doc(uid).get()),
-      );
-      const names = partnerSnaps.map((s) => String((s.data() ?? {}).name ?? '(no name)'));
-      return { coupleId, sessionCount, names, isPremium: !!couple.isPremium };
-    }),
-  );
+  const leaderboard = leaderboardSnap
+    ? await Promise.all(
+        leaderboardSnap.docs.map(async (doc) => {
+          const coupleId = doc.id;
+          const sessionCount = Number(doc.data().sessionCount ?? 0);
+          try {
+            const coupleSnap = await db.collection('couples').doc(coupleId).get();
+            if (!coupleSnap.exists) {
+              return { coupleId, sessionCount, names: [], isPremium: false };
+            }
+            const couple = coupleSnap.data() ?? {};
+            const uids = [couple.partner1Uid, couple.partner2Uid].filter(Boolean) as string[];
+            const partnerSnaps = await Promise.all(
+              uids.map((uid) => db.collection('users').doc(uid).get()),
+            );
+            const names = partnerSnaps.map((s) => String((s.data() ?? {}).name ?? '(no name)'));
+            return { coupleId, sessionCount, names, isPremium: !!couple.isPremium };
+          } catch (e: any) {
+            console.error(`adminGetTimeInsights enrich failed for ${coupleId}:`, e?.message ?? e);
+            return { coupleId, sessionCount, names: [], isPremium: false };
+          }
+        }),
+      )
+    : [];
 
   return { month, heat, leaderboard };
 });

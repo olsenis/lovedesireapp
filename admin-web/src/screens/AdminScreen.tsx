@@ -63,26 +63,45 @@ export function AdminScreen() {
 
   const loadAll = async () => {
     setStatsError(null);
-    try {
-      const [ov, cur, prev, sess, insights] = await Promise.all([
-        adminGetOverview(),
-        adminGetStats(currentMonthKey(0)),
-        adminGetStats(currentMonthKey(-1)),
-        adminGetSessionStats(currentMonthKey(0)),
-        adminGetTimeInsights(currentMonthKey(0)),
-      ]);
-      setOverview(ov);
-      setCurStats(cur.counts ?? {});
-      setPrevStats(prev.counts ?? {});
-      setSessionStats(sess.screens ?? []);
+    // Fire each callable independently and settle results — one failing
+    // callable (e.g. adminGetSessionStats hitting a missing composite index)
+    // must not cascade-hide the four that DO succeed. Errors go to the
+    // console per-call with a label so we can spot which one is broken.
+    const label = <T,>(name: string, p: Promise<T>) =>
+      p.catch((err: any) => {
+        // eslint-disable-next-line no-console
+        console.error(`[admin] ${name} failed:`, err?.message ?? err);
+        return null;
+      });
+    const [ov, cur, prev, sess, insights] = await Promise.all([
+      label('adminGetOverview', adminGetOverview()),
+      label('adminGetStats(current)', adminGetStats(currentMonthKey(0))),
+      label('adminGetStats(previous)', adminGetStats(currentMonthKey(-1))),
+      label('adminGetSessionStats', adminGetSessionStats(currentMonthKey(0))),
+      label('adminGetTimeInsights', adminGetTimeInsights(currentMonthKey(0))),
+    ]);
+    if (ov) setOverview(ov);
+    if (cur) setCurStats(cur.counts ?? {});
+    if (prev) setPrevStats(prev.counts ?? {});
+    if (sess) setSessionStats(sess.screens ?? []);
+    if (insights) {
       setHeat(insights.heat ?? []);
       setLeaderboard(insights.leaderboard ?? []);
-    } catch (e: any) {
-      setStatsError(e?.message ?? 'Could not load stats.');
-    } finally {
-      setStatsLoading(false);
-      setRefreshing(false);
     }
+    // Surface a compact status line naming which calls failed (if any) —
+    // helpful diagnostic without cluttering the UI when everything works.
+    const failed = [
+      !ov && 'overview',
+      !cur && 'current stats',
+      !prev && 'previous stats',
+      !sess && 'session stats',
+      !insights && 'time insights',
+    ].filter(Boolean);
+    if (failed.length > 0) {
+      setStatsError(`Failed to load: ${failed.join(', ')}. Check Cloud Function logs.`);
+    }
+    setStatsLoading(false);
+    setRefreshing(false);
   };
 
   useEffect(() => {
