@@ -8,6 +8,7 @@ import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, updateCustomWYRQuestion, deleteCustomWYRQuestion, WYRRecords, WYRCustomQuestion } from '../services/wyrService';
+import { MatchCelebration } from '../components/MatchCelebration';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYR_PACKS, WYRLevel, WYRPack } from '../constants/content';
 import { notifyPartner } from '../services/notificationService';
@@ -105,6 +106,11 @@ export default function WouldYouRatherScreen() {
     previousBest: WYRRecords | null;
   } | null>(null);
   const [records, setRecords] = useState<WYRRecords>({});
+  // Match celebration — full-screen modal shown on the FIRST reveal per
+  // question where both partners picked the same option. Tracked by
+  // questionIndex to avoid re-firing on re-renders after the reveal.
+  const [celebrateText, setCelebrateText] = useState<string | null>(null);
+  const celebratedIdxRef = useRef<number>(-1);
   // Pack picker visibility — expanded state on the level picker screen
   // when the user taps the "🎨 Themed session" row. Small UX: not a
   // separate route, just an accordion so users can dip into pack list
@@ -259,6 +265,18 @@ export default function WouldYouRatherScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await startWYR(coupleId, level, packId);
   };
+
+  // Fresh-match celebration trigger. Fires once per question index when
+  // reveal lands AND both partners picked the same option. Ref guards
+  // against re-fires on re-renders that keep matched=true for the same qi.
+  useEffect(() => {
+    if (!session || !currentQ || !matched) return;
+    if (session.questionIndex === celebratedIdxRef.current) return;
+    celebratedIdxRef.current = session.questionIndex;
+    const winning = myAnswer === 'a' ? currentQ.a : currentQ.b;
+    setCelebrateText(winning);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matched, session?.questionIndex]);
 
   const handleAnswer = async (answer: WYRAnswer) => {
     if (!coupleId || !session || myAnswer) return;
@@ -891,6 +909,15 @@ export default function WouldYouRatherScreen() {
           await handleReset();
         }}
         onCancel={() => setShowChangeLevel(false)}
+      />
+
+      <MatchCelebration
+        visible={celebrateText !== null}
+        title="You match!"
+        emoji="🎉"
+        content={celebrateText ?? ''}
+        partnerName={partner?.name ?? 'partner'}
+        onDismiss={() => setCelebrateText(null)}
       />
     </View>
   );
