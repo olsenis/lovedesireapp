@@ -42,6 +42,16 @@ export default function FantasyWishesScreen() {
   // the card to the back of the deck so the user can defer without either
   // saying yes/maybe/no or reloading the whole feature. Cleared on Reset.
   const [skipped, setSkipped] = useState<Set<string>>(new Set());
+  // Session pacing. Every SESSION_BATCH votes we show a friendly pause
+  // prompt with two paths: "Keep going" (dismiss, extend threshold by
+  // another batch) or "Save for later" (park the deck at a rest state
+  // with a "change my mind" affordance). Prevents decision-fatigue
+  // grinding through 200+ presets in one sitting without gating anyone
+  // who wants to keep exploring.
+  const SESSION_BATCH = 8;
+  const [votedInSession, setVotedInSession] = useState(0);
+  const [nextPromptAt, setNextPromptAt] = useState(SESSION_BATCH);
+  const [pausedForLater, setPausedForLater] = useState(false);
   // Match celebration: subtle. newMatchId names the wish card to render
   // in glow-highlight mode for ~2s after a fresh mutual Yes, plus a
   // small tappable toast that jumps to the Matches tab. Full-screen
@@ -156,6 +166,17 @@ export default function FantasyWishesScreen() {
     }
     // Deck auto-advances naturally: the item leaves unvotedInDeck via the
     // subscription round-trip, and currentItem recomputes to the next one.
+    setVotedInSession((v) => v + 1);
+  };
+
+  const handleKeepGoing = () => {
+    Haptics.selectionAsync();
+    setNextPromptAt((n) => n + SESSION_BATCH);
+    setPausedForLater(false);
+  };
+  const handleSaveForLater = () => {
+    Haptics.selectionAsync();
+    setPausedForLater(true);
   };
 
   const handleSkip = (item: FantasyWishesItem) => {
@@ -261,6 +282,10 @@ export default function FantasyWishesScreen() {
   }, [items, skipped, uid]);
   const currentItem = deck[0] ?? null;
   const allDone = totalCount > 0 && deck.length === 0;
+  // Show pacing prompt when session votes have crossed the current
+  // threshold — unless the whole deck is empty (DoneState wins) or the
+  // user has already parked the session (pausedForLater wins).
+  const showSessionPrompt = !allDone && !pausedForLater && votedInSession >= nextPromptAt;
 
   // Partner-progress hint: how many wishes the partner still hasn't voted on.
   // Used in the DoneState to show whether they're behind us or caught up.
@@ -352,6 +377,20 @@ export default function FantasyWishesScreen() {
               partnerLeft={partnerLeft}
               partnerName={partner?.name ?? 'partner'}
               onViewMatches={() => setActiveTab('matches')}
+            />
+          ) : pausedForLater ? (
+            <SessionPausedState
+              votedInSession={votedInSession}
+              matchesCount={matched.length}
+              onContinue={handleKeepGoing}
+              onViewMatches={() => setActiveTab('matches')}
+            />
+          ) : showSessionPrompt ? (
+            <SessionPromptCard
+              votedInSession={votedInSession}
+              matchesCount={matched.length}
+              onKeepGoing={handleKeepGoing}
+              onSaveForLater={handleSaveForLater}
             />
           ) : currentItem ? (
             <>
@@ -537,6 +576,69 @@ function DoneState({ votedCount, totalCount, matchesCount, partnerLeft, partnerN
   );
 }
 
+// Fires every SESSION_BATCH votes. Deliberate friendly friction — not a
+// gate, just a "want a break?" nudge. Both buttons keep the user in
+// control: keep going = extend the threshold, save for later = park the
+// deck with a change-my-mind button on the paused state.
+function SessionPromptCard({ votedInSession, matchesCount, onKeepGoing, onSaveForLater }: {
+  votedInSession: number; matchesCount: number;
+  onKeepGoing: () => void; onSaveForLater: () => void;
+}) {
+  return (
+    <View style={styles.pauseWrap}>
+      <Text style={styles.pauseEmoji}>🌙</Text>
+      <Text style={styles.pauseTitle}>You've explored {votedInSession} tonight</Text>
+      {matchesCount > 0 && (
+        <Text style={styles.pauseSub}>{matchesCount} match{matchesCount === 1 ? '' : 'es'} so far ✨</Text>
+      )}
+      <Text style={styles.pauseHint}>
+        Coming back fresh tomorrow keeps each Yes meaningful. Or keep exploring if you're in the flow.
+      </Text>
+      <View style={styles.pauseBtnRow}>
+        <TouchableOpacity style={styles.pauseSecondaryBtn} onPress={onSaveForLater} activeOpacity={0.7} accessibilityRole="button">
+          <Text style={styles.pauseSecondaryText}>Save for later</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.pausePrimaryBtn} onPress={onKeepGoing} activeOpacity={0.85} accessibilityRole="button">
+          <Text style={styles.pausePrimaryText}>Load 8 more ›</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// Shown after user picks "Save for later". Confirms the pause, offers
+// a peek at matches so far, and a small change-my-mind link that flips
+// straight back into the deck (same session state — no lost progress).
+function SessionPausedState({ votedInSession, matchesCount, onContinue, onViewMatches }: {
+  votedInSession: number; matchesCount: number;
+  onContinue: () => void; onViewMatches: () => void;
+}) {
+  return (
+    <View style={styles.pauseWrap}>
+      <Text style={styles.pauseEmoji}>💤</Text>
+      <Text style={styles.pauseTitle}>See you tomorrow</Text>
+      <Text style={styles.pauseSub}>
+        You explored {votedInSession} tonight
+        {matchesCount > 0 && ` · ${matchesCount} match${matchesCount === 1 ? '' : 'es'} ✨`}
+      </Text>
+      <TouchableOpacity
+        style={[styles.pausePrimaryBtn, matchesCount === 0 && styles.doneMatchesBtnDisabled, { marginTop: Spacing.md }]}
+        onPress={onViewMatches}
+        disabled={matchesCount === 0}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+      >
+        <Text style={styles.pausePrimaryText}>
+          {matchesCount === 0 ? 'No matches yet' : `View ${matchesCount} match${matchesCount === 1 ? '' : 'es'} ›`}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.pauseChangeMind} onPress={onContinue} activeOpacity={0.7} accessibilityRole="button">
+        <Text style={styles.pauseChangeMindText}>Change my mind — keep exploring</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.cream },
   header: {
@@ -707,4 +809,39 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+
+  // ─── Session pause card (every 8 votes) ────────────────────────────
+  pauseWrap: {
+    backgroundColor: '#FFF5F8',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    ...Shadow.sm,
+  },
+  pauseEmoji: { fontSize: 48 },
+  pauseTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, textAlign: 'center' },
+  pauseSub: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text, textAlign: 'center' },
+  pauseHint: {
+    fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted,
+    textAlign: 'center', lineHeight: 20, marginTop: 4, paddingHorizontal: Spacing.sm,
+  },
+  pauseBtnRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md, alignSelf: 'stretch' },
+  pauseSecondaryBtn: {
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', minWidth: 120,
+  },
+  pauseSecondaryText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  pausePrimaryBtn: {
+    flex: 1, paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full, backgroundColor: Colors.burgundy,
+    alignItems: 'center',
+  },
+  pausePrimaryText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream, letterSpacing: 0.3 },
+  pauseChangeMind: { marginTop: Spacing.md, paddingVertical: Spacing.sm },
+  pauseChangeMindText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 });
