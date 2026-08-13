@@ -378,6 +378,23 @@ const COUPLE_ID_RE = /^[A-Za-z0-9_-]{6,64}$/;
 const MONTH_RE = /^\d{4}-\d{2}$/;
 
 // ─── 1. Overview: top-strip counts for the dashboard ────────────────────────
+// Each aggregate query is wrapped individually so one failure (e.g. missing
+// composite index for a where+count combination, or a schema quirk on a
+// specific field) can't take down the whole dashboard. Failed queries
+// surface as 0 with a log entry; the UI shows dashes for those tiles.
+async function safeCount(
+  q: FirebaseFirestore.Query | FirebaseFirestore.CollectionReference,
+  label: string,
+): Promise<number> {
+  try {
+    const snap = await q.count().get();
+    return snap.data().count;
+  } catch (e: any) {
+    console.error(`safeCount failed for ${label}:`, e?.message ?? e);
+    return 0;
+  }
+}
+
 export const adminGetOverview = onCall({ invoker: 'public' }, async (req) => {
   assertAdmin(req);
   const month = currentMonthKey();
@@ -387,25 +404,28 @@ export const adminGetOverview = onCall({ invoker: 'public' }, async (req) => {
   const couples = db.collection('couples');
   const activeCouples = db.collection('activeCouples').doc(month).collection('couples');
 
-  const [totalUsersSnap, totalCouplesSnap, pairedSnap, paidSnap, activeSnap, signupsSnap] =
+  const [totalUsers, totalCouples, pairedCouples, paidCouples, activeCouplesThisMonth, signupsThisMonth] =
     await Promise.all([
-      users.count().get(),
-      couples.count().get(),
-      couples.where('partner2Uid', '!=', null).count().get(),
-      couples.where('isPremium', '==', true).count().get(),
-      activeCouples.count().get(),
-      users.where('createdAt', '>=', startOfMonth).count().get(),
+      safeCount(users, 'totalUsers'),
+      safeCount(couples, 'totalCouples'),
+      // partner2Uid non-empty string: safer than `!= null` for aggregate
+      // count, which Firestore doesn't reliably support without a composite
+      // index. Works because every paired couple has an auto-generated
+      // Firebase Auth uid stored here (always a non-empty string).
+      safeCount(couples.where('partner2Uid', '>', ''), 'pairedCouples'),
+      safeCount(couples.where('isPremium', '==', true), 'paidCouples'),
+      safeCount(activeCouples, 'activeCouplesThisMonth'),
+      safeCount(users.where('createdAt', '>=', startOfMonth), 'signupsThisMonth'),
     ]);
 
-  const paidCouples = paidSnap.data().count;
   return {
     month,
-    totalUsers: totalUsersSnap.data().count,
-    totalCouples: totalCouplesSnap.data().count,
-    pairedCouples: pairedSnap.data().count,
+    totalUsers,
+    totalCouples,
+    pairedCouples,
     paidCouples,
-    activeCouplesThisMonth: activeSnap.data().count,
-    signupsThisMonth: signupsSnap.data().count,
+    activeCouplesThisMonth,
+    signupsThisMonth,
     mrrEstimate: Math.round(paidCouples * MRR_BLENDED_MONTHLY * 100) / 100,
   };
 });
