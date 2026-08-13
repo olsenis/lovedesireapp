@@ -34,8 +34,9 @@ const NURTURE = [
 // Discover Yourselves — quiz-based identity + shared history. One-time
 // or occasional revisit, not daily.
 const DISCOVER = [
-  { emoji: '📖', title: 'Our Story',         subtitle: 'Timeline of your milestones, met to married and beyond', route: '/our-story',  bg: '#FFF0F3', paid: false },
-  { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',      bg: '#E3F2FD', paid: false },
+  { emoji: '📖', title: 'Our Story',         subtitle: 'Timeline of your milestones, met to married and beyond', route: '/our-story',          bg: '#FFF0F3', paid: false },
+  { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',               bg: '#E3F2FD', paid: false },
+  { emoji: '💕', title: "Speak their language", subtitle: '3 fresh ways every week to speak your partner\'s language', route: '/love-language-nudge', bg: '#FCE4EC', paid: false },
 ];
 
 // Same divider shape as Home ("─── LABEL ───") so the two hubs share a visual

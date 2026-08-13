@@ -16,10 +16,13 @@ import {
   Lato_700Bold,
 } from '@expo-google-fonts/lato';
 import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
 import { createUserProfile } from '../services/authService';
 import { getConsent, confirmConsent } from '../services/consentService';
 import { getOnboardingState } from '../services/onboardingService';
 import { markCoupleActive } from '../services/statsService';
+import { scheduleLoveLanguageNudge, cancelLoveLanguageNudge } from '../services/loveLanguageNudgeService';
+import { LoveLanguage } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -189,6 +192,34 @@ export default function RootLayout() {
     if (loading || !user || !profile?.coupleId) return;
     markCoupleActive(profile.coupleId);
   }, [loading, user, profile?.coupleId]);
+
+  // Weekly love-language nudge (Sunday 09:00 local). Reschedules on every
+  // relevant change so a rename or a re-quiz refreshes the notification
+  // body. Cancels when partner or their language disappears (unpaired,
+  // partner deleted quiz result).
+  const { partner: nudgePartner } = useCouple(user?.uid, profile?.coupleId);
+  useEffect(() => {
+    if (loading || !user) return;
+    if (nudgePartner?.name && nudgePartner?.loveLanguage) {
+      scheduleLoveLanguageNudge(nudgePartner.name, nudgePartner.loveLanguage as LoveLanguage);
+    } else {
+      cancelLoveLanguageNudge();
+    }
+  }, [loading, user, nudgePartner?.name, nudgePartner?.loveLanguage]);
+
+  // Generic notification-tap router. Any notification whose data payload
+  // includes a `route: '/some-path'` string will deep-link there when
+  // tapped. Used today by the love-language weekly nudge — future
+  // scheduled notifications should follow the same convention.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const route = response.notification.request.content.data?.route;
+      if (typeof route === 'string' && route.startsWith('/')) {
+        router.push(route as any);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 
