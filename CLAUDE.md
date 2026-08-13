@@ -91,7 +91,7 @@ app/                         Full-screen sub-screens
   roulette.tsx               Tonight's Date — spin for a date idea (formerly "Date Night Roulette")
   daily.tsx                  Daily — merged Picks + Questions, 3 categories (Playful free · Deep 💰 · Spicy 💰). Actions first, questions second. Actions with mutual Yes save to Together List; questions reveal side-by-side when both answered
   questions-game.tsx         Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
-  fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, 5 at a time
+  fantasy-wishes.tsx         Fantasy Wishes — explicit double-blind voting, one-card-at-a-time deck (refactored Aug 2026 from 5-at-a-time list). Yes/No vote (Maybe dropped Aug 2026 — added no signal beyond softer No). Skip for later moves card to back of deck. Session pacing at 8 votes: friendly "Load 8 more / Save for later" prompt (not a hard cap).
   truth-dare.tsx             Truth or Dare — real 2-phone multiplayer (picking/answering/done), audio answers
   would-you-rather.tsx       Would You Rather — simultaneous answer reveal, 3 levels, session persists
   bingo.tsx                  Activity Cards — 25 face-down cards, turn-based reveal, 3 states (pending/done), passes system
@@ -217,11 +217,11 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Activity Cards:** 25 face-down cards, turn-based. Picker has 2 passes to swap before accepting. Receiver gets the card and can mark "We did it!" or skip (1 pass). Cards have 3 states: face-down, pending (accepted not done), completed (green). `pendingCard` field tracks which card is waiting for receiver. Paid feature.
 
-**Double-blind voting (Wishlist, Fantasy, Fantasy Wishes):** `votes: { [uid]: 'yes'|'maybe'|'no' }`. Only mutual `yes` surfaces in Matches. Never expose individual votes.
+**Double-blind voting (Wishlist, Fantasy, Fantasy Wishes):** `votes: { [uid]: 'yes'|'maybe'|'no' }`. Only mutual `yes` surfaces in Matches. Never expose individual votes. FW UI dropped Maybe Aug 2026 (Yes/No + Skip only); the type stays broad for backward compat with existing docs.
 
 **Daily Picks / Daily Questions:** Deterministic shuffle by date+coupleId ensures both partners see same items. 5 picks per category per day (Daily Picks), 3 questions per category per day (Daily Questions).
 
-**Fantasy Wishes pagination:** Shows 5 items locked in `shownUnvotedIds`. Only advances when all 5 are voted + "Load 5 more" pressed. Voted items accumulate in "Already voted" section.
+**Fantasy Wishes deck (Aug 2026 refactor):** One card at a time from the derived deck (unvoted items in createdAt order, session-skipped moved to back). Yes / No vote auto-advances by removing item from unvoted set on subscription round-trip. Legacy `shownUnvotedIds` batching + "Load 5 more" removed; existing Firestore Maybe votes preserved but no UI writes new ones. Progress bar scales to true totalCount but label hides the denominator (394 items is overwhelming; encourages grinding). Session pacing: after `SESSION_BATCH` (8) Yes/No votes, deck steps aside for "Load 8 more / Save for later" prompt. Skip does NOT count. Save for later parks at a "See you tomorrow" state with a change-my-mind link — never a hard gate.
 
 **30-Day Challenge:** Setup phase allows 2 edits + 2 vetoes per partner before activating. `completedBy: {day: [uid]}` syncs across phones.
 

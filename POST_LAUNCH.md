@@ -6,6 +6,29 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## Extend session pacing to other decks (raised August 2026)
+
+### What
+Fantasy Wishes ships with a "Load 8 more / Save for later" pause card at every 8 votes (see `SESSION_BATCH` constant in `app/fantasy-wishes.tsx`). Deliberate friendly friction — not a gate, dismissable — that prevents grinding through 294 presets in a single session and creates natural stopping points.
+
+Pattern could reasonably extend to:
+- Would You Rather (spicy pack in particular — long sessions dull the reactions)
+- Sensate Focus (already stage-based but could add a pause between stages after N cycles)
+- Truth or Dare "Together Right Here" mode (turn-based marathon sessions)
+
+### Why deferred
+Fantasy Wishes is the extreme case (294 items in a static pool). The other decks have natural pace from turn-taking (Truth or Dare), reveal moments (WYR), or explicit stage boundaries (Sensate). Adding session pacing before observing whether users actually grind through them is over-engineering.
+
+### Decision criteria for revisiting
+- Post-launch analytics show single-session vote counts >30 on any deck feature (indicates grinding, not exploration)
+- Match rate drops noticeably as session length grows (indicates fatigue distorting Yes/No decisions)
+- Direct user report of "I got tired of X"
+
+### Effort estimate
+~30 min per feature to lift the SessionPromptCard / SessionPausedState pattern from fantasy-wishes.tsx into a shared component + wire the trigger.
+
+---
+
 ## Multiple concurrent 30-day challenges (raised August 2026)
 
 ### What
