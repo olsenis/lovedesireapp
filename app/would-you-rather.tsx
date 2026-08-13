@@ -918,6 +918,9 @@ export default function WouldYouRatherScreen() {
         content={celebrateText ?? ''}
         partnerName={partner?.name ?? 'partner'}
         onDismiss={() => setCelebrateText(null)}
+        onAddToList={celebrateText && !session?.savedToList ? handleSaveMatch : undefined}
+        addButtonLabel="Save to our list"
+        alreadyAdded={!!session?.savedToList}
       />
     </View>
   );

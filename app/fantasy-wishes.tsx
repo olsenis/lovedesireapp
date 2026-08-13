@@ -433,6 +433,9 @@ export default function FantasyWishesScreen() {
         content={celebrateItem?.text ?? ''}
         partnerName={partner?.name ?? 'partner'}
         onDismiss={() => setCelebrateItem(null)}
+        onAddToList={celebrateItem ? () => handleAddToTogether(celebrateItem) : undefined}
+        addButtonLabel="Add to Together List"
+        alreadyAdded={celebrateItem ? fwBothWantToAdd(celebrateItem, uid, partnerId ?? '') : false}
       />
 
       <HelpModal
@@ -476,26 +479,28 @@ function WishDeckCard({ item, onVote }: {
   return (
     <View style={styles.deckCard}>
       <View style={styles.deckCardAccent} />
-      <View style={styles.deckCardBody}>
-        <Text style={styles.deckWishText}>{item.text}</Text>
-      </View>
-      <View style={styles.deckVoteRow}>
-        {(['yes', 'maybe', 'no'] as FWVote[]).map((v) => {
-          const labels = { yes: '✓ Yes', maybe: '~ Maybe', no: '✗ No' };
-          const colors = { yes: Colors.success, maybe: '#F9A825', no: Colors.error };
-          return (
-            <TouchableOpacity
-              key={v}
-              style={[styles.deckVoteBtn, { borderColor: colors[v] }]}
-              onPress={() => onVote(item, v)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel={labels[v]}
-            >
-              <Text style={[styles.deckVoteText, { color: colors[v] }]}>{labels[v]}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={styles.deckCardInner}>
+        <View style={styles.deckCardBody}>
+          <Text style={styles.deckWishText}>{item.text}</Text>
+        </View>
+        <View style={styles.deckVoteRow}>
+          {(['yes', 'maybe', 'no'] as FWVote[]).map((v) => {
+            const labels = { yes: '✓ Yes', maybe: '~ Maybe', no: '✗ No' };
+            const colors = { yes: Colors.success, maybe: '#F9A825', no: Colors.error };
+            return (
+              <TouchableOpacity
+                key={v}
+                style={[styles.deckVoteBtn, { borderColor: colors[v] }]}
+                onPress={() => onVote(item, v)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={labels[v]}
+              >
+                <Text style={[styles.deckVoteText, { color: colors[v] }]}>{labels[v]}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </View>
   );
@@ -587,13 +592,22 @@ const styles = StyleSheet.create({
     ...Shadow.sm,
   },
   deckCardAccent: { width: 4, backgroundColor: Colors.rose },
+  // Inner column: text grows in the body, vote row stays at the bottom
+  // in a stable padded row. Fixes the earlier bug where absolute-position
+  // vote row overlapped long wish text.
+  deckCardInner: {
+    flex: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    gap: Spacing.lg,
+    minHeight: 260,
+  },
   deckCardBody: {
     flex: 1,
-    paddingVertical: Spacing.xxl,
-    paddingHorizontal: Spacing.lg,
-    minHeight: 220,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: Spacing.md,
   },
   deckWishText: {
     fontFamily: Fonts.heading,
@@ -603,10 +617,6 @@ const styles = StyleSheet.create({
     lineHeight: 30,
   },
   deckVoteRow: {
-    position: 'absolute',
-    bottom: Spacing.lg,
-    left: Spacing.lg + 4,
-    right: Spacing.lg,
     flexDirection: 'row',
     gap: Spacing.sm,
   },

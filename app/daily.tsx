@@ -115,9 +115,11 @@ export default function DailyScreen() {
   // Fresh-match celebration — tracks which action gi's we've already
   // celebrated this session so re-renders on wishDoc updates don't
   // re-fire. Populated on first snapshot with the historical matches
-  // so old ones don't retroactively celebrate on mount.
+  // so old ones don't retroactively celebrate on mount. State holds
+  // the full matched gi so the celebration modal can wire "Add to
+  // Together List" via handleAddToList(gi).
   const celebratedActionGiRef = useRef<Set<number> | null>(null);
-  const [celebrateActionText, setCelebrateActionText] = useState<string | null>(null);
+  const [celebrateAction, setCelebrateAction] = useState<{ gi: number; text: string } | null>(null);
 
   // Deep-link default: /daily with no ?category= → Playful. Never default
   // to a paid category — a free user tapping a push notification would hit
@@ -244,7 +246,7 @@ export default function DailyScreen() {
     if (fresh.length > 0) {
       const gi = fresh[0];
       const item = wishDoc.items[gi];
-      if (item) setCelebrateActionText(item.text);
+      if (item) setCelebrateAction({ gi, text: item.text });
     }
     celebratedActionGiRef.current = now;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -649,10 +651,13 @@ export default function DailyScreen() {
       />
 
       <MatchCelebration
-        visible={celebrateActionText !== null}
-        content={celebrateActionText ?? ''}
+        visible={celebrateAction !== null}
+        content={celebrateAction?.text ?? ''}
         partnerName={partner?.name ?? 'partner'}
-        onDismiss={() => setCelebrateActionText(null)}
+        onDismiss={() => setCelebrateAction(null)}
+        onAddToList={celebrateAction ? () => handleAddToList(celebrateAction.gi) : undefined}
+        addButtonLabel="Add to Together List"
+        alreadyAdded={celebrateAction ? alreadyAdded(celebrateAction.gi) : false}
       />
     </View>
   );

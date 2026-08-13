@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated, Easing, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../constants/colors';
@@ -27,6 +27,16 @@ type Props = {
   partnerName: string;
   emoji?: string;
   onDismiss: () => void;
+  // Optional "Add to Together List" button. When provided, the modal
+  // shows a two-button row (Later | Add to our list). Add fires the
+  // callback and dismisses. When absent, a single Nice ✨ button
+  // dismisses (used for pure celebration with no follow-up action).
+  onAddToList?: () => void | Promise<void>;
+  addButtonLabel?: string;
+  // Optional: signal that the pair has already added this to Together
+  // List (e.g. from a previous session). Hides the Add button so the
+  // modal doesn't tempt a re-add — shows a confirmation pill instead.
+  alreadyAdded?: boolean;
 };
 
 const CONFETTI_EMOJIS = ['✨', '💖', '🎉', '💫', '🌟', '💕'];
@@ -40,7 +50,21 @@ export function MatchCelebration({
   partnerName,
   emoji = '✨',
   onDismiss,
+  onAddToList,
+  addButtonLabel = 'Add to our list',
+  alreadyAdded = false,
 }: Props) {
+  const [adding, setAdding] = useState(false);
+  const handleAdd = async () => {
+    if (!onAddToList || adding) return;
+    setAdding(true);
+    try {
+      await onAddToList();
+      onDismiss();
+    } finally {
+      setAdding(false);
+    }
+  };
   const cardScale = useRef(new Animated.Value(0.8)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
   const particles = useRef(
@@ -98,7 +122,12 @@ export function MatchCelebration({
       ]).start();
     });
 
-    dismissTimer.current = setTimeout(onDismiss, AUTO_DISMISS_MS);
+    // Auto-dismiss only when there's no primary action to take. If the
+    // modal has an Add button the user should have time to decide, not be
+    // whisked away mid-thought.
+    if (!onAddToList) {
+      dismissTimer.current = setTimeout(onDismiss, AUTO_DISMISS_MS);
+    }
 
     return () => {
       if (dismissTimer.current) {
@@ -146,15 +175,45 @@ export function MatchCelebration({
             <Text style={styles.content}>{content}</Text>
           </View>
           <Text style={styles.partners}>You & {partnerName} both said Yes</Text>
-          <TouchableOpacity
-            style={styles.dismissBtn}
-            onPress={onDismiss}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss celebration"
-          >
-            <Text style={styles.dismissText}>Nice ✨</Text>
-          </TouchableOpacity>
+          {alreadyAdded && (
+            <View style={styles.alreadyPill}>
+              <Text style={styles.alreadyPillText}>✓ Already on your Together List</Text>
+            </View>
+          )}
+          {onAddToList && !alreadyAdded ? (
+            <View style={styles.btnRow}>
+              <TouchableOpacity
+                style={styles.laterBtn}
+                onPress={onDismiss}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Later"
+                disabled={adding}
+              >
+                <Text style={styles.laterText}>Later</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addBtn, adding && styles.addBtnBusy]}
+                onPress={handleAdd}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={addButtonLabel}
+                disabled={adding}
+              >
+                <Text style={styles.addText}>{adding ? 'Adding…' : `+ ${addButtonLabel}`}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.dismissBtn}
+              onPress={onDismiss}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss celebration"
+            >
+              <Text style={styles.dismissText}>Nice ✨</Text>
+            </TouchableOpacity>
+          )}
         </Animated.View>
       </View>
     </Modal>
@@ -241,5 +300,54 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.cream,
     letterSpacing: 0.5,
+  },
+  btnRow: {
+    marginTop: Spacing.sm,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    width: '100%',
+  },
+  laterBtn: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    minWidth: 90,
+  },
+  laterText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+    color: Colors.muted,
+    letterSpacing: 0.3,
+  },
+  addBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.burgundy,
+    alignItems: 'center',
+  },
+  addBtnBusy: { opacity: 0.6 },
+  addText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+    color: Colors.cream,
+    letterSpacing: 0.3,
+  },
+  alreadyPill: {
+    backgroundColor: Colors.success,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    marginTop: 4,
+  },
+  alreadyPillText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12,
+    color: Colors.cream,
+    letterSpacing: 0.4,
   },
 });
