@@ -5,8 +5,11 @@
  * - deleteUserCascade: full GDPR delete when user account is removed (Tier 1.6)
  * - cleanupExpiredFlashes: scheduled deletion of flashes past 24h (Tier 1.7)
  * - cleanupOldTruthDareAudio: scheduled deletion of old audio (Tier 1.8)
+ * - cleanupOldSessions: scheduled deletion of session records >12 months old (Aug 2026)
  * - adminGetOverview / adminGetStats / adminGrantPremium / adminRevokePremium /
  *   adminSearchUser: admin dashboard callables (Aug 2026)
+ * - adminGetSessionStats / adminGetTimeInsights: per-screen time distribution
+ *   + heatmap + per-couple leaderboard (Aug 2026)
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
@@ -526,4 +529,140 @@ export const adminSearchUser = onCall({ invoker: 'public' }, async (req) => {
     joinedAt: (profile as any).createdAt ?? userRecord.metadata.creationTime,
     partner,
   };
+});
+
+// ─── Session telemetry admin callables (Aug 2026) ──────────────────────────
+// See services/telemetryService.ts + ADMIN_DASHBOARD.md for the data model.
+// Layer 1 aggregates in stats/{month} hold total_sec / count / heatmap keys.
+// Layer 2 per-couple records in sessions/{month}/entries/* power min/max
+// and (via activeCouples/{month}/couples.sessionCount) leaderboard queries.
+
+// Union of screen slugs currently instrumented by useTrackScreen. Keep in
+// sync with the argument list across app/**.tsx if you add screens. Missing
+// a screen just means it doesn't appear in the min/max/avg table.
+const TRACKED_SCREENS = [
+  'home', 'discover', 'us', 'together_list', 'profile',
+  'daily', 'truth_dare', 'would_you_rather', 'activity_cards',
+  'fantasy_wishes', 'versus', 'roulette', 'dares',
+  'sunday_checkin', 'moments', 'notes', 'journal', 'intimacy_log',
+  'pulse', 'blueprint', 'sensate',
+  'reminders', 'countdown', 'calendar',
+  'upgrade', 'quiz', 'challenge', 'flashes',
+  'onboarding_tour', 'mood_history', 'our_story', 'year_in_review',
+];
+
+// Per-screen time distribution: uses Layer 1 for count+avg (one doc read
+// covers everything) + Layer 2 for min/max (one orderBy+limit read each).
+export const adminGetSessionStats = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const month = String(req.data?.month ?? '').trim();
+  if (!MONTH_RE.test(month)) {
+    throw new HttpsError('invalid-argument', 'month must be yyyy-mm.');
+  }
+
+  const [statsSnap, ...perScreenMinMax] = await Promise.all([
+    db.collection('stats').doc(month).get(),
+    ...TRACKED_SCREENS.flatMap((screen) => [
+      db.collection('sessions').doc(month).collection('entries')
+        .where('screen', '==', screen).orderBy('durationSec', 'asc').limit(1).get(),
+      db.collection('sessions').doc(month).collection('entries')
+        .where('screen', '==', screen).orderBy('durationSec', 'desc').limit(1).get(),
+    ]),
+  ]);
+
+  const stats = statsSnap.exists ? (statsSnap.data() ?? {}) : {};
+  const screens: Array<{
+    screen: string; count: number; totalSec: number;
+    avgSec: number; minSec: number | null; maxSec: number | null;
+  }> = [];
+
+  for (let i = 0; i < TRACKED_SCREENS.length; i++) {
+    const screen = TRACKED_SCREENS[i];
+    const count = Number(stats[`time_${screen}_count`] ?? 0);
+    const totalSec = Number(stats[`time_${screen}_total_sec`] ?? 0);
+    const avgSec = count > 0 ? Math.round(totalSec / count) : 0;
+
+    const minSnap = perScreenMinMax[i * 2];
+    const maxSnap = perScreenMinMax[i * 2 + 1];
+    const minSec = minSnap.empty ? null : Number(minSnap.docs[0].data().durationSec);
+    const maxSec = maxSnap.empty ? null : Number(maxSnap.docs[0].data().durationSec);
+
+    screens.push({ screen, count, totalSec, avgSec, minSec, maxSec });
+  }
+
+  return { month, screens };
+});
+
+// Heatmap (24×7 grid of overall app opens) + per-couple leaderboard (top 20
+// by session count). Bundled into one callable so the dashboard can render
+// both sections with a single round-trip.
+export const adminGetTimeInsights = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const month = String(req.data?.month ?? '').trim();
+  if (!MONTH_RE.test(month)) {
+    throw new HttpsError('invalid-argument', 'month must be yyyy-mm.');
+  }
+
+  const [statsSnap, leaderboardSnap] = await Promise.all([
+    db.collection('stats').doc(month).get(),
+    db.collection('activeCouples').doc(month).collection('couples')
+      .orderBy('sessionCount', 'desc').limit(20).get(),
+  ]);
+
+  const stats = statsSnap.exists ? (statsSnap.data() ?? {}) : {};
+  // Heatmap: 24 hours × 7 days-of-week (Sun=0). Fill from `heat_H_D` keys.
+  const heat: number[][] = Array.from({ length: 24 }, () => Array(7).fill(0));
+  for (let h = 0; h < 24; h++) {
+    for (let d = 0; d < 7; d++) {
+      heat[h][d] = Number(stats[`heat_${h}_${d}`] ?? 0);
+    }
+  }
+
+  // Enrich leaderboard entries with couple + partner names for the UI.
+  const leaderboard = await Promise.all(
+    leaderboardSnap.docs.map(async (doc) => {
+      const coupleId = doc.id;
+      const sessionCount = Number(doc.data().sessionCount ?? 0);
+      const coupleSnap = await db.collection('couples').doc(coupleId).get();
+      if (!coupleSnap.exists) {
+        return { coupleId, sessionCount, names: [], isPremium: false };
+      }
+      const couple = coupleSnap.data() ?? {};
+      const uids = [couple.partner1Uid, couple.partner2Uid].filter(Boolean) as string[];
+      const partnerSnaps = await Promise.all(
+        uids.map((uid) => db.collection('users').doc(uid).get()),
+      );
+      const names = partnerSnaps.map((s) => String((s.data() ?? {}).name ?? '(no name)'));
+      return { coupleId, sessionCount, names, isPremium: !!couple.isPremium };
+    }),
+  );
+
+  return { month, heat, leaderboard };
+});
+
+// ─── Scheduled cleanup: sessions older than 12 months ───────────────────────
+// Runs daily. Idempotent — deletes any `sessions/{month}` documents whose
+// month key is 13-36 months in the past. Uses admin SDK `recursiveDelete`
+// which handles the full subcollection tree of entries in one call.
+const SESSION_RETENTION_MONTHS = 12;
+
+export const cleanupOldSessions = onSchedule('every 24 hours', async () => {
+  let totalDeleted = 0;
+  for (let i = SESSION_RETENTION_MONTHS + 1; i < 36; i++) {
+    const d = new Date();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() - i);
+    const month = d.toISOString().slice(0, 7);
+    try {
+      const monthRef = db.collection('sessions').doc(month);
+      const entries = await monthRef.collection('entries').limit(1).get();
+      if (entries.empty) continue;
+      await db.recursiveDelete(monthRef);
+      totalDeleted++;
+      console.log(`Cleaned up sessions/${month}`);
+    } catch (e) {
+      console.error(`Failed to cleanup sessions/${month}:`, e);
+    }
+  }
+  console.log(`Session cleanup: ${totalDeleted} monthly buckets deleted`);
 });
