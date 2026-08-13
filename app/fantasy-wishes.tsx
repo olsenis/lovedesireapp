@@ -443,7 +443,7 @@ export default function FantasyWishesScreen() {
         title="Fantasy Wishes"
         description="A private list of explicit sexual scenarios. Vote independently, only mutual Yes is ever revealed to both of you."
         tips={[
-          'One wish at a time, tap Yes / Maybe / No — your partner never sees your choices',
+          'One wish at a time, tap Yes or No — your partner never sees your choices',
           'Not sure yet? Skip for later, it goes to the back of your deck',
           'When you both say Yes → it appears in Matches',
           'Tap matches to add them to your Together List',
@@ -476,6 +476,10 @@ function WishDeckCard({ item, onVote }: {
   item: FantasyWishesItem;
   onVote: (item: FantasyWishesItem, vote: FWVote) => void;
 }) {
+  // Maybe was dropped Aug 2026 — it added decision friction without value
+  // (didn't count as match, effectively same outcome as No). Skip covers
+  // "not sure yet". Existing Maybe votes in Firestore are preserved but
+  // no longer surfaced anywhere in the UI.
   return (
     <View style={styles.deckCard}>
       <View style={styles.deckCardAccent} />
@@ -484,9 +488,9 @@ function WishDeckCard({ item, onVote }: {
           <Text style={styles.deckWishText}>{item.text}</Text>
         </View>
         <View style={styles.deckVoteRow}>
-          {(['yes', 'maybe', 'no'] as FWVote[]).map((v) => {
-            const labels = { yes: '✓ Yes', maybe: '~ Maybe', no: '✗ No' };
-            const colors = { yes: Colors.success, maybe: '#F9A825', no: Colors.error };
+          {(['yes', 'no'] as const).map((v) => {
+            const labels = { yes: '✓ Yes', no: '✗ No' };
+            const colors = { yes: Colors.success, no: Colors.error };
             return (
               <TouchableOpacity
                 key={v}
