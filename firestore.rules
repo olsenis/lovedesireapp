@@ -220,15 +220,41 @@ service cloud.firestore {
     // Docs at /activeCouples/{yyyy-mm}/couples/{coupleId} exist iff that
     // couple used the app that month. Client can only write to their own
     // couple's doc (isMemberOfCouple gate). Admin dashboard counts docs
-    // per-month for MAU / WAU. Never read from client. Value payload is
-    // trivial ({active: true}); the aggregate signal is the count of docs,
-    // not the doc contents.
+    // per-month for MAU / WAU. Never read from client. Payload now includes
+    // `sessionCount` (incremented by telemetryService.writeSession per
+    // session) to enable cheap per-couple leaderboard queries in the admin
+    // dashboard via .orderBy('sessionCount', 'desc').limit(N).
     match /activeCouples/{month}/couples/{coupleId} {
       allow read: if false;
       allow write: if request.auth != null && isMemberOfCouple(coupleId);
     }
     match /activeCouples/{month} {
       // Parent doc unused; block direct client access.
+      allow read, write: if false;
+    }
+
+    // ── Per-couple session records (Aug 2026) ──────────────────────────────
+    // Layer 2 telemetry: one doc per screen mount → unmount with duration.
+    // Powers per-screen min/max/avg and per-couple leaderboard in the admin
+    // dashboard. Auto-deleted after 12 months by the scheduled Cloud
+    // Function `cleanupOldSessions` (functions/src/index.ts).
+    //
+    // Client can only CREATE (via addDoc from telemetryService.writeSession)
+    // and only for their own couple's coupleId. No reads, updates, or
+    // deletes from client. Admin reads via admin SDK (adminGetSessionStats
+    // / adminGetHeatmap callables) which bypass rules.
+    //
+    // See ADMIN_DASHBOARD.md § Phase 5 for the full data model.
+    match /sessions/{month}/entries/{sessionId} {
+      allow read: if false;
+      allow create: if request.auth != null
+        && isMemberOfCouple(request.resource.data.coupleId)
+        && request.resource.data.durationSec is number
+        && request.resource.data.durationSec >= 0
+        && request.resource.data.durationSec <= 300;
+      allow update, delete: if false;
+    }
+    match /sessions/{month} {
       allow read, write: if false;
     }
   }

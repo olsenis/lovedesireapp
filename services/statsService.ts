@@ -21,13 +21,14 @@ function currentMonthKey(): string {
   return new Date().toISOString().slice(0, 7); // "2026-08"
 }
 
-// Increment a named counter by 1 in the current month's stats doc.
-// Fire-and-forget — errors are swallowed so a failed stats write never
-// breaks the caller. Callers do not need to await.
-export async function trackEvent(name: string): Promise<void> {
+// Increment a named counter in the current month's stats doc. Default
+// increment is 1 (event counter); pass `by` to add a larger value (used
+// by session time aggregates in telemetryService). Fire-and-forget —
+// errors are swallowed so a failed stats write never breaks the caller.
+export async function trackEvent(name: string, by: number = 1): Promise<void> {
   try {
     const ref = doc(db, 'stats', currentMonthKey());
-    await setDoc(ref, { [name]: increment(1) }, { merge: true });
+    await setDoc(ref, { [name]: increment(by) }, { merge: true });
   } catch {
     // Silent — telemetry must never affect app behaviour.
   }
