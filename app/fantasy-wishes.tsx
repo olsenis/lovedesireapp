@@ -13,7 +13,7 @@ import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem
 import { FANTASY_WISHES_PRESETS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
-import { Spacing, Radius } from '../constants/spacing';
+import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
 
@@ -38,12 +38,14 @@ export default function FantasyWishesScreen() {
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [shownUnvotedIds, setShownUnvotedIds] = useState<string[]>([]);
-  const [addedToList, setAddedToList] = useState<Set<string>>(new Set());
+  // Session-only skip set. Skipping doesn't record a vote — it just moves
+  // the card to the back of the deck so the user can defer without either
+  // saying yes/maybe/no or reloading the whole feature. Cleared on Reset.
+  const [skipped, setSkipped] = useState<Set<string>>(new Set());
   // Match celebration + generic toast state. newMatchId names the wish card
   // to render in glow-highlight mode for ~2s after a fresh mutual Yes.
   // toastMsg / toastAnim drive a small floating banner (~3s) used for both
-  // "match saved" confirmation and "wish added to next batch" from +Add.
+  // "match saved" confirmation and "wish added / partner added" from adds.
   const [newMatchId, setNewMatchId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [toastActive, setToastActive] = useState(false);
@@ -106,8 +108,8 @@ export default function FantasyWishesScreen() {
         setNewMatchId(matchedItem.id);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         showToast("It's a Match! ✨ Tap to see", true);
-        // Clear the glow highlight after the animation window so the card
-        // returns to its normal appearance in Explore / Matches list.
+        // Clear the match highlight after the animation window so the
+        // Matches list card returns to its normal appearance.
         setTimeout(() => setNewMatchId(null), 2200);
       }
     }
@@ -115,24 +117,10 @@ export default function FantasyWishesScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, partnerId, uid]);
 
-  // Initialize locked batch of 5 unvoted items when items first load
-  useEffect(() => {
-    if (shownUnvotedIds.length === 0 && items.length > 0 && uid) {
-      const first5 = items
-        .filter(i => !i.votes[uid])
-        .slice(0, 5)
-        .map(i => i.id);
-      setShownUnvotedIds(first5);
-    }
-  }, [items.length, uid]);
-
-  // Auto-inject partner-added wishes into the current batch on the receiving
-  // side. Without this, when Óli hits +Add the new wish only appears on his
-  // own screen (via handleAdd's local setShownUnvotedIds); Ola's phone gets
-  // the item via subscription but it never surfaces in her current batch
-  // because Load-more's oldest-first sort keeps burying it. We snapshot every
-  // item id we've seen on mount, then any newer id that arrives afterwards
-  // gets appended to shownUnvotedIds so it shows up as the next card down.
+  // Partner-added toast. On mount we snapshot every id we already saw so
+  // historical items don't fire a spurious "New wish" toast; any id that
+  // shows up later gets one — unless it was added locally (own +Add call),
+  // in which case the "Added ✓" toast handles it instead.
   const seenItemIdsRef = useRef<Set<string>>(new Set());
   const initialSeenRef = useRef<boolean>(false);
   useEffect(() => {
@@ -145,19 +133,12 @@ export default function FantasyWishesScreen() {
     const newIds = items.filter((i) => !seenItemIdsRef.current.has(i.id)).map((i) => i.id);
     if (newIds.length === 0) return;
     newIds.forEach((id) => seenItemIdsRef.current.add(id));
-    setShownUnvotedIds((prev) => [...prev, ...newIds.filter((id) => !prev.includes(id))]);
     // Only fire the partner-added toast for items the partner (not us)
     // added. If we added the item locally, handleAdd already showed
-    // "Added ✓" and we'd otherwise race two toasts against each other,
-    // causing both to flash so fast neither could be read.
-    // Both guards needed:
-    //  - isLocallyAddingRef closes the timing gap during the await
-    //  - locallyAddedIdsRef is a longer-tail net for later subscription
-    //    fires (server-confirmed after the optimistic one) once the flag
-    //    has already been cleared.
+    // "Added ✓" and we'd otherwise race two toasts against each other.
     const partnerOnlyIds = newIds.filter((id) => !locallyAddedIdsRef.current.has(id));
     if (partnerOnlyIds.length > 0 && !toastActive && !isLocallyAddingRef.current) {
-      showToast('✨ New wish below', false);
+      showToast('✨ New wish added', false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
@@ -172,17 +153,26 @@ export default function FantasyWishesScreen() {
         notifyPartner(coupleId, uid, 'New match ✨', 'You have a shared fantasy wish').catch(() => {});
       }
     }
+    // Deck auto-advances naturally: the item leaves unvotedInDeck via the
+    // subscription round-trip, and currentItem recomputes to the next one.
+  };
+
+  const handleSkip = (item: FantasyWishesItem) => {
+    Haptics.selectionAsync();
+    // Skipped items move to the back of the derived deck order — the user
+    // can still get to them later this session by finishing everything else,
+    // and reset clears the skip set entirely.
+    setSkipped((s) => {
+      const next = new Set(s);
+      next.add(item.id);
+      return next;
+    });
   };
 
   // Ids the local user just added. The partner-added-detection effect
   // reads this to skip firing its own toast for local additions,
   // otherwise "Partner added a wish" races over "Added ✓" and both
   // flash so fast the user can't read either.
-  //
-  // isLocallyAddingRef closes the timing gap: Firestore's onSnapshot fires
-  // optimistically DURING the await, before the id can be added to
-  // locallyAddedIdsRef. The flag flips true before the await so the
-  // auto-inject effect knows to skip its toast for the whole write window.
   const locallyAddedIdsRef = useRef<Set<string>>(new Set());
   const isLocallyAddingRef = useRef(false);
   const handleAdd = async () => {
@@ -191,16 +181,9 @@ export default function FantasyWishesScreen() {
     try {
       const newId = await addFantasyWishesItem(coupleId, newText.trim());
       locallyAddedIdsRef.current.add(newId);
-      // Inject the new wish into the current locked batch immediately so the
-      // user sees it right below the existing 5, not somewhere down after
-      // Load 5 more. Previously the toast said "You'll see it after this
-      // batch" but Load 5 more's .slice(0, 5) picks the oldest unvoted items
-      // by createdAt, so the just-added (newest) wish never surfaced until
-      // hundreds of presets had been voted on.
-      setShownUnvotedIds((prev) => [...prev, newId]);
       setNewText('');
       setShowAdd(false);
-      showToast('Added ✓ · Just below', false);
+      showToast('Added ✓ · At the end of your deck', false);
     } finally {
       isLocallyAddingRef.current = false;
     }
@@ -223,7 +206,13 @@ export default function FantasyWishesScreen() {
     setResetting(true);
     try {
       await clearAndReloadFantasyWishes(id, FANTASY_WISHES_PRESETS);
-      setShownUnvotedIds([]); // will re-init from fresh items
+      setSkipped(new Set());
+      // Refs get re-populated by the initial-seen guard when the new items
+      // land via the subscription. Clear so celebrations for the fresh set
+      // fire correctly if a match happens right away.
+      prevMatchIdsRef.current = null;
+      seenItemIdsRef.current = new Set();
+      initialSeenRef.current = false;
     } finally {
       setResetting(false);
     }
@@ -250,59 +239,34 @@ export default function FantasyWishesScreen() {
   // stamped atomically by voteOnFantasyWish when the second YES lands.
   // Legacy matches from before matchedAt existed fall back to createdAt so
   // ordering still works during the transition period.
-  const matched = items
-    .filter((i) => partnerId && isFWMatch(i, uid, partnerId))
-    .sort((a, b) => (b.matchedAt ?? b.createdAt) - (a.matchedAt ?? a.createdAt));
-  const allVoted = items.filter((i) => myVote(i) !== null);
-  // Locked batch: items in shownUnvotedIds that are still unvoted
-  const currentBatch = items.filter((i) => shownUnvotedIds.includes(i.id) && myVote(i) === null);
-  const canLoadMore = currentBatch.length === 0 && allVoted.length < items.length;
+  const matched = useMemo(
+    () => items
+      .filter((i) => partnerId && isFWMatch(i, uid, partnerId))
+      .sort((a, b) => (b.matchedAt ?? b.createdAt) - (a.matchedAt ?? a.createdAt)),
+    [items, partnerId, uid],
+  );
+  const votedCount = useMemo(() => items.filter((i) => myVote(i) !== null).length, [items, uid]);
+  const totalCount = items.length;
 
-  const loadMore = () => {
-    const alreadyShown = new Set(shownUnvotedIds);
-    const votedIds = new Set(allVoted.map(i => i.id));
-    // Sort candidates newest-first so user-added wishes surface at the top
-    // of the next Load-more batch. Bulk-loaded presets share near-identical
-    // createdAt timestamps so their relative order stays roughly stable.
-    // Previously createdAt-asc buried every custom wish under 300+ presets.
-    const next5 = items
-      .filter(i => !votedIds.has(i.id) && !alreadyShown.has(i.id))
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, 5)
-      .map(i => i.id);
-    setShownUnvotedIds(prev => [...prev, ...next5]);
-  };
+  // Deck order: unvoted items in createdAt order, but any id in `skipped`
+  // moves to the back so the user's Skip actions defer without dropping the
+  // card entirely. Voting removes items from this list (they're no longer
+  // unvoted); Skip just re-sorts to move them out of the front.
+  const deck = useMemo(() => {
+    const unvoted = items.filter((i) => myVote(i) === null);
+    const front = unvoted.filter((i) => !skipped.has(i.id));
+    const back = unvoted.filter((i) => skipped.has(i.id));
+    return [...front, ...back];
+  }, [items, skipped, uid]);
+  const currentItem = deck[0] ?? null;
+  const allDone = totalCount > 0 && deck.length === 0;
 
-  // Build heterogeneous row data for FlatList — switches based on active tab
-  type Row =
-    | { type: 'empty-explore' }
-    | { type: 'wish-current'; item: FantasyWishesItem }
-    | { type: 'load-more' }
-    | { type: 'all-done' }
-    | { type: 'voted-label' }
-    | { type: 'wish-voted'; item: FantasyWishesItem }
-    | { type: 'empty-matches' }
-    | { type: 'match-card'; item: FantasyWishesItem };
-
-  const rows = useMemo<Row[]>(() => {
-    if (activeTab === 'matches') {
-      if (matched.length === 0) return [{ type: 'empty-matches' }];
-      return matched.map(item => ({ type: 'match-card' as const, item }));
-    }
-    // Explore tab
-    const list: Row[] = [];
-    if (items.length === 0) list.push({ type: 'empty-explore' });
-    for (const item of currentBatch) list.push({ type: 'wish-current', item });
-    if (canLoadMore) list.push({ type: 'load-more' });
-    if (!canLoadMore && currentBatch.length === 0 && allVoted.length === items.length && items.length > 0) {
-      list.push({ type: 'all-done' });
-    }
-    if (allVoted.length > 0) {
-      list.push({ type: 'voted-label' });
-      for (const item of allVoted) list.push({ type: 'wish-voted', item });
-    }
-    return list;
-  }, [activeTab, matched, items.length, currentBatch, allVoted, canLoadMore]);
+  // Partner-progress hint: how many wishes the partner still hasn't voted on.
+  // Used in the DoneState to show whether they're behind us or caught up.
+  const partnerLeft = useMemo(() => {
+    if (!partnerId) return 0;
+    return items.filter((i) => !i.votes[partnerId]).length;
+  }, [items, partnerId]);
 
   // While the paywall check resolves or the user is being redirected away,
   // render nothing so a free user doesn't briefly see the FW UI flash
@@ -333,9 +297,7 @@ export default function FantasyWishesScreen() {
       </View>
 
       {/* Floating toast — fires on new match ("It's a Match! ✨ Tap to see",
-          tappable → Matches tab) and on +Add ("Added ✓ · Just below",
-          passive). Absolute positioned so it hovers over the list content
-          without shifting it. */}
+          tappable → Matches tab) and on +Add / partner add (passive). */}
       {toastActive && toastMsg && (
         <Animated.View
           style={[
@@ -369,85 +331,79 @@ export default function FantasyWishesScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={rows}
-        keyExtractor={(row, idx) => row.type === 'wish-current' || row.type === 'wish-voted' || row.type === 'match-card' ? `${row.type}-${row.item.id}` : `${row.type}-${idx}`}
-        contentContainerStyle={styles.list}
-        renderItem={({ item: row }) => {
-          switch (row.type) {
-            case 'empty-explore':
-              return (
-                <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7} accessibilityRole="button">
-                  <Text style={styles.emptyEmoji}>{loadingPresets ? '⏳' : '✨'}</Text>
-                  <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
-                  <Text style={styles.emptyText}>
-                    {loadingPresets
-                      ? 'Adding 120 wishes, this takes a moment'
-                      : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
-                  </Text>
-                </TouchableOpacity>
-              );
-            case 'wish-current':
-              return <WishCard item={row.item} onVote={handleVote} myVote={null} isCelebrating={row.item.id === newMatchId} />;
-            case 'load-more':
-              return (
-                <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.8} accessibilityRole="button">
-                  <Text style={styles.loadMoreText}>Load 5 more ↓</Text>
-                </TouchableOpacity>
-              );
-            case 'all-done':
-              return (
-                <View style={styles.allDoneCard}>
-                  <Text style={styles.allDoneEmoji}>✨</Text>
-                  <Text style={styles.allDoneText}>You've voted on everything!</Text>
-                </View>
-              );
-            case 'voted-label':
-              return <Text style={styles.groupLabel}>Already voted</Text>;
-            case 'wish-voted':
-              return <WishCard item={row.item} onVote={handleVote} myVote={myVote(row.item)} isCelebrating={row.item.id === newMatchId} />;
-            case 'empty-matches':
-              return (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyEmoji}>💫</Text>
-                  <Text style={styles.emptyTitle}>No matches yet</Text>
-                  <Text style={styles.emptyText}>When you both say Yes to something, it appears here</Text>
-                </View>
-              );
-            case 'match-card': {
-              const item = row.item;
-              const iPressed = (item.addToList ?? []).includes(uid);
-              const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
-              const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
-              const celebrating = item.id === newMatchId;
-              return (
-                <View style={[styles.matchCard, celebrating && styles.matchCardCelebrating]}>
-                  <Text style={styles.matchEmoji}>✨</Text>
-                  <View style={styles.matchInfo}>
-                    <Text style={styles.matchText}>{item.text}</Text>
-                    <Text style={styles.matchBadge}>✓ You both want this</Text>
-                    {bothPressed ? (
-                      <Text style={styles.addedText}>✓ Added to Together List</Text>
-                    ) : iPressed ? (
-                      <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
-                    ) : (
-                      <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8} accessibilityRole="button">
-                        <Text style={styles.addToListBtnText}>
-                          {theyPressed ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              );
-            }
-            default: return null;
+      {activeTab === 'explore' && (
+        <View style={styles.exploreBody}>
+          {items.length === 0 ? (
+            <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7} accessibilityRole="button">
+              <Text style={styles.emptyEmoji}>{loadingPresets ? '⏳' : '✨'}</Text>
+              <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
+              <Text style={styles.emptyText}>
+                {loadingPresets
+                  ? 'Adding 120 wishes, this takes a moment'
+                  : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
+              </Text>
+            </TouchableOpacity>
+          ) : allDone ? (
+            <DoneState
+              votedCount={votedCount}
+              totalCount={totalCount}
+              matchesCount={matched.length}
+              partnerLeft={partnerLeft}
+              partnerName={partner?.name ?? 'partner'}
+              onViewMatches={() => setActiveTab('matches')}
+            />
+          ) : currentItem ? (
+            <>
+              <ProgressRow votedCount={votedCount} totalCount={totalCount} matchesCount={matched.length} />
+              <WishDeckCard item={currentItem} onVote={handleVote} />
+              <TouchableOpacity style={styles.skipLink} onPress={() => handleSkip(currentItem)} activeOpacity={0.7} accessibilityRole="button">
+                <Text style={styles.skipLinkText}>Skip for later ›</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+        </View>
+      )}
+
+      {activeTab === 'matches' && (
+        <FlatList
+          data={matched}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.matchesList}
+          ListEmptyComponent={
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyEmoji}>💫</Text>
+              <Text style={styles.emptyTitle}>No matches yet</Text>
+              <Text style={styles.emptyText}>When you both say Yes to something, it appears here</Text>
+            </View>
           }
-        }}
-        removeClippedSubviews
-        initialNumToRender={8}
-        windowSize={5}
-      />
+          renderItem={({ item }) => {
+            const iPressed = (item.addToList ?? []).includes(uid);
+            const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
+            const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
+            const celebrating = item.id === newMatchId;
+            return (
+              <View style={[styles.matchCard, celebrating && styles.matchCardCelebrating]}>
+                <Text style={styles.matchEmoji}>✨</Text>
+                <View style={styles.matchInfo}>
+                  <Text style={styles.matchText}>{item.text}</Text>
+                  <Text style={styles.matchBadge}>✓ You both want this</Text>
+                  {bothPressed ? (
+                    <Text style={styles.addedText}>✓ Added to Together List</Text>
+                  ) : iPressed ? (
+                    <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
+                  ) : (
+                    <TouchableOpacity style={styles.addToListBtn} onPress={() => handleAddToTogether(item)} activeOpacity={0.8} accessibilityRole="button">
+                      <Text style={styles.addToListBtnText}>
+                        {theyPressed ? `${partner?.name ?? 'Partner'} wants to add, tap to confirm` : '+ Add to Together List'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            );
+          }}
+        />
+      )}
 
       <Modal visible={showAdd} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -479,8 +435,8 @@ export default function FantasyWishesScreen() {
         title="Fantasy Wishes"
         description="A private list of explicit sexual scenarios. Vote independently, only mutual Yes is ever revealed to both of you."
         tips={[
-          'Tap to load preset scenarios, or add your own',
-          'Vote Yes, Maybe, or No, your partner never sees your choices',
+          'One wish at a time, tap Yes / Maybe / No — your partner never sees your choices',
+          'Not sure yet? Skip for later, it goes to the back of your deck',
           'When you both say Yes → it appears in Matches',
           'Tap matches to add them to your Together List',
         ]}
@@ -491,37 +447,85 @@ export default function FantasyWishesScreen() {
   );
 }
 
-function WishCard({ item, onVote, myVote, isCelebrating }: {
+function ProgressRow({ votedCount, totalCount, matchesCount }: {
+  votedCount: number; totalCount: number; matchesCount: number;
+}) {
+  const pct = totalCount === 0 ? 0 : Math.min(1, votedCount / totalCount);
+  return (
+    <View style={styles.progressRow}>
+      <View style={styles.progressBarTrack}>
+        <View style={[styles.progressBarFill, { width: `${pct * 100}%` }]} />
+      </View>
+      <Text style={styles.progressLabel}>
+        {votedCount} / {totalCount}
+        {matchesCount > 0 && <Text style={styles.progressMatches}>  ·  {matchesCount} ✨</Text>}
+      </Text>
+    </View>
+  );
+}
+
+function WishDeckCard({ item, onVote }: {
   item: FantasyWishesItem;
   onVote: (item: FantasyWishesItem, vote: FWVote) => void;
-  myVote: FWVote | null;
-  isCelebrating?: boolean;
 }) {
   return (
-    <View style={[styles.wishCard, isCelebrating && styles.wishCardCelebrating]}>
-      {isCelebrating && (
-        <View style={styles.celebrateBadge}>
-          <Text style={styles.celebrateBadgeText}>It's a Match! ✨</Text>
-        </View>
-      )}
-      <Text style={styles.wishText}>{item.text}</Text>
-      <View style={styles.voteRow}>
+    <View style={styles.deckCard}>
+      <View style={styles.deckCardAccent} />
+      <View style={styles.deckCardBody}>
+        <Text style={styles.deckWishText}>{item.text}</Text>
+      </View>
+      <View style={styles.deckVoteRow}>
         {(['yes', 'maybe', 'no'] as FWVote[]).map((v) => {
           const labels = { yes: '✓ Yes', maybe: '~ Maybe', no: '✗ No' };
           const colors = { yes: Colors.success, maybe: '#F9A825', no: Colors.error };
-          const active = myVote === v;
           return (
             <TouchableOpacity
               key={v}
-              style={[styles.voteBtn, active && { backgroundColor: colors[v], borderColor: colors[v] }]}
+              style={[styles.deckVoteBtn, { borderColor: colors[v] }]}
               onPress={() => onVote(item, v)}
               activeOpacity={0.8}
-             accessibilityRole="button">
-              <Text style={[styles.voteBtnText, active && { color: Colors.white }]}>{labels[v]}</Text>
+              accessibilityRole="button"
+              accessibilityLabel={labels[v]}
+            >
+              <Text style={[styles.deckVoteText, { color: colors[v] }]}>{labels[v]}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
+    </View>
+  );
+}
+
+function DoneState({ votedCount, totalCount, matchesCount, partnerLeft, partnerName, onViewMatches }: {
+  votedCount: number; totalCount: number; matchesCount: number;
+  partnerLeft: number; partnerName: string; onViewMatches: () => void;
+}) {
+  return (
+    <View style={styles.doneWrap}>
+      <Text style={styles.doneEmoji}>✨</Text>
+      <Text style={styles.doneTitle}>You've explored everything</Text>
+      <View style={styles.doneStatsRow}>
+        <Text style={styles.doneStat}>{matchesCount} matches</Text>
+        <Text style={styles.doneStatDivider}>·</Text>
+        <Text style={styles.doneStat}>{votedCount} voted</Text>
+      </View>
+      <Text style={styles.donePartnerHint}>
+        {partnerLeft === 0 ? "You're both caught up ✓" : `${partnerName} has ${partnerLeft} left to explore`}
+      </Text>
+      <TouchableOpacity
+        style={[styles.doneMatchesBtn, matchesCount === 0 && styles.doneMatchesBtnDisabled]}
+        onPress={onViewMatches}
+        disabled={matchesCount === 0}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+      >
+        <Text style={styles.doneMatchesBtnText}>
+          {matchesCount === 0 ? 'No matches yet' : `View ${matchesCount} match${matchesCount === 1 ? '' : 'es'} ›`}
+        </Text>
+      </TouchableOpacity>
+      <Text style={styles.doneComeBack}>
+        New wishes appear when either of you adds one, or use ↺ to reload the deck.
+      </Text>
     </View>
   );
 }
@@ -538,42 +542,125 @@ const styles = StyleSheet.create({
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
   addBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   resetBtn: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.muted },
-  loadMoreBtn: { paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1.5, borderColor: Colors.burgundy, backgroundColor: Colors.white, marginTop: Spacing.sm },
-  loadMoreText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
-  allDoneCard: { alignItems: 'center', paddingVertical: Spacing.xl, gap: Spacing.sm },
-  allDoneEmoji: { fontSize: 36 },
-  allDoneText: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted },
+
   infoBanner: { marginHorizontal: Spacing.lg, marginTop: Spacing.sm, backgroundColor: '#F3E5F5', borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.sm },
   infoText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: '#6A1B9A', textAlign: 'center' },
+
   tabRow: { flexDirection: 'row', marginHorizontal: Spacing.lg, marginBottom: Spacing.md, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   tabActive: { backgroundColor: Colors.burgundy },
   tabText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   tabTextActive: { color: Colors.cream },
-  scroll: { flex: 1 },
-  list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
-  groupLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
-  emptyCard: { alignItems: 'center', padding: Spacing.xxl, backgroundColor: Colors.white, borderRadius: Radius.xl, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
+
+  exploreBody: { flex: 1, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
+  matchesList: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
+
+  // ─── Progress ─────────────────────────────────────────────────────────
+  progressRow: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    paddingTop: Spacing.sm,
+  },
+  progressBarTrack: {
+    flex: 1, height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden',
+  },
+  progressBarFill: { height: 6, backgroundColor: Colors.burgundy, borderRadius: 3 },
+  progressLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, letterSpacing: 0.5 },
+  progressMatches: { color: Colors.burgundy },
+
+  // ─── Deck card ────────────────────────────────────────────────────────
+  // Blush tint + rose left-border stripe to differentiate from Daily's white
+  // card. Bigger vertical padding and centred heading font make it feel like
+  // a moment rather than a list row.
+  deckCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF5F8',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    marginTop: Spacing.md,
+    ...Shadow.sm,
+  },
+  deckCardAccent: { width: 4, backgroundColor: Colors.rose },
+  deckCardBody: {
+    flex: 1,
+    paddingVertical: Spacing.xxl,
+    paddingHorizontal: Spacing.lg,
+    minHeight: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deckWishText: {
+    fontFamily: Fonts.heading,
+    fontSize: 22,
+    color: Colors.text,
+    textAlign: 'center',
+    lineHeight: 30,
+  },
+  deckVoteRow: {
+    position: 'absolute',
+    bottom: Spacing.lg,
+    left: Spacing.lg + 4,
+    right: Spacing.lg,
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  deckVoteBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: Radius.full,
+    borderWidth: 1.5,
+    backgroundColor: Colors.white,
+  },
+  deckVoteText: { fontFamily: Fonts.bodyBold, fontSize: 15 },
+
+  skipLink: { alignSelf: 'center', paddingVertical: Spacing.md, marginTop: Spacing.sm },
+  skipLinkText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted },
+
+  // ─── Done state ───────────────────────────────────────────────────────
+  doneWrap: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  doneEmoji: { fontSize: 56 },
+  doneTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy, textAlign: 'center' },
+  doneStatsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: 4 },
+  doneStat: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  doneStatDivider: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+  donePartnerHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+  doneMatchesBtn: {
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.burgundy,
+    alignItems: 'center',
+  },
+  doneMatchesBtnDisabled: { backgroundColor: Colors.border },
+  doneMatchesBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream, letterSpacing: 0.4 },
+  doneComeBack: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', marginTop: Spacing.md, paddingHorizontal: Spacing.lg, lineHeight: 18 },
+
+  // ─── Matches tab (unchanged) ──────────────────────────────────────────
+  emptyCard: { alignItems: 'center', padding: Spacing.xxl, backgroundColor: Colors.white, borderRadius: Radius.xl, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border, marginTop: Spacing.md },
   emptyEmoji: { fontSize: 48 },
   emptyTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },
   emptyText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
-  wishCard: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
-  // Highlight state for ~2s right after a fresh mutual Yes. Warm blush
-  // background + burgundy border pulls the eye without being loud.
-  wishCardCelebrating: { backgroundColor: '#FCE4EC', borderColor: Colors.burgundy, borderWidth: 2 },
-  celebrateBadge: { alignSelf: 'flex-start', backgroundColor: Colors.burgundy, borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 2 },
-  celebrateBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.cream, letterSpacing: 0.5 },
-  wishText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
-  voteRow: { flexDirection: 'row', gap: Spacing.sm },
-  voteBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
-  voteBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+
   matchCard: { borderRadius: Radius.lg, padding: Spacing.lg, flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, backgroundColor: '#F3E5F5' },
   matchCardCelebrating: { borderColor: Colors.burgundy, borderWidth: 2, backgroundColor: '#FCE4EC' },
-  // Floating toast — sits just under the header, above the info banner
-  // and Explore/Matches tabs. High zIndex so it hovers above cards.
-  // Warm burgundy text on cream + border. Previously top: 168 landed
-  // directly on top of the tab row and hid the Explore/Matches labels
-  // during the 3s window — awkward every time a match toast fired.
+  matchEmoji: { fontSize: 28, marginTop: 2 },
+  matchInfo: { flex: 1, gap: 4 },
+  matchText: { fontFamily: Fonts.heading, fontSize: 17, color: Colors.text, lineHeight: 24 },
+  matchBadge: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success },
+  addToListBtn: { marginTop: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, borderRadius: Radius.full, backgroundColor: Colors.burgundy },
+  addToListBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.cream },
+  addedText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success, marginTop: 4 },
+  waitingText: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 4 },
+
+  // ─── Toast (unchanged) ────────────────────────────────────────────────
   toast: {
     position: 'absolute',
     top: 100,
@@ -594,19 +681,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   toastText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.3 },
-  // Match variant of the floating toast: inverted colors so it reads as
-  // celebratory instead of informational. Burgundy fill + cream text lands
-  // heavier than the default cream fill + burgundy text used by +Add.
   toastMatch: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   toastTextMatch: { color: Colors.cream, fontSize: 14, letterSpacing: 0.4 },
-  matchEmoji: { fontSize: 28, marginTop: 2 },
-  matchInfo: { flex: 1, gap: 4 },
-  matchText: { fontFamily: Fonts.heading, fontSize: 17, color: Colors.text, lineHeight: 24 },
-  matchBadge: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success },
-  addToListBtn: { marginTop: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, borderRadius: Radius.full, backgroundColor: Colors.burgundy },
-  addToListBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.cream },
-  addedText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success, marginTop: 4 },
-  waitingText: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 4 },
+
+  // ─── Add modal (unchanged) ────────────────────────────────────────────
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
