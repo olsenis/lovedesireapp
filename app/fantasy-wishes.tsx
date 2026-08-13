@@ -494,7 +494,7 @@ function WishDeckCard({ item, onVote }: {
             return (
               <TouchableOpacity
                 key={v}
-                style={[styles.deckVoteBtn, { borderColor: colors[v] }]}
+                style={styles.deckVoteBtn}
                 onPress={() => onVote(item, v)}
                 activeOpacity={0.8}
                 accessibilityRole="button"
@@ -629,7 +629,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     borderRadius: Radius.full,
-    borderWidth: 1.5,
+    borderWidth: 1,
+    borderColor: Colors.border,
     backgroundColor: Colors.white,
   },
   deckVoteText: { fontFamily: Fonts.bodyBold, fontSize: 15 },
