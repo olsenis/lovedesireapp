@@ -232,7 +232,9 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Push notifications:** Expo Push tokens registered on startup. `notifyPartner()` POSTs to Expo Push API. Only works on real devices. Used in: mood, WYR answers, Questions Game answers, Truth or Dare answers.
 
-**Home screen nudges ("Waiting for you"):** index.tsx subscribes to challenge, notes, fantasyWishes, dailyQuestions, dailyWishes, and WYR. Shows nudge card when partner has acted but current user hasn't.
+**Home screen nudges ("Waiting for you"):** index.tsx subscribes to challenge, notes, fantasyWishes, dailyQuestions, dailyWishes, WYR, dares, moments, flashes, sensate, todos, sunday check-in, bingo. Shows nudge card when partner has acted but current user hasn't. Some nudges `unshift` to top of stack for weekly/timed rituals (Year in Review, LDR pre/post-visit, incoming flash, Sunday Love-Language). Aug 2026 dedupe: Fantasy Wishes matches-nudge suppresses the partner-ahead nudge when both would fire (same emoji, same route, matches wins as the specific-reward signal). Insight card (daily rotating love-language tip) hidden on Sundays when partner has loveLanguage — Sunday LL nudge owns the surface. Personalized greeting: "Good morning, {firstName}" when profile.name is set.
+
+**Home Tonight's Picks:** 4 launcher tiles — Daily (💫), Truth or Dare (🎯), Fantasy Wishes (✨), Dares (🎁). See-all-games row routes to Discover tab. Dares tile added Aug 2026 (H5) to close discoverability gap — /dares had no Home entry unless an active-dare nudge fired.
 
 **Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`, Moments at `couples/{coupleId}/moments/{date}_{uid}.jpg`, Flashes at `couples/{coupleId}/flashes/{ts}_{uid}.{ext}`. All photo uploads compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before `uploadBytes`. (Time Capsules storage path at `couples/{coupleId}/timeCapsules/` no longer written — feature removed July 2026, any pre-launch test blobs remain in Storage until GDPR cascade cleans them.)
 

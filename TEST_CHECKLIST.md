@@ -503,6 +503,14 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   3. Wait 5 seconds
   - **Expected:** Splash stays visible; no crash.
 
+- [ ] **Greeting includes user's first name**
+  1. Open Home when profile.name is set to "Óli Ólafsson"
+  - **Expected:** "Good morning, Óli" (first name only). Verify afternoon/evening variants.
+
+- [ ] **Greeting falls back to bare greeting during onboarding**
+  1. Open Home before completing name step
+  - **Expected:** "Good morning" (no comma, no name).
+
 - [ ] **Greeting matches time of day**
   1. Open Home before noon
   - **Expected:** 'Good morning'. Verify afternoon/evening variants.
@@ -575,11 +583,15 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 - [ ] **Insight card hidden until partner takes quiz**
   1. Neither phone completed quiz
-  - **Expected:** No 'INSIGHT FOR YOU' card.
+  - **Expected:** No 'INSIGHT' card.
 
 - [ ] **Insight card appears after partner completes quiz** 📱
   1. Phone B completes quiz
-  - **Expected:** Beige card 'INSIGHT FOR YOU · <LANGUAGE>'.
+  - **Expected:** Beige card 'INSIGHT · <FULL LANGUAGE NAME>'. Regression: previously read 'INSIGHT FOR YOU · WORDS' (leaked raw key + verbose eyebrow). Aug 2026 (H4) tightened to `INSIGHT · WORDS OF AFFIRMATION` via `LOVE_LANGUAGE_LABELS`.
+
+- [ ] **Insight card hidden on Sundays when partner has loveLanguage** 📱
+  1. Phone A: Sunday morning, partner's quiz result present
+  - **Expected:** Insight card NOT rendered. The Sunday Love-Language nudge (see H2 test below) owns the LL surface on Sundays.
 
 - [ ] **Tapping CTA navigates to suggested route**
   1. Tap insight card
@@ -731,9 +743,9 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   2. Phone A: return to Home
   - **Expected:** Phone A's card subtitle reads "1 suggestion waiting · N open" (or "2 suggestions waiting" if plural). Tap navigates to /todo showing the pending row for accept/decline.
 
-- [ ] **Tonight's Picks section renders exactly 3 rows + "See all games →" link**
-  1. Scroll to Tonight's Picks (renamed from "Games & Rituals" July 2026)
-  - **Expected:** Daily (💫) · Truth or Dare (🎯) · Fantasy Wishes (✨) rows visible, in that order. NO Date Roulette / Would You Rather rows on Home. Below the last row: "See all games →" tappable link that navigates to /(tabs)/discover. Regression check: previously this section had 5 rows duplicating the Discover tab menu; also previously the first row was "Daily Picks" but that merged into "Daily" July 2026.
+- [ ] **Tonight's Picks section renders exactly 4 rows + "See all games →" link**
+  1. Scroll to Tonight's Picks
+  - **Expected:** Daily (💫) · Truth or Dare (🎯) · Fantasy Wishes (✨) · Dares (🎁) rows visible, in that order. NO Date Roulette / Would You Rather rows on Home. Below the last row: "See all games →" tappable link → /(tabs)/discover. Regression: Dares tile added Aug 2026 (H5) to close a discoverability gap — /dares had no Home entry unless a nudge fired.
 
 - [ ] **Daily row navigates to /daily**
   1. Tap Daily
@@ -747,9 +759,13 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   1. Premium views row
   - **Expected:** Plain subtitle.
 
-- [ ] **All 3 rows push correct routes + See all games link works**
-  1. Tap each of the 3 rows, then See all games
-  - **Expected:** Daily → /daily, Truth or Dare → /truth-dare, Fantasy Wishes → /fantasy-wishes (or /upgrade if free-tier). See all games link → /(tabs)/discover.
+- [ ] **Dares row routes to /dares regardless of active dares**
+  1. Fresh couple with zero active dares
+  - **Expected:** Dares row still visible in Tonight's Picks; tapping routes to /dares (empty inbox/outbox state).
+
+- [ ] **All 4 rows push correct routes + See all games link works**
+  1. Tap each of the 4 rows, then See all games
+  - **Expected:** Daily → /daily, Truth or Dare → /truth-dare, Fantasy Wishes → /fantasy-wishes (or /upgrade if free-tier), Dares → /dares. See all games link → /(tabs)/discover.
 
 ### Waiting for you — challenge / notes / daily
 
@@ -795,13 +811,29 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   1. Phone B answers first
   - **Expected:** '🤔 Would You Rather' nudge.
 
-- [ ] **Fantasy Wishes vote nudge** 📱 💰
-  1. Phone B votes
-  - **Expected:** '✨ Fantasy Wishes' nudge.
+- [ ] **Fantasy Wishes vote nudge (partner ahead, no matches)** 📱 💰
+  1. Phone B votes on items Phone A hasn't touched; no mutual Yes yet
+  - **Expected:** '✨ Fantasy Wishes' nudge with subtitle "{partner} is exploring, vote to find your matches".
 
 - [ ] **Fantasy Wishes match nudge** 📱 💰
   1. Both vote yes on same item
   - **Expected:** '✨ 1 match' nudge.
+
+- [ ] **FW nudge dedupe — matches wins over partner-ahead** 📱 💰
+  1. Both partners have voted; 1+ mutual Yes exists; partner has ALSO voted on other items you haven't seen
+  - **Expected:** Exactly ONE ✨ FW nudge visible ('N matches'), NOT both cards stacked. Regression: pre-Aug 2026 (H3), two ✨ FW cards used to appear back-to-back — same emoji, same route. Now the matches nudge suppresses the partner-ahead nudge because matches is the specific-reward signal.
+
+- [ ] **Sunday Love-Language nudge unshifts to top of stack** 📱
+  1. Sunday morning; partner has completed the Love Language quiz
+  - **Expected:** '💕 Speak {partner}'s language today · 3 fresh ways to try this week ✨' visible AT THE TOP of the Waiting for you stack (unshifted, above other cards). Tap → /love-language-nudge showing 3 concrete actions.
+
+- [ ] **Sunday LL nudge hidden Monday-Saturday**
+  1. Same account, weekday (not Sunday)
+  - **Expected:** No 💕 LL card in nudge stack. Insight card (INSIGHT · <LANG>) reappears.
+
+- [ ] **Sunday LL nudge hidden if partner has no loveLanguage**
+  1. Sunday, but partner has not completed quiz
+  - **Expected:** No 💕 LL card. Insight card also hidden (no quiz result).
 
 ### Waiting for you — Moments / Sunday / Activity / Together / Tease
 
