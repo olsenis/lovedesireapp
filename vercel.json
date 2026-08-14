@@ -2,5 +2,6 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
   "installCommand": "npm install --legacy-peer-deps",
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+  "ignoreCommand": "! git diff --name-only HEAD^ HEAD | grep -qvE '^(web|admin-web)/'"
 }
