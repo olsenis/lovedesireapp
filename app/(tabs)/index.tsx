@@ -769,8 +769,25 @@ export default function HomeScreen() {
     });
   }
 
+  // Sunday Love-Language ritual — closes the loop for the push notification
+  // that fires at Sun 09:00. Any other way of opening the app on Sunday
+  // (tab tap, task-switcher return, background push after dismissal) shows
+  // nothing without this card. Unshifted so it leads the stack — same tier
+  // as the weekly LDR pre/post-visit ritual cards. Partner must have a
+  // loveLanguage set; without one there's nothing to speak to.
+  const partnerLang = (partner as any)?.loveLanguage as string | undefined;
+  if (partnerId && partnerLang && new Date().getDay() === 0) {
+    list.unshift({
+      emoji: '💕',
+      title: `Speak ${partner?.name ?? 'your partner'}'s language today`,
+      subtitle: '3 fresh ways to try this week ✨',
+      route: '/love-language-nudge',
+      bg: Colors.blush,
+    });
+  }
+
     return list;
-  }, [challengeState, partnerId, partner?.name, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, dares]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, dares]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {
@@ -913,8 +930,12 @@ export default function HomeScreen() {
           so the day feels closed. Reappears with a fresh tip tomorrow.
           When Long Distance is on, every 3rd day rotates in a
           distance-specific tip instead of a love-language one, so LDR
-          pairs see genuinely distance-aware suggestions regularly. */}
-      {!insightDismissedToday && (() => {
+          pairs see genuinely distance-aware suggestions regularly.
+          Hidden on Sundays when the partner has a loveLanguage — Sunday's
+          nudge stack owns the LL surface with the weekly ritual card
+          (see the useMemo above), so a daily tip on the same theme would
+          be redundant same-theme noise. */}
+      {!insightDismissedToday && !(new Date().getDay() === 0 && partnerId && (partner as any)?.loveLanguage) && (() => {
         const dayN = Math.floor(Date.now() / 86400000);
         const isLdrDay = isLDR && dayN % 3 === 0;
         const tip = isLdrDay

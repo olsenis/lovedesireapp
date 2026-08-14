@@ -75,11 +75,10 @@ Ordered roughly by impact / effort ratio (best first).
 **Change:** `getGreeting()` now accepts an optional `name` arg and returns `${base}, ${firstName}` when profile.name is set. Falls back to bare greeting during onboarding.
 **Why:** Warmest possible first impression, cheapest possible fix.
 
-### H2 Sunday Love-Language Home card (~30-60 min)
+### H2 Sunday Love-Language Home card — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` nudge system
-**Change:** New nudge branch: when `partner?.loveLanguage` is set AND today is Sunday, unshift a card `💕 Speak ${partnerName}'s language today — 3 fresh ways`. Route to `/love-language-nudge`.
-**Why:** The Sunday nudge is currently push-notification-only. If the user opens the app any other way on Sunday, the feature loop is invisible. Closes the loop.
-**Caveats:** Do NOT double-nudge if the user has already opened `/love-language-nudge` this week — needs a session-local dismiss or a lightweight "seen this week" record.
+**Change:** New nudge branch that unshifts on Sundays when partner has a `loveLanguage`. Also hides the daily insight card on Sundays (same-theme collision — Sunday nudge owns the LL surface).
+**Deferred:** per-Sunday dismissal after tap. Card stays visible all Sunday for now — if that turns out annoying, easy to add `ll_sunday_seen_week` AsyncStorage flag using the same pattern as the insight card's `insight_dismissed_date`.
 
 ### H3 Deduplicate Fantasy Wishes nudges (~15 min)
 **File:** `app/(tabs)/index.tsx` nudge branches
