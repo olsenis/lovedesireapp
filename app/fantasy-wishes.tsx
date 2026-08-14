@@ -616,7 +616,7 @@ function SessionPausedState({ votedInSession, matchesCount, onContinue, onViewMa
 }) {
   return (
     <View style={styles.pauseWrap}>
-      <Text style={styles.pauseEmoji}>💤</Text>
+      <Text style={styles.pauseEmoji}>🕯️</Text>
       <Text style={styles.pauseTitle}>See you tomorrow</Text>
       <Text style={styles.pauseSub}>
         You explored {votedInSession} today
@@ -634,7 +634,7 @@ function SessionPausedState({ votedInSession, matchesCount, onContinue, onViewMa
         </Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.pauseChangeMind} onPress={onContinue} activeOpacity={0.7} accessibilityRole="button">
-        <Text style={styles.pauseChangeMindText}>Change my mind — keep exploring</Text>
+        <Text style={styles.pauseChangeMindText}>Change my mind, keep exploring</Text>
       </TouchableOpacity>
     </View>
   );
