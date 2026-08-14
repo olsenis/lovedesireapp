@@ -320,7 +320,7 @@ export default function DaresScreen() {
         <View style={styles.overlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Send a dare</Text>
-            <Text style={styles.modalHint}>Give {partnerName} something to do — playful, sweet, spicy, up to you.</Text>
+            <Text style={styles.modalHint}>Give {partnerName} something to do: playful, sweet, spicy, up to you.</Text>
             <TextInput
               style={styles.promptInput}
               placeholder="Wear the red dress by Friday..."
@@ -427,7 +427,7 @@ export default function DaresScreen() {
       <HelpModal
         visible={help.visible}
         title="Dares"
-        description={`Send ${partnerName} a challenge, they complete it by a deadline. Works when you're apart — this isn't Truth or Dare's same-room mechanic.`}
+        description={`Send ${partnerName} a challenge, they complete it by a deadline. Works when you're apart, this isn't Truth or Dare's same-room mechanic.`}
         tips={[
           'Tap + Send at top-right to write a challenge',
           'Add an optional deadline so it doesn\'t sit forever',

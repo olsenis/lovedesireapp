@@ -362,7 +362,7 @@ export default function ProfileScreen() {
           }} accessibilityRole="button">
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>Your birthday</Text>
-              <Text style={styles.rowHint}>{profile?.birthday ? `${profile.birthday} — visible to partner` : 'Tap to add (DD.MM.YYYY)'}</Text>
+              <Text style={styles.rowHint}>{profile?.birthday ? `${profile.birthday}, visible to partner` : 'Tap to add (DD.MM.YYYY)'}</Text>
             </View>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
@@ -569,7 +569,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.row} onPress={() => router.push('/calendar' as any)} accessibilityRole="button">
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>✨ Special Days</Text>
-              <Text style={styles.rowHint}>Anniversaries, birthdays, first times — dates worth remembering</Text>
+              <Text style={styles.rowHint}>Anniversaries, birthdays, first times: dates worth remembering</Text>
             </View>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>

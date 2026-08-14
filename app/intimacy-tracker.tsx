@@ -200,7 +200,7 @@ export default function IntimacyTrackerScreen() {
             </View>
           )}
 
-          <Text style={styles.privacy}>🔒 Private — only visible to you and {partnerName}</Text>
+          <Text style={styles.privacy}>🔒 Private, only visible to you and {partnerName}</Text>
         </ScrollView>
       ) : (
         <StatsView stats={stats} entries={entries} partnerName={partnerName} />
@@ -314,7 +314,7 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
       <View style={styles.emptyStats}>
         <Text style={styles.emptyEmoji}>🔥</Text>
         <Text style={styles.emptyText}>Start logging to see your stats</Text>
-        <Text style={styles.privacy}>🔒 Private — only visible to you and your partner</Text>
+        <Text style={styles.privacy}>🔒 Private, only visible to you and your partner</Text>
       </View>
     );
   }
@@ -471,7 +471,7 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
         )}
       </View>
 
-      <Text style={styles.privacy}>🔒 Private — only visible to you and your partner</Text>
+      <Text style={styles.privacy}>🔒 Private, only visible to you and your partner</Text>
     </ScrollView>
   );
 }

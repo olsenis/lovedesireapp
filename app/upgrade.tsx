@@ -16,7 +16,7 @@ const FEATURES = [
   { emoji: '🎲', title: 'Fire & Desire challenges', desc: '30 days of committed prompts to reignite what habit has softened' },
   { emoji: '🎴', title: 'Activity Cards', desc: '25 cards a month, take turns drawing what you do together next' },
   { emoji: '🌶️', title: 'Spicy content everywhere', desc: 'Explicit truths, dares, daily picks, and Would You Rather unlocked across the app' },
-  { emoji: '🧬', title: 'The Lovers quiz', desc: 'Find out how you each experience pleasure — and what to reach for when you drift apart' },
+  { emoji: '🧬', title: 'The Lovers quiz', desc: 'Find out how you each experience pleasure, and what to reach for when you drift apart' },
 ];
 
 export default function UpgradeScreen() {

@@ -609,7 +609,7 @@ export default function DailyScreen() {
         title="Daily"
         description="Every day: a mix of picks to vote on together and questions to answer privately. Votes stay hidden until both say yes, answers reveal side by side when you're both done."
         tips={[
-          'Actions come first — quick Yes / Not for me on each',
+          'Actions come first, quick Yes / Not for me on each',
           'When you both say Yes → tap Add to save it to your Together List',
           'Questions are private until both partners answer, then reveal at the same time',
           'Playful is free · Deep and Spicy unlock with subscription',

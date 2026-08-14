@@ -158,7 +158,7 @@ export default function VersusScreen() {
           <Text style={styles.emptyEmoji}>🤔</Text>
           <Text style={styles.emptyTitle}>Not enough answers yet</Text>
           <Text style={styles.emptyBody}>
-            Versus works by quizzing you on {partnerName}&apos;s picks from Daily. It needs at least {VERSUS_UNLOCK_THRESHOLD} of their binary answers — the kind with two options like &ldquo;A or B?&rdquo; — before it can build your first round.
+            Versus works by quizzing you on {partnerName}&apos;s picks from Daily. It needs at least {VERSUS_UNLOCK_THRESHOLD} of their binary answers, the kind with two options like &ldquo;A or B?&rdquo;, before it can build your first round.
           </Text>
           <Text style={styles.emptyBody}>
             Play Daily together for a few days. Every binary question either of you answers becomes ammunition for Versus.
@@ -213,7 +213,7 @@ export default function VersusScreen() {
             <>
               <Text style={styles.reveal}>
                 {picked === current.partnerAnswer
-                  ? `Yes — ${partnerName} picked "${current.partnerAnswer}"`
+                  ? `Yes, ${partnerName} picked "${current.partnerAnswer}"`
                   : `${partnerName} actually picked "${current.partnerAnswer}"`}
               </Text>
               {/* Conversation hook — the whole point of Versus isn't the

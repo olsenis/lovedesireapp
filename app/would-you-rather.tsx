@@ -50,7 +50,7 @@ function compatibilityBand(match: number, total: number): { label: string; emoji
 // occasional moments rather than the milestone system going silent.
 const MILESTONES = [5, 10, 25, 50, 100, 200] as const;
 const MILESTONE_MESSAGES: Record<number, string> = {
-  5: "5 matches — you're getting each other!",
+  5: "5 matches, you're getting each other!",
   10: "10 matches! You're in sync ✨",
   25: '25 matches! Serious compatibility 💫',
   50: '50 matches! You know each other well 💛',
@@ -619,7 +619,7 @@ export default function WouldYouRatherScreen() {
       <View style={[styles.screen, styles.center]}>
         <View style={styles.packDoneCard}>
           <Text style={styles.packDoneEmoji}>{activePack.emoji}</Text>
-          <Text style={styles.packDoneTitle}>{activePack.name} — done!</Text>
+          <Text style={styles.packDoneTitle}>{activePack.name}, done!</Text>
           <Text style={styles.packDonePct}>{rate}%</Text>
           <Text style={styles.packDoneScore}>{session.score.match} matches of {session.score.total}</Text>
           <TouchableOpacity style={styles.saveBtn} onPress={handleReset} activeOpacity={0.85} accessibilityRole="button">

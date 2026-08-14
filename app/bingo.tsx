@@ -163,7 +163,7 @@ export default function ActivityCardsScreen() {
           accessibilityRole="button"
           accessibilityLabel="View Together List"
         >
-          <Text style={styles.savedToastText}>💾 Saved to Together List — tap to view</Text>
+          <Text style={styles.savedToastText}>💾 Saved to Together List, tap to view</Text>
         </TouchableOpacity>
       )}
       <View style={styles.header}>
@@ -306,10 +306,10 @@ export default function ActivityCardsScreen() {
             </TouchableOpacity>
             {passesLeft > 0 ? (
               <TouchableOpacity style={styles.cancelRevealBtn} onPress={handlePass} accessibilityRole="button">
-                <Text style={styles.cancelRevealText}>Pass — put it back ({passesLeft} left)</Text>
+                <Text style={styles.cancelRevealText}>Pass, put it back ({passesLeft} left)</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={styles.noPassesText}>No passes left — you must accept</Text>
+              <Text style={styles.noPassesText}>No passes left, you must accept</Text>
             )}
           </Animated.View>
         </View>

@@ -440,7 +440,7 @@ export default function TruthDareScreen() {
               disabled={soloSpinning}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Surprise me — spin the wheel for a random Truth or Dare"
+              accessibilityLabel="Surprise me, spin the wheel for a random Truth or Dare"
             >
               <Text style={styles.surpriseLinkText}>or Surprise me 🎲</Text>
             </TouchableOpacity>

@@ -19,8 +19,8 @@ export interface Question {
 
 export const QUESTION_CATEGORY_CONFIG: Record<QuestionCategory, { label: string; emoji: string; color: string; description: string }> = {
   playful: { label: 'Playful', emoji: '😊', color: '#FFF9C4', description: 'Light, curious, warm-up questions to start the night' },
-  deep:    { label: 'Deep',    emoji: '💛', color: '#FCE4EC', description: 'Vulnerable, romantic, growth-oriented — slow down and connect' },
-  spicy:   { label: 'Spicy',   emoji: '🔥', color: '#FFCCBC', description: 'Sensual, intimate, fantasy — for when you want to explore together' },
+  deep:    { label: 'Deep',    emoji: '💛', color: '#FCE4EC', description: 'Vulnerable, romantic, growth-oriented, slow down and connect' },
+  spicy:   { label: 'Spicy',   emoji: '🔥', color: '#FFCCBC', description: 'Sensual, intimate, fantasy, for when you want to explore together' },
 };
 
 export const QUESTIONS: Question[] = [

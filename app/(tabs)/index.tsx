@@ -612,10 +612,10 @@ export default function HomeScreen() {
       const sharedPick = Object.keys(myVotes).find(k => myVotes[k] === 'yes' && partnerVotes[k] === 'yes') ?? null;
 
       const subtitle = fwMatch
-        ? `You both want to try something from your Fantasy Wishes — maybe tonight?`
+        ? `You both want to try something from your Fantasy Wishes, maybe tonight?`
         : sharedPick
-        ? `You both picked something today — why not make it happen?`
-        : `It's been ${daysSince} days — some time together tonight?`;
+        ? `You both picked something today, why not make it happen?`
+        : `It's been ${daysSince} days, some time together tonight?`;
 
       list.push({
         emoji: '💝',
@@ -706,7 +706,7 @@ export default function HomeScreen() {
       list.push({
         emoji: '💞',
         title: 'Sunday check-in started',
-        subtitle: `${partner?.name ?? 'Partner'} is answering — start when you can`,
+        subtitle: `${partner?.name ?? 'Partner'} is answering, start when you can`,
         route: '/state-union',
         bg: Colors.blush,
       });

@@ -247,10 +247,10 @@ export default function RootLayout() {
             You can turn off explicit content at any time in Settings.
           </Text>
           <TouchableOpacity style={consentStyles.confirmBtn} onPress={handleConfirmConsent} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="I confirm I am 18 years or older and want to continue">
-            <Text style={consentStyles.confirmBtnText}>I confirm I am 18+ — Continue →</Text>
+            <Text style={consentStyles.confirmBtnText}>I confirm I am 18+, Continue →</Text>
           </TouchableOpacity>
           <TouchableOpacity style={consentStyles.declineBtn} onPress={handleDeclineConsent} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="I am under 18. Exit the app and delete this account.">
-            <Text style={consentStyles.declineBtnText}>I am under 18 — Exit</Text>
+            <Text style={consentStyles.declineBtnText}>I am under 18, Exit</Text>
           </TouchableOpacity>
         </View>
       </View>

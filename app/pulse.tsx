@@ -176,7 +176,7 @@ export default function HitaScreen() {
         "Play a round of Truth or Dare on the Flirty or Spicy level.",
         "Try a Daily Spicy pick this week if you're both up for it.",
         "Spend one evening just kissing, nothing has to lead anywhere.",
-        "Talk about what feels good lately — direct, no beating around.",
+        "Talk about what feels good lately, direct, no beating around.",
       ],
       teamwork: [
         "Ask your partner: 'What do you need from me right now?'",
@@ -229,7 +229,7 @@ export default function HitaScreen() {
       {!done ? (
         <ScrollView contentContainerStyle={styles.list}>
           <Text style={styles.intro}>
-            Rate how things are going, privately. Use this to understand yourself, not to judge your partner. Every 4 weeks is enough — do it too often and it becomes noise.
+            Rate how things are going, privately. Use this to understand yourself, not to judge your partner. Every 4 weeks is enough, do it too often and it becomes noise.
           </Text>
           {daysSinceLast !== null && daysSinceLast > 0 && (
             <Text style={styles.lastCheckIn}>

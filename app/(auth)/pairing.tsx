@@ -206,7 +206,7 @@ export default function PairingScreen() {
         <Text style={styles.cardNote}>Show the code or QR to your partner</Text>
       </View>
 
-      <Text style={styles.or}>— or —</Text>
+      <Text style={styles.or}>or</Text>
 
       {/* Enter partner's code */}
       <View style={styles.card}>

@@ -47,7 +47,7 @@ export default function PrivacyPolicyScreen() {
         </Section>
 
         <Section title="5. Third-party services">
-          {`Desire uses the following third-party services to operate:\n\n• Google Firebase (Authentication, Firestore database, Cloud Storage) — for user accounts, data storage, and photo uploads. Firebase processes data on our behalf and is bound by data processing agreements. Firebase is GDPR compliant.\n• Expo Push Notifications — for delivering partner notifications. Only your device push token is shared with Expo; your personal content is never transmitted.\n\nThese service providers are not permitted to use your data for their own purposes. We do not use analytics SDKs, advertising networks, or tracking tools.`}
+          {`Desire uses the following third-party services to operate:\n\n• Google Firebase (Authentication, Firestore database, Cloud Storage), for user accounts, data storage, and photo uploads. Firebase processes data on our behalf and is bound by data processing agreements. Firebase is GDPR compliant.\n• Expo Push Notifications, for delivering partner notifications. Only your device push token is shared with Expo; your personal content is never transmitted.\n\nThese service providers are not permitted to use your data for their own purposes. We do not use analytics SDKs, advertising networks, or tracking tools.`}
         </Section>
 
         <Section title="6. Data retention">

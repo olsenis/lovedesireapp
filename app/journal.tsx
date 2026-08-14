@@ -212,7 +212,7 @@ export default function JournalScreen() {
             <Text style={styles.emptyEmoji}>📓</Text>
             <Text style={styles.emptyTitle}>Your shared journal</Text>
             <Text style={styles.emptyText}>
-              A private space for both of you to write what you're thinking. Reflections, gratitude, frustrations — anything you want {partner?.name ?? 'your partner'} to see.
+              A private space for both of you to write what you're thinking. Reflections, gratitude, frustrations, anything you want {partner?.name ?? 'your partner'} to see.
             </Text>
             <TouchableOpacity style={styles.emptyBtn} onPress={() => openCompose()} accessibilityRole="button">
               <Text style={styles.emptyBtnText}>Write the first entry</Text>
