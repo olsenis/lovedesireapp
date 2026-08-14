@@ -40,15 +40,13 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 **Why:** FW + Sensate + Fire are the most flagship-worthy premium features. The upgrade screen should sell those first, not "5-type intimacy quiz".
 **Caveats:** Order shift may need a corresponding icon/color tweak per feature card so the top three still feel balanced.
 
-### #5 Journal redesign (3-4h)
-**Status:** Pending
-**File:** `app/journal.tsx`
+### #5 Journal redesign — ✅ shipped (next commit)
+**File:** `app/journal.tsx` + new `constants/journalPrompts.ts` + new `services/journalPromptsService.ts`
 **Change:**
-- **Rotating prompts** — ~20-30 prompt questions that cycle daily so the blank-page problem goes away
-- **Weekly retro summary** — auto-generated 1st-of-week digest of entries from the past 7 days
-- **3-day streak-lite** — subtle streak counter, encourages return without punishing skips
-**Why:** Journal rated 6.0 as "please use this" problem — nothing pulls users back. Rotating prompts + retro + streak turns dead feature into weekly habit. Rating goal: 6.0 → 7.5.
-**Caveats:** Streaks can feel gamified/childish in an intimate app — keep it subtle (colour dot on the button, no big numbers).
+- **Rotating prompts** — 25 curated reflective prompts, one per (week × couple) via deterministic seed (same helpers pattern as Love Language nudge). Rose-tinted prompt card at top of Journal screen. "Reflect on it →" opens compose modal with prompt as placeholder text.
+- **Weekly retrospective** — Sunday-only card between prompt and entries. Shows my count + partner count + dominant journal moods + partner's mood-log emojis side-by-side. Disposable — appears Sunday, vanishes Monday.
+- **Streak-lite** — small `🔥 N-day streak` pill in the header when streak ≥ 3. Client-derived from the entry stream (no Firestore writes, no schema change). Breaks silently on missed day — no shame, no punishment.
+**Deferred:** no Home nudge (Journal is low-frequency; adding it would compete with actual waiting-for-you signals). No push notification. No per-prompt storage on entries. No prompt customization. No retro archive.
 
 ### #7 Intimacy Log narrative — Phase 1 ✅ shipped (next commit); Phase 2+3 deferred
 **File:** `services/intimacyService.ts` + `app/intimacy-tracker.tsx` + `app/(tabs)/index.tsx`

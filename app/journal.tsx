@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -11,11 +11,13 @@ import {
   updateJournalEntry,
   deleteJournalEntry,
 } from '../services/journalService';
+import { MoodEntry, subscribeToMoods } from '../services/moodService';
+import { pickWeeklyPrompt, getRecentStreak, getWeeklyRetro } from '../services/journalPromptsService';
 import { notifyPartner } from '../services/notificationService';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
-import { Spacing, Radius } from '../constants/spacing';
+import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const MOODS: { key: NonNullable<JournalEntry['mood']>; emoji: string; label: string }[] = [
@@ -44,32 +46,71 @@ function formatDate(ts: number): string {
 
 export default function JournalScreen() {
   const { user, profile } = useAuth();
-  const { partner } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   useTrackScreen('journal');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [showCompose, setShowCompose] = useState(false);
   const [editing, setEditing] = useState<JournalEntry | null>(null);
   const [text, setText] = useState('');
   const [moodPick, setMoodPick] = useState<JournalEntry['mood'] | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<JournalEntry | null>(null);
+  // Track whether the compose was opened via the prompt card so we can
+  // swap the modal title + textarea placeholder without adding a new
+  // "prompt id" concept to the entry data. Cleared when the modal closes.
+  const [composePrompt, setComposePrompt] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
+  const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
+  const partnerName = partner?.name ?? 'your partner';
 
   useEffect(() => {
     if (!coupleId) return;
     return subscribeJournal(coupleId, setEntries);
   }, [coupleId]);
 
-  const openCompose = (entry?: JournalEntry) => {
+  // Partner mood log — feeds the Sunday weekly retro card ("Ola felt 🥰
+  // on 4 days"). Separate subscription from journal because moods and
+  // journal are different feature surfaces with different data shapes.
+  useEffect(() => {
+    if (!coupleId) return;
+    return subscribeToMoods(coupleId, setMoods);
+  }, [coupleId]);
+
+  // Weekly prompt — deterministic per (week, coupleId) so both partners
+  // land on the same starting question. Recomputes weekly automatically
+  // as the seed key changes on Sunday rollover.
+  const weeklyPrompt = useMemo(
+    () => (coupleId ? pickWeeklyPrompt(coupleId, partnerName) : null),
+    [coupleId, partnerName],
+  );
+
+  // Consecutive-day writing streak. Only surfaces (in the header pill)
+  // when >= 3, which the review calls "streak-lite" — encouragement
+  // not gamification. Breaks silently on a missed day.
+  const streak = useMemo(() => getRecentStreak(entries, uid), [entries, uid]);
+
+  // Sunday-only retro card. Renders between the prompt card and the
+  // entries list. Null on weekdays or when the week is entirely empty.
+  const isSunday = new Date().getDay() === 0;
+  const retro = useMemo(
+    () => (isSunday && partnerId ? getWeeklyRetro(entries, moods, uid, partnerId) : null),
+    [isSunday, entries, moods, uid, partnerId],
+  );
+
+  const openCompose = (entry?: JournalEntry, opts?: { prompt?: string }) => {
     if (entry) {
       setEditing(entry);
       setText(entry.text);
       setMoodPick(entry.mood ?? null);
+      setComposePrompt(null);
     } else {
       setEditing(null);
       setText('');
       setMoodPick(null);
+      setComposePrompt(opts?.prompt ?? null);
     }
     setShowCompose(true);
   };
@@ -91,6 +132,7 @@ export default function JournalScreen() {
     setText('');
     setMoodPick(null);
     setEditing(null);
+    setComposePrompt(null);
     setShowCompose(false);
   };
 
@@ -108,13 +150,63 @@ export default function JournalScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Journal</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title}>Journal</Text>
+          {streak >= 3 && (
+            <View style={styles.streakPill}>
+              <Text style={styles.streakPillText}>🔥 {streak}-day streak</Text>
+            </View>
+          )}
+        </View>
         <TouchableOpacity onPress={() => openCompose()} accessibilityRole="button">
           <Text style={styles.writeBtn}>Write</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.list}>
+        {/* Weekly prompt — always visible, tap to open compose with the
+            prompt as placeholder. Blank-page killer. */}
+        {weeklyPrompt && (
+          <View style={styles.promptCard}>
+            <Text style={styles.promptEyebrow}>THIS WEEK'S PROMPT</Text>
+            <Text style={styles.promptText}>{weeklyPrompt}</Text>
+            <TouchableOpacity
+              style={styles.promptCta}
+              onPress={() => openCompose(undefined, { prompt: weeklyPrompt })}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Reflect on this week's prompt"
+            >
+              <Text style={styles.promptCtaText}>Reflect on it →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Sunday-only weekly retro card. Disposable — appears Sunday,
+            vanishes Monday. No archive. */}
+        {retro && (
+          <View style={styles.retroCard}>
+            <Text style={styles.retroEyebrow}>{retro.weekLabel.toUpperCase()}</Text>
+            <Text style={styles.retroPara}>
+              You wrote {retro.myCount} {retro.myCount === 1 ? 'time' : 'times'}
+              {partnerId ? `, ${partnerName} wrote ${retro.partnerCount} ${retro.partnerCount === 1 ? 'time' : 'times'}` : ''}
+              {' '}this week.
+            </Text>
+            {retro.dominantMoods.length > 0 && (
+              <Text style={styles.retroPara}>
+                Mostly {retro.dominantMoods.join(' and ')}.
+              </Text>
+            )}
+            {retro.partnerMoodDays.length > 0 && (
+              <Text style={styles.retroPara}>
+                {partnerName} felt {retro.partnerMoodDays
+                  .map((m) => `${m.emoji} on ${m.count} ${m.count === 1 ? 'day' : 'days'}`)
+                  .join(', ')}.
+              </Text>
+            )}
+          </View>
+        )}
+
         {entries.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>📓</Text>
@@ -165,10 +257,15 @@ export default function JournalScreen() {
       <Modal visible={showCompose} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.modal}>
-            <Text style={styles.modalTitle}>{editing ? 'Edit entry' : 'New journal entry'}</Text>
+            <Text style={styles.modalTitle}>
+              {editing ? 'Edit entry' : composePrompt ? "This week's prompt" : 'New journal entry'}
+            </Text>
+            {composePrompt && !editing && (
+              <Text style={styles.modalPromptText}>{composePrompt}</Text>
+            )}
             <TextInput
               style={styles.textarea}
-              placeholder="What's on your mind?"
+              placeholder={composePrompt ? 'Reflect here…' : "What's on your mind?"}
               placeholderTextColor={Colors.muted}
               value={text}
               onChangeText={setText}
@@ -190,7 +287,7 @@ export default function JournalScreen() {
               ))}
             </View>
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowCompose(false); setEditing(null); }} accessibilityRole="button">
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowCompose(false); setEditing(null); setComposePrompt(null); }} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -228,8 +325,62 @@ const styles = StyleSheet.create({
   },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
+  titleWrap: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
+  streakPill: {
+    backgroundColor: Colors.blush,
+    borderRadius: Radius.full,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Colors.rose,
+  },
+  streakPillText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.burgundy, letterSpacing: 0.3 },
   writeBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+
+  // Weekly prompt card — always at top of list, rose-tinted so it feels
+  // like an invitation rather than another entry.
+  promptCard: {
+    backgroundColor: '#FFF5F8',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.rose,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+    ...Shadow.sm,
+  },
+  promptEyebrow: {
+    fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted,
+    letterSpacing: 0.8,
+  },
+  promptText: {
+    fontFamily: Fonts.heading, fontSize: 20, color: Colors.text,
+    lineHeight: 28,
+  },
+  promptCta: {
+    alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full, backgroundColor: Colors.burgundy, marginTop: 4,
+  },
+  promptCtaText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.cream },
+
+  // Sunday-only weekly retro card. Distinct from prompt card (cream bg,
+  // no rose stripe) so users can tell them apart at a glance.
+  retroCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+    ...Shadow.sm,
+  },
+  retroEyebrow: {
+    fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted,
+    letterSpacing: 0.8, marginBottom: 4,
+  },
+  retroPara: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 20 },
 
   list: { paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.md, paddingBottom: Spacing.xxl },
 
@@ -258,6 +409,10 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
+  modalPromptText: {
+    fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text,
+    lineHeight: 22, marginTop: -Spacing.sm,
+  },
   textarea: {
     backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md,
     fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
