@@ -50,15 +50,15 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 **Why:** Journal rated 6.0 as "please use this" problem — nothing pulls users back. Rotating prompts + retro + streak turns dead feature into weekly habit. Rating goal: 6.0 → 7.5.
 **Caveats:** Streaks can feel gamified/childish in an intimate app — keep it subtle (colour dot on the button, no big numbers).
 
-### #7 Intimacy Log narrative (4-6h)
-**Status:** Pending
-**File:** `app/intimacy-tracker.tsx` + new monthly-summary generation logic
-**Change:**
-- Auto-generated 1st-of-month "story" summary of the past month
-- Example: "You had 12 intimate moments in August, most on Fridays, average intensity 4/5, top mood 🥰. Sensate cycles: 2 completed."
-- Ties to Sensate + Daily via one-tap logging prompts ("Log tonight's Sensate as an intimate moment?")
-**Why:** Rated 5.6 — "analytics without narrative". Turning dry logs into a story feels premium and reflective. Rating goal: 5.6 → 7.2.
-**Caveats:** Need at least a few months of data to be meaningful — first-month users see a "check back in a month" state. Content pool of narrative templates needed (avoid clinical "you logged N sessions" — write it like a friend recapping).
+### #7 Intimacy Log narrative — Phase 1 ✅ shipped (next commit); Phase 2+3 deferred
+**File:** `services/intimacyService.ts` + `app/intimacy-tracker.tsx` + `app/(tabs)/index.tsx`
+**Change:** Pure client-side monthly narrative surface + Home discoverability nudge.
+- New helpers: `generateMonthlyNarrative(entries, monthDate)`, `computeMonthlyDelta(entries, monthDate)`, `previousMonthDate()`
+- New NarrativeCard at top of Stats tab, past-month only (≥3 entries threshold), rose-stripe blush card. 2-4 warm sentences + Pulse-style delta pill (up/down/flat) + optional reflection prompt when Disconnected entries exist.
+- New Home nudge: days 1-7 of new month, prev-month ≥3 entries → `✨ Your {month} in intimacy · N moments · read the story →` routing to `/intimacy-tracker?tab=stats`
+- Deep-link `?tab=stats` support added to intimacy-tracker mount
+**Deferred (Phase 2):** ties to Sensate + Daily via one-tap "want to log this?" prompts on stage completion / spicy pick vote. Requires suppressing `notifyPartner` side-effect for auto-logged entries.
+**Deferred (Phase 3):** anonymised cross-couple benchmark ("couples in year 3 log an average of 6/month"). Requires scheduled Cloud Function writing anonymised aggregates + opt-in settings toggle + Privacy Policy addendum.
 
 ### Deferred
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.

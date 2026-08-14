@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
@@ -9,6 +9,7 @@ import {
   IntimacyEntry, IntimacyLocation, IntimacyType, IntimacyMood,
   subscribeIntimacyLog, addIntimacyEntry, deleteIntimacyEntry, getIntimacyStats,
   LOCATION_LABELS as LOC_LABELS,
+  generateMonthlyNarrative, computeMonthlyDelta, previousMonthDate,
 } from '../services/intimacyService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
@@ -90,7 +91,11 @@ export default function IntimacyTrackerScreen() {
     }
   }, [subLoading, isSubscribed]);
   const [entries, setEntries] = useState<IntimacyEntry[]>([]);
-  const [tab, setTab] = useState<'log' | 'stats'>('log');
+  // Deep-link support: /intimacy-tracker?tab=stats opens straight into
+  // the Stats tab. Home's Monthly Narrative nudge uses this to hand off
+  // into the story surface without a manual tap on the tab pill.
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<'log' | 'stats'>(params.tab === 'stats' ? 'stats' : 'log');
   const [showSheet, setShowSheet] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<IntimacyEntry | null>(null);
 
@@ -314,6 +319,12 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
     );
   }
 
+  // Past-month narrative — only shows when previous month had ≥3 entries.
+  // Story framing (completed arc) beats live current-month gamification.
+  const prevMonth = previousMonthDate();
+  const narrative = generateMonthlyNarrative(entries, prevMonth);
+  const delta = narrative ? computeMonthlyDelta(entries, prevMonth) : null;
+
   const thisMonth = entries.filter(e => {
     const d = new Date(e.createdAt);
     const n = new Date();
@@ -327,6 +338,35 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
 
   return (
     <ScrollView contentContainerStyle={styles.statsContent}>
+      {/* Monthly narrative (past month, ≥3 entries only) */}
+      {narrative && (
+        <View style={styles.narrativeCard}>
+          <View style={styles.narrativeHeader}>
+            <Text style={styles.narrativeEyebrow}>
+              {narrative.monthLabel.toUpperCase()} · {narrative.entryCount} {narrative.entryCount === 1 ? 'MOMENT' : 'MOMENTS'}
+            </Text>
+            {delta && (
+              <View style={styles.narrativeDeltaPill}>
+                <Text style={[
+                  styles.narrativeDeltaText,
+                  delta.direction === 'up' && { color: Colors.success },
+                  delta.direction === 'down' && { color: Colors.error },
+                  delta.direction === 'flat' && { color: Colors.muted },
+                ]}>
+                  {delta.direction === 'up' ? '↑ ' : delta.direction === 'down' ? '↓ ' : ''}{delta.text}
+                </Text>
+              </View>
+            )}
+          </View>
+          {narrative.paragraphs.map((p, i) => (
+            <Text key={i} style={styles.narrativeParagraph}>{p}</Text>
+          ))}
+          {narrative.reflectionPrompt && (
+            <Text style={styles.narrativeReflect}>{narrative.reflectionPrompt}</Text>
+          )}
+        </View>
+      )}
+
       {/* This month */}
       <View style={styles.statHero}>
         <Text style={styles.statHeroNum}>{thisMonth}</Text>
@@ -742,6 +782,46 @@ const styles = StyleSheet.create({
   emptyStats: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },
   emptyEmoji: { fontSize: 56 },
   emptyText: { fontFamily: Fonts.bodyItalic, fontSize: 16, color: Colors.muted, textAlign: 'center' },
+
+  // Past-month narrative card (Aug 2026, #7 Phase 1). Sits at top of the
+  // Stats scroll when prior month had ≥3 entries. Warm blush background,
+  // rose left-border stripe reads as "reflection surface" and separates
+  // from the burgundy analytics hero below.
+  narrativeCard: {
+    backgroundColor: '#FFF5F8',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.rose,
+    padding: Spacing.lg,
+    gap: Spacing.sm,
+    ...Shadow.sm,
+  },
+  narrativeHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    gap: Spacing.sm, flexWrap: 'wrap',
+  },
+  narrativeEyebrow: {
+    fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted,
+    letterSpacing: 0.8, flex: 1,
+  },
+  narrativeDeltaPill: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.full,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  narrativeDeltaText: { fontFamily: Fonts.bodyBold, fontSize: 12 },
+  narrativeParagraph: {
+    fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22,
+  },
+  narrativeReflect: {
+    fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.burgundy,
+    marginTop: Spacing.xs, lineHeight: 20,
+  },
 
   statHero: { backgroundColor: Colors.burgundy, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: 4 },
   statHeroNum: { fontFamily: Fonts.heading, fontSize: 56, color: Colors.white, lineHeight: 60 },

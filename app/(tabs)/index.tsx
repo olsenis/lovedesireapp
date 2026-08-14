@@ -574,6 +574,31 @@ export default function HomeScreen() {
     }
   }
 
+  // Monthly narrative nudge (#7 Phase 1) — days 1-7 of a new month, when
+  // the previous month has ≥3 entries there's a story to tell. Routes to
+  // Stats tab directly via ?tab=stats so the user lands ON the narrative.
+  if (profile?.features?.intimacyLog && partnerId && intimacyEntries.length >= 3) {
+    const now = new Date();
+    const dayOfMonth = now.getDate();
+    if (dayOfMonth >= 1 && dayOfMonth <= 7) {
+      const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+      const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const prevCount = intimacyEntries.filter(
+        (e) => e.createdAt >= prevMonthStart && e.createdAt < prevMonthEnd,
+      ).length;
+      if (prevCount >= 3) {
+        const prevLabel = new Date(prevMonthStart).toLocaleString('en-GB', { month: 'long' });
+        list.push({
+          emoji: '✨',
+          title: `Your ${prevLabel} in intimacy`,
+          subtitle: `${prevCount} ${prevCount === 1 ? 'moment' : 'moments'} · read the story →`,
+          route: '/intimacy-tracker?tab=stats',
+          bg: Colors.blush,
+        });
+      }
+    }
+  }
+
   // Smart intimacy nudge — only if feature enabled AND entries exist AND > 7 days ago
   if (profile?.features?.intimacyLog && partnerId && intimacyEntries.length > 0) {
     const last = intimacyEntries[0].createdAt;

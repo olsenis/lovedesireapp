@@ -174,3 +174,163 @@ export function getIntimacyStats(entries: IntimacyEntry[], uid: string): Intimac
     orgasmStats: { myRate, partnerRate, myAvgCount, partnerAvgCount },
   };
 }
+
+// ─── Monthly narrative (#7 Phase 1) ────────────────────────────────────────
+// Turns the raw log into a short warm story that reads at a glance. Rated
+// 5.6 → 7.2 goal per ENTERTAINMENT_REVIEW.md. Pure client-side compute
+// from the local entries stream; no server aggregation.
+
+export interface NarrativeMonth {
+  monthLabel: string;                 // "August 2026"
+  entryCount: number;
+  paragraphs: string[];                // 2-4 short sentences
+  reflectionPrompt?: string;           // optional gentle nudge
+}
+
+export interface MonthlyDelta {
+  countDelta: number;                  // positive = more than prev month
+  direction: 'up' | 'down' | 'flat';   // flat when |delta| <= 1
+  text: string;                         // "3 more than last month"
+}
+
+const NARRATIVE_MIN_ENTRIES = 3;
+const DOMINANT_DAY_MIN_SHARE = 0.4;
+const DOMINANT_DAY_MIN_COUNT = 4;
+const DOMINANT_MOOD_SHARE = 0.6;
+const RATING_DIFF_NOTABLE = 0.5;
+const FAV_SPOT_MIN_SHARE = 0.4;
+const FAV_SPOT_MIN_COUNT = 4;
+
+const MOOD_LABELS: Record<IntimacyMood, string> = {
+  amazing: 'Amazing',
+  good: 'Good',
+  okay: 'Okay',
+  disconnected: 'Disconnected',
+};
+
+const DAY_NAMES = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'];
+
+// Bound a Date to the month containing it, returning [startMs, nextMonthStartMs).
+function monthBounds(d: Date): [number, number] {
+  const start = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
+  return [start, next];
+}
+
+function entriesInMonth(entries: IntimacyEntry[], monthDate: Date): IntimacyEntry[] {
+  const [start, end] = monthBounds(monthDate);
+  return entries.filter((e) => e.createdAt >= start && e.createdAt < end);
+}
+
+// Build the narrative for a given month. Returns null when the month has
+// fewer than NARRATIVE_MIN_ENTRIES entries — not enough for an honest story.
+export function generateMonthlyNarrative(entries: IntimacyEntry[], monthDate: Date): NarrativeMonth | null {
+  const monthEntries = entriesInMonth(entries, monthDate);
+  if (monthEntries.length < NARRATIVE_MIN_ENTRIES) return null;
+
+  const monthLabel = monthDate.toLocaleString('en-GB', { month: 'long', year: 'numeric' });
+  const paragraphs: string[] = [];
+
+  // 1. Frequency + dominant day-of-week
+  const dayCounts = new Array(7).fill(0) as number[];
+  for (const e of monthEntries) dayCounts[new Date(e.createdAt).getDay()]++;
+  const maxDay = dayCounts.indexOf(Math.max(...dayCounts));
+  const dayShare = dayCounts[maxDay] / monthEntries.length;
+  const useDayPattern = dayShare >= DOMINANT_DAY_MIN_SHARE && dayCounts[maxDay] >= DOMINANT_DAY_MIN_COUNT;
+  if (useDayPattern) {
+    paragraphs.push(`You connected ${monthEntries.length} times this month, most often on ${DAY_NAMES[maxDay]}.`);
+  } else {
+    paragraphs.push(`You connected ${monthEntries.length} times this month.`);
+  }
+
+  // 2. Mood pattern
+  const moodCount: Record<IntimacyMood, number> = { amazing: 0, good: 0, okay: 0, disconnected: 0 };
+  for (const e of monthEntries) moodCount[e.mood]++;
+  const dominantMood = (Object.entries(moodCount) as [IntimacyMood, number][])
+    .sort((a, b) => b[1] - a[1])[0];
+  const disconnectedCount = moodCount.disconnected;
+  let moodSentence: string | null = null;
+  let reflectionPrompt: string | undefined;
+  if (dominantMood[1] / monthEntries.length >= DOMINANT_MOOD_SHARE) {
+    if (disconnectedCount >= 1 && dominantMood[0] !== 'disconnected') {
+      moodSentence = `Mostly ${MOOD_LABELS[dominantMood[0]]}, with one Disconnected worth reflecting on.`;
+      reflectionPrompt = 'Want to talk about the disconnect?';
+    } else if (dominantMood[0] === 'disconnected') {
+      moodSentence = `A tough month — mostly Disconnected.`;
+      reflectionPrompt = 'This month was hard. Want to talk it through?';
+    } else {
+      moodSentence = `Mostly ${MOOD_LABELS[dominantMood[0]]}.`;
+    }
+  } else if (disconnectedCount >= 1) {
+    moodSentence = `Mixed moods across the month, with ${disconnectedCount} Disconnected.`;
+    reflectionPrompt = 'Want to reflect on the harder moments?';
+  }
+  if (moodSentence) paragraphs.push(moodSentence);
+
+  // 3. Rating trend vs previous month
+  const rated = monthEntries.filter((e) => e.rating !== undefined);
+  if (rated.length >= 3) {
+    const monthAvg = rated.reduce((s, e) => s + (e.rating ?? 0), 0) / rated.length;
+    const prev = new Date(monthDate);
+    prev.setMonth(prev.getMonth() - 1);
+    const prevEntries = entriesInMonth(entries, prev).filter((e) => e.rating !== undefined);
+    if (prevEntries.length >= 3) {
+      const prevAvg = prevEntries.reduce((s, e) => s + (e.rating ?? 0), 0) / prevEntries.length;
+      const diff = monthAvg - prevAvg;
+      if (Math.abs(diff) >= RATING_DIFF_NOTABLE) {
+        const dir = diff > 0 ? 'higher' : 'lower';
+        paragraphs.push(`Rated slightly ${dir} than last month, ${monthAvg.toFixed(1)}.`);
+      }
+    }
+  }
+
+  // 4. Favourite spot (only when meaningfully dominant)
+  const locCount: Partial<Record<IntimacyLocation, number>> = {};
+  for (const e of monthEntries) locCount[e.location] = (locCount[e.location] ?? 0) + 1;
+  const topLoc = (Object.entries(locCount) as [IntimacyLocation, number][])
+    .sort((a, b) => b[1] - a[1])[0];
+  if (topLoc && topLoc[1] >= FAV_SPOT_MIN_COUNT && topLoc[1] / monthEntries.length >= FAV_SPOT_MIN_SHARE) {
+    const label = LOCATION_LABELS[topLoc[0]];
+    if (label) paragraphs.push(`Most often ${label.emoji} ${label.label.toLowerCase()}.`);
+  }
+
+  // Cap at 4 paragraphs — a story, not a report.
+  return {
+    monthLabel,
+    entryCount: monthEntries.length,
+    paragraphs: paragraphs.slice(0, 4),
+    reflectionPrompt,
+  };
+}
+
+// Pulse-style month-over-month count delta. Null when the previous month
+// has zero entries — nothing meaningful to compare against.
+export function computeMonthlyDelta(entries: IntimacyEntry[], monthDate: Date): MonthlyDelta | null {
+  const thisMonth = entriesInMonth(entries, monthDate);
+  const prev = new Date(monthDate);
+  prev.setMonth(prev.getMonth() - 1);
+  const prevMonth = entriesInMonth(entries, prev);
+  if (prevMonth.length === 0) return null;
+  const countDelta = thisMonth.length - prevMonth.length;
+  const abs = Math.abs(countDelta);
+  if (abs <= 1) {
+    return { countDelta, direction: 'flat', text: 'About the same as last month' };
+  }
+  if (countDelta > 0) {
+    return { countDelta, direction: 'up', text: `${abs} more than last month` };
+  }
+  return { countDelta, direction: 'down', text: `${abs} fewer than last month` };
+}
+
+// Convenience: the "previous month" Date object (1st, midday) relative to
+// the current time. Used by both the Stats view and the Home nudge branch
+// so they agree on what "previous month" means.
+export function previousMonthDate(now: Date = new Date()): Date {
+  const d = new Date(now.getFullYear(), now.getMonth() - 1, 1, 12);
+  return d;
+}
+
+// Days into the current month (1-31). Home nudge fires when this is 1-7.
+export function dayOfMonth(now: Date = new Date()): number {
+  return now.getDate();
+}
