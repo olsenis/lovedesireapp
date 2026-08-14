@@ -791,7 +791,7 @@ export default function ProfileScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Delete account</Text>
             <Text style={styles.modalHint}>
-              This permanently deletes your account. Your couple's shared data will remain until your partner also deletes their account.
+              This permanently deletes your account. Your couple's shared data will remain until {partner?.name ?? 'your partner'} also deletes their account.
             </Text>
             <TextInput style={styles.modalInput} placeholder="Enter your password to confirm"
               placeholderTextColor={Colors.muted} value={deletePw} onChangeText={setDeletePw} secureTextEntry autoFocus />
@@ -838,7 +838,7 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Your birthday</Text>
-            <Text style={styles.modalHint}>Pick your full birthday. Your partner will see a countdown and your age.</Text>
+            <Text style={styles.modalHint}>Pick your full birthday. {partner?.name ?? 'Your partner'} will see a countdown and your age.</Text>
             <BrandDatePicker
               value={birthdayPick}
               onChange={setBirthdayPick}

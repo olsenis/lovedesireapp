@@ -467,7 +467,7 @@ export default function TruthDareScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.picker}>
           <Text style={styles.pickerIntro}>
-            One phone each. Pick truth or dare for your partner, they'll answer on their screen.
+            One phone each. Pick truth or dare for {partnerName}, they'll answer on their screen.
           </Text>
           <Text style={styles.pickerSectionLabel}>Choose level</Text>
           {LEVELS.map(level => {
@@ -487,11 +487,11 @@ export default function TruthDareScreen() {
         <HelpModal
           visible={help.visible}
           title="Truth or Dare"
-          description="Pick Truth or Dare for your partner, they see it on their phone and must respond."
+          description={`Pick Truth or Dare for ${partnerName}, they see it on their phone and must respond.`}
           tips={[
-            "Your turn = you draw a card and send it to your partner",
-            "Pick Truth → partner types or records their answer",
-            "Pick Dare → partner confirms they did it, then you confirm",
+            `Your turn = you draw a card and send it to ${partnerName}`,
+            `Pick Truth → ${partnerName} types or records their answer`,
+            `Pick Dare → ${partnerName} confirms they did it, then you confirm`,
             "Back saves the game, return anytime",
           ]}
           onDismiss={help.dismiss}

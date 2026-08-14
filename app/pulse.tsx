@@ -101,6 +101,7 @@ const chartStyles = StyleSheet.create({
 export default function HitaScreen() {
   const { user, profile } = useAuth();
   const { partner } = useCouple(user?.uid, profile?.coupleId);
+  const partnerName = partner?.name ?? 'your partner';
   const [scores, setScores] = useState<Record<string, number>>({});
   const [done, setDone] = useState(false);
   const [resultsTab, setResultsTab] = useState<'results' | 'history'>('results');
@@ -232,7 +233,7 @@ export default function HitaScreen() {
       {!done ? (
         <ScrollView contentContainerStyle={styles.list}>
           <Text style={styles.intro}>
-            Rate how things are going, privately. Use this to understand yourself, not to judge your partner. Every 4 weeks is enough, do it too often and it becomes noise.
+            Rate how things are going, privately. Use this to understand yourself, not to judge {partnerName}. Every 4 weeks is enough, do it too often and it becomes noise.
           </Text>
           {daysSinceLast !== null && daysSinceLast > 0 && (
             <Text style={styles.lastCheckIn}>
@@ -401,10 +402,10 @@ export default function HitaScreen() {
       <HelpModal
         visible={help.visible}
         title="Relationship Pulse"
-        description="A private check-in on how you're feeling about your relationship. Your partner never sees your individual scores."
+        description={`A private check-in on how you're feeling about your relationship. ${partner?.name ?? 'Your partner'} never sees your individual scores.`}
         tips={[
           "Rate 10 areas from 1 (needs work) to 5 (amazing)",
-          "Completely private, your partner cannot see your answers",
+          `Completely private, ${partnerName} cannot see your answers`,
           "After submitting, you see your score, a suggestion, and your history",
           "Come back monthly to track how things change over time",
         ]}

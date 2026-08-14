@@ -25,6 +25,7 @@ import { ActivityCardsSession, subscribeActivityCards } from '../../services/bin
 import { Dare, subscribeDares } from '../../services/dareService';
 import { Todo, subscribeTodos } from '../../services/todoService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
+import { personalise } from '../../services/personalise';
 import {
   StateUnionDoc,
   subscribeStateUnion,
@@ -84,7 +85,7 @@ type LangTip = { tip: string; cta: string; route: string };
 // long distance. These sit alongside (not replacing) love-language tips so
 // LDR pairs see genuinely distance-aware suggestions on some days.
 const LDR_TIPS: LangTip[] = [
-  { tip: `Send your partner a morning spark with your first coffee.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
+  { tip: `Send {partner} a morning spark with your first coffee.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
   { tip: `Video call over dinner tonight, one candle each.`, cta: '', route: '' },
   { tip: `Watch the same episode at the same time, hit play together.`, cta: '', route: '' },
   { tip: `Send a voice note instead of a text today. Your voice lands differently.`, cta: 'Open Tease', route: '/flashes' },
@@ -1008,7 +1009,7 @@ export default function HomeScreen() {
             accessibilityRole={tip.route ? 'button' : undefined}
           >
             <Text style={styles.insightEyebrow}>INSIGHT{langMeta ? ` · ${langMeta.toUpperCase()}` : ''}</Text>
-            <Text style={styles.insightTip}>{tip.tip}</Text>
+            <Text style={styles.insightTip}>{personalise(tip.tip, partner?.name)}</Text>
             {tip.cta ? <Text style={styles.insightCta}>{tip.cta} →</Text> : null}
           </TouchableOpacity>
         );

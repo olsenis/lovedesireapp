@@ -132,6 +132,7 @@ function timeLabel(note: LoveNote): string {
 export default function NotesScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const partnerName = partner?.name ?? 'your partner';
   const isLDR = !!couple?.isLongDistance;
   const occasions: Occasion[] = isLDR ? [...OCCASIONS, ...LDR_OCCASIONS] : OCCASIONS;
   useTrackScreen('notes');
@@ -332,7 +333,7 @@ export default function NotesScreen() {
         {forMeStash.length > 0 && (
           <>
             <Text style={styles.groupLabel}>Open when... ✨</Text>
-            <Text style={styles.stashHint}>Sealed letters from your partner. Open one when the moment hits.</Text>
+            <Text style={styles.stashHint}>Sealed letters from {partnerName}. Open one when the moment hits.</Text>
             {forMeStash.map((note) => {
               const meta = note.openCondition ? CONDITION_META[note.openCondition] : null;
               return (
@@ -358,7 +359,7 @@ export default function NotesScreen() {
 
         {forMe.length > 0 && (
           <>
-            <Text style={styles.groupLabel}>From {partner?.name ?? 'your partner'} 💌</Text>
+            <Text style={styles.groupLabel}>From {partnerName} 💌</Text>
             {forMe.map((note) => {
               const canOpen = Date.now() >= note.openAt;
               return (
@@ -570,7 +571,7 @@ export default function NotesScreen() {
             )}
             {occasion === SAD_OCCASION_LABEL && (
               <View style={styles.moodPickerWrap}>
-                <Text style={styles.moodPickerLabel}>Unlocks when {partner?.name ?? 'your partner'} logs this mood:</Text>
+                <Text style={styles.moodPickerLabel}>Unlocks when {partnerName} logs this mood:</Text>
                 <View style={styles.moodPickerGrid}>
                   {ALL_MOODS.map((m) => {
                     const active = moodPick === m;
@@ -590,17 +591,17 @@ export default function NotesScreen() {
                     );
                   })}
                 </View>
-                <Text style={styles.sadHint}>Unlocks when your partner logs {moodPick} {MOOD_LABELS[moodPick]} mood</Text>
+                <Text style={styles.sadHint}>Unlocks when {partnerName} logs {moodPick} {MOOD_LABELS[moodPick]} mood</Text>
               </View>
             )}
             {occasion === "When I arrive" && (
               <Text style={styles.sadHint}>Unlocks automatically on the day of your next visit</Text>
             )}
             {occasion === "When you miss me" && (
-              <Text style={styles.sadHint}>Goes into your partner's "Open when..." stash, for whenever they miss you.</Text>
+              <Text style={styles.sadHint}>Goes into {partnerName}'s "Open when..." stash, for whenever they miss you.</Text>
             )}
             {occasion === "When you can't sleep" && (
-              <Text style={styles.sadHint}>Goes into your partner's "Open when..." stash, for a sleepless night.</Text>
+              <Text style={styles.sadHint}>Goes into {partnerName}'s "Open when..." stash, for a sleepless night.</Text>
             )}
             <View style={styles.modalBtns}>
               <TouchableOpacity
@@ -642,7 +643,7 @@ export default function NotesScreen() {
           <View style={styles.overlay}>
             <View style={[styles.modal, { gap: Spacing.md }]}>
               <Text style={styles.modalTitle}>Delete this note?</Text>
-              <Text style={styles.deleteHint}>Your partner won't see it. This cannot be undone.</Text>
+              <Text style={styles.deleteHint}>{partner?.name ?? 'Your partner'} won't see it. This cannot be undone.</Text>
               <View style={styles.deletePreview}>
                 <Text style={styles.deletePreviewText} numberOfLines={3}>"{deleteConfirm.message}"</Text>
               </View>
@@ -730,7 +731,7 @@ export default function NotesScreen() {
       <HelpModal
         visible={help.visible}
         title="Love Notes"
-        description="Write a timed message that your partner can't open until the moment you choose."
+        description={`Write a timed message that ${partnerName} can't open until the moment you choose.`}
         tips={[
           'Tap Write to compose a note',
           'Choose when it unlocks, right now, tonight, tomorrow, or next week',

@@ -29,6 +29,7 @@ const PAID_PROGRAMS: Set<ChallengeProgram> = new Set(['fire', 'desire']);
 export default function ChallengeScreen() {
   const { user, profile, loading: authLoading } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const partnerName = partner?.name ?? 'your partner';
   const { isSubscribed } = useSubscription();
   const isLDR = !!couple?.isLongDistance;
   const PROGRAMS: ChallengeProgram[] = isLDR ? [...BASE_PROGRAMS, 'distance'] : BASE_PROGRAMS;
@@ -346,7 +347,7 @@ export default function ChallengeScreen() {
                 <Text style={styles.completedText}>✓ Both done, great work today</Text>
               </View>
             ) : myMarked ? (
-              <Text style={styles.waitingText}>You've marked this done, waiting for your partner ✓</Text>
+              <Text style={styles.waitingText}>You've marked this done, waiting for {partnerName} ✓</Text>
             ) : (
               <View style={styles.actionRow}>
                 <TouchableOpacity style={[styles.markBtn, { backgroundColor: cfg.textColor, flex: 1 }]} onPress={handleMark} activeOpacity={0.85} accessibilityRole="button">

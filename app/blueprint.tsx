@@ -236,7 +236,7 @@ export default function BlueprintScreen() {
         tips={[
           '5 types: Sensual, Sexual, Energetic, Kinky, Shapeshifter',
           'Answer honestly, no right or wrong type',
-          "When both complete it: see your partner's type + compatibility tips",
+          `When both complete it: see ${partner?.name ?? 'your partner'}'s type + compatibility tips`,
           'Includes 3 actionable tips for your specific combination',
         ]}
         onDismiss={help.dismiss}

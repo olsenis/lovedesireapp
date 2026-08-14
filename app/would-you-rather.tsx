@@ -472,7 +472,7 @@ export default function WouldYouRatherScreen() {
         </ScrollView>
         <HelpModal visible={help.visible} title="Would You Rather"
           description="Both partners answer at the same time, then reveal. See if you match, and talk about why you chose differently."
-          tips={["Pick a level and both answer simultaneously","Your answer is hidden until your partner also answers","If you match → +1 point","If you don't → discuss why! That's the fun part"]}
+          tips={["Pick a level and both answer simultaneously",`Your answer is hidden until ${partnerName} also answers`,"If you match → +1 point","If you don't → discuss why! That's the fun part"]}
           onDismiss={help.dismiss} onDismissAll={help.dismissAll} />
 
         {/* Add-your-own modal. A/B text inputs + optional discussion +
@@ -748,7 +748,7 @@ export default function WouldYouRatherScreen() {
 
         {/* Status */}
         {!myAnswer && (
-          <Text style={styles.waitingHint}>Pick your answer, it's hidden until your partner answers too</Text>
+          <Text style={styles.waitingHint}>Pick your answer, it's hidden until {partnerName} answers too</Text>
         )}
         {myAnswer && !bothAnswered && (
           <Text style={styles.waitingHint}>Waiting for {partner?.name ?? 'partner'} to answer…</Text>

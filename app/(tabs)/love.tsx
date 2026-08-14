@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
 import { useSubscription } from '../../hooks/useSubscription';
+import { personalise } from '../../services/personalise';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
@@ -36,7 +37,7 @@ const NURTURE = [
 const DISCOVER = [
   { emoji: '📖', title: 'Our Story',         subtitle: 'Timeline of your milestones, met to married and beyond', route: '/our-story',          bg: '#FFF0F3', paid: false },
   { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',               bg: '#E3F2FD', paid: false },
-  { emoji: '💕', title: "Speak their language", subtitle: '3 fresh ways every week to speak your partner\'s language', route: '/love-language-nudge', bg: '#FCE4EC', paid: false },
+  { emoji: '💕', title: "Speak their language", subtitle: "3 fresh ways every week to speak {partner}'s language", route: '/love-language-nudge', bg: '#FCE4EC', paid: false },
 ];
 
 // Same divider shape as Home ("─── LABEL ───") so the two hubs share a visual
@@ -84,7 +85,7 @@ function FeatureCard({
 export default function LoveScreen() {
   const { isSubscribed } = useSubscription();
   const { user, profile } = useAuth();
-  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const isLDR = !!couple?.isLongDistance;
   useTrackScreen('us');
   const intimacyLogEnabled = profile?.features?.intimacyLog ?? false;
@@ -95,13 +96,13 @@ export default function LoveScreen() {
       <Text style={styles.subtitle}>Your rhythm together</Text>
 
       <SectionDivider label="Rituals" />
-      {RITUALS.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
+      {RITUALS.map((f) => <FeatureCard key={f.route} {...f} subtitle={personalise(f.subtitle, partner?.name)} isSubscribed={isSubscribed} isLDR={isLDR} />)}
 
       <SectionDivider label="Nurture" />
-      {nurture.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
+      {nurture.map((f) => <FeatureCard key={f.route} {...f} subtitle={personalise(f.subtitle, partner?.name)} isSubscribed={isSubscribed} isLDR={isLDR} />)}
 
       <SectionDivider label="Discover yourselves" />
-      {DISCOVER.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
+      {DISCOVER.map((f) => <FeatureCard key={f.route} {...f} subtitle={personalise(f.subtitle, partner?.name)} isSubscribed={isSubscribed} isLDR={isLDR} />)}
     </ScrollView>
   );
 }

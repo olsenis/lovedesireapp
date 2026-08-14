@@ -494,7 +494,7 @@ export default function FantasyWishesScreen() {
         title="Fantasy Wishes"
         description="A private list of explicit sexual scenarios. Vote independently, only mutual Yes is ever revealed to both of you."
         tips={[
-          'One wish at a time, tap Yes or No. Your partner never sees your choices',
+          `One wish at a time, tap Yes or No. ${partner?.name ?? 'Your partner'} never sees your choices`,
           'Not sure yet? Skip for later, it goes to the back of your deck',
           'When you both say Yes → it appears in Matches',
           'Tap matches to add them to your Together List',

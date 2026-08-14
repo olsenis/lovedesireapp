@@ -288,7 +288,7 @@ export default function VersusScreen() {
         description={`Test how well you know ${partnerName}. We pull their quick-fire answers from Questions Game and ask you to guess each one.`}
         tips={[
           "Only works with binary (A or B) questions you've both answered before",
-          "Pick what you think your partner chose",
+          `Pick what you think ${partnerName} chose`,
           "You see the right answer immediately, no penalty for wrong",
           "Track your knowing-them percentage over time",
         ]}

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
 import { useSubscription } from '../../hooks/useSubscription';
+import { personalise } from '../../services/personalise';
 import { getPartnerBinaryAnswerCount, VERSUS_UNLOCK_THRESHOLD } from '../../services/versusService';
 import { getFeatureUnlockState, markVersusUnlocked, isVersusUnlockRecent } from '../../services/featureUnlockService';
 import { Colors } from '../../constants/colors';
@@ -25,12 +26,12 @@ const GAMES: GameCard[] = [
   // Activity Cards' cards ask you to do things in the same room together.
   // LDR pairs get an "IN-PERSON" pill so they know before opening.
   { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true, inPerson: true },
-  { emoji: '🎁', title: 'Dares',                subtitle: 'Challenge your partner, they complete by a deadline', route: '/dares',   bg: '#FFF3E0', paid: false },
+  { emoji: '🎁', title: 'Dares',                subtitle: 'Challenge {partner}, they complete by a deadline', route: '/dares',   bg: '#FFF3E0', paid: false },
   { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5', paid: true },
 ];
 
 const VERSUS_CARD: GameCard = {
-  emoji: '🆚', title: 'Versus', subtitle: 'How well do you know your partner? Guess their answers',
+  emoji: '🆚', title: 'Versus', subtitle: 'How well do you know {partner}? Guess their answers',
   route: '/versus', bg: '#FFE5EC', paid: false,
 };
 
@@ -76,7 +77,7 @@ function FeatureCard({
 
 export default function DiscoverScreen() {
   const { user, profile } = useAuth();
-  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
 
   useTrackScreen('discover');
@@ -150,6 +151,7 @@ export default function DiscoverScreen() {
         <FeatureCard
           key={f.route}
           {...f}
+          subtitle={personalise(f.subtitle, partner?.name)}
           isSubscribed={isSubscribed}
           isLDR={isLDR}
           isNew={f.route === '/versus' && versusIsNew}
@@ -157,7 +159,7 @@ export default function DiscoverScreen() {
       ))}
 
       <Text style={styles.sectionLabel}>Challenges</Text>
-      {CHALLENGES.map((f) => <FeatureCard key={f.route} {...f} isSubscribed={isSubscribed} isLDR={isLDR} />)}
+      {CHALLENGES.map((f) => <FeatureCard key={f.route} {...f} subtitle={personalise(f.subtitle, partner?.name)} isSubscribed={isSubscribed} isLDR={isLDR} />)}
     </ScrollView>
   );
 }

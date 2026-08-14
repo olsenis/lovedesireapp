@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LoveLanguage } from '../constants/content';
 import { useAuth } from '../hooks/useAuth';
+import { useCouple } from '../hooks/useCouple';
 import { createUserProfile } from '../services/authService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -20,6 +21,8 @@ const OPTION_BG = '#FFF0F3';
 
 export default function QuizScreen() {
   const { user, profile } = useAuth();
+  const { partner } = useCouple(user?.uid, profile?.coupleId);
+  const partnerName = partner?.name ?? 'your partner';
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<Record<LoveLanguage, number>>({ words: 0, acts: 0, gifts: 0, time: 0, touch: 0 });
   const [done, setDone] = useState(false);
@@ -162,7 +165,7 @@ export default function QuizScreen() {
         tips={[
           "Choose A or B for each question, go with your gut",
           "Results show your primary love language",
-          "Share your result with your partner so they know how to love you best",
+          `Share your result with ${partnerName} so they know how to love you best`,
           "Retake the quiz if your preferences change over time",
         ]}
         onDismiss={help.dismiss}
