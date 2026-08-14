@@ -1415,44 +1415,48 @@ Date-driven features: month calendar, countdown lists, sealed time capsules, rel
   1. Open Add → blank/whitespace label
   - **Expected:** Save at 40% opacity, disabled.
 
-### Countdowns list (app/countdown.tsx)
+### Countdowns list (removed Aug 2026 — merged into Special Days ledger)
 
-- [ ] **Empty state shows when no user dates exist**
-  1. Fresh couple, no user dates
-  - **Expected:** Below auto cards: ⏳ 'No dates yet' + 'Add a date' CTA.
+Feature merged into Special Days (`app/calendar.tsx`). The `/countdown` route no longer exists, `app/countdown.tsx` is deleted. Both surfaces used the same `importantDateService` data, so no data migration was needed. The unique "Mysterious countdown" (secret date) toggle was ported into the Special Days add modal. All tests below are now covered by the Special Days ledger section — see that section for the equivalent cases.
 
-- [ ] **Auto-dates always present with dashed border**
-  1. Open Countdowns
-  - **Expected:** Valentine's + Mother's Day cards with dashed border; no ✕.
+### Special Days ledger (app/calendar.tsx)
 
-- [ ] **Partner birthday auto-date with turning-age**
-  1. Partner birthday DD.MM.YYYY entered
-  - **Expected:** '<Partner name> turns <age> 🎂'.
+- [ ] **Empty state shows when no dates exist**
+  1. Fresh couple, no user dates, no partner birthday set, no couple.startDate
+  - **Expected:** 📖 'Nothing on the ledger yet' + intro copy + '+ Add' CTA in header.
 
-- [ ] **Add a normal countdown**
-  1. + Add → 🎉 → 'Anniversary trip' → 90 days → Mysterious off → Save
-  - **Expected:** New card sorted by days; large '90 days'.
+- [ ] **Auto-dates inline in ledger without ✕**
+  1. Open Special Days with Valentine's + partner birthday + couple.startDate present
+  - **Expected:** 💝 'Valentine's Day', 🎂 '{Partner name}'s birthday', 💍 'Anniversary' all appear in ledger with no delete button.
 
-- [ ] **Today badge appears on date with 0 days left**
-  1. Add countdown for today
-  - **Expected:** Blush bg + '🎉 Today!' badge.
+- [ ] **Grouped by time bucket**
+  1. Add 3 dates: one in next 30 days, one 2 months out, one 6 months out
+  - **Expected:** Three sections rendered in order: 'Coming up', 'Next 3 months', 'Later this year'.
 
-- [ ] **Mysterious countdown hides label from partner** 📱
-  1. Phone A: Add → 'Surprise getaway' → 30 days → Mysterious toggle ON → Save
-  2. Phone B: Countdowns
-  - **Expected:** Phone A sees real label; Phone B sees 🤫 'A surprise from your partner'.
+- [ ] **Add a normal special day**
+  1. + Add → 🎉 → 'Anniversary trip' → date 90 days out → Save
+  - **Expected:** New entry lands in the correct bucket (Next 3 months), sorted chronologically.
+
+- [ ] **Today shows 'today', tomorrow shows 'tomorrow'** ⚠️
+  1. Add date for today, add another for tomorrow
+  - **Expected:** Entries read '{Date} · today' and '{Date} · tomorrow', not 'in 0 days' / 'in 1 days'.
+
+- [ ] **Secret date hides label from partner** 📱
+  1. Phone A: Add → 'Surprise getaway' → date 30 days out → check 'Keep it a surprise 🤫' → Save
+  2. Phone B: Open Special Days
+  - **Expected:** Phone A sees real label; Phone B sees 🤫 'A surprise from {partner name}'.
 
 - [ ] **Delete user-added date** 📱
-  1. Phone A: ✕ on 'Test'
-  - **Expected:** Disappears both phones; auto-dates have no ✕.
+  1. Phone A: ✕ on 'Anniversary trip'
+  - **Expected:** Disappears both phones. Auto-dates have no ✕.
 
 - [ ] **Sort order updates as new closer date is added**
   1. Existing 60-day; add 5-day
-  - **Expected:** 5-day moves above 60-day.
+  - **Expected:** 5-day moves above 60-day (both in 'Coming up' bucket).
 
-- [ ] **First-time help modal appears** ⚠️
-  1. New user opens Countdowns
-  - **Expected:** HelpModal 'Countdowns' + 4 tips; dismiss once.
+- [ ] **Past dates roll forward to next year**
+  1. Add a date whose calendar date has already passed this year (e.g. today is Aug 14, add 'Anniversary' on Feb 3)
+  - **Expected:** Entry shows next Feb 3 (next year) with correct days-until.
 
 ### Time Capsules (removed July 2026)
 
@@ -3219,9 +3223,9 @@ Long-distance toggle and the suite of features it unlocks.
   1. Next visit yesterday
   - **Expected:** ✨ 'Visit memory drop' → /moments.
 
-- [ ] **Day 2 post-visit routes to countdown** 🌍 ⚠️
+- [ ] **Day 2 post-visit routes to Special Days** 🌍 ⚠️
   1. Next visit 2 days past
-  - **Expected:** 📅 'Day 2 apart' → /countdown.
+  - **Expected:** 📅 'Day 2 apart' → /calendar (Special Days ledger).
 
 - [ ] **Day 4+ post-visit hides nudge** ⚠️ 🌍
   1. Next visit 4 days past

@@ -263,8 +263,8 @@ Reordered from the reviewer's ROI ranking (below) under "quality + shareability 
 | **6** | **Pulse** redesign | 10→5 questions, trend comparison ("stronger/softer than 4 weeks ago"), routes to related features per softest dimension. Cadence hint in intro copy. | 2h | ✅ **Shipped** |
 | 7 | **Intimacy Log** narrative | Auto-generated 1st-of-month "story" summary. Ties to Sensate + Daily via one-tap logging prompts. | 4-6h | Pending |
 | **8** | **Love Language** weekly nudge | Standalone `/love-language-nudge` screen linked from Us tab Discover. Sunday 09:00 local notification (weekly). 100 curated actions (20 per language × 5). Deterministic pick (weekAnchor + coupleId) so both partners see same trio. | 2-3h | ✅ **Shipped** (bf46a21 + a29dbd2) |
-| 9 | **Calendar** reposition | "Anniversary + special-days ledger" — no calendar-sync competition. | 30 min | Pending |
-| 10 | **`/upgrade`** copy reorder | Lead with Fantasy Wishes + Sensate + Fire challenges. Blueprint + Adult moods secondary. | 30 min | Pending |
+| **9** | **Calendar** reposition | Full "Special Days ledger" rewrite (killed month grid, grouped by time bucket) + Countdowns feature merged in (shared same data). | 30 min → 90 min actual | ✅ **Shipped** (fa7c365 + 361ee9a) |
+| **10** | **`/upgrade`** copy reorder | Fantasy Wishes / Sensate / Fire+Desire lead, Blueprint drops to bottom, Activity Cards + Spicy content mid-list. | 30 min | ✅ **Shipped** (801ed02) |
 | 4b | **Versus starter pool** (v2) | ~30-50 curated universal binary questions + in-Versus answering mode so brand-new couples with 0 Daily binary answers can play immediately. | ~2h | Deferred — revisit if cold-start bug surfaces post-launch |
 
 **Total: ~35-50h focused work.** At 1-2 items per week: **~2-3 month roadmap**.

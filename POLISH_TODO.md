@@ -27,8 +27,11 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - The auto-date system currently only inlines Valentine's + partner birthday. Consider whether to include anniversary from `couple.startDate` too — probably yes.
 - If we want to allow scrolling forward through future years' entries, the sort needs to handle the year-rollover logic that the current Upcoming section already does (moves past dates to next year).
 
-### #10 /upgrade copy reorder (~30 min)
-**Status:** Pending
+### #10 /upgrade copy reorder — ✅ shipped (801ed02, previous session)
+**Status:** Shipped
+**Notes:** FEATURES array already leads with Fantasy Wishes + Sensate + Fire & Desire per the review. Was landed in an earlier session (Aug 2026) but the roadmap doc wasn't updated. No further work needed — the file's own comment (lines 8-13) documents the ordering rationale.
+---
+**Original notes below (kept for history):**
 **File:** `app/upgrade.tsx`
 **Change:**
 - Reorder the FEATURES array so **Fantasy Wishes**, **Sensate Focus**, and **Fire + Desire challenge programs** are the top three items
@@ -67,9 +70,9 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 
 Ordered roughly by impact / effort ratio (best first).
 
-### H1 Personalize greeting (~5 min)
+### H1 Personalize greeting — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx`
-**Change:** `Good morning` → `` `Good morning, ${profile.name.split(' ')[0]}` `` (with fallback if name missing).
+**Change:** `getGreeting()` now accepts an optional `name` arg and returns `${base}, ${firstName}` when profile.name is set. Falls back to bare greeting during onboarding.
 **Why:** Warmest possible first impression, cheapest possible fix.
 
 ### H2 Sunday Love-Language Home card (~30-60 min)

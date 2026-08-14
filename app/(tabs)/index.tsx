@@ -40,11 +40,14 @@ import { PartnerAvatar } from '../../components/PartnerAvatar';
 import { useTrackScreen } from '../../hooks/useTrackScreen';
 import { trackEvent } from '../../services/statsService';
 
-function getGreeting(): string {
+// Personalised greeting when the user has a name on their profile —
+// warmer first impression than a generic salutation. Falls back to the
+// bare greeting during onboarding before a name is set.
+function getGreeting(name?: string): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  const base = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  const firstName = name?.trim().split(/\s+/)[0];
+  return firstName ? `${base}, ${firstName}` : base;
 }
 
 function getTogetherSince(couple: { createdAt: number; startDate?: number }): string {
@@ -805,7 +808,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.greeting}>{getGreeting(profile?.name)}</Text>
           <Text style={styles.headerDate}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
         </View>
         <TouchableOpacity style={styles.signOutBtn} onPress={() => router.push('/profile' as any)} accessibilityRole="button">
