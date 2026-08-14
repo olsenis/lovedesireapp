@@ -10,6 +10,8 @@ import { Spacing, Radius } from '../constants/spacing';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { PulseResult, subscribePulseHistory, savePulseResult, getPulseTrend } from '../services/pulseService';
+import { personalise } from '../services/personalise';
+import { useCouple } from '../hooks/useCouple';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
 
@@ -98,6 +100,7 @@ const chartStyles = StyleSheet.create({
 
 export default function HitaScreen() {
   const { user, profile } = useAuth();
+  const { partner } = useCouple(user?.uid, profile?.coupleId);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [done, setDone] = useState(false);
   const [resultsTab, setResultsTab] = useState<'results' | 'history'>('results');
@@ -164,10 +167,10 @@ export default function HitaScreen() {
       ],
       closeness: [
         "Give a long hug every morning and evening for a week.",
-        "Reach for your partner's hand more often today, no reason needed.",
+        "Reach for {partner}'s hand more often today, no reason needed.",
         "Sit closer on the couch tonight, no phone between you.",
         "Try a Sensate Focus stage this week, touch without goal.",
-        "Send a Spark with a heart emoji when you think of your partner today.",
+        "Send a Spark with a heart emoji when you think of {partner} today.",
         "Share something vulnerable you haven't mentioned recently.",
       ],
       sex: [
@@ -179,12 +182,12 @@ export default function HitaScreen() {
         "Talk about what feels good lately, direct, no beating around.",
       ],
       teamwork: [
-        "Ask your partner: 'What do you need from me right now?'",
-        "Take one task off your partner's plate today without being asked.",
-        "Tell your partner 3 specific things you noticed this week.",
+        "Ask {partner}: 'What do you need from me right now?'",
+        "Take one task off {partner}'s plate today without being asked.",
+        "Tell {partner} 3 specific things you noticed this week.",
         "Set a small shared goal, something to work on together.",
-        "Bring your partner their favourite drink without being asked, one time.",
-        "Say 'thank you' out loud for something small your partner does routinely.",
+        "Bring {partner} their favourite drink without being asked, one time.",
+        "Say 'thank you' out loud for something small {partner} does routinely.",
       ],
     };
     const pool = suggestions[lowest.key] ?? ["Take time this week for each other."];
@@ -331,7 +334,7 @@ export default function HitaScreen() {
                 return (
                   <View style={styles.suggestionBox}>
                     <Text style={styles.suggestionTitle}>A gentle suggestion</Text>
-                    <Text style={styles.suggestionText}>{s.text}</Text>
+                    <Text style={styles.suggestionText}>{personalise(s.text, partner?.name)}</Text>
                     {s.actionLabel && s.actionRoute && (
                       <TouchableOpacity
                         style={styles.suggestionAction}

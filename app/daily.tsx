@@ -19,6 +19,7 @@ import {
 } from '../services/dailyQuestionsService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
+import { personalise } from '../services/personalise';
 import { DAILY_WISH_CATEGORY_CONFIG, QUESTION_CATEGORY_CONFIG, DailyWishCategory, QuestionCategory, Question } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -576,7 +577,7 @@ export default function DailyScreen() {
                       <View style={[styles.catBadgeSm, { backgroundColor: dpCfg.color }]}>
                         <Text style={[styles.catBadgeSmText, { color: dpCfg.textColor }]}>{dpCfg.emoji} {dpCfg.label}</Text>
                       </View>
-                      <Text style={styles.matchModalText}>{item.text}</Text>
+                      <Text style={styles.matchModalText}>{personalise(item.text, partnerName)}</Text>
                       {both ? (
                         <TouchableOpacity
                           onPress={() => { setShowMatches(false); router.push('/todo' as any); }}
@@ -777,7 +778,7 @@ function ActionCard({
           </View>
         )}
       </View>
-      <Text style={styles.cardText}>{text}</Text>
+      <Text style={styles.cardText}>{personalise(text, partnerName)}</Text>
       {didMatch ? (
         <View style={styles.matchSection}>
           <View style={styles.matchBanner}>
@@ -854,7 +855,7 @@ function QuestionCard({
       <View style={styles.typePill}>
         <Text style={styles.typePillText}>QUESTION</Text>
       </View>
-      <Text style={styles.cardQuestion}>{q.text}</Text>
+      <Text style={styles.cardQuestion}>{personalise(q.text, partnerName)}</Text>
 
       {both && (
         <View style={styles.revealWrap}>

@@ -14,6 +14,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
+import { personalise } from '../services/personalise';
 import {
   TruthDareSession, subscribeTruthDare, startTruthDare,
   playCard, nextTurn, resetTruthDare, submitTruthAnswer,
@@ -448,7 +449,7 @@ export default function TruthDareScreen() {
             {soloResult && !soloSpinning && (
               <View style={styles.soloResult}>
                 <Text style={styles.soloResultEyebrow}>{soloResult.kind === 'truth' ? 'Your truth' : 'Your dare'}</Text>
-                <Text style={styles.soloResultText}>{soloResult.text}</Text>
+                <Text style={styles.soloResultText}>{personalise(soloResult.text, partnerName)}</Text>
               </View>
             )}
           </ScrollView>
@@ -579,7 +580,7 @@ export default function TruthDareScreen() {
                 {drawnCard.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
               </Text>
             </View>
-            <Text style={styles.cardText}>{drawnCard.text}</Text>
+            <Text style={styles.cardText}>{personalise(drawnCard.text, partnerName)}</Text>
             <Text style={styles.previewHint}>
               {drawnCard.type === 'truth' ? `${partnerName} will answer this question` : `${partnerName} will do this dare`}
             </Text>
@@ -611,7 +612,7 @@ export default function TruthDareScreen() {
                 {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
               </Text>
             </View>
-            <Text style={styles.cardText}>{session.card.text}</Text>
+            <Text style={styles.cardText}>{personalise(session.card.text, partnerName)}</Text>
 
             {/* ── TRUTH: picker waits ── */}
             {session.card.type === 'truth' && isMyTurn && (
@@ -810,7 +811,7 @@ function DoneCard({
           {card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
         </Text>
       </View>
-      <Text style={styles.cardText}>{card.text}</Text>
+      <Text style={styles.cardText}>{personalise(card.text, partnerName)}</Text>
 
       {card.type === 'truth' && card.audioURL && (
         <View style={styles.answerReveal}>

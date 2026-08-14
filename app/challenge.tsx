@@ -13,6 +13,7 @@ import {
   editTask, markDayComplete, vetoDay, resetChallenge, MAX_EDITS, MAX_VETOES,
 } from '../services/challengeService';
 import { CHALLENGE_PROGRAMS, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '../constants/content';
+import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -27,7 +28,7 @@ const PAID_PROGRAMS: Set<ChallengeProgram> = new Set(['fire', 'desire']);
 
 export default function ChallengeScreen() {
   const { user, profile, loading: authLoading } = useAuth();
-  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
   const isLDR = !!couple?.isLongDistance;
   const PROGRAMS: ChallengeProgram[] = isLDR ? [...BASE_PROGRAMS, 'distance'] : BASE_PROGRAMS;
@@ -252,7 +253,7 @@ export default function ChallengeScreen() {
                 <View style={styles.dayCardLeft}>
                   <Text style={[styles.dayNum, { color: cfg.textColor }]}>{task.day}</Text>
                 </View>
-                <Text style={styles.dayText}>{displayText}</Text>
+                <Text style={styles.dayText}>{personalise(displayText, partner?.name)}</Text>
                 {myEditsLeft > 0 && (
                   <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Edit day">
                     <Text style={styles.editBtnText}>✏️</Text>
@@ -338,7 +339,7 @@ export default function ChallengeScreen() {
               <Text style={[styles.taskDayNum, { color: cfg.textColor }]}>{state.currentDay}</Text>
               <Text style={styles.taskDayLabel}>{isVetoDay ? 'veto day' : 'today'}</Text>
             </View>
-            <Text style={styles.taskText}>{todayText}</Text>
+            <Text style={styles.taskText}>{personalise(todayText, partner?.name)}</Text>
 
             {bothMarked ? (
               <View style={styles.completedRow}>
@@ -371,7 +372,7 @@ export default function ChallengeScreen() {
                 return (
                   <View key={d} style={[styles.completedDay, { backgroundColor: cfg.color }]}>
                     <Text style={[styles.completedDayNum, { color: cfg.textColor }]}>{isVeto ? '🎲' : d}</Text>
-                    <Text style={styles.completedDayText} numberOfLines={2}>{t}</Text>
+                    <Text style={styles.completedDayText} numberOfLines={2}>{t ? personalise(t, partner?.name) : ''}</Text>
                   </View>
                 );
               })}

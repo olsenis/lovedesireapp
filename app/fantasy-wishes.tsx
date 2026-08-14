@@ -11,6 +11,7 @@ import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
 import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_PRESETS } from '../constants/content';
+import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -406,7 +407,7 @@ export default function FantasyWishesScreen() {
                   ]}
                 />
               </View>
-              <WishDeckCard item={currentItem} onVote={handleVote} />
+              <WishDeckCard item={currentItem} onVote={handleVote} partnerName={partner?.name} />
               <TouchableOpacity style={styles.skipLink} onPress={() => handleSkip(currentItem)} activeOpacity={0.7} accessibilityRole="button">
                 <Text style={styles.skipLinkText}>Skip for later ›</Text>
               </TouchableOpacity>
@@ -436,7 +437,7 @@ export default function FantasyWishesScreen() {
               <View style={[styles.matchCard, celebrating && styles.matchCardCelebrating]}>
                 <Text style={styles.matchEmoji}>✨</Text>
                 <View style={styles.matchInfo}>
-                  <Text style={styles.matchText}>{item.text}</Text>
+                  <Text style={styles.matchText}>{personalise(item.text, partner?.name)}</Text>
                   <Text style={styles.matchBadge}>✓ You both want this</Text>
                   {bothPressed ? (
                     <TouchableOpacity
@@ -505,9 +506,10 @@ export default function FantasyWishesScreen() {
   );
 }
 
-function WishDeckCard({ item, onVote }: {
+function WishDeckCard({ item, onVote, partnerName }: {
   item: FantasyWishesItem;
   onVote: (item: FantasyWishesItem, vote: FWVote) => void;
+  partnerName?: string;
 }) {
   // Maybe was dropped Aug 2026 — it added decision friction without value
   // (didn't count as match, effectively same outcome as No). Skip covers
@@ -518,7 +520,7 @@ function WishDeckCard({ item, onVote }: {
       <View style={styles.deckCardAccent} />
       <View style={styles.deckCardInner}>
         <View style={styles.deckCardBody}>
-          <Text style={styles.deckWishText}>{item.text}</Text>
+          <Text style={styles.deckWishText}>{personalise(item.text, partnerName)}</Text>
         </View>
         <View style={styles.deckVoteRow}>
           {(['yes', 'no'] as const).map((v) => {

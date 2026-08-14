@@ -10,6 +10,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, updateCustomWYRQuestion, deleteCustomWYRQuestion, WYRRecords, WYRCustomQuestion } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYR_PACKS, WYRLevel, WYRPack } from '../constants/content';
+import { personalise } from '../services/personalise';
 import { notifyPartner } from '../services/notificationService';
 import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
@@ -723,7 +724,7 @@ export default function WouldYouRatherScreen() {
           activeOpacity={0.85}
          accessibilityRole="button">
           <Text style={[styles.optionLetter, { color: cfg.textColor }, myAnswer === 'a' && { color: Colors.white }]}>A</Text>
-          <Text style={[styles.optionText, myAnswer === 'a' && { color: Colors.white }]}>{currentQ.a}</Text>
+          <Text style={[styles.optionText, myAnswer === 'a' && { color: Colors.white }]}>{personalise(currentQ.a, partner?.name)}</Text>
           {bothAnswered && partnerAnswer === 'a' && <Text style={styles.partnerTag}>{partner?.name ?? 'Partner'}</Text>}
         </TouchableOpacity>
 
@@ -741,7 +742,7 @@ export default function WouldYouRatherScreen() {
           activeOpacity={0.85}
          accessibilityRole="button">
           <Text style={[styles.optionLetter, { color: cfg.textColor }, myAnswer === 'b' && { color: Colors.white }]}>B</Text>
-          <Text style={[styles.optionText, myAnswer === 'b' && { color: Colors.white }]}>{currentQ.b}</Text>
+          <Text style={[styles.optionText, myAnswer === 'b' && { color: Colors.white }]}>{personalise(currentQ.b, partner?.name)}</Text>
           {bothAnswered && partnerAnswer === 'b' && <Text style={styles.partnerTag}>{partner?.name ?? 'Partner'}</Text>}
         </TouchableOpacity>
 
@@ -760,7 +761,7 @@ export default function WouldYouRatherScreen() {
             <Text style={styles.resultTitle}>{matched ? 'You match!' : 'You differ!'}</Text>
 
             {currentQ.discussion && (
-              <Text style={styles.discussionPrompt}>💬 {currentQ.discussion}</Text>
+              <Text style={styles.discussionPrompt}>💬 {personalise(currentQ.discussion, partner?.name)}</Text>
             )}
             {/* Save-to-list only on match. Match already means both partners
                 chose the same option, so no double-confirm handshake needed —
