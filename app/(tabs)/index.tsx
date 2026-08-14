@@ -949,6 +949,22 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Inactive-partner hint (H12) — paired via invite code but partner
+          hasn't finished onboarding (no display name set). The couple card
+          above renders '...' + '?' avatar; without context that reads as
+          broken. A single warm line explains + softens the empty state.
+          Vanishes the moment partner sets their name in Profile. */}
+      {isConnected && !partner?.name?.trim() && (
+        <View style={styles.inactivePartnerHint}>
+          <Text style={styles.inactivePartnerText}>
+            Waiting for your partner to open Desire ✨
+          </Text>
+          <Text style={styles.inactivePartnerSub}>
+            Their avatar and name will appear here once they set them.
+          </Text>
+        </View>
+      )}
+
       {/* Daily insight card — based on partner's Love Language quiz result.
           Hidden for the rest of the day once the user acts on the CTA,
           so the day feels closed. Reappears with a fresh tip tomorrow.
@@ -1271,13 +1287,6 @@ const styles = StyleSheet.create({
   sectionLine: { flex: 1, height: 1, backgroundColor: Colors.border },
   sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, letterSpacing: 2.5, textTransform: 'uppercase' },
 
-  ritualRow: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
-  ritualOrnament: { fontSize: 22, color: Colors.burgundy, width: 32, textAlign: 'center' },
-  ritualText: { flex: 1 },
-  ritualTitle: { fontFamily: Fonts.headingItalic, fontSize: 20, color: Colors.burgundy },
-  ritualSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 1 },
-  ritualArrow: { fontFamily: Fonts.body, fontSize: 18, color: Colors.muted },
-
   quickCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
   quickItem: { alignItems: 'center', gap: 4, paddingHorizontal: Spacing.md, paddingVertical: 4 },
   quickIcon: { fontSize: 22 },
@@ -1292,7 +1301,6 @@ const styles = StyleSheet.create({
   gameArrow: { fontFamily: Fonts.body, fontSize: 18, color: Colors.muted },
   seeAllGamesRow: { alignItems: 'center', paddingVertical: Spacing.sm, marginTop: 2, marginBottom: Spacing.sm },
   seeAllGamesText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.5 },
-  name: { fontFamily: Fonts.heading, fontSize: 34, color: Colors.burgundy, lineHeight: 38, marginTop: 2 },
   signOutBtn: { paddingTop: 6 },
   signOut: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
 
@@ -1314,33 +1322,29 @@ const styles = StyleSheet.create({
   ldrStatusLine: { fontFamily: Fonts.body, fontSize: 11, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: 4 },
 
   connectBanner: { backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.rose, gap: Spacing.sm },
+  inactivePartnerHint: {
+    backgroundColor: '#FFF5F8',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    gap: 2,
+  },
+  inactivePartnerText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  inactivePartnerSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, lineHeight: 18 },
   connectEmoji: { fontSize: 32 },
   connectText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   codeBox: { backgroundColor: 'rgba(136,14,79,0.08)', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, marginTop: 4 },
   connectCode: { fontFamily: Fonts.heading, fontSize: 30, color: Colors.burgundy, letterSpacing: 8 },
 
   moodSection: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   sectionTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },
-  changeText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   moodBtn: { alignItems: 'center', width: '22%', paddingVertical: Spacing.sm, borderRadius: Radius.md, backgroundColor: Colors.cream, borderWidth: 1, borderColor: Colors.border },
   moodEmoji: { fontSize: 26 },
   moodLabel: { fontFamily: Fonts.body, fontSize: 9, color: Colors.muted, textAlign: 'center', marginTop: 2 },
-  moodSelected: { paddingVertical: Spacing.sm, gap: 6 },
-  moodSelectedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  moodSelectedEmoji: { fontSize: 28 },
-  moodSelectedLabel: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.text },
-  partnerMoodRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  partnerMoodEmoji: { fontSize: 16 },
-  partnerMoodText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
-
-  dailyWishCard: { backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm },
-  dailyWishLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  dailyWishEmoji: { fontSize: 32 },
-  dailyWishTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
-  dailyWishSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, marginTop: 2 },
-  dailyWishArrow: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.muted },
 
   nudgeLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: Spacing.sm },
   nudgeCard: { flexDirection: 'row', alignItems: 'center', borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.sm, gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
@@ -1380,15 +1384,6 @@ const styles = StyleSheet.create({
   onboardSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2 },
   onboardArrow: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy },
 
-  moodSummaryCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md, ...Shadow.sm },
-  moodSummaryRow: { flex: 1, gap: 2 },
-  moodSummaryText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
-  moodSummaryArrow: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.muted },
-
-  sparkBtn: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
-  sparkBtnSent: { backgroundColor: '#E8F5E9', borderColor: Colors.success },
-  sparkBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
-
   sparkOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sparkSheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
   sparkSheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: Radius.full, alignSelf: 'center', marginBottom: Spacing.sm },
@@ -1399,6 +1394,4 @@ const styles = StyleSheet.create({
   sparkCancelBtn: { alignItems: 'center', paddingVertical: Spacing.md, marginTop: Spacing.xs },
   sparkCancelText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
 
-  flashBtn: { backgroundColor: '#FFF0F3', borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F4A7B9', ...Shadow.sm, marginTop: Spacing.sm },
-  flashBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
 });

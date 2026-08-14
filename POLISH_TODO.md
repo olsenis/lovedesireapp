@@ -124,15 +124,13 @@ Also rehabilitate On-this-day + Insight into the token palette (they're currentl
 Remaining shared ✨: FW matches + FW partner-ahead (mutually exclusive via H3 dedupe), LDR post-visit day 1, LDR pre-visit day 2, monthly narrative — these fire in different scenarios, rare same-Home collision. Acceptable.
 Remaining shared 📸: Moments daily prompt + incoming Flash — both photo-related, rare same-Home collision. Acceptable.
 
-### H11 Prune unused styles (~10 min)
+### H11 Prune unused styles — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` StyleSheet
-**Change:** Remove dead styles: `ritualRow`, `dailyWishCard`, `moodSummaryCard`, `sparkBtn`, `flashBtn`, `name`, `moodSelected*`, `partnerMoodRow`, `sectionHeader`, `changeText`.
-**Why:** Housekeeping. No behaviour change; cleaner file.
+**Change:** Removed 27 dead styles across 6 families: `ritual*` (6), `dailyWish*` (6), `moodSummary*` (4), `sparkBtn*` (3), `flashBtn*` (2), `moodSelected*` + `partnerMood*` (5), plus stray `name`, `sectionHeader`, `changeText`. Zero usages confirmed by grep before removal.
 
-### H12 Warmer inactive-partner state (optional, ~30 min)
-**File:** `app/(tabs)/index.tsx` couple card
-**Change:** When partner has never opened the app (no `lastActive`, no mood, avatar shows `?`), add a subtle line under partner avatar: "Waiting for Ola to open Desire ✨" + a "Nudge them" button that sends a friendly reminder push.
-**Why:** Half-populated Home looks broken. Explain why + give the user an action.
+### H12 Warmer inactive-partner state — ✅ shipped (next commit)
+**File:** `app/(tabs)/index.tsx` between couple hero card and insight card
+**Change:** When `isConnected && !partner?.name?.trim()` (paired via invite but partner never set their name), a warm blush hint appears: "Waiting for your partner to open Desire ✨" + sub "Their avatar and name will appear here once they set them." Vanishes the moment partner sets name in Profile. Signal-only — no "Nudge them" button because we have no reliable push channel for a partner who hasn't opened the app enough to grant notification permission.
 
 ---
 
