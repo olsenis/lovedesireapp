@@ -262,7 +262,7 @@ Reordered from the reviewer's ROI ranking (below) under "quality + shareability 
 | 5 | **Journal** redesign | Rotating prompts (~20-30) + weekly retro summary + 3-day streak-lite. | 3-4h | Pending |
 | **6** | **Pulse** redesign | 10→5 questions, trend comparison ("stronger/softer than 4 weeks ago"), routes to related features per softest dimension. Cadence hint in intro copy. | 2h | ✅ **Shipped** |
 | 7 | **Intimacy Log** narrative | Auto-generated 1st-of-month "story" summary. Ties to Sensate + Daily via one-tap logging prompts. | 4-6h | Pending |
-| 8 | **Love Language** weekly nudge | Home card that rotates weekly focus + 3 concrete micro-actions. Extends existing `getLanguageTip`. | 2-3h | Pending |
+| **8** | **Love Language** weekly nudge | Standalone `/love-language-nudge` screen linked from Us tab Discover. Sunday 09:00 local notification (weekly). 100 curated actions (20 per language × 5). Deterministic pick (weekAnchor + coupleId) so both partners see same trio. | 2-3h | ✅ **Shipped** (bf46a21 + a29dbd2) |
 | 9 | **Calendar** reposition | "Anniversary + special-days ledger" — no calendar-sync competition. | 30 min | Pending |
 | 10 | **`/upgrade`** copy reorder | Lead with Fantasy Wishes + Sensate + Fire challenges. Blueprint + Adult moods secondary. | 30 min | Pending |
 | 4b | **Versus starter pool** (v2) | ~30-50 curated universal binary questions + in-Versus answering mode so brand-new couples with 0 Daily binary answers can play immediately. | ~2h | Deferred — revisit if cold-start bug surfaces post-launch |
