@@ -85,7 +85,7 @@ const LDR_TIPS: LangTip[] = [
   { tip: `Video call over dinner tonight, one candle each.`, cta: '', route: '' },
   { tip: `Watch the same episode at the same time, hit play together.`, cta: '', route: '' },
   { tip: `Send a voice note instead of a text today. Your voice lands differently.`, cta: 'Open Tease', route: '/flashes' },
-  { tip: `Sync your calendars for next weekend, pick one thing to look forward to.`, cta: 'Open Countdowns', route: '/countdown' },
+  { tip: `Sync your calendars for next weekend, pick one thing to look forward to.`, cta: 'Open Special Days', route: '/calendar' },
   { tip: `Cook the same recipe tonight, video-call while you eat.`, cta: '', route: '' },
   { tip: `Write a Love Note timed to unlock tomorrow morning.`, cta: 'Write a Love Note', route: '/notes' },
   { tip: `Share a short playlist of what's been on repeat for you this week.`, cta: '', route: '' },
@@ -105,7 +105,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
     acts: [
       { tip: `Do one small thing for ${partnerName} they didn't ask for. Notice what.`, cta: 'Add to Together List', route: '/todo' },
       { tip: `Take one task off ${partnerName}'s plate today. Don't announce it.`, cta: 'Open list', route: '/todo' },
-      { tip: `Plan a small surprise. Acts of Service is felt in unprompted effort.`, cta: 'Open Countdowns', route: '/countdown' },
+      { tip: `Plan a small surprise. Acts of Service is felt in unprompted effort.`, cta: 'Open Special Days', route: '/calendar' },
     ],
     gifts: [
       { tip: `It's the thought, not the price. Send ${partnerName} a Tease photo of something that made you think of them today.`, cta: 'Send a Tease', route: '/flashes' },
@@ -730,8 +730,8 @@ export default function HomeScreen() {
       const them = partner?.name ?? 'them';
       const postvisit = [
         { emoji: '✨', title: 'Visit memory drop',          sub: `Share your favorite photos from seeing ${them}`, route: '/moments' },
-        { emoji: '📅', title: 'Day 2 apart',               sub: 'Plan one thing to look forward to together this week', route: '/countdown' },
-        { emoji: '✈️', title: 'Day 3 apart',               sub: 'Start mapping the dates for your next visit', route: '/countdown' },
+        { emoji: '📅', title: 'Day 2 apart',               sub: 'Plan one thing to look forward to together this week', route: '/calendar' },
+        { emoji: '✈️', title: 'Day 3 apart',               sub: 'Start mapping the dates for your next visit', route: '/calendar' },
       ];
       const p = postvisit[daysSince - 1];
       if (p) list.unshift({ emoji: p.emoji, title: p.title, subtitle: p.sub, route: p.route, bg: Colors.blush });

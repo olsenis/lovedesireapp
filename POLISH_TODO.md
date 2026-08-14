@@ -8,8 +8,11 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 
 ## Entertainment roadmap — pending
 
-### #9 Calendar reposition — start here (~30-60 min)
-**Status:** In progress
+### #9 Calendar reposition — ✅ shipped (fa7c365) + Countdowns merged (next commit)
+**Status:** Shipped as ledger; Countdowns duplicate feature merged into Special Days
+**Follow-up:** Ported the secret-date toggle from Countdowns → Special Days modal, deleted `app/countdown.tsx`, updated 4 Home nudge routes + 1 Profile row from `/countdown` to `/calendar`.
+---
+**Original notes below (kept for history):**
 **File:** `app/calendar.tsx` (screen title already renamed to "Special Days" but screen is still a calendar grid)
 **Change:**
 - **Remove** the month grid (7-column day-cell layout + prev/next month arrows + weekday header + dot indicators)

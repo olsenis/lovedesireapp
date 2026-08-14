@@ -574,14 +574,6 @@ export default function ProfileScreen() {
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => router.push('/countdown' as any)} accessibilityRole="button">
-            <View style={styles.rowTextStack}>
-              <Text style={styles.rowLabel}>⏳ Countdowns</Text>
-              <Text style={styles.rowHint}>Important dates and anniversaries</Text>
-            </View>
-            <Text style={styles.rowChevron}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.divider} />
           <TouchableOpacity style={styles.row} onPress={() => router.push('/reminders' as any)} accessibilityRole="button">
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>🔔 Flirt Reminders</Text>

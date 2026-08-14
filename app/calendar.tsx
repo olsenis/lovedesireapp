@@ -67,6 +67,10 @@ export default function CalendarScreen() {
   const [addDate, setAddDate] = useState<Date | null>(null);
   const [addLabel, setAddLabel] = useState('');
   const [addEmoji, setAddEmoji] = useState('❤️');
+  // Secret dates render as "A surprise from {partnerName}" on the other
+  // partner's ledger until the day arrives. Ported from the old
+  // Countdowns screen when we merged its unique feature over.
+  const [addSecret, setAddSecret] = useState(false);
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -162,12 +166,13 @@ export default function CalendarScreen() {
     setAddDate(null);
     setAddLabel('');
     setAddEmoji('❤️');
+    setAddSecret(false);
     setShowAdd(true);
   };
 
   const handleSaveDate = async () => {
     if (!addLabel.trim() || !addDate || !profile?.coupleId || !user) return;
-    await addImportantDate(profile.coupleId, addLabel.trim(), addDate.getTime(), addEmoji, user.uid);
+    await addImportantDate(profile.coupleId, addLabel.trim(), addDate.getTime(), addEmoji, user.uid, addSecret);
     setShowAdd(false);
   };
 
@@ -271,6 +276,24 @@ export default function CalendarScreen() {
             />
             <Text style={styles.modalHint}>Pick a date</Text>
             <BrandDatePicker value={addDate} onChange={setAddDate} placeholder="Date" />
+            <TouchableOpacity
+              style={styles.secretToggle}
+              onPress={() => setAddSecret((s) => !s)}
+              activeOpacity={0.7}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: addSecret }}
+              accessibilityLabel="Keep this date a surprise"
+            >
+              <View style={[styles.checkbox, addSecret && styles.checkboxOn]}>
+                {addSecret && <Text style={styles.checkboxTick}>✓</Text>}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.secretTitle}>Keep it a surprise 🤫</Text>
+                <Text style={styles.secretHint}>
+                  {partnerName} sees "A surprise from you" until the day arrives.
+                </Text>
+              </View>
+            </TouchableOpacity>
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -366,4 +389,17 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+
+  secretToggle: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  checkbox: {
+    width: 22, height: 22, borderRadius: 4, borderWidth: 1.5, borderColor: Colors.muted,
+    alignItems: 'center', justifyContent: 'center', marginTop: 1,
+  },
+  checkboxOn: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
+  checkboxTick: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.cream },
+  secretTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  secretHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 2, lineHeight: 18 },
 });
