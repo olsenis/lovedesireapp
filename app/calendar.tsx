@@ -7,46 +7,55 @@ import { ImportantDate, subscribeDates, addImportantDate, deleteImportantDate } 
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
-import { Spacing, Radius } from '../constants/spacing';
+import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-// Auto-dates: anniversaries, partner birthdays — derived elsewhere but we can
-// inline the bare logic for display in calendar (kept simple for MVP)
-function buildAutoDates(partnerName: string, partnerBirthday?: string): { label: string; emoji: string; mmdd: string }[] {
-  const auto = [
-    { label: "Valentine's Day", emoji: '💝', mmdd: '02-14' },
-  ];
-  if (partnerBirthday) {
-    const parts = partnerBirthday.split('.');
-    if (parts.length >= 2) {
-      const dd = String(parseInt(parts[0], 10)).padStart(2, '0');
-      const mm = String(parseInt(parts[1], 10)).padStart(2, '0');
-      const turningAge = parts.length === 3 ? `${partnerName}'s birthday` : `${partnerName}'s birthday`;
-      auto.push({ label: turningAge, emoji: '🎂', mmdd: `${mm}-${dd}` });
-    }
+// A ledger entry — either a user-added ImportantDate or an auto-derived date
+// (Valentine's, partner birthday, couple anniversary). All flow through the
+// same sort so the resulting list is one honest chronological view.
+type LedgerEntry = {
+  key: string;
+  label: string;
+  emoji: string;
+  nextOccurrence: Date;
+  daysUntil: number;
+  // Optional bits — user entries carry these, auto entries don't
+  userDate?: ImportantDate;
+  isSecret?: boolean;
+};
+
+function nextOccurrenceOf(mm: number, dd: number, from: Date = new Date()): Date {
+  const y = from.getFullYear();
+  const candidate = new Date(y, mm, dd);
+  if (candidate.getTime() < from.setHours(0, 0, 0, 0)) {
+    candidate.setFullYear(y + 1);
   }
-  return auto;
+  return candidate;
 }
 
-// Days of month grid (weeks starting Monday)
-function buildMonthGrid(year: number, month: number): (number | null)[] {
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const daysInMonth = lastDay.getDate();
-  // Day of week: 0=Sun, 1=Mon... shift so Monday=0
-  const startCol = (firstDay.getDay() + 6) % 7;
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < startCol; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
+function daysBetween(a: Date, b: Date): number {
+  const ms = a.getTime() - b.getTime();
+  return Math.ceil(ms / 86400000);
 }
+
+// Group ledger entries into readable time buckets. Keeps the list scannable
+// so a long ledger doesn't just become a wall of dates.
+function bucketOf(daysUntil: number): 'thisMonth' | 'nextThree' | 'later' {
+  if (daysUntil <= 30) return 'thisMonth';
+  if (daysUntil <= 90) return 'nextThree';
+  return 'later';
+}
+
+const BUCKET_LABELS: Record<'thisMonth' | 'nextThree' | 'later', string> = {
+  thisMonth: 'Coming up',
+  nextThree: 'Next 3 months',
+  later: 'Later this year',
+};
 
 export default function CalendarScreen() {
   const { user, profile } = useAuth();
@@ -54,10 +63,6 @@ export default function CalendarScreen() {
   useTrackScreen('calendar');
   const [dates, setDates] = useState<ImportantDate[]>([]);
 
-  const today = new Date();
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [addDate, setAddDate] = useState<Date | null>(null);
   const [addLabel, setAddLabel] = useState('');
@@ -68,49 +73,93 @@ export default function CalendarScreen() {
     return subscribeDates(profile.coupleId, setDates);
   }, [profile?.coupleId]);
 
+  const partnerName = partner?.name ?? 'your partner';
   const partnerUid = couple?.partner1Uid === user?.uid ? couple?.partner2Uid : couple?.partner1Uid;
   const effectiveBirthday = partner?.birthday ?? (partnerUid ? couple?.partnerBirthdays?.[partnerUid] : undefined);
-  const autoDates = useMemo(() => buildAutoDates(partner?.name ?? 'Partner', effectiveBirthday), [partner?.name, effectiveBirthday]);
 
-  const grid = useMemo(() => buildMonthGrid(viewYear, viewMonth), [viewYear, viewMonth]);
+  // Ledger = user dates + auto-derived (Valentine's, partner birthday,
+  // couple anniversary from startDate). One flat sorted list — no month
+  // grid, no hidden data. Everything the couple cares about, chronological.
+  const ledger = useMemo<LedgerEntry[]>(() => {
+    const now = new Date();
+    const entries: LedgerEntry[] = [];
 
-  // Index dates by MM-DD for fast lookup
-  const datesByMmdd = useMemo(() => {
-    const map = new Map<string, ImportantDate[]>();
+    // Auto: Valentine's Day
+    {
+      const next = nextOccurrenceOf(1, 14);
+      entries.push({
+        key: 'auto-valentines',
+        label: "Valentine's Day",
+        emoji: '💝',
+        nextOccurrence: next,
+        daysUntil: daysBetween(next, now),
+      });
+    }
+
+    // Auto: partner birthday (needs DD.MM or DD.MM.YYYY)
+    if (effectiveBirthday) {
+      const parts = effectiveBirthday.split('.');
+      if (parts.length >= 2) {
+        const dd = parseInt(parts[0], 10);
+        const mm = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+        if (Number.isFinite(dd) && Number.isFinite(mm)) {
+          const next = nextOccurrenceOf(mm, dd);
+          entries.push({
+            key: 'auto-partner-birthday',
+            label: `${partnerName}'s birthday`,
+            emoji: '🎂',
+            nextOccurrence: next,
+            daysUntil: daysBetween(next, now),
+          });
+        }
+      }
+    }
+
+    // Auto: couple anniversary from startDate
+    if (couple?.startDate) {
+      const start = new Date(couple.startDate);
+      const next = nextOccurrenceOf(start.getMonth(), start.getDate());
+      entries.push({
+        key: 'auto-anniversary',
+        label: 'Anniversary',
+        emoji: '💍',
+        nextOccurrence: next,
+        daysUntil: daysBetween(next, now),
+      });
+    }
+
+    // User-added dates
     for (const d of dates) {
       const dt = new Date(d.date);
-      const key = `${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
-      const arr = map.get(key) ?? [];
-      arr.push(d);
-      map.set(key, arr);
+      const next = nextOccurrenceOf(dt.getMonth(), dt.getDate());
+      entries.push({
+        key: `user-${d.id}`,
+        label: d.label,
+        emoji: d.emoji,
+        nextOccurrence: next,
+        daysUntil: daysBetween(next, now),
+        userDate: d,
+        isSecret: !!d.secret && d.createdBy !== user?.uid,
+      });
     }
-    return map;
-  }, [dates]);
 
-  const autoByMmdd = useMemo(() => {
-    const map = new Map<string, { label: string; emoji: string }>();
-    for (const a of autoDates) map.set(a.mmdd, { label: a.label, emoji: a.emoji });
-    return map;
-  }, [autoDates]);
+    entries.sort((a, b) => a.nextOccurrence.getTime() - b.nextOccurrence.getTime());
+    return entries;
+  }, [dates, effectiveBirthday, partnerName, couple?.startDate, user?.uid]);
 
-  const eventsOn = (day: number) => {
-    const mmdd = `${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const userDates = datesByMmdd.get(mmdd) ?? [];
-    const auto = autoByMmdd.get(mmdd);
-    return { userDates, auto };
-  };
+  // Group by bucket, preserving sort order inside each group.
+  const grouped = useMemo(() => {
+    const groups: Record<'thisMonth' | 'nextThree' | 'later', LedgerEntry[]> = {
+      thisMonth: [], nextThree: [], later: [],
+    };
+    for (const entry of ledger) {
+      groups[bucketOf(entry.daysUntil)].push(entry);
+    }
+    return groups;
+  }, [ledger]);
 
-  const prevMonth = () => {
-    if (viewMonth === 0) { setViewYear(viewYear - 1); setViewMonth(11); } else { setViewMonth(viewMonth - 1); }
-  };
-  const nextMonth = () => {
-    if (viewMonth === 11) { setViewYear(viewYear + 1); setViewMonth(0); } else { setViewMonth(viewMonth + 1); }
-  };
-
-  const openAddForDay = (day: number) => {
-    setSelectedDay(day);
-    const d = new Date(viewYear, viewMonth, day, 12);
-    setAddDate(d);
+  const openAdd = () => {
+    setAddDate(null);
     setAddLabel('');
     setAddEmoji('❤️');
     setShowAdd(true);
@@ -120,11 +169,15 @@ export default function CalendarScreen() {
     if (!addLabel.trim() || !addDate || !profile?.coupleId || !user) return;
     await addImportantDate(profile.coupleId, addLabel.trim(), addDate.getTime(), addEmoji, user.uid);
     setShowAdd(false);
-    setSelectedDay(null);
   };
 
-  const isToday = (day: number) =>
-    viewYear === today.getFullYear() && viewMonth === today.getMonth() && day === today.getDate();
+  const formatWhen = (entry: LedgerEntry): string => {
+    const d = entry.nextOccurrence;
+    const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+    if (entry.daysUntil === 0) return `${dateStr} · today`;
+    if (entry.daysUntil === 1) return `${dateStr} · tomorrow`;
+    return `${dateStr} · in ${entry.daysUntil} days`;
+  };
 
   return (
     <View style={styles.screen}>
@@ -133,102 +186,61 @@ export default function CalendarScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Special Days</Text>
-        <View style={{ width: 60 }} />
-      </View>
-
-      <View style={styles.monthHeader}>
-        <TouchableOpacity onPress={prevMonth} accessibilityRole="button" accessibilityLabel="Previous month">
-          <Text style={styles.monthArrow}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.monthLabel}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
-        <TouchableOpacity onPress={nextMonth} accessibilityRole="button" accessibilityLabel="Next month">
-          <Text style={styles.monthArrow}>›</Text>
+        <TouchableOpacity onPress={openAdd} accessibilityRole="button" accessibilityLabel="Add special day">
+          <Text style={styles.addBtn}>+ Add</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.weekRow}>
-        {WEEKDAYS.map((w) => (
-          <View key={w} style={styles.weekCell}>
-            <Text style={styles.weekText}>{w}</Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.introHint}>
+          A ledger of the dates that matter to you both. Anniversaries, birthdays, first times, small rituals worth remembering.
+        </Text>
+
+        {ledger.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyEmoji}>📖</Text>
+            <Text style={styles.emptyTitle}>Nothing on the ledger yet</Text>
+            <Text style={styles.emptyBody}>
+              Tap + Add to save anniversaries, birthdays, first times, or any date worth marking together.
+            </Text>
           </View>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={styles.gridWrap}>
-        <View style={styles.grid}>
-          {grid.map((day, i) => {
-            if (day === null) {
-              return <View key={`empty-${i}`} style={styles.dayCell} />;
-            }
-            const { userDates, auto } = eventsOn(day);
-            const hasEvent = userDates.length > 0 || !!auto;
-            const today_ = isToday(day);
+        ) : (
+          (['thisMonth', 'nextThree', 'later'] as const).map((bucket) => {
+            const rows = grouped[bucket];
+            if (rows.length === 0) return null;
             return (
-              <TouchableOpacity
-                key={day}
-                style={[styles.dayCell, today_ && styles.dayCellToday, hasEvent && styles.dayCellEvent]}
-                onPress={() => openAddForDay(day)}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={`${MONTH_NAMES[viewMonth]} ${day}`}
-              >
-                <Text style={[styles.dayNum, today_ && styles.dayNumToday]}>{day}</Text>
-                {hasEvent && (
-                  <View style={styles.dotsRow}>
-                    {auto && <View style={[styles.dot, { backgroundColor: Colors.muted }]} />}
-                    {userDates.map((d) => (
-                      <View key={d.id} style={[styles.dot, { backgroundColor: Colors.burgundy }]} />
-                    ))}
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Upcoming list (next 5 events from today) */}
-        <Text style={styles.sectionLabel}>Upcoming</Text>
-        {(() => {
-          const now = new Date();
-          const upcoming = [...dates]
-            .map((d) => {
-              const dt = new Date(d.date);
-              // Move to this year or next year
-              const next = new Date(now.getFullYear(), dt.getMonth(), dt.getDate());
-              if (next < now) next.setFullYear(now.getFullYear() + 1);
-              return { date: d, next };
-            })
-            .sort((a, b) => a.next.getTime() - b.next.getTime())
-            .slice(0, 5);
-          if (upcoming.length === 0) {
-            return <Text style={styles.emptyText}>Nothing on the ledger yet. Tap a day to add anniversaries, birthdays, or first-times worth remembering.</Text>;
-          }
-          return upcoming.map(({ date: d, next }) => {
-            const daysUntil = Math.ceil((next.getTime() - now.getTime()) / 86400000);
-            const isSecret = d.secret && d.createdBy !== user?.uid;
-            return (
-              <View key={d.id} style={styles.upcomingCard}>
-                <Text style={styles.upcomingEmoji}>{isSecret ? '🤫' : d.emoji}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.upcomingLabel}>{isSecret ? 'A surprise from your partner' : d.label}</Text>
-                  <Text style={styles.upcomingDate}>
-                    {next.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })} · in {daysUntil} day{daysUntil !== 1 ? 's' : ''}
-                  </Text>
+              <View key={bucket} style={styles.section}>
+                <Text style={styles.sectionLabel}>{BUCKET_LABELS[bucket]}</Text>
+                <View style={styles.card}>
+                  {rows.map((entry, i) => (
+                    <View key={entry.key}>
+                      {i > 0 && <View style={styles.divider} />}
+                      <View style={styles.ledgerRow}>
+                        <Text style={styles.rowEmoji}>{entry.isSecret ? '🤫' : entry.emoji}</Text>
+                        <View style={styles.rowBody}>
+                          <Text style={styles.rowLabel}>
+                            {entry.isSecret ? `A surprise from ${partnerName}` : entry.label}
+                          </Text>
+                          <Text style={styles.rowWhen}>{formatWhen(entry)}</Text>
+                        </View>
+                        {entry.userDate && !entry.isSecret && entry.userDate.createdBy === user?.uid && (
+                          <TouchableOpacity
+                            onPress={() => profile?.coupleId && deleteImportantDate(profile.coupleId, entry.userDate!.id)}
+                            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Delete ${entry.label}`}
+                          >
+                            <Text style={styles.deleteBtn}>✕</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  ))}
                 </View>
-                {!isSecret && d.createdBy === user?.uid && (
-                  <TouchableOpacity
-                    onPress={() => profile?.coupleId && deleteImportantDate(profile.coupleId, d.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Delete date"
-                  >
-                    <Text style={styles.deleteBtn}>✕</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             );
-          });
-        })()}
+          })
+        )}
       </ScrollView>
 
       {/* Add date modal */}
@@ -236,9 +248,7 @@ export default function CalendarScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Add a special day</Text>
-            <Text style={styles.modalHint}>
-              {selectedDay && `${MONTH_NAMES[viewMonth]} ${selectedDay}, ${viewYear}`}
-            </Text>
+            <Text style={styles.modalHint}>Pick an emoji</Text>
             <View style={styles.emojiRow}>
               {['❤️', '💍', '🎂', '✈️', '🎉', '🌹', '⭐', '🏠'].map((e) => (
                 <TouchableOpacity
@@ -251,28 +261,22 @@ export default function CalendarScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <View style={styles.labelInputWrap}>
-              <Text style={styles.modalHint}>Label</Text>
-              <TextInput
-                style={styles.labelInput}
-                placeholder="What's this day about?"
-                placeholderTextColor={Colors.muted}
-                value={addLabel}
-                onChangeText={setAddLabel}
-              />
-              <Text style={styles.modalHint}>Pick a date</Text>
-              <BrandDatePicker
-                value={addDate}
-                onChange={setAddDate}
-                placeholder="Date"
-              />
-            </View>
+            <Text style={styles.modalHint}>Label</Text>
+            <TextInput
+              style={styles.labelInput}
+              placeholder="What's this day about?"
+              placeholderTextColor={Colors.muted}
+              value={addLabel}
+              onChangeText={setAddLabel}
+            />
+            <Text style={styles.modalHint}>Pick a date</Text>
+            <BrandDatePicker value={addDate} onChange={setAddDate} placeholder="Date" />
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowAdd(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.saveBtn, !addLabel.trim() && { opacity: 0.4 }]}
+                style={[styles.saveBtn, (!addLabel.trim() || !addDate) && { opacity: 0.4 }]}
                 onPress={handleSaveDate}
                 disabled={!addLabel.trim() || !addDate}
                 accessibilityRole="button"
@@ -297,52 +301,58 @@ const styles = StyleSheet.create({
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
   title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
+  addBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
 
-  monthHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
+  content: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.md, gap: Spacing.md },
+  introHint: {
+    fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted,
+    lineHeight: 20, textAlign: 'center', paddingHorizontal: Spacing.sm, marginBottom: Spacing.sm,
   },
-  monthArrow: { fontFamily: Fonts.heading, fontSize: 32, color: Colors.burgundy, paddingHorizontal: Spacing.md },
-  monthLabel: { fontFamily: Fonts.headingItalic, fontSize: 24, color: Colors.burgundy },
 
-  weekRow: { flexDirection: 'row', paddingHorizontal: Spacing.sm },
-  weekCell: { flex: 1, alignItems: 'center', paddingVertical: Spacing.xs },
-  weekText: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, letterSpacing: 1 },
-
-  gridWrap: { paddingHorizontal: Spacing.sm, paddingBottom: Spacing.xxl },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  dayCell: {
-    width: `${100 / 7}%`, aspectRatio: 1,
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 6,
-  },
-  dayCellToday: { backgroundColor: Colors.blush, borderRadius: Radius.md },
-  dayCellEvent: { backgroundColor: 'rgba(244,167,185,0.18)', borderRadius: Radius.md },
-  dayNum: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text },
-  dayNumToday: { fontFamily: Fonts.bodyBold, color: Colors.burgundy },
-  dotsRow: { flexDirection: 'row', gap: 2, marginTop: 2 },
-  dot: { width: 5, height: 5, borderRadius: 2.5 },
-
+  section: { gap: Spacing.sm },
   sectionLabel: {
     fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted,
-    textTransform: 'uppercase', letterSpacing: 1, marginTop: Spacing.lg, marginBottom: Spacing.sm, paddingHorizontal: Spacing.sm,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.sm,
   },
-  upcomingCard: {
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    ...Shadow.sm,
+  },
+  divider: { height: 1, backgroundColor: Colors.border, marginHorizontal: Spacing.lg },
+  ledgerRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.sm, marginHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.lg, paddingVertical: 14,
   },
-  upcomingEmoji: { fontSize: 28 },
-  upcomingLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
-  upcomingDate: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
-  deleteBtn: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted, padding: 4 },
-  emptyText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.lg },
+  rowEmoji: { fontSize: 28 },
+  rowBody: { flex: 1, gap: 2 },
+  rowLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  rowWhen: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
+  deleteBtn: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted, padding: 4 },
+
+  emptyCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    borderWidth: 1, borderColor: Colors.border,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  emptyEmoji: { fontSize: 48 },
+  emptyTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, textAlign: 'center' },
+  emptyBody: {
+    fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted,
+    textAlign: 'center', lineHeight: 20, paddingHorizontal: Spacing.sm,
+  },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
-  modalHint: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
-  labelInputWrap: { gap: 6 },
+  modalHint: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted, marginBottom: -4 },
   labelInput: {
     backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md,
     fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border,
@@ -351,7 +361,7 @@ const styles = StyleSheet.create({
   emojiBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
   emojiActive: { borderColor: Colors.burgundy, backgroundColor: Colors.blush },
   emojiOpt: { fontSize: 22 },
-  modalBtns: { flexDirection: 'row', gap: Spacing.md },
+  modalBtns: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
   cancelBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
