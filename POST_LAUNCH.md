@@ -29,6 +29,30 @@ Fantasy Wishes is the extreme case (294 items in a static pool). The other decks
 
 ---
 
+## Home nudge stack: semantic palette + priority sort (raised August 2026)
+
+### What
+Home's "Waiting for you" nudge stack renders in source order with ad-hoc pastel backgrounds (6 different hex values outside the design tokens). Two H-items in POLISH_TODO.md addressed this:
+- **H7** — semantic nudge palette (urgent / informational / celebratory tokens instead of rainbow pastels)
+- **H8** — priority sort + cap at 4 with "See N more" affordance
+
+### Why deferred
+Concluded these are edge-case polish, not launch-blockers. The 8+ nudge scenario only hits paired LDR power-users on Sundays during specific ritual windows. Most users see 2-4 nudges per open. Time better spent on bug bash before launch.
+
+Also, the current shipped surface has correctness-level fixes in place (H3 FW dedupe, H6 fold TL into row, H10 emoji uniqueness) that address the WORST rainbow-stack cases. Broader tier system is nice-to-have.
+
+### Decision criteria for revisiting
+- Post-launch analytics show `screen_home` sessions where >5 nudges rendered simultaneously for >5% of couples
+- Direct user reports of "I keep missing important stuff" or "Home feels overwhelming"
+- Sunday morning support tickets pattern (LDR couples specifically)
+
+### Effort estimate when we do it
+- H8 priority sort + cap: 1-2h
+- H7 semantic palette: 1-2h
+- Both together, roughly 3h total (they share the memo refactor)
+
+---
+
 ## Multiple concurrent 30-day challenges (raised August 2026)
 
 ### What

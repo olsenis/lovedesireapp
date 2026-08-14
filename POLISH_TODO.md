@@ -94,20 +94,11 @@ Ordered roughly by impact / effort ratio (best first).
 **File:** `app/(tabs)/index.tsx`
 **Change:** The Together List row already surfaces `N suggestions waiting · N open` in its subtitle when partner has pending suggestions. The parallel Waiting-for-you nudge was pure duplicate — removed. Row keeps doing the work.
 
-### H7 Semantic nudge palette (1-2h)
-**File:** `app/(tabs)/index.tsx` + `constants/colors.ts` (add tokens)
-**Change:** Currently nudge card backgrounds are 6 hardcoded pastel hex values (`#FFF9C4`, `#FFF3E0`, `#F3E5F5`, `#FAEEF2`, `#FFF0F3`, `#FFF4E8`) chosen ad-hoc. Move to a semantic system:
-- **Urgent** (waiting for me, expiring): blush (`Colors.blush`)
-- **Informational** (partner activity, ambient): cream (`Colors.white` or muted cream)
-- **Celebratory** (matches, milestones): warm amber, once — not per row
-Also rehabilitate On-this-day + Insight into the token palette (they're currently amber/tan outside the design system).
-**Why:** Rainbow-stack effect — no semantic meaning behind colour differences. Palette tokens would make the stack readable at a glance.
+### H7 Semantic nudge palette — ⏸️ deferred to POST_LAUNCH
+Rainbow-stack fix. Nice cosmetic polish but not launch-blocker — most users see 2-4 nudges per open. See [POST_LAUNCH.md](POST_LAUNCH.md) "Home nudge stack".
 
-### H8 Priority sort + cap the nudge stack (1-2h)
-**File:** `app/(tabs)/index.tsx` nudge memo
-**Change:** Add priority weights per nudge type. Sort descending. Cap at 4-5 visible with a "See N more" affordance if more exist.
-- Priority tiers: incoming actions (P1) > partner-ahead (P2) > time-based (P3) > LDR ambient (P4)
-**Why:** LDR + Sunday power-user can see 8+ nudges. Priority + cap keeps Home actionable, not overwhelming.
+### H8 Priority sort + cap the nudge stack — ⏸️ deferred to POST_LAUNCH
+Priority tier system + "See N more" cap. Edge-case impact (8+ nudge scenario hits paired LDR power-users on Sundays only). Revisit if analytics show broad impact. See [POST_LAUNCH.md](POST_LAUNCH.md) "Home nudge stack".
 
 ### H9 Polish Tonight's Picks copy — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` Tonight's Picks tiles
