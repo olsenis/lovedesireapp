@@ -587,7 +587,7 @@ function SessionPromptCard({ votedInSession, matchesCount, onKeepGoing, onSaveFo
 }) {
   return (
     <View style={styles.pauseWrap}>
-      <Text style={styles.pauseEmoji}>🌙</Text>
+      <Text style={styles.pauseEmoji}>💗</Text>
       <Text style={styles.pauseTitle}>You've explored {votedInSession} today</Text>
       {matchesCount > 0 && (
         <Text style={styles.pauseSub}>{matchesCount} match{matchesCount === 1 ? '' : 'es'} so far ✨</Text>
