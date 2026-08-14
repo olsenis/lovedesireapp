@@ -80,20 +80,17 @@ Ordered roughly by impact / effort ratio (best first).
 **Change:** New nudge branch that unshifts on Sundays when partner has a `loveLanguage`. Also hides the daily insight card on Sundays (same-theme collision — Sunday nudge owns the LL surface).
 **Deferred:** per-Sunday dismissal after tap. Card stays visible all Sunday for now — if that turns out annoying, easy to add `ll_sunday_seen_week` AsyncStorage flag using the same pattern as the insight card's `insight_dismissed_date`.
 
-### H3 Deduplicate Fantasy Wishes nudges (~15 min)
+### H3 Deduplicate Fantasy Wishes nudges — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` nudge branches
-**Change:** Currently FW fires TWO nudges when both conditions hit: `✨ N matches` and `✨ Fantasy Wishes (partner exploring)`. Collapse into one: if matches exist, show matches nudge (win); if only partner-ahead, show partner-ahead. Never both.
-**Why:** Two identical-looking ✨ cards back-to-back is confusing rainbow-stack noise.
+**Change:** Partner-ahead FW nudge now suppressed when the matches nudge fires (both route to same screen, both use ✨). Matches wins because it's the higher-value specific-reward signal.
 
-### H4 Fix Insight eyebrow label (~10 min)
+### H4 Fix Insight eyebrow label — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` insight card render
-**Change:** `INSIGHT FOR YOU · WORDS` → `INSIGHT · WORDS OF AFFIRMATION` (map raw language key via `LOVE_LANGUAGE_LABELS[lang].label`).
-**Why:** Raw internal key leaked into UI copy. Trivial fix, meaningful polish.
+**Change:** Imported `LOVE_LANGUAGE_LABELS`, mapped raw key → human label, dropped "FOR YOU" for a tighter eyebrow: `INSIGHT · WORDS OF AFFIRMATION`.
 
-### H5 Async Dares launcher tile on Home (~15-30 min)
-**File:** `app/(tabs)/index.tsx` Tonight's Picks or a new tile row
-**Change:** Add a launcher card for `/dares` — same style as Daily / Truth or Dare / Fantasy Wishes tiles. Copy suggestion: `"🎁 Async Dares — Send a challenge, watch it get done"`.
-**Why:** Feature is invisible unless a dare is currently in flight. Users can't SEND a new dare from Home. Discoverability gap.
+### H5 Async Dares launcher tile — ✅ shipped (next commit)
+**File:** `app/(tabs)/index.tsx` Tonight's Picks section
+**Change:** Added 4th tile between Fantasy Wishes and "See all games" row: `🎁 Dares · Send a challenge, watch it get done` → `/dares`.
 
 ### H6 Fold "partner suggested" nudge into Together List row (~15 min)
 **File:** `app/(tabs)/index.tsx`

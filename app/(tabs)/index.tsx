@@ -32,7 +32,7 @@ import {
   answeredCount as suAnsweredCount,
   hasUserCompleted as suHasUserCompleted,
 } from '../../services/stateUnionService';
-import { CHALLENGE_PROGRAM_CONFIG } from '../../constants/content';
+import { CHALLENGE_PROGRAM_CONFIG, LOVE_LANGUAGE_LABELS, LoveLanguage } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
@@ -540,8 +540,12 @@ export default function HomeScreen() {
     }
   }
 
-  // Fantasy Wishes: partner has voted on items you haven't seen yet
-  if (partnerId && fwItems.length > 0) {
+  // Fantasy Wishes: partner has voted on items you haven't seen yet.
+  // Suppressed when the matches nudge above already fires — same
+  // destination, same emoji, so two ✨ cards in a row was pure noise.
+  // Matches nudge wins because it's the higher-value signal (a specific
+  // reward to claim vs an ambient "keep going" hint).
+  if (partnerId && fwItems.length > 0 && fwMatches.length === 0) {
     const partnerVoted = fwItems.filter(i => !!i.votes[partnerId]).length;
     const myVoted = fwItems.filter(i => !!i.votes[uid]).length;
     if (partnerVoted > myVoted) {
@@ -942,9 +946,13 @@ export default function HomeScreen() {
           ? LDR_TIPS[dayN % LDR_TIPS.length]
           : getLanguageTip((partner as any)?.loveLanguage, partner?.name ?? 'them');
         if (!tip) return null;
+        // Human-readable label for the eyebrow. Was leaking the raw
+        // profile key ("WORDS") — now maps via LOVE_LANGUAGE_LABELS so
+        // it reads "WORDS OF AFFIRMATION" etc.
+        const langKey = (partner as any)?.loveLanguage as LoveLanguage | undefined;
         const langMeta = isLdrDay
           ? 'LONG DISTANCE'
-          : ((partner as any)?.loveLanguage ? `${(partner as any).loveLanguage}` : '');
+          : (langKey ? LOVE_LANGUAGE_LABELS[langKey]?.label ?? '' : '');
         const handleTipPress = () => {
           if (!tip.route) return;
           // Route-based CTAs that stay on Home (e.g. the Spark picker) can't
@@ -963,7 +971,7 @@ export default function HomeScreen() {
             activeOpacity={tip.route ? 0.85 : 1}
             accessibilityRole={tip.route ? 'button' : undefined}
           >
-            <Text style={styles.insightEyebrow}>INSIGHT FOR YOU{langMeta ? ` · ${isLdrDay ? langMeta : langMeta.toUpperCase()}` : ''}</Text>
+            <Text style={styles.insightEyebrow}>INSIGHT{langMeta ? ` · ${langMeta.toUpperCase()}` : ''}</Text>
             <Text style={styles.insightTip}>{tip.tip}</Text>
             {tip.cta ? <Text style={styles.insightCta}>{tip.cta} →</Text> : null}
           </TouchableOpacity>
@@ -1153,6 +1161,19 @@ export default function HomeScreen() {
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Fantasy Wishes</Text>
           <Text style={styles.gameSub}>Double-blind voting {!isSubscribed && '· 🔒'}</Text>
+        </View>
+        <Text style={styles.gameArrow}>›</Text>
+      </TouchableOpacity>
+
+      {/* Async Dares launcher — was previously only reachable via Home
+          nudges (which only fire when a dare is in flight). Home had no
+          way to SEND a dare unless one was already pending. Tile added
+          Aug 2026 to close that discoverability gap. */}
+      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/dares' as any)} activeOpacity={0.85} accessibilityRole="button">
+        <Text style={styles.gameEmoji}>🎁</Text>
+        <View style={styles.gameText}>
+          <Text style={styles.gameTitle}>Dares</Text>
+          <Text style={styles.gameSub}>Send a challenge, watch it get done</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
