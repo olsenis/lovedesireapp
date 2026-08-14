@@ -439,7 +439,14 @@ export default function FantasyWishesScreen() {
                   <Text style={styles.matchText}>{item.text}</Text>
                   <Text style={styles.matchBadge}>✓ You both want this</Text>
                   {bothPressed ? (
-                    <Text style={styles.addedText}>✓ Added to Together List</Text>
+                    <TouchableOpacity
+                      onPress={() => router.push('/todo' as any)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Open Together List"
+                    >
+                      <Text style={styles.addedText}>✓ Added to Together List →</Text>
+                    </TouchableOpacity>
                   ) : iPressed ? (
                     <Text style={styles.waitingText}>Waiting for {partner?.name ?? 'partner'} ✓</Text>
                   ) : (
