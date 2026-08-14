@@ -394,6 +394,18 @@ export default function FantasyWishesScreen() {
             />
           ) : currentItem ? (
             <>
+              {/* Session batch progress — fills 0→8 within the current
+                  pause window. Not a quest meter to 394; just visual
+                  rhythm for the "Load 8 more / Save for later" pacing
+                  we already ship. Slim, textless, unshowy. */}
+              <View style={styles.batchBarTrack}>
+                <View
+                  style={[
+                    styles.batchBarFill,
+                    { width: `${(Math.min(SESSION_BATCH, votedInSession - (nextPromptAt - SESSION_BATCH)) / SESSION_BATCH) * 100}%` },
+                  ]}
+                />
+              </View>
               <WishDeckCard item={currentItem} onVote={handleVote} />
               <TouchableOpacity style={styles.skipLink} onPress={() => handleSkip(currentItem)} activeOpacity={0.7} accessibilityRole="button">
                 <Text style={styles.skipLinkText}>Skip for later ›</Text>
@@ -645,6 +657,13 @@ const styles = StyleSheet.create({
 
   exploreBody: { flex: 1, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
   matchesList: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
+
+  // ─── Batch progress bar (session pacing to SESSION_BATCH) ─────────────
+  batchBarTrack: {
+    height: 3, backgroundColor: Colors.border, borderRadius: 2,
+    marginTop: Spacing.sm, overflow: 'hidden',
+  },
+  batchBarFill: { height: 3, backgroundColor: Colors.rose, borderRadius: 2 },
 
   // ─── Deck card ────────────────────────────────────────────────────────
   // Blush tint + rose left-border stripe to differentiate from Daily's white
