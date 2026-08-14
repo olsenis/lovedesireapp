@@ -92,10 +92,9 @@ Ordered roughly by impact / effort ratio (best first).
 **File:** `app/(tabs)/index.tsx` Tonight's Picks section
 **Change:** Added 4th tile between Fantasy Wishes and "See all games" row: `🎁 Dares · Send a challenge, watch it get done` → `/dares`.
 
-### H6 Fold "partner suggested" nudge into Together List row (~15 min)
+### H6 Fold "partner suggested" nudge into Together List row — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx`
-**Change:** The Together List row already has a subtitle slot. When partner has suggested items pending, put the count there ("Ola suggested 2 items ✨") instead of firing a separate nudge card.
-**Why:** Duplicate surface — the row is right there, the nudge card is redundant.
+**Change:** The Together List row already surfaces `N suggestions waiting · N open` in its subtitle when partner has pending suggestions. The parallel Waiting-for-you nudge was pure duplicate — removed. Row keeps doing the work.
 
 ### H7 Semantic nudge palette (1-2h)
 **File:** `app/(tabs)/index.tsx` + `constants/colors.ts` (add tokens)
@@ -112,18 +111,20 @@ Also rehabilitate On-this-day + Insight into the token palette (they're currentl
 - Priority tiers: incoming actions (P1) > partner-ahead (P2) > time-based (P3) > LDR ambient (P4)
 **Why:** LDR + Sunday power-user can see 8+ nudges. Priority + cap keeps Home actionable, not overwhelming.
 
-### H9 Polish Tonight's Picks copy (~15 min)
+### H9 Polish Tonight's Picks copy — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` Tonight's Picks tiles
-**Change:** Rewrite subtitles benefit-first:
-- Daily: "Fresh picks and questions every day" → "See what you both feel like tonight"
-- Truth or Dare: "Two ways to play, one phone or two" → "Something soft, something bold"
-- Fantasy Wishes: "Double-blind voting" → "Discover what you both secretly want"
-**Why:** Current copy leads with mechanic. Benefit-first copy converts better.
+**Change:** Daily / T-or-D / Fantasy Wishes subtitles rewritten benefit-first per the plan. Dares already benefit-first from H5. Lock badge appended after new copy for free-tier Fantasy Wishes.
 
-### H10 Reserve emoji per surface (~30 min)
+### H10 Reserve emoji per surface — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` nudge branches
-**Change:** Give Async Dares its own emoji distinct from Care Package (both currently 🎁). Same for Together-List (✨) vs Fantasy Wishes matches (✨) vs Year in Review (✨). Assign unique icons per source so the stack reads clearly.
-**Why:** Repeated icons in the stack collapse visual distinction. First fix: pair each nudge with a semantic icon.
+**Change:**
+- LDR Care Package 🎁 → 📦 (literal package, no collision with Async Dares)
+- Year in Review ✨ → 🎊 (year-end feel, distinctive from ambient FW/LDR ✨)
+- LDR pre-visit day 4 (tease) 📸 → 🔥 (matches "teaser of what's coming" subtitle)
+- LDR pre-visit day 6 (surprise) 🎁 → 🌟 (something special, no gift-emoji collision)
+- Together List suggested ✨ removed via H6 (no longer competes)
+Remaining shared ✨: FW matches + FW partner-ahead (mutually exclusive via H3 dedupe), LDR post-visit day 1, LDR pre-visit day 2, monthly narrative — these fire in different scenarios, rare same-Home collision. Acceptable.
+Remaining shared 📸: Moments daily prompt + incoming Flash — both photo-related, rare same-Home collision. Acceptable.
 
 ### H11 Prune unused styles (~10 min)
 **File:** `app/(tabs)/index.tsx` StyleSheet

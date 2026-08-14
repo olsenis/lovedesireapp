@@ -655,7 +655,7 @@ export default function HomeScreen() {
     if (inWindow && partnerId) {
       const yearTitle = m === 11 ? today.getFullYear() : today.getFullYear() - 1;
       list.unshift({
-        emoji: '✨',
+        emoji: '🎊',
         title: `Your ${yearTitle} Year in Review`,
         subtitle: 'Swipeable cards · screenshot to share',
         route: '/year-in-review',
@@ -664,17 +664,12 @@ export default function HomeScreen() {
     }
   }
 
-  // Together List — partner suggested an item and is waiting for my accept/reject
-  const pendingTodos = todos.filter((t) => t.status === 'pending' && t.createdBy !== uid);
-  if (pendingTodos.length > 0) {
-    list.push({
-      emoji: '✨',
-      title: `${partner?.name ?? 'Partner'} suggested ${pendingTodos.length === 1 ? 'something' : `${pendingTodos.length} things`}`,
-      subtitle: pendingTodos.length === 1 ? `"${pendingTodos[0].text.slice(0, 60)}"` : 'Accept or decline in Together List',
-      route: '/todo',
-      bg: '#FFF4E8',
-    });
-  }
+  // Together List "partner suggested" nudge was removed Aug 2026 (H6) —
+  // the dedicated Together List row above already surfaces
+  // `N suggestions waiting · N open` in its subtitle when
+  // partnerSuggestions > 0. A parallel Waiting-for-you card said the
+  // same thing in another shape. Removing the duplicate keeps the
+  // stack lean without hiding the signal. Row is at line ~1140.
 
   // Activity Cards (Bingo) — partner picked a card and I'm the receiver.
   // Use typeof number check to guard against undefined/null pendingCard
@@ -732,7 +727,7 @@ export default function HomeScreen() {
     const today = new Date();
     if (today.getDate() <= 3) {
       list.push({
-        emoji: '🎁',
+        emoji: '📦',
         title: 'Care package time?',
         subtitle: `Send ${partner.name} something small in the mail this month`,
         route: '/notes',
@@ -777,9 +772,9 @@ export default function HomeScreen() {
       { emoji: '💞', title: 'Tomorrow',   sub: `Last sleep before you see ${them}. Leave a note for the morning.`, route: '/notes' },
       { emoji: '✨', title: '2 days',     sub: 'List one thing you want to talk about in person', route: '/notes' },
       { emoji: '🌹', title: '3 days',     sub: "Pick something in Daily you'd both love to try together", route: '/daily?category=playful' },
-      { emoji: '📸', title: '4 days',     sub: "Send a teaser of what's coming", route: '/flashes' },
+      { emoji: '🔥', title: '4 days',     sub: "Send a teaser of what's coming", route: '/flashes' },
       { emoji: '💌', title: '5 days',     sub: `Write a note for when ${them} arrives`, route: '/notes' },
-      { emoji: '🎁', title: '6 days',     sub: `Plan a small surprise for ${them}`, route: '/notes' },
+      { emoji: '🌟', title: '6 days',     sub: `Plan a small surprise for ${them}`, route: '/notes' },
       { emoji: '✈️', title: 'One week',   sub: `Write one thing you're excited to do with ${them}`, route: '/notes' },
     ];
     const p = previsit[nextVisit.daysUntil - 1];
@@ -1167,7 +1162,7 @@ export default function HomeScreen() {
         <Text style={styles.gameEmoji}>💫</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Daily</Text>
-          <Text style={styles.gameSub}>Fresh picks and questions every day</Text>
+          <Text style={styles.gameSub}>See what you both feel like tonight</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
@@ -1176,7 +1171,7 @@ export default function HomeScreen() {
         <Text style={styles.gameEmoji}>🎯</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Truth or Dare</Text>
-          <Text style={styles.gameSub}>Two ways to play, one phone or two</Text>
+          <Text style={styles.gameSub}>Something soft, something bold</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
@@ -1185,7 +1180,7 @@ export default function HomeScreen() {
         <Text style={styles.gameEmoji}>✨</Text>
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Fantasy Wishes</Text>
-          <Text style={styles.gameSub}>Double-blind voting {!isSubscribed && '· 🔒'}</Text>
+          <Text style={styles.gameSub}>Discover what you both secretly want {!isSubscribed && '· 🔒'}</Text>
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
