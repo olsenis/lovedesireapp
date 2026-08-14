@@ -394,7 +394,6 @@ export default function FantasyWishesScreen() {
             />
           ) : currentItem ? (
             <>
-              <ProgressRow votedCount={votedCount} totalCount={totalCount} matchesCount={matched.length} />
               <WishDeckCard item={currentItem} onVote={handleVote} />
               <TouchableOpacity style={styles.skipLink} onPress={() => handleSkip(currentItem)} activeOpacity={0.7} accessibilityRole="button">
                 <Text style={styles.skipLinkText}>Skip for later ›</Text>
@@ -483,26 +482,6 @@ export default function FantasyWishesScreen() {
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />
-    </View>
-  );
-}
-
-function ProgressRow({ votedCount, totalCount, matchesCount }: {
-  votedCount: number; totalCount: number; matchesCount: number;
-}) {
-  // Bar still scales to true total so it stays honest, but we hide the
-  // 394-item denominator from the label — that number is overwhelming
-  // ("60 days at 5/day") and encourages grinding instead of pacing.
-  const pct = totalCount === 0 ? 0 : Math.min(1, votedCount / totalCount);
-  return (
-    <View style={styles.progressRow}>
-      <View style={styles.progressBarTrack}>
-        <View style={[styles.progressBarFill, { width: `${pct * 100}%` }]} />
-      </View>
-      <Text style={styles.progressLabel}>
-        {votedCount} voted
-        {matchesCount > 0 && <Text style={styles.progressMatches}>  ·  {matchesCount} ✨</Text>}
-      </Text>
     </View>
   );
 }
@@ -666,18 +645,6 @@ const styles = StyleSheet.create({
 
   exploreBody: { flex: 1, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
   matchesList: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md },
-
-  // ─── Progress ─────────────────────────────────────────────────────────
-  progressRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    paddingTop: Spacing.sm,
-  },
-  progressBarTrack: {
-    flex: 1, height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden',
-  },
-  progressBarFill: { height: 6, backgroundColor: Colors.burgundy, borderRadius: 3 },
-  progressLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, letterSpacing: 0.5 },
-  progressMatches: { color: Colors.burgundy },
 
   // ─── Deck card ────────────────────────────────────────────────────────
   // Blush tint + rose left-border stripe to differentiate from Daily's white
