@@ -266,7 +266,7 @@ export default function TogetherScreen() {
                   {newAsSuggestion ? `Suggest to ${partner?.name ?? 'partner'}` : 'Add directly to the list'}
                 </Text>
                 <Text style={[styles.suggestToggleHint, newAsSuggestion && styles.suggestToggleHintActive]}>
-                  {newAsSuggestion ? 'They accept or decline before it appears' : 'Tap to switch to suggest mode'}
+                  {newAsSuggestion ? `${partner?.name ?? 'Your partner'} accepts or declines before it appears` : 'Tap to switch to suggest mode'}
                 </Text>
               </View>
             </TouchableOpacity>

@@ -198,7 +198,7 @@ export default function IntimacyTrackerScreen() {
           <Text style={styles.privacy}>🔒 Private — only visible to you and {partnerName}</Text>
         </ScrollView>
       ) : (
-        <StatsView stats={stats} entries={entries} />
+        <StatsView stats={stats} entries={entries} partnerName={partnerName} />
       )}
 
       {/* Entry detail view */}
@@ -303,7 +303,7 @@ export default function IntimacyTrackerScreen() {
 }
 
 // ── Stats view ────────────────────────────────────────────────────────────────
-function StatsView({ stats, entries }: { stats: ReturnType<typeof getIntimacyStats>; entries: IntimacyEntry[] }) {
+function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof getIntimacyStats>; entries: IntimacyEntry[]; partnerName: string }) {
   if (entries.length < 3) {
     return (
       <View style={styles.emptyStats}>
@@ -358,7 +358,7 @@ function StatsView({ stats, entries }: { stats: ReturnType<typeof getIntimacySta
         <View style={styles.initiateLegend}>
           <Text style={styles.legendText}>🙋 You {Math.round(meW)}%</Text>
           <Text style={styles.legendText}>🤝 Both {Math.round(bothW)}%</Text>
-          <Text style={styles.legendText}>💑 Them {Math.round(100 - meW - bothW)}%</Text>
+          <Text style={styles.legendText}>💑 {partnerName} {Math.round(100 - meW - bothW)}%</Text>
         </View>
       </View>
 
@@ -547,7 +547,7 @@ function DetailSheet({
               {(['me', 'partner', 'both'] as const).map(v => (
                 <Chip
                   key={v}
-                  label={v === 'me' ? 'I did' : v === 'partner' ? 'They did' : 'Both of us'}
+                  label={v === 'me' ? 'I did' : v === 'partner' ? `${partnerName} did` : 'Both of us'}
                   selected={initiatedBy === v}
                   onPress={() => setInitiatedBy(v)}
                 />

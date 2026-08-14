@@ -12,12 +12,12 @@ import { useTrackScreen } from '../hooks/useTrackScreen';
 
 // Short one-liner per language explaining what it is — kept subtle so
 // the actions get the visual weight, not the theory.
-const LANGUAGE_HINT: Record<LoveLanguage, string> = {
-  words: 'They feel loved when you say it — appreciation, notice, spoken affection.',
-  acts: 'They feel loved when you do it — small chores handled, effort taken off their plate.',
-  gifts: 'They feel loved when you think of them — a token that says "I saw this, thought of you".',
-  time: 'They feel loved when you show up — undivided attention, present, phone away.',
-  touch: 'They feel loved when you reach — hugs, hand-holds, contact that is not asking for more.',
+const LANGUAGE_HINT: Record<LoveLanguage, (name: string) => string> = {
+  words: (name) => `${name} feels loved when you say it, appreciation, notice, spoken affection.`,
+  acts: (name) => `${name} feels loved when you do it, small chores handled, effort taken off ${name}'s plate.`,
+  gifts: (name) => `${name} feels loved when you think of ${name}, a token that says "I saw this, thought of you".`,
+  time: (name) => `${name} feels loved when you show up, undivided attention, present, phone away.`,
+  touch: (name) => `${name} feels loved when you reach, hugs, hand-holds, contact that is not asking for more.`,
 };
 
 const LANGUAGE_EMOJI: Record<LoveLanguage, string> = {
@@ -69,7 +69,7 @@ export default function LoveLanguageNudgeScreen() {
               <Text style={styles.heroEmoji}>{LANGUAGE_EMOJI[partnerLang]}</Text>
               <Text style={styles.heroLabel}>{partnerName}'s language</Text>
               <Text style={styles.heroLang}>{LOVE_LANGUAGE_LABELS[partnerLang].label}</Text>
-              <Text style={styles.heroHint}>{LANGUAGE_HINT[partnerLang]}</Text>
+              <Text style={styles.heroHint}>{LANGUAGE_HINT[partnerLang](partnerName)}</Text>
             </View>
 
             <Text style={styles.sectionLabel}>3 ways to try this week</Text>

@@ -81,10 +81,10 @@ type LangTip = { tip: string; cta: string; route: string };
 // long distance. These sit alongside (not replacing) love-language tips so
 // LDR pairs see genuinely distance-aware suggestions on some days.
 const LDR_TIPS: LangTip[] = [
-  { tip: `Send them a morning spark with your first coffee.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
+  { tip: `Send your partner a morning spark with your first coffee.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
   { tip: `Video call over dinner tonight, one candle each.`, cta: '', route: '' },
   { tip: `Watch the same episode at the same time, hit play together.`, cta: '', route: '' },
-  { tip: `Send a voice note instead of a text today. Hearing them lands differently.`, cta: 'Open Tease', route: '/flashes' },
+  { tip: `Send a voice note instead of a text today. Your voice lands differently.`, cta: 'Open Tease', route: '/flashes' },
   { tip: `Sync your calendars for next weekend, pick one thing to look forward to.`, cta: 'Open Countdowns', route: '/countdown' },
   { tip: `Cook the same recipe tonight, video-call while you eat.`, cta: '', route: '' },
   { tip: `Write a Love Note timed to unlock tomorrow morning.`, cta: 'Write a Love Note', route: '/notes' },
@@ -109,7 +109,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
     ],
     gifts: [
       { tip: `It's the thought, not the price. Send ${partnerName} a Tease photo of something that made you think of them today.`, cta: 'Send a Tease', route: '/flashes' },
-      { tip: `Schedule a Love Note unlocked for tonight with one specific thing you got them in mind.`, cta: 'Write a Love Note', route: '/notes' },
+      { tip: `Schedule a Love Note unlocked for tonight with one specific thing you got ${partnerName} in mind.`, cta: 'Write a Love Note', route: '/notes' },
       { tip: `Pick something from Playful in Daily and treat it like a small gift today.`, cta: 'Open Daily', route: '/daily?category=playful' },
     ],
     time: [
@@ -746,8 +746,8 @@ export default function HomeScreen() {
       { emoji: '✨', title: '2 days',     sub: 'List one thing you want to talk about in person', route: '/notes' },
       { emoji: '🌹', title: '3 days',     sub: "Pick something in Daily you'd both love to try together", route: '/daily?category=playful' },
       { emoji: '📸', title: '4 days',     sub: "Send a teaser of what's coming", route: '/flashes' },
-      { emoji: '💌', title: '5 days',     sub: 'Write a note for when they arrive', route: '/notes' },
-      { emoji: '🎁', title: '6 days',     sub: 'Plan a small surprise for them', route: '/notes' },
+      { emoji: '💌', title: '5 days',     sub: `Write a note for when ${them} arrives`, route: '/notes' },
+      { emoji: '🎁', title: '6 days',     sub: `Plan a small surprise for ${them}`, route: '/notes' },
       { emoji: '✈️', title: 'One week',   sub: `Write one thing you're excited to do with ${them}`, route: '/notes' },
     ];
     const p = previsit[nextVisit.daysUntil - 1];

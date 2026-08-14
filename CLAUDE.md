@@ -104,6 +104,7 @@ app/                         Full-screen sub-screens
   countdown.tsx              Countdowns — important dates & anniversaries
   reminders.tsx              Flirt Reminders — local scheduled notifications
   quiz.tsx                   Love Language Quiz — 10-question result
+  love-language-nudge.tsx    Speak partner's love language — weekly Sunday nudge (local scheduled notification, Sunday 09:00), 3 concrete actions from partner's language pool (20 per language × 5 languages = 100). Deterministic pick (weekAnchor + coupleId) so both partners see same trio.
   pulse.tsx                  Relationship Pulse — private 10-question satisfaction tracker
   daily-wishes.tsx           Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   (time-capsules.tsx removed July 2026 — abstract long-timeline payoff didn't demo well pre-launch; revisit if users request "seal for later" mechanics)
@@ -185,6 +186,7 @@ All static game content lives here — import from this file, never hardcode in 
 - `DATE_IDEAS` — 130 date ideas (53 home + 39 out + 38 adventure + 28 with `virtual: true` for LDR). Rich 1-2 sentence descriptions.
 - `PRESET_WISHES` — 60 wishlist presets (Romantic/Adventure/Intimate/Spicy, 15 each)
 - `QUIZ_QUESTIONS` + `LOVE_LANGUAGE_LABELS` — 10 A/B love language questions
+- `LOVE_LANGUAGE_ACTIONS` (constants/loveLanguageActions.ts) — 100 daily-doable actions (20 per language × 5) for the weekly Sunday nudge. Low-friction, no special setup, matches the tone of the quiz.
 - `BLUEPRINT_QUESTIONS` + `BLUEPRINT_TYPE_CONFIG` + `BLUEPRINT_COMPATIBILITY` — 15 A/B questions, 5 types, 25-pair compatibility guidance
 - `FANTASY_PRESETS` + `FANTASY_CATEGORY_CONFIG` — 60 fantasy presets (Roleplay/Sensual/Bold/Adventurous)
 - `FANTASY_WISHES_PRESETS` — 294 scenario items for Fantasy Wishes (Sensual/Roleplay/Explicit/BDSM). Target 400+. See `memory/fantasy_wishes_prompt.md`.
@@ -234,6 +236,8 @@ Three prompts for expanding content — always use the right one for the categor
 **Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`, Moments at `couples/{coupleId}/moments/{date}_{uid}.jpg`, Flashes at `couples/{coupleId}/flashes/{ts}_{uid}.{ext}`. All photo uploads compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before `uploadBytes`. (Time Capsules storage path at `couples/{coupleId}/timeCapsules/` no longer written — feature removed July 2026, any pre-launch test blobs remain in Storage until GDPR cascade cleans them.)
 
 **Content rules:** No em dashes (—) anywhere in UI strings — use commas instead. Dares must be physical actions (do something), not verbal (say/tell/describe). Spicy level = explicitly X-rated language.
+
+**Pronoun-free copy convention (Aug 2026):** User-facing strings refer to the partner by NAME (`${partnerName}`) or by "your partner" — not by `they/them/their`. Exception: pronouns are fine where they follow a name in the same sentence and swapping would sound stiff ("Tell {partnerName} what you love about who they are"). Rationale: names are personal, impossible to misgender, avoid the settings surface a pronoun toggle would need, and sidestep Icelandic-locale declension complications if we ever localise. Chart labels, log options, standalone tooltip refs → always use name or "Partner".
 
 **Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Reads `couples/{coupleId}/isPremium` so **one subscription covers both partners**. RevenueCat webhook writes to the couple doc; QA test couples flipped manually in Firebase Console. Client cannot write `isPremium` or `premiumSince` (firestore.rules blocks the two fields explicitly). Legacy per-user `isPremium` on `users/{uid}` was deprecated Aug 2026 — any stale value is ignored by the hook.
 

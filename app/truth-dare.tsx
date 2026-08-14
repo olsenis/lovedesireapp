@@ -711,7 +711,7 @@ export default function TruthDareScreen() {
             {session.card.type === 'dare' && isMyTurn && !partnerConfirmedDare && (
               <View style={styles.greyBanner}>
                 <Text style={styles.greyBannerText}>✅ Dare sent to {partnerName}!</Text>
-                <Text style={styles.greyBannerHint}>Waiting for them to do it and confirm…</Text>
+                <Text style={styles.greyBannerHint}>Waiting for {partnerName} to do it and confirm…</Text>
               </View>
             )}
 

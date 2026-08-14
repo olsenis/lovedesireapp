@@ -7,6 +7,10 @@ import { LoveLanguage } from './content';
 // Used by services/loveLanguageNudgeService.ts to pick 3 items each
 // week deterministically (date + coupleId hash) so both partners see
 // the same suggestions when they open the Sunday nudge.
+//
+// Pool size: 20 per language (100 total). Enough that the weekly
+// deterministic pick won't feel repetitive for many months even
+// though each week is a random-order shuffle of the same pool.
 
 export const LOVE_LANGUAGE_ACTIONS: Record<LoveLanguage, string[]> = {
   words: [
@@ -20,6 +24,16 @@ export const LOVE_LANGUAGE_ACTIONS: Record<LoveLanguage, string[]> = {
     'Tell them one quality you admire in them',
     'Repeat back something they told you last week, show you were listening',
     'Text them mid-day: "Just thinking about you"',
+    'Tell them one thing you noticed today that they did well',
+    'Send a photo of something and say "reminded me of you"',
+    'Post an appreciative note somewhere they will see it — fridge, lock screen, DM',
+    'Give them credit out loud when they helped with something',
+    'Compliment their laugh, their mind, something non-physical',
+    'Repeat their favourite quote back to them, unprompted',
+    'Text them a memory of the two of you that still makes you smile',
+    'Tell them one hope you have for the two of you',
+    'Say "thank you for being you" without needing a reason',
+    'Introduce them proudly, not just by name',
   ],
   acts: [
     'Make their coffee or tea the way they like it before they ask',
@@ -31,7 +45,17 @@ export const LOVE_LANGUAGE_ACTIONS: Record<LoveLanguage, string[]> = {
     'Pick up something they need on your way home',
     'Set out their clothes for tomorrow',
     'Make the bed together in the morning',
-    'Bring them something they did not know they needed, water, snack, phone charger',
+    'Bring them something they did not know they needed — water, snack, phone charger',
+    'Fold their laundry and put it away',
+    'Load the dishwasher without being asked',
+    'Charge their phone when it is dying',
+    'Grab their bag or coat when you are leaving together',
+    'Refill their water while they are working',
+    'Handle the trash tonight even if it is not your night',
+    'Wipe down the counters after cooking',
+    'Bring them a warm blanket when they look cold',
+    'Answer a message they have been dreading, together',
+    'Cancel one thing on their calendar they secretly wish they did not have to do',
   ],
   gifts: [
     'Bring home their favourite snack from the store',
@@ -44,6 +68,16 @@ export const LOVE_LANGUAGE_ACTIONS: Record<LoveLanguage, string[]> = {
     'Bring them coffee from the good place, not the closest',
     'Wrap something small in fancy paper just because',
     'Save something they mentioned wanting, then surprise them with it later',
+    'Save an article you read to send them later',
+    'Buy them coffee on your morning run',
+    'Bring home a leaf, shell, or stone you found on your walk',
+    'Screenshot a meme that made you laugh, send it',
+    'Add a treat to your grocery order that only they would notice',
+    'Frame a small photo you both like',
+    'Buy the fancy version of something they use daily',
+    'Pick up their favourite takeout unprompted',
+    'Leave a note in their book, jacket pocket, or lunchbox',
+    'Order that thing they have been "going to buy for months"',
   ],
   time: [
     'Put your phone in another room for the next hour',
@@ -56,6 +90,16 @@ export const LOVE_LANGUAGE_ACTIONS: Record<LoveLanguage, string[]> = {
     'Have breakfast together without screens on',
     'Drive somewhere together with music instead of podcasts',
     'Lie in bed for 15 minutes after waking, no scrolling',
+    'Turn off the TV and just talk for 15 minutes',
+    'Sit outside with them, no phones, coffee or tea in hand',
+    'Play a board game or card game together tonight',
+    'Show up to something they care about — a workout, hobby, or event',
+    'Ask them a "would you rather" question and actually discuss the answer',
+    'Cook their favourite meal side by side',
+    'Take a bath or shower together, no agenda',
+    'Look through old photos together for 10 minutes',
+    'Plan a small trip together — even just tomorrow\'s dinner counts',
+    'Wake up 15 minutes early so you have time together before the day starts',
   ],
   touch: [
     'Hold their hand while walking somewhere',
@@ -63,10 +107,20 @@ export const LOVE_LANGUAGE_ACTIONS: Record<LoveLanguage, string[]> = {
     'Rest your hand on their back while you are talking to them',
     'Give them a shoulder rub without them asking',
     'Kiss them on the forehead',
-    'Sit close enough to touch, knees, thighs, arm to arm',
+    'Sit close enough to touch — knees, thighs, arm to arm',
     'Play with their hair while watching TV',
     'Give them a foot rub tonight',
     'Cuddle for 10 minutes with no follow-up expectation',
     'Slow-dance in the kitchen to one song',
+    'Kiss the back of their neck when you pass them in the kitchen',
+    'Rest your head on their shoulder while sitting together',
+    'Trace their arm or back lightly while you are talking',
+    'Hug them from behind unexpectedly',
+    'Interlock fingers when you are driving together',
+    'Give a real welcome-home hug at the door, not a wave',
+    'Sit on the same couch, close, not on opposite ends',
+    'Squeeze their hand three times, silent "I love you"',
+    'Give them a scalp rub for 60 seconds',
+    'Lean into them during the boring parts of a movie',
   ],
 };

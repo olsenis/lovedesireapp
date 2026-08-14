@@ -120,7 +120,7 @@ export default function VersusScreen() {
   // doesn't feel formulaic across a 10-round game. The suggestion frames the
   // reveal as a conversation opener rather than a scored quiz answer.
   const talkPrompts = [
-    'Ask them why',
+    `Ask ${partnerName} why`,
     `Ask ${partnerName} what led to that`,
     'Talk about it later',
     `See if ${partnerName} still feels that way`,

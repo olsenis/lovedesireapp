@@ -253,7 +253,7 @@ export default function PairingScreen() {
             <Text style={styles.confirmTitle}>Join couple with this code?</Text>
             <Text style={styles.confirmCode}>{pendingScannedCode}</Text>
             <Text style={styles.confirmHint}>
-              Only accept if this code came from someone you trust. Joining shares your name, photo, and mood with them.
+              Only accept if this code came from someone you trust. Joining shares your name, photo, and mood with your partner.
             </Text>
             <View style={styles.confirmBtns}>
               <TouchableOpacity

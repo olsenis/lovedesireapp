@@ -570,7 +570,7 @@ export default function NotesScreen() {
             )}
             {occasion === SAD_OCCASION_LABEL && (
               <View style={styles.moodPickerWrap}>
-                <Text style={styles.moodPickerLabel}>Unlocks when they log this mood:</Text>
+                <Text style={styles.moodPickerLabel}>Unlocks when {partner?.name ?? 'your partner'} logs this mood:</Text>
                 <View style={styles.moodPickerGrid}>
                   {ALL_MOODS.map((m) => {
                     const active = moodPick === m;
@@ -597,10 +597,10 @@ export default function NotesScreen() {
               <Text style={styles.sadHint}>Unlocks automatically on the day of your next visit</Text>
             )}
             {occasion === "When you miss me" && (
-              <Text style={styles.sadHint}>Goes into their "Open when..." stash. They open it whenever they miss you.</Text>
+              <Text style={styles.sadHint}>Goes into your partner's "Open when..." stash, for whenever they miss you.</Text>
             )}
             {occasion === "When you can't sleep" && (
-              <Text style={styles.sadHint}>Goes into their "Open when..." stash. They open it on a sleepless night.</Text>
+              <Text style={styles.sadHint}>Goes into your partner's "Open when..." stash, for a sleepless night.</Text>
             )}
             <View style={styles.modalBtns}>
               <TouchableOpacity

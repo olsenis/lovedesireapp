@@ -118,7 +118,7 @@ export default function MomentsScreen() {
             </View>
             <View style={styles.waitingRight}>
               <Text style={styles.waitingTitle}>Waiting for {partner?.name ?? 'your partner'}...</Text>
-              <Text style={styles.waitingSub}>Your photo is ready. Both photos reveal when they take theirs.</Text>
+              <Text style={styles.waitingSub}>Your photo is ready. Both photos reveal when {partner?.name ?? 'your partner'} takes theirs.</Text>
             </View>
           </View>
         ) : (

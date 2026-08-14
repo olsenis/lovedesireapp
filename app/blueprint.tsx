@@ -197,7 +197,7 @@ export default function BlueprintScreen() {
               <Text style={styles.partnerPendingText}>
                 Waiting for {partner?.name ?? 'your partner'} to complete the quiz
               </Text>
-              <Text style={styles.partnerPendingHint}>When they finish, your compatibility will appear here.</Text>
+              <Text style={styles.partnerPendingHint}>When {partner?.name ?? 'your partner'} finishes, your compatibility will appear here.</Text>
             </View>
           )}
 

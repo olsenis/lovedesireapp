@@ -164,10 +164,10 @@ export default function HitaScreen() {
       ],
       closeness: [
         "Give a long hug every morning and evening for a week.",
-        "Reach for their hand more often today, no reason needed.",
+        "Reach for your partner's hand more often today, no reason needed.",
         "Sit closer on the couch tonight, no phone between you.",
         "Try a Sensate Focus stage this week, touch without goal.",
-        "Send a Spark with a heart emoji when you think of them today.",
+        "Send a Spark with a heart emoji when you think of your partner today.",
         "Share something vulnerable you haven't mentioned recently.",
       ],
       sex: [
@@ -180,11 +180,11 @@ export default function HitaScreen() {
       ],
       teamwork: [
         "Ask your partner: 'What do you need from me right now?'",
-        "Take one task off their plate today without being asked.",
+        "Take one task off your partner's plate today without being asked.",
         "Tell your partner 3 specific things you noticed this week.",
         "Set a small shared goal, something to work on together.",
-        "Bring them their favourite drink without them asking, one time.",
-        "Say 'thank you' out loud for something small they do routinely.",
+        "Bring your partner their favourite drink without being asked, one time.",
+        "Say 'thank you' out loud for something small your partner does routinely.",
       ],
     };
     const pool = suggestions[lowest.key] ?? ["Take time this week for each other."];
