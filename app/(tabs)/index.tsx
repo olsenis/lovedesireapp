@@ -471,6 +471,34 @@ export default function HomeScreen() {
     });
   }
 
+  // Daily matches: both voted yes on a pick today, but user hasn't pressed
+  // Add to Together List. Higher priority than the partner-ahead nudge
+  // below (matches are the payoff, not just backlog). Mirrors the Fantasy
+  // Wishes matches nudge shape/palette so both features feel of a piece.
+  // Suppresses the "Daily is waiting" branch when it fires so we never
+  // stack two Daily rows for the same couple.
+  let dailyMatchesUnread = 0;
+  if (partnerId && dailyWishDoc) {
+    const partnerVotes = dailyWishDoc.votes[partnerId] ?? {};
+    const myVotes = dailyWishDoc.votes[uid] ?? {};
+    const addList = dailyWishDoc.addToList ?? {};
+    for (const key of Object.keys(myVotes)) {
+      const gi = Number(key);
+      if (myVotes[gi] === 'yes' && partnerVotes[gi] === 'yes' && !(addList[gi] ?? []).includes(uid)) {
+        dailyMatchesUnread++;
+      }
+    }
+  }
+  if (dailyMatchesUnread > 0) {
+    list.push({
+      emoji: '✨',
+      title: `${dailyMatchesUnread} Daily ${dailyMatchesUnread === 1 ? 'match' : 'matches'}`,
+      subtitle: 'You both said yes today, tap to save to your list',
+      route: '/daily',
+      bg: '#F3E5F5',
+    });
+  }
+
   // Daily (unified): partner has ANSWERED or VOTED on items user hasn't
   // touched. Replaces two prior nudges (Questions Game + Daily Picks) that
   // now share a route.
@@ -488,7 +516,7 @@ export default function HomeScreen() {
   // Route has no ?category= — /daily's auto-selector picks the cat where
   // partner is ahead (questions ranked above actions), so the tap lands on
   // the most-urgent cat without the nudge itself having to decide.
-  if (partnerId) {
+  if (partnerId && dailyMatchesUnread === 0) {
     let questionsAhead = 0;
     if (dailyQDoc) {
       const partnerAns = dailyQDoc.answers?.[partnerId] ?? {};

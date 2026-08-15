@@ -119,6 +119,11 @@ Remaining shared 📸: Moments daily prompt + incoming Flash — both photo-rela
 **File:** `app/(tabs)/index.tsx` StyleSheet
 **Change:** Removed 27 dead styles across 6 families: `ritual*` (6), `dailyWish*` (6), `moodSummary*` (4), `sparkBtn*` (3), `flashBtn*` (2), `moodSelected*` + `partnerMood*` (5), plus stray `name`, `sectionHeader`, `changeText`. Zero usages confirmed by grep before removal.
 
+### H13 Daily matches Home nudge — ✅ shipped (next commit)
+**File:** `app/(tabs)/index.tsx` nudge branches
+**Change:** Added dedicated `✨ N Daily match(es)` nudge that fires when both partners voted yes on a Daily pick today AND user hasn't pressed "Add to Together List" yet. Suppresses the existing partner-ahead "💫 Daily is waiting" branch when it fires (same route, matches is the specific-reward signal). Mirrors the Fantasy Wishes matches nudge shape/palette so both features feel of a piece.
+**Why:** User caught the gap during Bug bash Round 2 — FW fires a match nudge, Daily didn't, so users who matched but hadn't opened Daily since had no Home cue to save the item to Together List.
+
 ### H12 Warmer inactive-partner state — ✅ shipped (next commit)
 **File:** `app/(tabs)/index.tsx` between couple hero card and insight card
 **Change:** When `isConnected && !partner?.name?.trim()` (paired via invite but partner never set their name), a warm blush hint appears: "Waiting for your partner to open Desire ✨" + sub "Their avatar and name will appear here once they set them." Vanishes the moment partner sets name in Profile. Signal-only — no "Nudge them" button because we have no reliable push channel for a partner who hasn't opened the app enough to grant notification permission.
