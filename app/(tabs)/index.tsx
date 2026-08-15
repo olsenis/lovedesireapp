@@ -454,7 +454,11 @@ export default function HomeScreen() {
       subtitle: freshlyCompletedFromPartner.length > 1
         ? `${freshlyCompletedFromPartner.length} of your dares, tap to see`
         : 'Tap to see how it went',
-      route: '/dares',
+      // Deep-link to the "Sent" tab — a partner-completed dare lives in
+      // the dares I sent (not the "For me" default). Without this the
+      // nudge dropped users on an empty "For me" tab and the completed
+      // dare looked invisible.
+      route: '/dares?tab=sent',
       bg: '#F3E5F5',
     });
   }

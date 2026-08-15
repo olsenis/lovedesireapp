@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -83,7 +83,11 @@ export default function DaresScreen() {
   const partnerName = partner?.name ?? 'your partner';
 
   const [dares, setDares] = useState<Dare[]>([]);
-  const [tab, setTab] = useState<Tab>('for-me');
+  // Initial tab honours `?tab=sent` deep-link from Home's completed-dare
+  // nudge. Without it the nudge landed users on an empty "For me" tab
+  // and the completed dare that fired the nudge looked invisible.
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<Tab>(params.tab === 'sent' ? 'sent' : 'for-me');
 
   // Compose modal state
   const [showCompose, setShowCompose] = useState(false);
