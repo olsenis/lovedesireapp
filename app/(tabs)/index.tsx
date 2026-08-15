@@ -960,7 +960,7 @@ export default function HomeScreen() {
             Waiting for your partner to open Desire ✨
           </Text>
           <Text style={styles.inactivePartnerSub}>
-            Their avatar and name will appear here once they set them.
+            Your partner's avatar and name will appear here once set.
           </Text>
         </View>
       )}

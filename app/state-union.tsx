@@ -220,7 +220,7 @@ export default function StateUnionScreen() {
                 ? `${partnerName} hasn't started yet`
                 : `${partnerName} has answered ${partnerAnswered} of ${STATE_UNION_QUESTIONS.length}`}
             </Text>
-            <Text style={styles.waitHint}>You'll see both your answers side by side once they're done.</Text>
+            <Text style={styles.waitHint}>You'll see both answers side by side once {partnerName} is done.</Text>
           </View>
         )}
 

@@ -208,7 +208,7 @@ export default function ProfileScreen() {
           result.reason === 'taken' ? 'This couple is already full.' :
           result.reason === 'expired' ? 'This invite code has expired.' :
           result.reason === 'not_found' ? 'Code not found. Double-check the 8 characters.' :
-          `Could not join (reason: ${result.reason ?? 'unknown'})`;
+          'Could not join, please try again.';
         setPairError(msg);
         return;
       }

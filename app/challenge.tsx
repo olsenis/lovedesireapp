@@ -80,7 +80,7 @@ export default function ChallengeScreen() {
     try {
       await startChallenge(coupleId!, program);
     } catch (e: any) {
-      setStartError(e?.code === 'permission-denied' ? 'Permission denied, check Firebase rules.' : `Error: ${e?.message ?? String(e)}`);
+      setStartError(e?.code === 'permission-denied' ? 'Could not start the challenge, please try again.' : 'Could not start the challenge, please try again.');
     } finally {
       // Always clear the starting flag — previously only reset on error, so a
       // successful start left `starting=true` forever. When the user then hit

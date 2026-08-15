@@ -37,7 +37,7 @@ const STAGES: Stage[] = [
     textColor: '#A4366A',
     instruction: 'Partner A touches Partner B for 15 minutes, back, arms, face, scalp. Partner B only receives and notices. No goal. No performance. Switch when the timer ends.',
     prompts: [
-      'Notice the temperature of their skin.',
+      "Notice the temperature of your partner's skin.",
       'Pay attention to texture, smooth, rough, soft.',
       'There is no goal here. Just sensation.',
       'Follow what feels interesting to your hands.',
@@ -63,7 +63,7 @@ const STAGES: Stage[] = [
       'Notice what you want to linger on.',
       'There is nowhere to arrive. This is the whole thing.',
       'Breathe together, slowly.',
-      'Pay attention to their responses without chasing them.',
+      "Pay attention to your partner's responses without chasing them.",
       'Receiver: if something feels good, let it show.',
       'Follow warmth. Follow what feels alive.',
       'This is not foreplay. This is presence.',

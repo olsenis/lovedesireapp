@@ -533,7 +533,7 @@ export default function TruthDareScreen() {
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
-                  <Text style={styles.levelSub}>{level === 'spicy' && !isSubscribed ? '🔒 Premium' : 'You pick first · partner joins from their phone'}</Text>
+                  <Text style={styles.levelSub}>{level === 'spicy' && !isSubscribed ? '🔒 Premium' : 'You pick first · your partner joins from another phone'}</Text>
                 </View>
                 <Text style={[styles.levelArrow, { color: c.textColor }]}>›</Text>
               </TouchableOpacity>
@@ -735,7 +735,7 @@ export default function TruthDareScreen() {
             {/* ── TRUTH: picker waits ── */}
             {session.card.type === 'truth' && isMyTurn && (
               <View style={styles.sentBanner}>
-                <Text style={styles.sentText}>✅ Sent to {partnerName}! They're answering…</Text>
+                <Text style={styles.sentText}>✅ Sent to {partnerName}, waiting for the answer…</Text>
               </View>
             )}
 

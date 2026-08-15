@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { loadVersusPool, VersusItem, VERSUS_UNLOCK_THRESHOLD, loadVersusStats, updateVersusStats, VersusStats } from '../services/versusService';
+import { personalise } from '../services/personalise';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { Colors } from '../constants/colors';
@@ -180,7 +181,7 @@ export default function VersusScreen() {
       {status === 'playing' && current && (
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.eyebrow}>What did {partnerName} pick?</Text>
-          <Text style={styles.question}>{current.question.text}</Text>
+          <Text style={styles.question}>{personalise(current.question.text, partnerName)}</Text>
 
           <View style={styles.optionsWrap}>
             {current.options.map((opt) => {
