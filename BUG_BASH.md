@@ -15,8 +15,8 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 ## ⏳ Pending — regression tests for recent commits
 
 - [ ] **Together List (todo screen) partner name** — save a Bingo / Daily / Fantasy Wishes matched item that contains `{partner}` → open Together List → verify text shows partner name, not literal `{partner}` (`d830fed`)
-- [ ] **T-or-D `{partner}` POV substitution** — picker preview, answering-waiting, DoneCard should all show the PICKER's name in dare/truth text on both phones (`9c4d6b1`). Test with a dare like "Give {partner} a lap dance" from spicy pool — Óli's picker preview should read "Give Óli a lap dance" (his own name, since Ola is the doer targeting Óli), Ola's answering view should also read "Give Óli a lap dance".
-- [ ] **New manual T-or-D mode** — Wherever You Are → picker phase shows two rows: draw-random `[🤔 Truth] [🔥 Dare]` + write-your-own `[✏️ Truth] [✏️ Dare]` (dashed border) → tap ✏️ opens inline TextInput → type custom text → Send goes through `playCard` same as pool card → partner sees custom text like any other card (`fafc46a`)
+- [x] **T-or-D `{partner}` POV substitution** — ✅ PASSED across Sweet / Flirty / Spicy after hard-refresh + Vercel deploy landed (`9c4d6b1`).
+- [x] **New manual T-or-D mode** — ✅ PASSED. Wherever You Are picker shows draw-random + write-your-own rows, TextInput opens, Send flows through playCard (`fafc46a`).
 
 ## ⏳ Pending — Bug bash Round 2 remainder
 
@@ -25,6 +25,10 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 - [ ] **#7 WYR full flow** — Playful / Romantic / Spicy start, private answer, side-by-side reveal, match banner, save-to-list, session persistence across app close/reopen
 - [ ] **#7 Bingo full flow** — 5×5 grid renders face-down, flip + 2 picker passes, pending state, receiver Accept vs Skip, completed green state, reset month
 - [ ] **#9 Auth flows** — register (with 18+ checkbox + consent write) + login + pairing (invite code generation + entry) + couple-connect + password reset via email
+
+## ⏳ Pending — Manual content read-through (user, self-paced)
+
+- [ ] **Read every content-pool text by hand** — the automated sweeps caught structural issues (em dashes, `{partner}` tokens, first-position pronouns, POV substitution) but only a human can catch tone / typos / awkward phrasing / anything that "reads off" in context. Scope: DARES (274) · TRUTHS (310) · QUESTIONS (474) · DAILY_WISH_ITEMS (254) · FANTASY_WISHES_PRESETS (294) · BINGO_ACTIVITIES (55). Approach: read a category at a time, flag any that need rewriting, batch-fix. Estimate ~2-3h across several sessions.
 
 ## ⏳ Pending — Bug bash Round 3
 
