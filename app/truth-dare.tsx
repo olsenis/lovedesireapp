@@ -123,6 +123,20 @@ export default function TruthDareScreen() {
   const myScore = session?.scores[uid] ?? 0;
   const partnerScore = session?.scores[partnerId ?? ''] ?? 0;
 
+  // `targetName` is the name to substitute for `{partner}` in dare / truth
+  // card text. The content pool is authored FROM THE DOER'S POINT OF VIEW
+  // — "Kiss {partner}" means "you (doer) kiss your partner (the picker)".
+  // So the substitution name is always the PICKER's name, from whichever
+  // phone we're viewing on:
+  //   - I'm the picker (isMyTurn === true)  → picker is me       → my own name
+  //   - I'm the doer  (isMyTurn === false)  → picker is partner  → partner's name
+  // Previously we always used `partnerName`, which read correctly for the
+  // doer but flipped the target on the picker's preview + waiting views
+  // ("Give Ola7 a lap dance" appeared on Óli's picker preview when the
+  // dare was actually for Ola7 to do TO Óli). Solo mode is unaffected —
+  // in solo the player is the doer, so `partnerName` is still correct.
+  const targetName = isMyTurn ? (profile?.name ?? 'you') : partnerName;
+
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
   const handleStart = async (level: DareLevel) => {
@@ -684,7 +698,7 @@ export default function TruthDareScreen() {
                 {drawnCard.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
               </Text>
             </View>
-            <Text style={styles.cardText}>{personalise(drawnCard.text, partnerName)}</Text>
+            <Text style={styles.cardText}>{personalise(drawnCard.text, targetName)}</Text>
             <Text style={styles.previewHint}>
               {drawnCard.type === 'truth' ? `${partnerName} will answer this question` : `${partnerName} will do this dare`}
             </Text>
@@ -716,7 +730,7 @@ export default function TruthDareScreen() {
                 {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
               </Text>
             </View>
-            <Text style={styles.cardText}>{personalise(session.card.text, partnerName)}</Text>
+            <Text style={styles.cardText}>{personalise(session.card.text, targetName)}</Text>
 
             {/* ── TRUTH: picker waits ── */}
             {session.card.type === 'truth' && isMyTurn && (
@@ -847,6 +861,7 @@ export default function TruthDareScreen() {
             session={session}
             uid={uid}
             partnerName={partnerName}
+            targetName={targetName}
             cfg={cfg}
             onDone={handleDone}
             isMyTurn={isMyTurn}
@@ -866,11 +881,12 @@ export default function TruthDareScreen() {
 
 // ── Done card extracted to keep audio lifecycle isolated ──────────────────────
 function DoneCard({
-  session, uid, partnerName, cfg, onDone, isMyTurn,
+  session, uid, partnerName, targetName, cfg, onDone, isMyTurn,
 }: {
   session: TruthDareSession;
   uid: string;
   partnerName: string;
+  targetName: string;
   cfg: ReturnType<typeof Object.values>[0] & { emoji: string; label: string; color: string; textColor: string };
   onDone: () => void;
   isMyTurn: boolean;
@@ -906,7 +922,7 @@ function DoneCard({
           {card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
         </Text>
       </View>
-      <Text style={styles.cardText}>{personalise(card.text, partnerName)}</Text>
+      <Text style={styles.cardText}>{personalise(card.text, targetName)}</Text>
 
       {card.type === 'truth' && card.audioURL && (
         <View style={styles.answerReveal}>
