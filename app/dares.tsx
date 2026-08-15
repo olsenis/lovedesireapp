@@ -86,7 +86,10 @@ export default function DaresScreen() {
   // Initial tab honours `?tab=sent` deep-link from Home's completed-dare
   // nudge. Without it the nudge landed users on an empty "For me" tab
   // and the completed dare that fired the nudge looked invisible.
-  const params = useLocalSearchParams<{ tab?: string }>();
+  // `?compose=true` auto-opens the compose modal — Send-a-Dare mode
+  // card in truth-dare.tsx uses this so its "Compose →" CTA lands
+  // users directly in the form instead of the list.
+  const params = useLocalSearchParams<{ tab?: string; compose?: string }>();
   const [tab, setTab] = useState<Tab>(params.tab === 'sent' ? 'sent' : 'for-me');
 
   // Compose modal state
@@ -108,6 +111,14 @@ export default function DaresScreen() {
     if (!coupleId) return;
     return subscribeDares(coupleId, setDares);
   }, [coupleId]);
+
+  // Auto-open compose modal when arriving via `?compose=true` from the
+  // T-or-D "Send a Dare" mode card. One-shot on mount, no re-fire on
+  // param change (users can close the modal without re-triggering).
+  useEffect(() => {
+    if (params.compose === 'true') setShowCompose(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Partition dares by tab. For-me = dares I received. Sent = dares I sent.
   // Declined dares stay in the list so the sender sees the negative response
@@ -225,7 +236,17 @@ export default function DaresScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Dares</Text>
+        {/* Top-level tabs mirror the Play/Dare Log pair in /truth-dare
+            so both screens read as two views of the same Truth or Dare
+            hub. router.replace so nav history stays flat. */}
+        <View style={styles.topTabs}>
+          <TouchableOpacity style={styles.topTab} onPress={() => router.replace('/truth-dare' as any)} accessibilityRole="button" accessibilityLabel="Play">
+            <Text style={styles.topTabText}>Play</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.topTab, styles.topTabActive]} accessibilityRole="button" accessibilityLabel="Dare Log, current tab">
+            <Text style={[styles.topTabText, styles.topTabTextActive]}>Dare Log</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity onPress={() => setShowCompose(true)} accessibilityRole="button">
           <Text style={styles.sendLink}>+ Send</Text>
         </TouchableOpacity>
@@ -536,4 +557,13 @@ const styles = StyleSheet.create({
   proofViewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
   proofViewerImg: { width: '100%', height: '80%' },
   proofViewerHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: Spacing.md },
+
+  // Top-level tab pair (Play / Dare Log) shown in header. Mirrors the
+  // same pair in truth-dare.tsx picker header, kept intentionally
+  // compact so header stays a single-row chrome.
+  topTabs: { flexDirection: 'row', backgroundColor: Colors.white, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  topTab: { paddingVertical: 8, paddingHorizontal: 14 },
+  topTabActive: { backgroundColor: Colors.burgundy },
+  topTabText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  topTabTextActive: { color: Colors.cream },
 });

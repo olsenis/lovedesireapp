@@ -341,7 +341,19 @@ export default function TruthDareScreen() {
         <View style={styles.screen}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
-            <Text style={styles.title}>Truth or Dare</Text>
+            {/* Top-level tabs swap between Play (this screen) and Dare Log
+                (/dares screen) via router.replace so nav history stays
+                clean and neither screen stacks under the other. Only
+                shown on the picker view because switching mid-game would
+                abandon an active round visually. */}
+            <View style={styles.topTabs}>
+              <TouchableOpacity style={[styles.topTab, styles.topTabActive]} accessibilityRole="button" accessibilityLabel="Play, current tab">
+                <Text style={[styles.topTabText, styles.topTabTextActive]}>Play</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.topTab} onPress={() => router.replace('/dares' as any)} accessibilityRole="button" accessibilityLabel="Dare Log">
+                <Text style={styles.topTabText}>Dare Log</Text>
+              </TouchableOpacity>
+            </View>
             <View style={{ width: 60 }} />
           </View>
           <ScrollView contentContainerStyle={styles.modePickerWrap}>
@@ -378,7 +390,7 @@ export default function TruthDareScreen() {
                 and the Discover surface no longer has two competing dare
                 cards. The /dares screen itself is unchanged; this is a
                 surface consolidation, not a code merge. */}
-            <TouchableOpacity style={styles.modeCard} onPress={() => router.push('/dares' as any)} activeOpacity={0.85} accessibilityRole="button">
+            <TouchableOpacity style={styles.modeCard} onPress={() => router.push('/dares?compose=true' as any)} activeOpacity={0.85} accessibilityRole="button">
               <View style={styles.modeIconRow}>
                 <Text style={styles.modeIcon}>🎁</Text>
                 <Text style={styles.modeBadge}>For later</Text>
@@ -1050,4 +1062,13 @@ const styles = StyleSheet.create({
   soloResult: { backgroundColor: '#fff', borderRadius: 22, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', width: '100%', ...Shadow.sm, marginTop: Spacing.md },
   soloResultEyebrow: { fontFamily: Fonts.body, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', color: Colors.burgundy, marginBottom: Spacing.sm },
   soloResultText: { fontFamily: Fonts.headingItalic, fontSize: 20, color: Colors.burgundy, textAlign: 'center', lineHeight: 26 },
+
+  // Top-level tab pair (Play / Dare Log) shown in the picker header
+  // and mirrored in /dares. Kept intentionally compact so the header
+  // stays a single-row chrome. Same shape used in dares.tsx.
+  topTabs: { flexDirection: 'row', backgroundColor: Colors.white, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  topTab: { paddingVertical: 8, paddingHorizontal: 14 },
+  topTabActive: { backgroundColor: Colors.burgundy },
+  topTabText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
+  topTabTextActive: { color: Colors.cream },
 });
