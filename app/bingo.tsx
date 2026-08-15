@@ -10,6 +10,7 @@ import { HelpModal } from '../components/HelpModal';
 import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
+import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -69,7 +70,10 @@ export default function ActivityCardsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const activity = session.squares[revealIndex];
     await flipCard(coupleId, uid, revealIndex, partnerId);
-    notifyPartner(coupleId, uid, 'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${activity}", your turn!`).catch(() => {});
+    // Push notification lands on partner's device — substitute {partner}
+    // with THEIR partner's name (which is me, the sender). Use profile.name.
+    const partnerFacingText = personalise(activity, profile?.name);
+    notifyPartner(coupleId, uid, 'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${partnerFacingText}", your turn!`).catch(() => {});
     setRevealIndex(null);
   };
 
@@ -230,11 +234,11 @@ export default function ActivityCardsScreen() {
                 {isDone ? (
                   <>
                     <Text style={styles.cardDoneEmoji}>✓</Text>
-                    <Text style={styles.cardDoneText} numberOfLines={2}>{activity}</Text>
+                    <Text style={styles.cardDoneText} numberOfLines={2}>{personalise(activity, partner?.name)}</Text>
                   </>
                 ) : isRevealed ? (
                   <>
-                    <Text style={styles.cardRevealedText} numberOfLines={3}>{activity}</Text>
+                    <Text style={styles.cardRevealedText} numberOfLines={3}>{personalise(activity, partner?.name)}</Text>
                     {isPending && <Text style={styles.cardPendingLabel}>!</Text>}
                   </>
                 ) : (
@@ -257,7 +261,7 @@ export default function ActivityCardsScreen() {
           <Animated.View style={styles.revealCard}>
             <Text style={styles.revealLabel}>{partnerName} sent you a challenge</Text>
             <Text style={styles.revealActivity}>
-              {hasPendingCard ? session.squares[session.pendingCard!] : ''}
+              {hasPendingCard ? personalise(session.squares[session.pendingCard!], partner?.name) : ''}
             </Text>
             <TouchableOpacity style={styles.acceptBtn} onPress={handleDoItNow} activeOpacity={0.85} accessibilityRole="button">
               <Text style={styles.acceptBtnText}>✨ Let's do this now</Text>
@@ -298,7 +302,7 @@ export default function ActivityCardsScreen() {
           <Animated.View style={[styles.revealCard, { transform: [{ scale: scaleAnim }] }]}>
             <Text style={styles.revealLabel}>Your challenge</Text>
             <Text style={styles.revealActivity}>
-              {revealIndex !== null ? session.squares[revealIndex] : ''}
+              {revealIndex !== null ? personalise(session.squares[revealIndex], partner?.name) : ''}
             </Text>
             <Text style={styles.revealHint}>Do this together, then it's {partnerName}'s turn</Text>
             <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} activeOpacity={0.85} accessibilityRole="button">
@@ -321,7 +325,7 @@ export default function ActivityCardsScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modal}>
               <Text style={styles.modalTitle}>Unmark this card?</Text>
-              <Text style={styles.modalText}>"{undoCard.text}"</Text>
+              <Text style={styles.modalText}>"{personalise(undoCard.text, partner?.name)}"</Text>
               <Text style={[styles.modalText, { fontSize: 13, marginTop: 4 }]}>
                 It'll go back to pending. Use this if you tapped done by mistake.
               </Text>

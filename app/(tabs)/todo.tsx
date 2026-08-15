@@ -9,6 +9,7 @@ import { useHelp } from '../../hooks/useHelp';
 import { HelpModal } from '../../components/HelpModal';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { DATE_IDEAS } from '../../constants/content';
+import { personalise } from '../../services/personalise';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
@@ -178,7 +179,7 @@ export default function TogetherScreen() {
                 <View key={todo.id} style={styles.suggestCard}>
                   <Text style={styles.suggestEmoji}>{cat.emoji}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.suggestText}>{todo.text}</Text>
+                    <Text style={styles.suggestText}>{personalise(todo.text, partner?.name)}</Text>
                     <Text style={styles.suggestCat}>{cat.label}</Text>
                   </View>
                   <View style={styles.suggestActions}>
@@ -313,7 +314,7 @@ export default function TogetherScreen() {
                       <Text style={styles.detailCatEmoji}>{cat.emoji}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.detailTitle}>{selectedTodo.text}</Text>
+                      <Text style={styles.detailTitle}>{personalise(selectedTodo.text, partner?.name)}</Text>
                       <Text style={styles.detailMeta}>{addedByMe ? 'Added by you' : `Added by ${partner?.name ?? 'Partner'}`}{selectedTodo.source && selectedTodo.source !== 'manual' ? ` · from ${SOURCE_LABELS[selectedTodo.source]}` : ''}</Text>
                     </View>
                   </View>
@@ -392,7 +393,7 @@ function TodoRow({ todo, cat, uid, partnerName, onToggle, onDelete, onSelect }: 
   const sourceLabel = todo.source && todo.source !== 'manual' ? SOURCE_LABELS[todo.source] : null;
 
   return (
-    <TouchableOpacity style={[styles.todoRow, todo.completed && styles.todoRowDone]} onPress={() => onSelect(todo)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`${todo.text}, ${todo.completed ? 'completed' : 'not completed'}`}>
+    <TouchableOpacity style={[styles.todoRow, todo.completed && styles.todoRowDone]} onPress={() => onSelect(todo)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={`${personalise(todo.text, partnerName)}, ${todo.completed ? 'completed' : 'not completed'}`}>
       <TouchableOpacity style={[styles.check, todo.completed && styles.checkDone]} onPress={() => onToggle(todo)} accessibilityRole="button" accessibilityLabel={todo.completed ? 'Mark as not done' : 'Mark as done'}>
         {todo.completed && <Text style={styles.checkMark}>✓</Text>}
       </TouchableOpacity>
@@ -400,7 +401,7 @@ function TodoRow({ todo, cat, uid, partnerName, onToggle, onDelete, onSelect }: 
         <Text style={styles.catDotEmoji}>{cat.emoji}</Text>
       </View>
       <View style={styles.todoContent}>
-        <Text style={[styles.todoText, todo.completed && styles.todoTextDone]} numberOfLines={2}>{todo.text}</Text>
+        <Text style={[styles.todoText, todo.completed && styles.todoTextDone]} numberOfLines={2}>{personalise(todo.text, partnerName)}</Text>
         <View style={styles.todoMeta}>
           <Text style={styles.todoAdded}>{addedByMe ? 'You' : partnerName}</Text>
           {sourceLabel && <Text style={styles.todoSource}>· from {sourceLabel}</Text>}
