@@ -28,7 +28,7 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## ⏳ Pending — Bug bash Round 3
 
-- [ ] **Copy sweep** across all screens — empty states, error messages, tooltips, button labels. Focus: consistency of tone, no em dashes, no leftover `{partner}` tokens, no pronouns where names should be
+- [x] **Copy sweep** across all screens — ✅ shipped `b1bb14a`. Round 3 agent audit found 8 lingering issues + 1 defensive opportunity. All fixed: challenge.tsx error message (leaked "Permission denied, check Firebase rules"), profile.tsx pairing error fallback (leaked reason codes), inactive-partner hint on Home, T-or-D sent-truth banner, Us tab "Speak their language" card, state-union wait hint, 2 sensate guided prompts, T-or-D mode picker sub. Also defensive-wrapped `versus.tsx` question text in personalise(). **Zero em dashes** and **zero unwrapped `{partner}` tokens** confirmed clean across app/ and components/.
 - [ ] **LDR mode toggle test** — Profile → flip `isLongDistance` on/off → verify T-or-D pool filters (LDR sees `ldr + either`, non-LDR sees `physical + either`), Home ritual copy adapts, Notes / Countdowns / Roulette LDR variants surface correctly
 - [ ] **Unpaid user coverage** — create QA account with `couples/{id}.isPremium = false` in Firebase Console → verify gates on Discover / Us / paywalled screens / category gates in Daily + WYR + T-or-D + Challenge. Deferred to a dedicated session since user is currently on paid tier.
 
@@ -42,6 +42,9 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## ✅ Shipped this session (Aug 2026)
 
+- `b1bb14a` — Round 3 copy sweep: 9 findings fixed (leaked internal errors, bare pronouns on Home + T-or-D + love hub + state-union + sensate + profile) + defensive personalise() on versus
+- `b10c986` — CLAUDE.md companion-docs index (so future sessions know BUG_BASH / POLISH_TODO / TEST_CHECKLIST / etc. exist)
+- `51dedba` — Created BUG_BASH.md (this file)
 - `d830fed` — Bingo + Together List `personalise()` fix for literal `{partner}` render
 - `9c4d6b1` — T-or-D targetName fix (`{partner}` substitutes with picker's name from both phones' viewpoint)
 - `fafc46a` — H19: Delete async dares entirely + add manual truth/dare authoring in Wherever You Are
