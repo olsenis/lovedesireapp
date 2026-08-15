@@ -525,7 +525,7 @@ export default function TruthDareScreen() {
           tips={[
             `Your turn = you draw a card and send it to ${partnerName}`,
             `Pick Truth → ${partnerName} types or records their answer`,
-            `Pick Dare → ${partnerName} confirms they did it, then you confirm`,
+            `Pick Dare → ${partnerName} taps "Dare completed" when done, next turn is yours`,
             "Back saves the game, return anytime",
           ]}
           onDismiss={help.dismiss}

@@ -63,14 +63,22 @@ export async function confirmDare(coupleId: string, uid: string, _session: Truth
   // Single tap from the challenged partner ends the round — picker no
   // longer double-confirms. The click-through was the top friction point
   // in the game per bug bash Aug 2026; trust already lives here so the
-  // second confirmation was theater. Idempotent guard covers the double-tap
-  // race.
+  // second confirmation was theater.
+  //
+  // Guard on `phase === 'done'` not on `dareConfirmed.includes(uid)`.
+  // Reason: pre-H14 sessions could leave `dareConfirmed` populated
+  // (challenged had tapped) while phase stayed 'answering' (picker
+  // never double-confirmed). Under a uid-in-list guard, the new tap
+  // hits the early return and the session stays stuck. Under a
+  // phase-based guard, any tap while phase is still 'answering'
+  // advances to 'done' regardless of dareConfirmed state, unblocking
+  // stale docs.
   const ref = doc(db, 'couples', coupleId, 'truthDare', 'active');
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) return;
     const current = snap.data() as TruthDareSession;
-    if ((current.card?.dareConfirmed ?? []).includes(uid)) return;
+    if (current.phase === 'done') return;
     tx.update(ref, {
       'card.dareConfirmed': [uid],
       phase: 'done',
