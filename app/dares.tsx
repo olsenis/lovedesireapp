@@ -152,6 +152,13 @@ export default function DaresScreen() {
       setShowCompose(false);
     } catch {
       Alert.alert('Could not send dare', 'Please try again.');
+    } finally {
+      // Always reset sending — the old code only reset on error, so a
+      // successful send left `sending` stuck at true and the guard on
+      // line 144 blocked every subsequent Send tap in the same session.
+      // The most-common trigger for "waiting for you doesn't appear"
+      // reports is a user who sent one dare successfully, then sent a
+      // second one that silently no-oped.
       setSending(false);
     }
   };
