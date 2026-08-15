@@ -21,9 +21,30 @@ All app UI text, strings, labels, and comments must be in **English**. The devel
 
 The Desire repo root (`G:\forrit\Desire\`) is opened as an Obsidian vault — `.obsidian/` config lives in the repo. That's why `.obsidian/workspace.json` shows as modified in `git status` between sessions (Obsidian rewrites it on open/close). Consequences:
 
-- All `.md` files in the repo (CLAUDE.md, POST_LAUNCH.md, TEST_LAUNCH.md, TEST_CHECKLIST.md, APP_MAP.md, README.md, memory/*, plans/*, and any future markdown docs) are simultaneously version-controlled AND readable/editable in Obsidian by the developer.
+- All `.md` files in the repo are simultaneously version-controlled AND readable/editable in Obsidian by the developer.
 - Do NOT stage `.obsidian/workspace.json` when making commits — it's noise from the editor, not intentional changes. Skip it with `git reset HEAD .obsidian/workspace.json` before committing.
 - The vault workflow is used for content curation (e.g. the planned `sex-ed/` folder). Raw research notes (transcripts, drafts) that shouldn't ship in the repo belong under `.gitignore` even though they live in the vault. Only publish-ready content gets committed.
+
+### Companion docs — read/update these when relevant
+
+| File | Purpose | When to update |
+|---|---|---|
+| [`APP_MAP.md`](APP_MAP.md) | Feature inventory across Home / Discover / Us / Profile tabs. High-level "what exists in the app". | When a feature is added, removed, renamed, or moved between tabs. |
+| [`BUG_BASH.md`](BUG_BASH.md) | Live session tracker — active tests, regression items for recent commits, pending Round 2/3, launch-prep chain, rolling shipped log with commit hashes. | Every time an item ships / passes / blocks. Move items between sections; trim shipped-history to POLISH_TODO after a couple days. |
+| [`POLISH_TODO.md`](POLISH_TODO.md) | Polish + roadmap history. Long-form H-series entries with shipped notes, entertainment-review items, deferred POST_LAUNCH work. | When shipping a polish/roadmap item, add an entry with commit hash + files touched + why. When superseded, mark ⏸️ with pointer to replacement. |
+| [`TEST_CHECKLIST.md`](TEST_CHECKLIST.md) | Comprehensive per-feature manual test walkthrough — 13 sections, dozens of check items per feature. For the full "walk every screen with 2 phones" sweep. | Before launch or after a big refactor. Add items when a new feature ships; check off items during a full-sweep session. |
+| [`TEST_LAUNCH.md`](TEST_LAUNCH.md) | Launch-day test plan (pre-flight before App Store submission). | Right before submitting a build to App Review. |
+| [`LAUNCH_STATUS.md`](LAUNCH_STATUS.md) | Current launch readiness snapshot (what's ready, what's blocking). | Weekly, or after a significant milestone. |
+| [`POST_LAUNCH.md`](POST_LAUNCH.md) | Roadmap for after v1 ships. Deferred features, wish-list items, analytics-gated decisions. | When deferring work "to post-launch"; when a v1 launch decision needs to be re-visited later. |
+| [`APP_STORE_SUBMISSION.md`](APP_STORE_SUBMISSION.md) | App Store metadata + submission checklist (screenshots, description, age rating, privacy questionnaire). | When preparing an App Review submission. |
+| [`ADMIN_DASHBOARD.md`](ADMIN_DASHBOARD.md) | Admin dashboard architecture + stats/telemetry spec + admin-web deployment. | When adding new stats, callables, or admin-web features. |
+| [`ENTERTAINMENT_REVIEW.md`](ENTERTAINMENT_REVIEW.md) | Feature-by-feature entertainment score audit (source of the H-series polish roadmap in POLISH_TODO). | Rarely — this is a snapshot review. Update when re-running the audit. |
+| [`BRAND_RESEARCH.md`](BRAND_RESEARCH.md) | Competitive research, naming, brand positioning. | When re-doing competitive analysis. |
+| [`README.md`](README.md) | Public-facing repo README. | Rarely — for external readers, not devs. |
+| `memory/*.md` | Persistent memory index — user preferences, feedback, project state, references, prompts. | Automatically via the memory system when learning something worth persisting across sessions. |
+| `plans/*.md` | Implementation plans authored via plan mode. | Whenever ExitPlanMode is called (the plan file is set by the plan-mode system message). |
+
+Read the relevant doc before starting a task in its area; update it in the same commit that changes the underlying code.
 
 ## Commands
 
