@@ -3,22 +3,17 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   Modal,
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import { useAuth } from '../hooks/useAuth';
-import { useCouple } from '../hooks/useCouple';
-import { useHelp } from '../hooks/useHelp';
-import { HelpModal } from '../components/HelpModal';
-import { BrandDatePicker } from '../components/BrandDatePicker';
+import { BrandDatePicker } from './BrandDatePicker';
 import {
   Dare,
   subscribeDares,
@@ -33,13 +28,27 @@ import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
-import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
 
-type Tab = 'for-me' | 'sent';
+// AsyncDaresPanel — inline hub for user-authored async dares (compose,
+// pending inbox, sent history, complete-with-proof). Extracted Aug 2026
+// from the deleted /dares standalone screen so async dares live as a
+// section of the Truth or Dare picker rather than a separate route. See
+// the plan file and CLAUDE.md for context.
+//
+// The panel owns every piece of state related to async dares (subscription,
+// modals, compose draft) — the host screen only needs to pass identity
+// props. No route params, no back button, no headers here; those are the
+// host's responsibility.
 
-// Human-readable deadline. If null → "No deadline". If past → "Past deadline".
-// Otherwise "Due Fri 15 Aug at 20:00" style. Compact but complete.
+interface Props {
+  coupleId: string;
+  uid: string;
+  partnerId: string;
+  partnerName: string;
+  senderName: string;
+}
+
 function formatDeadline(ts: number | null): string {
   if (!ts) return 'No deadline';
   const d = new Date(ts);
@@ -50,7 +59,6 @@ function formatDeadline(ts: number | null): string {
   return past ? `Past deadline (${day})` : `Due ${day} at ${time}`;
 }
 
-// Human status label for the pill on each dare card.
 function statusLabel(status: Dare['status']): string {
   switch (status) {
     case 'pending': return 'Waiting';
@@ -71,26 +79,11 @@ function statusColor(status: Dare['status']): string {
   }
 }
 
-export default function DaresScreen() {
-  const { user, profile } = useAuth();
-  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
-  const help = useHelp('dares');
-  useTrackScreen('dares');
-
-  const coupleId = profile?.coupleId;
-  const uid = user?.uid ?? '';
-  const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
-  const partnerName = partner?.name ?? 'your partner';
-
+export function AsyncDaresPanel({ coupleId, uid, partnerId, partnerName, senderName }: Props) {
   const [dares, setDares] = useState<Dare[]>([]);
-  // Initial tab honours `?tab=sent` deep-link from Home's completed-dare
-  // nudge. Without it the nudge landed users on an empty "For me" tab
-  // and the completed dare that fired the nudge looked invisible.
-  // `?compose=true` auto-opens the compose modal — Send-a-Dare mode
-  // card in truth-dare.tsx uses this so its "Compose →" CTA lands
-  // users directly in the form instead of the list.
-  const params = useLocalSearchParams<{ tab?: string; compose?: string }>();
-  const [tab, setTab] = useState<Tab>(params.tab === 'sent' ? 'sent' : 'for-me');
+  // `?compose=true` deep-link auto-opens the compose modal on mount. Left
+  // wired for future Home-nudge deep-links that jump straight to compose.
+  const params = useLocalSearchParams<{ compose?: string }>();
 
   // Compose modal state
   const [showCompose, setShowCompose] = useState(false);
@@ -112,20 +105,20 @@ export default function DaresScreen() {
     return subscribeDares(coupleId, setDares);
   }, [coupleId]);
 
-  // Auto-open compose modal when arriving via `?compose=true` from the
-  // T-or-D "Send a Dare" mode card. One-shot on mount, no re-fire on
-  // param change (users can close the modal without re-triggering).
   useEffect(() => {
     if (params.compose === 'true') setShowCompose(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Partition dares by tab. For-me = dares I received. Sent = dares I sent.
-  // Declined dares stay in the list so the sender sees the negative response
-  // but flow terminates (no further actions).
+  // Partition dares into two sections. "For me" surfaces actionable
+  // incoming (pending → accept/decline, accepted → complete). "Sent"
+  // shows status updates on things I've challenged partner with. Both
+  // sections are visible together — no sub-tabs, since users typically
+  // want a full glance at what's in flight in both directions.
   const forMe = useMemo(() => dares.filter((d) => d.toUid === uid), [dares, uid]);
   const sent = useMemo(() => dares.filter((d) => d.fromUid === uid), [dares, uid]);
-  const activeList = tab === 'for-me' ? forMe : sent;
+  const forMePending = forMe.filter((d) => d.status === 'pending' || d.status === 'accepted');
+  const bothEmpty = dares.length === 0;
 
   const resetCompose = () => {
     setComposePrompt('');
@@ -147,18 +140,12 @@ export default function DaresScreen() {
       await createDare(coupleId, uid, partnerId, composePrompt, composeDeadline?.getTime() ?? null);
       trackEvent('dare_created');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      notifyPartner(coupleId, uid, 'A dare from ' + (profile?.name ?? 'your partner') + ' 🎁', composePrompt.slice(0, 100)).catch(() => {});
+      notifyPartner(coupleId, uid, 'A dare from ' + senderName + ' 🎁', composePrompt.slice(0, 100)).catch(() => {});
       resetCompose();
       setShowCompose(false);
     } catch {
       Alert.alert('Could not send dare', 'Please try again.');
     } finally {
-      // Always reset sending — the old code only reset on error, so a
-      // successful send left `sending` stuck at true and the guard on
-      // line 144 blocked every subsequent Send tap in the same session.
-      // The most-common trigger for "waiting for you doesn't appear"
-      // reports is a user who sent one dare successfully, then sent a
-      // second one that silently no-oped.
       setSending(false);
     }
   };
@@ -217,7 +204,6 @@ export default function DaresScreen() {
             setCompleting(false);
             return;
           }
-          // Non-fatal — complete without proof rather than blocking the flow.
           console.warn('Dare proof upload failed', e);
         }
       }
@@ -227,7 +213,7 @@ export default function DaresScreen() {
       notifyPartner(
         coupleId,
         uid,
-        (profile?.name ?? 'Your partner') + ' completed a dare 🎉',
+        senderName + ' completed a dare 🎉',
         completeTarget.prompt.slice(0, 100),
       ).catch(() => {});
       resetComplete();
@@ -237,115 +223,99 @@ export default function DaresScreen() {
     }
   };
 
-  return (
-    <View style={styles.screen}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
-          <Text style={styles.backText}>‹ Back</Text>
-        </TouchableOpacity>
-        {/* Top-level tabs mirror the Play/Dare Log pair in /truth-dare
-            so both screens read as two views of the same Truth or Dare
-            hub. router.replace so nav history stays flat. */}
-        <View style={styles.topTabs}>
-          <TouchableOpacity style={styles.topTab} onPress={() => router.replace('/truth-dare' as any)} accessibilityRole="button" accessibilityLabel="Play">
-            <Text style={styles.topTabText}>Play</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.topTab, styles.topTabActive]} accessibilityRole="button" accessibilityLabel="Dare Log, current tab">
-            <Text style={[styles.topTabText, styles.topTabTextActive]}>Dare Log</Text>
-          </TouchableOpacity>
+  const renderCard = (dare: Dare, isMineToDo: boolean) => (
+    <View key={dare.id} style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={[styles.statusPill, { backgroundColor: statusColor(dare.status) }]}>
+          <Text style={styles.statusPillText}>{statusLabel(dare.status)}</Text>
         </View>
-        <TouchableOpacity onPress={() => setShowCompose(true)} accessibilityRole="button">
-          <Text style={styles.sendLink}>+ Send</Text>
-        </TouchableOpacity>
+        <Text style={styles.cardDeadline}>{formatDeadline(dare.deadline)}</Text>
       </View>
 
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tabBtn, tab === 'for-me' && styles.tabBtnActive]}
-          onPress={() => setTab('for-me')}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.tabText, tab === 'for-me' && styles.tabTextActive]}>For me</Text>
-          {forMe.filter((d) => d.status === 'pending').length > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{forMe.filter((d) => d.status === 'pending').length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabBtn, tab === 'sent' && styles.tabBtnActive]}
-          onPress={() => setTab('sent')}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.tabText, tab === 'sent' && styles.tabTextActive]}>Sent</Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.cardPrompt}>{dare.prompt}</Text>
 
-      <ScrollView contentContainerStyle={styles.list}>
-        {activeList.length === 0 && (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>🎁</Text>
-            <Text style={styles.emptyTitle}>
-              {tab === 'for-me' ? 'No dares yet' : 'Nothing sent yet'}
-            </Text>
-            <Text style={styles.emptyBody}>
-              {tab === 'for-me'
-                ? `Nothing waiting for you. Send ${partnerName} a challenge with the + button above.`
-                : `Tap + Send at the top to challenge ${partnerName} to something.`}
-            </Text>
-          </View>
+      {dare.proofNote && (
+        <Text style={styles.cardProofNote}>&ldquo;{dare.proofNote}&rdquo;</Text>
+      )}
+
+      {dare.proofURL && (
+        <TouchableOpacity onPress={() => setViewingProof(dare.proofURL!)} activeOpacity={0.85} accessibilityRole="button">
+          <Image source={{ uri: dare.proofURL }} style={styles.cardProofImg} contentFit="cover" />
+        </TouchableOpacity>
+      )}
+
+      <View style={styles.actionsRow}>
+        {isMineToDo && dare.status === 'pending' && (
+          <>
+            <TouchableOpacity style={styles.declineBtn} onPress={() => handleDecline(dare)} accessibilityRole="button">
+              <Text style={styles.declineText}>Decline</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(dare)} accessibilityRole="button">
+              <Text style={styles.acceptText}>Accept</Text>
+            </TouchableOpacity>
+          </>
         )}
+        {isMineToDo && dare.status === 'accepted' && (
+          <TouchableOpacity style={styles.completeBtn} onPress={() => openComplete(dare)} accessibilityRole="button">
+            <Text style={styles.completeText}>Mark complete →</Text>
+          </TouchableOpacity>
+        )}
+        {!isMineToDo && dare.status === 'pending' && (
+          <TouchableOpacity onPress={() => handleWithdraw(dare)} style={styles.withdrawLink} accessibilityRole="button">
+            <Text style={styles.withdrawText}>Withdraw</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
 
-        {activeList.map((dare) => {
-          const isMineToDo = tab === 'for-me';
-          return (
-            <View key={dare.id} style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={[styles.statusPill, { backgroundColor: statusColor(dare.status) }]}>
-                  <Text style={styles.statusPillText}>{statusLabel(dare.status)}</Text>
-                </View>
-                <Text style={styles.cardDeadline}>{formatDeadline(dare.deadline)}</Text>
-              </View>
+  return (
+    <View style={styles.container}>
+      {/* Section divider matches the Home Tonight's Picks pattern so
+          the T-or-D picker reads as a two-section scroll (mode cards +
+          async dares) rather than two unrelated blocks. */}
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerLabel}>Async Dares</Text>
+        <View style={styles.dividerLine} />
+      </View>
 
-              <Text style={styles.cardPrompt}>{dare.prompt}</Text>
+      {bothEmpty && (
+        <View style={styles.empty}>
+          <Text style={styles.emptyEmoji}>🎁</Text>
+          <Text style={styles.emptyTitle}>No async dares yet</Text>
+          <Text style={styles.emptyBody}>
+            Send {partnerName} a challenge with an optional deadline. They upload proof when it is done.
+          </Text>
+        </View>
+      )}
 
-              {dare.proofNote && (
-                <Text style={styles.cardProofNote}>&ldquo;{dare.proofNote}&rdquo;</Text>
-              )}
+      {forMePending.length > 0 && (
+        <View style={styles.sectionGroup}>
+          <Text style={styles.sectionLabel}>
+            📥 For you {forMePending.length > 1 ? `(${forMePending.length})` : ''}
+          </Text>
+          {forMePending.map((d) => renderCard(d, true))}
+        </View>
+      )}
 
-              {dare.proofURL && (
-                <TouchableOpacity onPress={() => setViewingProof(dare.proofURL!)} activeOpacity={0.85} accessibilityRole="button">
-                  <Image source={{ uri: dare.proofURL }} style={styles.cardProofImg} contentFit="cover" />
-                </TouchableOpacity>
-              )}
+      {sent.length > 0 && (
+        <View style={styles.sectionGroup}>
+          <Text style={styles.sectionLabel}>
+            📤 Sent {sent.length > 1 ? `(${sent.length})` : ''}
+          </Text>
+          {sent.map((d) => renderCard(d, false))}
+        </View>
+      )}
 
-              {/* Actions depend on tab + status */}
-              <View style={styles.actionsRow}>
-                {isMineToDo && dare.status === 'pending' && (
-                  <>
-                    <TouchableOpacity style={styles.declineBtn} onPress={() => handleDecline(dare)} accessibilityRole="button">
-                      <Text style={styles.declineText}>Decline</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(dare)} accessibilityRole="button">
-                      <Text style={styles.acceptText}>Accept</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-                {isMineToDo && dare.status === 'accepted' && (
-                  <TouchableOpacity style={styles.completeBtn} onPress={() => openComplete(dare)} accessibilityRole="button">
-                    <Text style={styles.completeText}>Mark complete →</Text>
-                  </TouchableOpacity>
-                )}
-                {!isMineToDo && dare.status === 'pending' && (
-                  <TouchableOpacity onPress={() => handleWithdraw(dare)} style={styles.withdrawLink} accessibilityRole="button">
-                    <Text style={styles.withdrawText}>Withdraw</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          );
-        })}
-      </ScrollView>
+      <TouchableOpacity
+        style={styles.sendCta}
+        onPress={() => setShowCompose(true)}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+      >
+        <Text style={styles.sendCtaText}>+ Send a new dare</Text>
+      </TouchableOpacity>
 
       {/* Compose modal */}
       <Modal visible={showCompose} transparent animationType="slide" onRequestClose={() => setShowCompose(false)}>
@@ -446,7 +416,7 @@ export default function DaresScreen() {
         </Modal>
       )}
 
-      {/* Proof viewer — tap on a proof photo to see full size */}
+      {/* Proof viewer */}
       {viewingProof && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setViewingProof(null)}>
           <TouchableOpacity style={styles.proofViewer} activeOpacity={1} onPress={() => setViewingProof(null)} accessibilityRole="button">
@@ -455,54 +425,24 @@ export default function DaresScreen() {
           </TouchableOpacity>
         </Modal>
       )}
-
-      <HelpModal
-        visible={help.visible}
-        title="Dares"
-        description={`Send ${partnerName} a challenge, they complete it by a deadline. Works when you're apart, this isn't Truth or Dare's same-room mechanic.`}
-        tips={[
-          'Tap + Send at top-right to write a challenge',
-          'Add an optional deadline so it doesn\'t sit forever',
-          `${partnerName} can accept or decline (no shame either way)`,
-          'Complete with an optional photo proof or just a note',
-        ]}
-        onDismiss={help.dismiss}
-        onDismissAll={help.dismissAll}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.cream },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 56, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  back: { width: 60 },
-  backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
-  title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
-  sendLink: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  container: { paddingHorizontal: Spacing.lg, gap: Spacing.sm },
 
-  tabBar: {
-    flexDirection: 'row', marginHorizontal: Spacing.lg, marginVertical: Spacing.sm,
-    backgroundColor: Colors.white, borderRadius: Radius.full,
-    borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
-  },
-  tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
-  tabBtnActive: { backgroundColor: Colors.burgundy },
-  tabText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
-  tabTextActive: { color: Colors.cream },
-  tabBadge: { backgroundColor: '#F9A825', borderRadius: 10, minWidth: 20, paddingHorizontal: 6, paddingVertical: 2, alignItems: 'center' },
-  tabBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: Spacing.lg, marginBottom: Spacing.md },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, letterSpacing: 2.5, textTransform: 'uppercase' },
 
-  list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md, paddingTop: Spacing.sm },
+  sectionGroup: { gap: Spacing.sm, marginBottom: Spacing.sm },
+  sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.xs },
 
-  empty: { alignItems: 'center', paddingVertical: Spacing.xxl, gap: Spacing.sm, paddingHorizontal: Spacing.md },
-  emptyEmoji: { fontSize: 56 },
-  emptyTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, textAlign: 'center' },
-  emptyBody: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
+  empty: { alignItems: 'center', paddingVertical: Spacing.lg, gap: Spacing.xs, paddingHorizontal: Spacing.md },
+  emptyEmoji: { fontSize: 44 },
+  emptyTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy, textAlign: 'center' },
+  emptyBody: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
 
   card: {
     backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg,
@@ -525,6 +465,13 @@ const styles = StyleSheet.create({
   completeText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.white },
   withdrawLink: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center' },
   withdrawText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, textDecorationLine: 'underline' },
+
+  sendCta: {
+    marginTop: Spacing.md, paddingVertical: Spacing.md, alignItems: 'center',
+    borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.white,
+  },
+  sendCtaText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
@@ -564,13 +511,4 @@ const styles = StyleSheet.create({
   proofViewer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', alignItems: 'center', justifyContent: 'center' },
   proofViewerImg: { width: '100%', height: '80%' },
   proofViewerHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: Spacing.md },
-
-  // Top-level tab pair (Play / Dare Log) shown in header. Mirrors the
-  // same pair in truth-dare.tsx picker header, kept intentionally
-  // compact so header stays a single-row chrome.
-  topTabs: { flexDirection: 'row', backgroundColor: Colors.white, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
-  topTab: { paddingVertical: 8, paddingHorizontal: 14 },
-  topTabActive: { backgroundColor: Colors.burgundy },
-  topTabText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
-  topTabTextActive: { color: Colors.cream },
 });

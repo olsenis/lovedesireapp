@@ -89,14 +89,20 @@ Ordered roughly by impact / effort ratio (best first).
 ### H5 Async Dares launcher tile — ✅ shipped, then ↩️ reversed by H14 (Aug 2026)
 Tile added, then removed 2 days later when async dares got consolidated into Truth or Dare's mode picker. Reason: after H5 landed, Home + Discover + Home-nudge stack all surfaced "Dares" independently of "Truth or Dare", creating a naming/brand collision. H14 fixes the collision; the discoverability gap that H5 was solving is now covered by the T-or-D tile → Send a Dare mode. Home nudges for in-flight dares still deep-link to /dares.
 
-### H17 T-or-D ↔ Dare Log unified via top-tab pair — ✅ shipped (next commit)
-**Files:** `app/truth-dare.tsx`, `app/dares.tsx`
+### H18 AsyncDaresPanel folded into T-or-D picker (deletes /dares route) — ✅ shipped (next commit)
+**Files:** NEW `components/AsyncDaresPanel.tsx`; MOD `app/truth-dare.tsx`, `app/(tabs)/index.tsx`; DELETE `app/dares.tsx`
 **Change:**
-- Added a `[Play] [Dare Log]` segmented control to both screen headers. Play = /truth-dare, Dare Log = /dares. Tabs use `router.replace` (not push) so nav history stays flat — neither screen stacks under the other. User perception: tab flip. Mechanism: route swap. This is Phase 1 of the merge — Phase 2 (true state-preserving inline via component extraction) deferred to post-launch if state loss on tab-swap becomes an actual pain point.
-- Play tab only rendered on T-or-D picker (not during active game phases) so mid-round swap cannot visually abandon a session.
-- T-or-D "Send a Dare" mode card now routes to `/dares?compose=true` — dares.tsx auto-opens compose modal on mount when that param is present. Meaningful distinction: Send-a-Dare mode card = compose immediately, Dare Log tab = browse pending + sent history.
-- CLAUDE.md updated with the new picker header shape + tab semantics.
-**Why:** User caught during Bug bash Round 2 that `/dares` was a black box only reachable via transient Home nudges or the T-or-D Send-a-Dare mode card. The async dare history — a valuable relationship artifact — had no discoverable entry from any tab. User's stated ask: "flipi history eða eitthvað álíka" (tab history or similar).
+- The H17 tab-pair `[Play] [Dare Log]` was a route-swap illusion that user perceived as disconnected — two separate screens pretending to be tabs. Newly-sent async dares also weren't visibly landing in the Dare Log for the user's test flow. Replaced the entire model with an inline panel.
+- New `<AsyncDaresPanel/>` component owns everything the old /dares screen did: subscribeDares, compose modal, complete-with-proof modal, proof viewer modal, accept/decline/withdraw actions. Props are just identity: `{ coupleId, uid, partnerId, partnerName, senderName }`. No route params, no header chrome — the host screen provides those.
+- `truth-dare.tsx` picker view: removed the `[Play] [Dare Log]` top-tab pair, restored the "Truth or Dare" title, removed the `🎁 Send a Dare` mode card (redundant with the panel's compose button), and mounted `<AsyncDaresPanel/>` at the bottom of the mode-cards ScrollView. Picker now has 2 mode cards (Solo + Live) + async panel section. Async panel is only rendered inside `mode === 'picker'` — solo mode and every multi-mode phase render as before with zero async chrome.
+- Panel layout: divider "─── ASYNC DARES ───" → optional empty state → optional "📥 For you" section (pending/accepted incoming) → optional "📤 Sent" section (my outgoing with status pill) → "+ Send a new dare" CTA. Both sections visible simultaneously — no sub-tabs, since users want a full glance in both directions.
+- Home nudges (pending-from-partner + completed-from-partner) now route to `/truth-dare` instead of `/dares`. No `?tab=sent` or `?compose=true` params needed — panel shows both sections by default.
+- `/dares` route file deleted. `services/dareService.ts` unchanged — data model + Firestore paths identical, only UI surface moved.
+- CLAUDE.md updated: Truth or Dare multiplayer section rewritten, Home Tonight's Picks paragraph updated to reference `/truth-dare` instead of `/dares`.
+**Why:** User caught during Bug bash Round 2 that H17's tab-pair pattern felt disconnected ("history sé síða hverfi alveg" — history should disappear as its own page entirely) and asked for the async dare overview to be inline below the T-or-D content per screenshot. Also solves the H17-era "list doesn't update" report by replacing the surface where the bug was observed (any subscription issue if it exists will now manifest in the panel and be diagnosed there).
+
+### H17 T-or-D ↔ Dare Log unified via top-tab pair — ⏸️ superseded by H18 (Aug 2026)
+Same-day supersede. The route-swap tab pair (added, then removed) proved too disconnected — user perceived two separate screens pretending to be tabs, not a unified hub. H18 deletes both the tab pair and the /dares route, folding async dares into the T-or-D picker as an inline panel component instead.
 
 ### H16 3-way dare context (ldr / either / physical) — ✅ shipped (next commit)
 **Files:** `constants/content.ts` (Dare interface + all 111 previously-marked dares), `app/truth-dare.tsx` (filter update)

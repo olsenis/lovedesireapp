@@ -443,7 +443,10 @@ export default function HomeScreen() {
         ? `${pendingDaresForMe.length} dares from ${partner?.name ?? 'your partner'}`
         : `A dare from ${partner?.name ?? 'your partner'}`,
       subtitle: first.prompt.length > 60 ? first.prompt.slice(0, 57) + '...' : first.prompt,
-      route: '/dares',
+      // /dares route was folded into /truth-dare picker Aug 2026 (H18).
+      // The panel shows both "For you" and "Sent" sections side-by-side
+      // so no tab/section deep-link param is needed.
+      route: '/truth-dare',
       bg: '#FFF3E0',
     });
   }
@@ -454,11 +457,7 @@ export default function HomeScreen() {
       subtitle: freshlyCompletedFromPartner.length > 1
         ? `${freshlyCompletedFromPartner.length} of your dares, tap to see`
         : 'Tap to see how it went',
-      // Deep-link to the "Sent" tab — a partner-completed dare lives in
-      // the dares I sent (not the "For me" default). Without this the
-      // nudge dropped users on an empty "For me" tab and the completed
-      // dare looked invisible.
-      route: '/dares?tab=sent',
+      route: '/truth-dare',
       bg: '#F3E5F5',
     });
   }
