@@ -17,6 +17,7 @@ import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../serv
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
 import { subscribeWYR, WYRSession } from '../../services/wyrService';
+import { subscribeTruthDare, TruthDareSession } from '../../services/truthDareService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
 import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
@@ -228,6 +229,7 @@ export default function HomeScreen() {
   const [dailyQDoc, setDailyQDoc] = useState<DailyQuestionDoc | null>(null);
   const [dailyWishDoc, setDailyWishDoc] = useState<DailyWishDoc | null>(null);
   const [wyrSession, setWyrSession] = useState<WYRSession | null>(null);
+  const [truthDareSession, setTruthDareSession] = useState<TruthDareSession | null>(null);
   const [intimacyEntries, setIntimacyEntries] = useState<IntimacyEntry[]>([]);
   const [recentSparks, setRecentSparks] = useState<SparkEntry[]>([]);
   const [sparkSent, setSparkSent] = useState(false);
@@ -301,6 +303,7 @@ export default function HomeScreen() {
     const u4 = subscribeDailyQuestions(coupleId, setDailyQDoc, { isLDR: !!couple?.isLongDistance });
     const u5 = subscribeDailyWishes(coupleId, setDailyWishDoc);
     const u6 = subscribeWYR(coupleId, setWyrSession);
+    const u18 = subscribeTruthDare(coupleId, setTruthDareSession);
     const u7 = subscribeIntimacyLog(coupleId, setIntimacyEntries);
     const u8 = subscribeRecentSparks(coupleId, setRecentSparks);
     const u10 = subscribeMemories(coupleId, setMemories);
@@ -310,7 +313,7 @@ export default function HomeScreen() {
     const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
     const u15 = subscribeTodos(coupleId, setTodos);
     const u16 = subscribeSensateProgress(coupleId, setSensateProgress);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -574,6 +577,49 @@ export default function HomeScreen() {
     }
   }
 
+  // Truth or Dare (multiplayer session, Wherever You Are mode) — Aug 2026:
+  // T-or-D was previously invisible on Home despite being turn-based just
+  // like WYR / Bingo. Two actionable states surface as nudges. States
+  // are mutually exclusive (answering vs picking) so no dedupe needed.
+  //   - Partner picked and sent a truth/dare → I need to answer/do.
+  //     Highest priority — a live card is out and I'm the doer.
+  //   - Turn just came to me but I haven't picked a card yet → gentle
+  //     prompt to open the game.
+  // Card-text preview goes through personalise() with `profile?.name`
+  // because the pool text is authored from doer's POV and I (the doer
+  // for this nudge) am the target — `{partner}` in the text should
+  // substitute with my own name.
+  if (truthDareSession && partnerId && truthDareSession.turnUid) {
+    const isDoerWaitingToAnswer =
+      truthDareSession.phase === 'answering' &&
+      truthDareSession.turnUid !== uid &&
+      truthDareSession.card &&
+      !(truthDareSession.card.dareConfirmed ?? []).includes(uid) &&
+      !truthDareSession.card.answeredBy;
+    const isPickerAtNewTurn =
+      truthDareSession.phase === 'picking' && truthDareSession.turnUid === uid;
+
+    if (isDoerWaitingToAnswer && truthDareSession.card) {
+      const cardText = personalise(truthDareSession.card.text, profile?.name);
+      const kind = truthDareSession.card.type === 'truth' ? 'Truth' : 'Dare';
+      list.push({
+        emoji: '🎯',
+        title: `${partner?.name ?? 'Partner'} sent you a ${kind}`,
+        subtitle: `"${cardText.slice(0, 60)}${cardText.length > 60 ? '...' : ''}"`,
+        route: '/truth-dare',
+        bg: '#F3E5F5',
+      });
+    } else if (isPickerAtNewTurn) {
+      list.push({
+        emoji: '🎯',
+        title: 'Your turn in Truth or Dare',
+        subtitle: `${partner?.name ?? 'Partner'} is waiting for you to pick a card`,
+        route: '/truth-dare',
+        bg: '#F3E5F5',
+      });
+    }
+  }
+
   // Monthly narrative nudge (#7 Phase 1) — days 1-7 of a new month, when
   // the previous month has ≥3 entries there's a story to tell. Routes to
   // Stats tab directly via ?tab=stats so the user lands ON the narrative.
@@ -811,7 +857,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

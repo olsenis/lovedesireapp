@@ -89,6 +89,17 @@ Ordered roughly by impact / effort ratio (best first).
 ### H5 Async Dares launcher tile — ✅ shipped, then ↩️ reversed by H14 (Aug 2026)
 Tile added, then removed 2 days later when async dares got consolidated into Truth or Dare's mode picker. Reason: after H5 landed, Home + Discover + Home-nudge stack all surfaced "Dares" independently of "Truth or Dare", creating a naming/brand collision. H14 fixes the collision; the discoverability gap that H5 was solving is now covered by the T-or-D tile → Send a Dare mode. Home nudges for in-flight dares still deep-link to /dares.
 
+### H20 Truth or Dare Home nudges — ✅ shipped (next commit)
+**Files:** `app/(tabs)/index.tsx`, `CLAUDE.md`
+**Change:**
+- T-or-D live game had zero Home nudges (unlike WYR, Bingo, Daily, FW). If Óli picked a card and sent it to Ola, Ola had no Home cue that a live card was waiting — she had to manually navigate to `/truth-dare` to see it. Same gap when the turn transitioned back to Ola in `picking` phase.
+- Added subscription to `truthDareSession` via `subscribeTruthDare` in Home (u18).
+- Two mutually-exclusive nudge branches after the WYR nudge:
+  - **`phase='answering' && turnUid !== uid && card && !dareConfirmed.includes(uid) && !answeredBy`** → `🎯 {partner} sent you a Truth/Dare` with card-text preview (first 60 chars, personalise'd with `profile.name` so `{partner}` tokens resolve to my own name since I'm the doer)
+  - **`phase='picking' && turnUid === uid`** → `🎯 Your turn in Truth or Dare` with subtitle "{partner} is waiting for you to pick a card"
+- Preview snippet routes through `personalise(text, profile?.name)` — the pool text is authored from doer's POV and I (the target) am the picker's opposite, so `{partner}` should render as my own name.
+**Why:** User caught during Bug bash Round 2 that T-or-D was invisible on Home despite being turn-based just like WYR + Bingo. The other multiplayer sessions surface as nudges — T-or-D shouldn't be an exception.
+
 ### H19 Async dares deleted entirely, manual T-or-D authoring added in live game — ✅ shipped (next commit)
 **Files:** DELETE `components/AsyncDaresPanel.tsx`, `services/dareService.ts`; MOD `app/truth-dare.tsx`, `app/(tabs)/index.tsx`, `services/storageService.ts` (drop `uploadDareProof`)
 **Change:**
