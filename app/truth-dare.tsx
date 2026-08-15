@@ -41,6 +41,14 @@ export default function TruthDareScreen() {
   const [loading, setLoading] = useState(true);
   useTrackScreen('truth_dare');
 
+  // LDR filter: when couple is long-distance, drop every dare that
+  // requires physical proximity (kiss/touch/hold/oral/positions) so the
+  // pool contains only remote-safe dares (voice message, video call,
+  // camera, text, send-something). Applied to every DARES read below.
+  // Truths need no filter — they are all verbal/typed/audio by nature.
+  const isLDR = !!couple?.isLongDistance;
+  const daresPool = isLDR ? DARES.filter(d => d.remote) : DARES;
+
   // Mode picker — 'picker' (default) | 'solo' (single-phone wheel) | 'multi' (level select for multiplayer)
   const [mode, setMode] = useState<'picker' | 'solo' | 'multi'>('picker');
 
@@ -115,7 +123,7 @@ export default function TruthDareScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const pool = type === 'truth'
       ? TRUTHS.filter(t => t.level === session.level)
-      : DARES.filter(d => d.level === session.level);
+      : daresPool.filter(d => d.level === session.level);
     if (pool.length === 0) return;
     setDrawnCard({ type, text: pickRandom(pool).text });
   };
@@ -126,7 +134,7 @@ export default function TruthDareScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const pool = (drawnCard.type === 'truth'
       ? TRUTHS.filter(t => t.level === session.level)
-      : DARES.filter(d => d.level === session.level)
+      : daresPool.filter(d => d.level === session.level)
     ).filter(item => item.text !== drawnCard.text);
     if (pool.length === 0) return;
     setDrawnCard({ type: drawnCard.type, text: pickRandom(pool).text });
@@ -249,7 +257,7 @@ export default function TruthDareScreen() {
     if (soloLevel === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
     const pool = kind === 'truth'
       ? TRUTHS.filter(t => t.level === soloLevel)
-      : DARES.filter(d => d.level === soloLevel);
+      : daresPool.filter(d => d.level === soloLevel);
     if (pool.length === 0) return;
     const picked = pickRandom(pool);
 
@@ -288,7 +296,7 @@ export default function TruthDareScreen() {
     if (soloSpinning) return;
     if (soloLevel === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
     const truthPool = TRUTHS.filter(t => t.level === soloLevel);
-    const darePool = DARES.filter(d => d.level === soloLevel);
+    const darePool = daresPool.filter(d => d.level === soloLevel);
     const mixed = [
       ...truthPool.map(t => ({ kind: 'truth' as const, text: t.text })),
       ...darePool.map(d => ({ kind: 'dare' as const, text: d.text })),

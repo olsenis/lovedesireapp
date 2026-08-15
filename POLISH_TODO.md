@@ -89,6 +89,16 @@ Ordered roughly by impact / effort ratio (best first).
 ### H5 Async Dares launcher tile — ✅ shipped, then ↩️ reversed by H14 (Aug 2026)
 Tile added, then removed 2 days later when async dares got consolidated into Truth or Dare's mode picker. Reason: after H5 landed, Home + Discover + Home-nudge stack all surfaced "Dares" independently of "Truth or Dare", creating a naming/brand collision. H14 fixes the collision; the discoverability gap that H5 was solving is now covered by the T-or-D tile → Send a Dare mode. Home nudges for in-flight dares still deep-link to /dares.
 
+### H15 LDR dare filter + 85 remote-safe dares authored — ✅ shipped (next commit)
+**Files:** `constants/content.ts` (Dare interface + 85 new dares), `app/truth-dare.tsx` (filter logic), CLAUDE.md (DARES content section)
+**Change:**
+- Added `remote?: boolean` to the `Dare` interface. `true` = LDR-safe (voice memo, video call, camera, text/sext, photograph, coordinated ritual, solo-and-report-back). Unset/false = requires physical proximity.
+- Tagged the pre-existing 189 dares (agent pass): 13 Sweet, 3 Flirty, 10 Spicy marked as remote-safe. Flirty at 3 was unplayable — LDR user would see the same 3 dares repeat within 3 rounds.
+- Authored 85 new remote-safe dares via 3 parallel agents (25 Sweet + 35 Flirty + 25 Spicy) with detailed briefs (character voice + tone bible references + 10+ rules + test rubric + 5+ positive + 7-8 negative examples per level). Post-merge pool: **Sweet 38, Flirty 38, Spicy 35** remote-safe out of Sweet 70, Flirty 81, Spicy 123 total.
+- Added filter in `truth-dare.tsx`: `const daresPool = isLDR ? DARES.filter(d => d.remote) : DARES;` derived at the top, all 4 DARES read sites (solo + multi × handleChoose + handleRedraw) flow through it. Truths need no filter since all verbal/typed/audio.
+- Agent prompts saved in `scratchpad/agent-prompt-{sweet,flirty,spicy}-remote.md` as audit trail. Per-agent output files retained in scratchpad for spot-check verification.
+**Why:** User caught the mismatch during Bug bash Round 2 — "Wherever You Are" mode name promised LDR support but dare content pool was near-100% physical-together. LDR couples were seeing "Kiss their neck for 30 seconds" and hitting a dead end. Filter + content investment makes the mode brand honest across all three levels.
+
 ### H14 Merge Async Dares under Truth or Dare + single-tap dare confirm — ✅ shipped (next commit)
 **Files:** `app/truth-dare.tsx`, `services/truthDareService.ts`, `app/(tabs)/discover.tsx`, `app/(tabs)/index.tsx`
 **Change (surface merge):**
