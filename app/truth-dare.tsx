@@ -13,7 +13,6 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { AsyncDaresPanel } from '../components/AsyncDaresPanel';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
 import { personalise } from '../services/personalise';
 import {
@@ -78,6 +77,13 @@ export default function TruthDareScreen() {
 
   // Local card drawn before sending
   const [drawnCard, setDrawnCard] = useState<{ type: 'truth' | 'dare'; text: string } | null>(null);
+
+  // Manual authoring state — user types their own truth/dare instead of
+  // drawing from the pool. Aug 2026 replacement for the deleted async
+  // dares feature: same user-value (custom content) delivered inside the
+  // live game flow with no deadline / no proof / no separate hub.
+  const [manualType, setManualType] = useState<'truth' | 'dare' | null>(null);
+  const [manualText, setManualText] = useState('');
 
   // Truth text answer
   const [answerText, setAnswerText] = useState('');
@@ -155,6 +161,24 @@ export default function TruthDareScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await playCard(coupleId, { type: drawnCard.type, text: drawnCard.text });
     setDrawnCard(null);
+  };
+
+  // Manual mode — enter authoring, cancel, and commit typed card.
+  const handleStartManual = (type: 'truth' | 'dare') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setManualType(type);
+    setManualText('');
+  };
+  const handleCancelManual = () => {
+    setManualType(null);
+    setManualText('');
+  };
+  const handleSendManual = async () => {
+    if (!coupleId || !manualType || !manualText.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await playCard(coupleId, { type: manualType, text: manualText.trim() });
+    setManualType(null);
+    setManualText('');
   };
 
   // Text answer
@@ -371,21 +395,6 @@ export default function TruthDareScreen() {
               <Text style={[styles.modeCta, styles.modeCtaOnDark]}>Begin →</Text>
             </TouchableOpacity>
 
-            {/* Async dares — the standalone /dares screen was folded
-                into this picker as an inline panel Aug 2026 (H18). The
-                panel handles its own subscription, compose modal,
-                complete flow, and proof viewer. Only visible on picker
-                view — hidden during solo and multi phases so an active
-                round is never competing with async browsing chrome. */}
-            {coupleId && partnerId && (
-              <AsyncDaresPanel
-                coupleId={coupleId}
-                uid={uid}
-                partnerId={partnerId}
-                partnerName={partnerName}
-                senderName={profile?.name ?? 'Your partner'}
-              />
-            )}
           </ScrollView>
         </View>
       );
@@ -589,17 +598,79 @@ export default function TruthDareScreen() {
         {/* ═══════════════════════════════════════════════════════════
             PHASE: PICKING
         ═══════════════════════════════════════════════════════════ */}
-        {session.phase === 'picking' && isMyTurn && !drawnCard && (
-          <View style={styles.choiceRow}>
-            <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.choiceBtnEmoji}>🤔</Text>
-              <Text style={styles.choiceBtnLabel}>Truth</Text>
-              <Text style={styles.choiceBtnSub}>{partnerName} answers a question</Text>
+        {session.phase === 'picking' && isMyTurn && !drawnCard && !manualType && (
+          <>
+            <View style={styles.choiceRow}>
+              <TouchableOpacity style={[styles.choiceBtn, styles.truthBtn]} onPress={() => handleChoose('truth')} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.choiceBtnEmoji}>🤔</Text>
+                <Text style={styles.choiceBtnLabel}>Truth</Text>
+                <Text style={styles.choiceBtnSub}>{partnerName} answers a question</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.choiceBtn, { borderColor: cfg.textColor }]} onPress={() => handleChoose('dare')} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.choiceBtnEmoji}>{cfg.emoji}</Text>
+                <Text style={[styles.choiceBtnLabel, { color: cfg.textColor }]}>Dare</Text>
+                <Text style={styles.choiceBtnSub}>{partnerName} does a challenge</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Manual mode — Aug 2026 replacement for the deleted async
+                dares feature. Type your own truth or dare instead of
+                drawing from the pool. Same-session live play, so no
+                deadline / proof / accept lifecycle needed — partner
+                just gets a card with your custom text through the
+                normal answering / dare-completion flow. */}
+            <View style={styles.manualDivider}>
+              <View style={styles.manualDividerLine} />
+              <Text style={styles.manualDividerLabel}>or write your own</Text>
+              <View style={styles.manualDividerLine} />
+            </View>
+            <View style={styles.choiceRow}>
+              <TouchableOpacity style={[styles.choiceBtn, styles.manualBtn]} onPress={() => handleStartManual('truth')} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.choiceBtnEmoji}>✏️</Text>
+                <Text style={styles.choiceBtnLabel}>Truth</Text>
+                <Text style={styles.choiceBtnSub}>Type it yourself</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.choiceBtn, styles.manualBtn]} onPress={() => handleStartManual('dare')} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.choiceBtnEmoji}>✏️</Text>
+                <Text style={styles.choiceBtnLabel}>Dare</Text>
+                <Text style={styles.choiceBtnSub}>Type it yourself</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* Manual authoring card — TextInput with Send / Cancel. */}
+        {session.phase === 'picking' && isMyTurn && manualType && (
+          <View style={[styles.cardView, { borderLeftColor: manualType === 'dare' ? cfg.textColor : '#1565C0' }]}>
+            <View style={styles.cardTypeRow}>
+              <Text style={styles.cardTypeEmoji}>✏️</Text>
+              <Text style={[styles.cardTypeBadge, { color: manualType === 'dare' ? cfg.textColor : '#1565C0' }]}>
+                Your own {manualType === 'truth' ? 'Truth' : 'Dare'}
+              </Text>
+            </View>
+            <TextInput
+              style={styles.manualInput}
+              placeholder={manualType === 'truth'
+                ? `Ask ${partnerName} anything...`
+                : `Challenge ${partnerName} to do...`}
+              placeholderTextColor={Colors.muted}
+              value={manualText}
+              onChangeText={setManualText}
+              multiline
+              maxLength={240}
+              autoFocus
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, !manualText.trim() && styles.sendBtnDisabled]}
+              onPress={handleSendManual}
+              disabled={!manualText.trim()}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <Text style={styles.sendBtnText}>Send to {partnerName} →</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.choiceBtn, { borderColor: cfg.textColor }]} onPress={() => handleChoose('dare')} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.choiceBtnEmoji}>{cfg.emoji}</Text>
-              <Text style={[styles.choiceBtnLabel, { color: cfg.textColor }]}>Dare</Text>
-              <Text style={styles.choiceBtnSub}>{partnerName} does a challenge</Text>
+            <TouchableOpacity onPress={handleCancelManual} style={styles.skipBtn} accessibilityRole="button">
+              <Text style={styles.skipText}>← Back to choose again</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -902,9 +973,19 @@ const styles = StyleSheet.create({
   choiceRow: { flexDirection: 'row', gap: Spacing.md },
   choiceBtn: { flex: 1, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', gap: Spacing.sm, borderWidth: 2, backgroundColor: Colors.white, ...Shadow.sm },
   truthBtn: { borderColor: Colors.border },
+  manualBtn: { borderColor: Colors.border, borderStyle: 'dashed' },
   choiceBtnEmoji: { fontSize: 36 },
   choiceBtnLabel: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },
   choiceBtnSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
+
+  manualDivider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: Spacing.md },
+  manualDividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  manualDividerLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, letterSpacing: 2, textTransform: 'uppercase' },
+  manualInput: {
+    backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md,
+    fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
+    minHeight: 80, borderWidth: 1, borderColor: Colors.border,
+  },
 
   waitingCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xxl, alignItems: 'center', gap: Spacing.md, borderWidth: 1, borderColor: Colors.border },
   waitingEmoji: { fontSize: 40 },
@@ -949,6 +1030,7 @@ const styles = StyleSheet.create({
   actionBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
 
   sendBtn: { backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  sendBtnDisabled: { opacity: 0.4 },
   sendBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   skipBtn: { alignItems: 'center', paddingVertical: Spacing.xs },

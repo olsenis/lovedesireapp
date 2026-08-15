@@ -22,7 +22,6 @@ import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkS
 import { FlashEntry, subscribeFlashes, formatCountdown } from '../../services/flashService';
 import { MomentEntry, subscribeMoments } from '../../services/momentService';
 import { ActivityCardsSession, subscribeActivityCards } from '../../services/bingoService';
-import { Dare, subscribeDares } from '../../services/dareService';
 import { Todo, subscribeTodos } from '../../services/todoService';
 import { Memory, subscribeMemories } from '../../services/memoryService';
 import { personalise } from '../../services/personalise';
@@ -277,7 +276,6 @@ export default function HomeScreen() {
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
-  const [dares, setDares] = useState<Dare[]>([]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -312,8 +310,7 @@ export default function HomeScreen() {
     const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
     const u15 = subscribeTodos(coupleId, setTodos);
     const u16 = subscribeSensateProgress(coupleId, setSensateProgress);
-    const u17 = subscribeDares(coupleId, setDares);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u17(); };
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -427,40 +424,11 @@ export default function HomeScreen() {
     });
   }
 
-  // Async Dares — pending dares for me (partner sent a challenge) and
-  // recently-completed dares from partner (they just did the thing you dared
-  // them to). Both drive back to /dares. Pending count in title lets user
-  // triage without opening.
-  const pendingDaresForMe = dares.filter((d) => d.toUid === uid && d.status === 'pending');
-  const freshlyCompletedFromPartner = dares.filter((d) =>
-    d.fromUid === uid && d.status === 'completed' && d.completedAt && Date.now() - d.completedAt < 24 * 3600000
-  );
-  if (pendingDaresForMe.length > 0) {
-    const first = pendingDaresForMe[0];
-    list.push({
-      emoji: '🎁',
-      title: pendingDaresForMe.length > 1
-        ? `${pendingDaresForMe.length} dares from ${partner?.name ?? 'your partner'}`
-        : `A dare from ${partner?.name ?? 'your partner'}`,
-      subtitle: first.prompt.length > 60 ? first.prompt.slice(0, 57) + '...' : first.prompt,
-      // /dares route was folded into /truth-dare picker Aug 2026 (H18).
-      // The panel shows both "For you" and "Sent" sections side-by-side
-      // so no tab/section deep-link param is needed.
-      route: '/truth-dare',
-      bg: '#FFF3E0',
-    });
-  }
-  if (freshlyCompletedFromPartner.length > 0) {
-    list.push({
-      emoji: '🎉',
-      title: `${partner?.name ?? 'Your partner'} completed your dare`,
-      subtitle: freshlyCompletedFromPartner.length > 1
-        ? `${freshlyCompletedFromPartner.length} of your dares, tap to see`
-        : 'Tap to see how it went',
-      route: '/truth-dare',
-      bg: '#F3E5F5',
-    });
-  }
+  // (Async Dares nudge branches removed Aug 2026 with H19 — the async
+  // dares feature was deleted entirely. Users author custom truths and
+  // dares inside the live Truth or Dare game flow now, no separate
+  // async lifecycle. No pending-inbox or completion notification lives
+  // on Home anymore.)
 
   // Fantasy Wishes: any mutual matches
   const fwMatches = fwItems.filter(i => partnerId && isFWMatch(i, uid, partnerId));
@@ -843,7 +811,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, dares]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

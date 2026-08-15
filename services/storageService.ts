@@ -81,21 +81,6 @@ export async function uploadMomentPhoto(coupleId: string, uid: string, uri: stri
 }
 
 
-// Dare completion proof photos for the Async Dares feature. Persistent
-// (not auto-deleted) since a dare completion moment is a memory the couple
-// may want to look back at. Stored under a dedicated /dareProofs/ prefix
-// per couple so listing/lifecycle operations can target them independently.
-// Path includes dareId + uid so per-dare files are traceable and unique.
-export async function uploadDareProof(coupleId: string, dareId: string, uid: string, uri: string): Promise<string> {
-  const compressed = await compressImage(uri);
-  const response = await fetch(compressed);
-  const blob = await response.blob();
-  assertUnderLimit(blob, 'photo');
-  const storageRef = ref(storage, `couples/${coupleId}/dareProofs/${dareId}_${uid}.jpg`);
-  await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
-  return await getDownloadURL(storageRef);
-}
-
 // Voice notes for the Love Notes feature — persistent audio (not ephemeral
 // like Flashes). Stored under a dedicated /voiceNotes/ prefix per couple so
 // GCS lifecycle rules or listing operations can target them independently.
