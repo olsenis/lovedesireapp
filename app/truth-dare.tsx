@@ -353,6 +353,24 @@ export default function TruthDareScreen() {
               <Text style={[styles.modeDesc, styles.modeDescOnDark]}>Each of you on your own phone, same room or worlds apart. Take turns picking truth or dare for each other.</Text>
               <Text style={[styles.modeCta, styles.modeCtaOnDark]}>Begin →</Text>
             </TouchableOpacity>
+
+            <Text style={styles.modeOr}>or</Text>
+
+            {/* Async dares — previously its own /dares screen surfaced via
+                Discover + Home Tonight's Picks. Consolidated here Aug 2026
+                so "Truth or Dare" owns every dare interaction in the app
+                and the Discover surface no longer has two competing dare
+                cards. The /dares screen itself is unchanged; this is a
+                surface consolidation, not a code merge. */}
+            <TouchableOpacity style={styles.modeCard} onPress={() => router.push('/dares' as any)} activeOpacity={0.85} accessibilityRole="button">
+              <View style={styles.modeIconRow}>
+                <Text style={styles.modeIcon}>🎁</Text>
+                <Text style={styles.modeBadge}>For later</Text>
+              </View>
+              <Text style={styles.modeTitle}>Send a Dare</Text>
+              <Text style={styles.modeDesc}>Leave a challenge for {partnerName} with an optional deadline. {partnerName} uploads proof when it is done.</Text>
+              <Text style={styles.modeCta}>Compose →</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       );
@@ -503,9 +521,9 @@ export default function TruthDareScreen() {
 
   if (!session) return null;
 
-  const dareConfirmed = session.card?.dareConfirmed ?? [];
-  const partnerConfirmedDare = !!partnerId && dareConfirmed.includes(partnerId);
-  const iConfirmedDare = dareConfirmed.includes(uid);
+  // (Removed dareConfirmed derived vars — single-tap confirm flow no
+  // longer needs to track individual uids; the challenged partner's
+  // tap immediately moves phase to 'done'.)
 
   // ── Active game ───────────────────────────────────────────────────────────────
   return (
@@ -708,23 +726,21 @@ export default function TruthDareScreen() {
               </>
             )}
 
-            {/* ── DARE: picker watches ── */}
-            {session.card.type === 'dare' && isMyTurn && !partnerConfirmedDare && (
+            {/* ── DARE: picker sent, waits for partner to mark done ── */}
+            {/* Single-tap flow (Aug 2026): challenged partner's tap alone ends
+                the round; picker no longer double-confirms. That means the
+                only intermediate state is "sent, waiting" for the picker
+                and "confirm you did it" for the challenged — no waiting-
+                for-picker banner, no picker confirm button. */}
+            {session.card.type === 'dare' && isMyTurn && (
               <View style={styles.greyBanner}>
                 <Text style={styles.greyBannerText}>✅ Dare sent to {partnerName}!</Text>
-                <Text style={styles.greyBannerHint}>Waiting for {partnerName} to do it and confirm…</Text>
+                <Text style={styles.greyBannerHint}>Waiting for {partnerName} to do it…</Text>
               </View>
             )}
 
-            {/* ── DARE: picker confirms after partner does ── */}
-            {session.card.type === 'dare' && isMyTurn && partnerConfirmedDare && !iConfirmedDare && (
-              <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85} accessibilityRole="button">
-                <Text style={styles.actionBtnText}>✓ {partnerName} completed it, confirm!</Text>
-              </TouchableOpacity>
-            )}
-
             {/* ── DARE: partner does it ── */}
-            {session.card.type === 'dare' && !isMyTurn && !iConfirmedDare && (
+            {session.card.type === 'dare' && !isMyTurn && (
               <>
                 <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={handleConfirmDare} activeOpacity={0.85} accessibilityRole="button">
                   <Text style={styles.actionBtnText}>✓ Dare completed</Text>
@@ -733,13 +749,6 @@ export default function TruthDareScreen() {
                   <Text style={styles.skipText}>Skip this one →</Text>
                 </TouchableOpacity>
               </>
-            )}
-
-            {/* ── DARE: partner confirmed, waiting ── */}
-            {session.card.type === 'dare' && !isMyTurn && iConfirmedDare && (
-              <View style={styles.sentBanner}>
-                <Text style={styles.sentText}>✓ Done! Waiting for {partnerName} to confirm…</Text>
-              </View>
             )}
           </View>
         )}
@@ -835,7 +844,7 @@ function DoneCard({
 
       {card.type === 'dare' && (
         <View style={styles.dareConfirmedBanner}>
-          <Text style={styles.dareConfirmedText}>✓ Both confirmed!</Text>
+          <Text style={styles.dareConfirmedText}>✓ Dare completed!</Text>
         </View>
       )}
 

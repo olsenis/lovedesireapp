@@ -1230,18 +1230,10 @@ export default function HomeScreen() {
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
 
-      {/* Async Dares launcher — was previously only reachable via Home
-          nudges (which only fire when a dare is in flight). Home had no
-          way to SEND a dare unless one was already pending. Tile added
-          Aug 2026 to close that discoverability gap. */}
-      <TouchableOpacity style={styles.gameRow} onPress={() => router.push('/dares' as any)} activeOpacity={0.85} accessibilityRole="button">
-        <Text style={styles.gameEmoji}>🎁</Text>
-        <View style={styles.gameText}>
-          <Text style={styles.gameTitle}>Dares</Text>
-          <Text style={styles.gameSub}>Send a challenge, watch it get done</Text>
-        </View>
-        <Text style={styles.gameArrow}>›</Text>
-      </TouchableOpacity>
+      {/* H5 Async Dares tile removed Aug 2026 — async dares now live as
+          "Send a Dare" mode inside Truth or Dare, so the T-or-D tile
+          above already owns the entry point. Home nudges for in-flight
+          dares still deep-link to /dares directly. */}
 
       <TouchableOpacity style={styles.seeAllGamesRow} onPress={() => router.push('/(tabs)/discover' as any)} activeOpacity={0.7} accessibilityRole="button">
         <Text style={styles.seeAllGamesText}>See all games →</Text>

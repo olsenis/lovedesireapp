@@ -86,7 +86,23 @@ Ordered roughly by impact / effort ratio (best first).
 **File:** `app/(tabs)/index.tsx` insight card render
 **Change:** Imported `LOVE_LANGUAGE_LABELS`, mapped raw key → human label, dropped "FOR YOU" for a tighter eyebrow: `INSIGHT · WORDS OF AFFIRMATION`.
 
-### H5 Async Dares launcher tile — ✅ shipped (next commit)
+### H5 Async Dares launcher tile — ✅ shipped, then ↩️ reversed by H14 (Aug 2026)
+Tile added, then removed 2 days later when async dares got consolidated into Truth or Dare's mode picker. Reason: after H5 landed, Home + Discover + Home-nudge stack all surfaced "Dares" independently of "Truth or Dare", creating a naming/brand collision. H14 fixes the collision; the discoverability gap that H5 was solving is now covered by the T-or-D tile → Send a Dare mode. Home nudges for in-flight dares still deep-link to /dares.
+
+### H14 Merge Async Dares under Truth or Dare + single-tap dare confirm — ✅ shipped (next commit)
+**Files:** `app/truth-dare.tsx`, `services/truthDareService.ts`, `app/(tabs)/discover.tsx`, `app/(tabs)/index.tsx`
+**Change (surface merge):**
+- Truth or Dare picker now shows 3 mode cards instead of 2: Solo Spin / Play Together (featured) / Send a Dare (async → routes to /dares)
+- Discover: standalone `🎁 Dares` card removed — T-or-D card now owns every dare interaction in the app
+- Home Tonight's Picks: H5 async-dares tile removed (reversed) — T-or-D tile already leads users into the Send a Dare mode
+- `/dares` screen + service + Firestore collection all UNCHANGED — this is a surface consolidation, not a code merge. Home nudges for pending/completed dares continue to deep-link to /dares directly.
+
+**Change (single-tap confirm):**
+- Removed the double-confirmation on dares in Wherever You Are mode. Old flow: challenged partner taps "Dare completed" → picker sees "confirm they did it" button → picker taps → phase='done'. New flow: challenged tap alone moves the round to done.
+- `truthDareService.confirmDare` now sets `phase: 'done'` on any single confirmation with an idempotent guard. UI dead branches (picker's confirm button + challenged's waiting-for-picker banner) removed. DoneCard banner text updated from "✓ Both confirmed!" → "✓ Dare completed!".
+**Why:** User caught both during Bug bash Round 2 — the two Dare surfaces read as duplicate features, and the double-confirm added a click for zero trust value in a playful game between partners who already share everything.
+
+
 **File:** `app/(tabs)/index.tsx` Tonight's Picks section
 **Change:** Added 4th tile between Fantasy Wishes and "See all games" row: `🎁 Dares · Send a challenge, watch it get done` → `/dares`.
 
