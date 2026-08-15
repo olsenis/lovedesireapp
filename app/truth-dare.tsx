@@ -41,13 +41,21 @@ export default function TruthDareScreen() {
   const [loading, setLoading] = useState(true);
   useTrackScreen('truth_dare');
 
-  // LDR filter: when couple is long-distance, drop every dare that
-  // requires physical proximity (kiss/touch/hold/oral/positions) so the
-  // pool contains only remote-safe dares (voice message, video call,
-  // camera, text, send-something). Applied to every DARES read below.
-  // Truths need no filter — they are all verbal/typed/audio by nature.
+  // 3-way LDR filter (Aug 2026): every dare is tagged
+  //   'ldr'      — LDR-only, feels weird in-person (video call, sexting,
+  //                camera performance)
+  //   'either'   — hybrid, works both (song send, coordinated candle
+  //                ritual, cooked meal + photo, "in front of {partner}"
+  //                phrasings that work live or on camera)
+  //   'physical' — in-person only, requires proximity (implicit default
+  //                when `context` is undefined)
+  // Both modes see 'either'. Only 'ldr' is exclusive to LDR; only
+  // 'physical' is exclusive to in-person. Truths need no filter since
+  // they're all verbal/typed/audio by nature.
   const isLDR = !!couple?.isLongDistance;
-  const daresPool = isLDR ? DARES.filter(d => d.remote) : DARES;
+  const daresPool = isLDR
+    ? DARES.filter(d => d.context === 'ldr' || d.context === 'either')
+    : DARES.filter(d => d.context !== 'ldr');
 
   // Mode picker — 'picker' (default) | 'solo' (single-phone wheel) | 'multi' (level select for multiplayer)
   const [mode, setMode] = useState<'picker' | 'solo' | 'multi'>('picker');

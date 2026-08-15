@@ -89,6 +89,16 @@ Ordered roughly by impact / effort ratio (best first).
 ### H5 Async Dares launcher tile — ✅ shipped, then ↩️ reversed by H14 (Aug 2026)
 Tile added, then removed 2 days later when async dares got consolidated into Truth or Dare's mode picker. Reason: after H5 landed, Home + Discover + Home-nudge stack all surfaced "Dares" independently of "Truth or Dare", creating a naming/brand collision. H14 fixes the collision; the discoverability gap that H5 was solving is now covered by the T-or-D tile → Send a Dare mode. Home nudges for in-flight dares still deep-link to /dares.
 
+### H16 3-way dare context (ldr / either / physical) — ✅ shipped (next commit)
+**Files:** `constants/content.ts` (Dare interface + all 111 previously-marked dares), `app/truth-dare.tsx` (filter update)
+**Change:**
+- Replaced boolean `remote?: true` with 3-way `context?: 'ldr' | 'either' | 'physical'` enum. Reason: boolean lumped hybrid dares (e.g. "send a song", "coordinated candle") in with the remote-only pool AND let them leak into the non-LDR pool. Non-LDR couples were drawing "Video-call {partner} and slowly take off two things" while sitting next to each other.
+- Agent classified all 111 previously-marked-remote dares into `ldr` vs `either`. Split: 67 `ldr` + 44 `either`. Physical dares (163) stay implicit-default; no marker required.
+- Filter now symmetric: LDR mode sees `ldr + either`, non-LDR sees `physical + either`. Only `ldr` is exclusive to LDR view, only `physical` exclusive to in-person. Both modes see hybrid `either` dares — those are by definition context-agnostic (curated artifact / coordinated ritual).
+- Per-level split: Sweet 8 ldr + 30 either, Flirty 31 ldr + 7 either, Spicy 28 ldr + 7 either.
+- Per-mode pool: LDR on → Sweet 38 · Flirty 38 · Spicy 35. LDR off → Sweet 62 · Flirty 50 · Spicy 95.
+**Why:** User caught the leak in Bug bash Round 2 — asked "does LDR content also work for non-LDR?" and pointed out that the non-LDR pool included video-call and sexting dares that don't make sense when partner is 3 feet away. 3-way classification is the correct model: hybrid dares are neither remote nor physical, they're both.
+
 ### H15 LDR dare filter + 85 remote-safe dares authored — ✅ shipped (next commit)
 **Files:** `constants/content.ts` (Dare interface + 85 new dares), `app/truth-dare.tsx` (filter logic), CLAUDE.md (DARES content section)
 **Change:**
