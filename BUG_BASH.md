@@ -22,7 +22,7 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 - [ ] **#7 T-or-D Truth flow** — text answer path + audio recording path (record → upload → reveal on both phones) + score bump + next turn transition
 - [ ] **#7 T-or-D Skip flow** — picker `↺ Try another` (max 2 redraws) + doer "Skip this one" (turn switches, no score change, `skipsUsed` increments per uid)
-- [ ] **#7 WYR full flow** — Playful / Romantic / Spicy start, private answer, side-by-side reveal, match banner, save-to-list, session persistence across app close/reopen
+- [x] **#7 WYR full flow** — ✅ PASSED. Includes H21 daily cap (5/day free, "Draw 5 more" paid up to 3 packs = 20/day max), 56 discussion prompt rewrites for A/B-flavored bugs, 6 role-flipped question rewrites to symmetric shared-preference form, summary modal "Continue later" copy. Post-launch item added to POST_LAUNCH.md: WYR saved-matches overview + stats page.
 - [x] **#7 Bingo full flow** — ✅ PASSED across multiple commits: activity reciprocity rewording (`d46dabc`), "Tonight's Activity" / "picked for us" copy (`7bd6210`), sender-picks-again on skip B logic (`0e937c1`), in-app passed-try-another status text (`6b54798`). Includes Bingo activities render partner name (personalise fix from `d830fed` verified in-flow).
 - [ ] **#9 Auth flows** — register (with 18+ checkbox + consent write) + login + pairing (invite code generation + entry) + couple-connect + password reset via email
 
@@ -50,6 +50,11 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 - `0e937c1` — Bingo skip B logic: turn stays with sender on skip (they pick another), 3-consecutive-skip safeguard flips to receiver. **User-tested PASS.**
 - `7bd6210` — Bingo copy: "Tonight's Activity" (picker) + "picked activity card for us" (receiver) + "Send this to {partner}" CTA — reframe from solo-challenge to joint activity. **User-tested PASS.**
 - `d46dabc` — Bingo: reword 3 asymmetric activities to reciprocal ("Send each other voice notes..."). **User-tested PASS.**
+- `332daaf` — WYR: reverted the Reset text link (Change chip already handles quit-and-restart). Kept the "Continue later" summary modal copy from 9282f2c.
+- `9282f2c` — WYR: summary modal right button "Continue later" (was "Reset with something Playful?") + short-lived Reset link (reverted next commit).
+- `c84223e` — WYR: 6 role-flipped questions rewritten to symmetric shared-preference form ("Watch partner / Be watched by partner" → "One of you performs while the other watches / Both stay fully focused"). Bug where impossible-to-match structure fired "You differ!" on couples who structurally agreed.
+- `d56a2a7` — H21 WYR daily cap (5/day free tier, "Draw 5 more" paid up to 3 packs = 20/day max). Mirrors Daily Picks bonus-draws pattern. **User-tested PASS.**
+- `d59e25d` — WYR: 56 discussion prompt rewrites (agent audit) to fix A/B-flavored bug where discussion assumed one option won. Playful 21 + Romantic 21 + Spicy 14 rewrites, 135 kept as-is.
 - `d2068f2` — H20 Truth or Dare Home "Waiting for you" nudges (2 mutually-exclusive branches: answering-waiting + picking-fresh-turn). **User-tested PASS.**
 - `b1bb14a` — Round 3 copy sweep: 9 findings fixed (leaked internal errors, bare pronouns on Home + T-or-D + love hub + state-union + sensate + profile) + defensive personalise() on versus
 - `b10c986` — CLAUDE.md companion-docs index (so future sessions know BUG_BASH / POLISH_TODO / TEST_CHECKLIST / etc. exist)

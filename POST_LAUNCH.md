@@ -195,6 +195,46 @@ Content authoring, not code. Each pack = ~10 hand-curated WYRQuestion objects se
 
 ---
 
+## WYR saved-matches overview page with stats (raised August 2026)
+
+### What
+A dedicated view listing the couple's saved WYR matches over time, plus running stats: match %, streak (best consecutive-match run), level breakdown ("You match most on Romantic — 78%"), most-picked option patterns ("You both lean toward slow evenings"), best-ever session record. Tab or section reachable from WYR screen when the couple has saved N+ matches.
+
+Sketch:
+```
+─── YOUR WYR HIGHLIGHTS ───
+
+67% match rate · 47 matches saved
+Best streak: 8 in a row · Best session: 92% on Spicy
+
+By level
+🌸 Playful   82% · 22 matches
+💗 Romantic  78% · 15 matches
+🔥 Spicy     45% · 10 matches
+
+Patterns
+You both lean toward slow evenings, familiar comfort, and being surprised
+
+── SAVED MATCHES ──
+🔥 Have Ola7 tell you one true thing they've never said before
+🔥 Feel deeply desired by Ola7
+🔥 Spend a lazy Sunday in bed together
+...
+```
+
+### Why deferred
+Requires match aggregation logic (either client-side derivation from todos + wyrService state, or a new sub-doc). "Fun stats" adds warmth but is not a launch-critical mechanic — the game works with or without a stats surface. Users don't miss what they haven't seen.
+
+### Decision criteria for revisiting
+- Post-launch users request "where can I see all our matches?" (support tickets or in-app feedback)
+- Retention data shows couples returning to WYR multiple times per week — indicates stats would reward them
+- Once accumulated match count per couple reaches ~30+ typical, stats become meaningful (currently no data on this)
+
+### Effort estimate
+~4-6 hours: aggregation service (`services/wyrStatsService.ts`), stats card component, saved-matches list view, small route or WYR-screen tab. No new Firestore paths needed if we derive from existing `couples/{id}/todos` (source: 'wyr') + running `score` on session.
+
+---
+
 ## Home screen widgets (Android + iOS) (raised July 2026)
 
 ### What
