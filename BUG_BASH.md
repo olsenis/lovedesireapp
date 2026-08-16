@@ -14,7 +14,7 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## ⏳ Pending — regression tests for recent commits
 
-- [ ] **Together List (todo screen) partner name** — save a Bingo / Daily / Fantasy Wishes matched item that contains `{partner}` → open Together List → verify text shows partner name, not literal `{partner}` (`d830fed`)
+- [x] **Together List (todo screen) partner name** — ✅ PASSED. Items saved via Activity Cards "Save to Together List for later" render partner name in the todo screen (d830fed verified in-flow).
 - [x] **T-or-D `{partner}` POV substitution** — ✅ PASSED across Sweet / Flirty / Spicy after hard-refresh + Vercel deploy landed (`9c4d6b1`).
 - [x] **New manual T-or-D mode** — ✅ PASSED. Wherever You Are picker shows draw-random + write-your-own rows, TextInput opens, Send flows through playCard (`fafc46a`).
 
