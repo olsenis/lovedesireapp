@@ -149,6 +149,11 @@ export async function markCardDone(
     completed: arrayUnion(index),
     pendingCard: null,
     turnUid: nextTurnUid,
+    // Accepting resets the consecutive-skip counter for the receiver.
+    // Otherwise a couple who skipped 2 then accepted then skipped again
+    // would be one skip away from the forced-turn-flip safeguard for
+    // reasons no one remembers.
+    [`receiverPasses.${nextTurnUid}`]: 0,
   });
   trackEvent('bingo_card_completed');
 }
@@ -160,28 +165,39 @@ export async function uncompleteCard(coupleId: string, index: number): Promise<v
   });
 }
 
-// Skip a received card. Skips are unlimited — pick pool + partner needs
-// don't warrant a cap, and the previous MAX_RECEIVER_PASSES=1 gate meant
-// couples felt punished for saying "not today" more than once per session.
-// Still tracks a counter so we can surface skip-heavy sessions in analytics
-// later if we want to. Transaction preserves the same-tap race guard.
+// After this many consecutive skips by the receiver, the safeguard fires
+// and the receiver becomes the next picker so the game doesn't stall on
+// a sender who keeps drawing cards the receiver rejects. Reset to 0 on
+// an accept (via markCardDone) or on the flip itself.
+export const CONSECUTIVE_SKIP_LIMIT = 3;
+
+// Skip a received card. Aug 2026: turn stays with the SENDER by default
+// instead of passing to the receiver, so a rejection reads as "your pick
+// wasn't quite right, try another" rather than "your card was rejected
+// AND now I take your turn". Safeguard: after CONSECUTIVE_SKIP_LIMIT
+// skips in a row by the same receiver, turn flips to the receiver
+// anyway so the sender can't cycle indefinitely.
+// Returns { turnFlipped } so the caller can pick the right notification
+// text (sender-picks-again vs safeguard-fired).
 export async function skipReceivedCard(
   coupleId: string,
-  uid: string,
-  _session: ActivityCardsSession,
-  nextTurnUid: string
-): Promise<void> {
+  receiverUid: string,
+  senderUid: string,
+): Promise<{ turnFlipped: boolean }> {
   const ref = doc(db, 'couples', coupleId, 'bingo', monthKey());
-  await runTransaction(db, async (tx) => {
+  return await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
-    if (!snap.exists()) return;
+    if (!snap.exists()) return { turnFlipped: false };
     const live = snap.data() as ActivityCardsSession;
-    const current = live.receiverPasses?.[uid] ?? 0;
+    const current = live.receiverPasses?.[receiverUid] ?? 0;
+    const next = current + 1;
+    const flipTurn = next >= CONSECUTIVE_SKIP_LIMIT;
     tx.update(ref, {
       pendingCard: null,
-      turnUid: nextTurnUid,
-      [`receiverPasses.${uid}`]: current + 1,
+      turnUid: flipTurn ? receiverUid : senderUid,
+      [`receiverPasses.${receiverUid}`]: flipTurn ? 0 : next,
     });
+    return { turnFlipped: flipTurn };
   });
 }
 

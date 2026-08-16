@@ -119,10 +119,16 @@ export default function ActivityCardsScreen() {
   const handleSkipReceived = async () => {
     if (!coupleId || !session || !partnerId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Same alternation as markCardDone — skipping still counts as
-    // resolving the round, so the next pick belongs to the receiver.
-    await skipReceivedCard(coupleId, uid, session, uid);
-    notifyPartner(coupleId, uid, 'Activity Cards', `${profile?.name ?? 'Your partner'} skipped this one, they're picking next`).catch(() => {});
+    // Aug 2026: turn stays with sender by default (they pick another)
+    // unless CONSECUTIVE_SKIP_LIMIT is reached, at which point the
+    // receiver becomes the picker. The service returns which happened
+    // so the push notification can pick the right copy.
+    const { turnFlipped } = await skipReceivedCard(coupleId, uid, partnerId);
+    const senderName = profile?.name ?? 'Your partner';
+    const body = turnFlipped
+      ? `${senderName} passed a few in a row, your turn to pick`
+      : `${senderName} passed, try another from the deck`;
+    notifyPartner(coupleId, uid, 'Activity Cards', body).catch(() => {});
   };
 
   // Save-for-later: some activities (skinny dipping, weekend trips, etc.)
