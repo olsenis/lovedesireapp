@@ -86,12 +86,6 @@ export default function WouldYouRatherScreen() {
   // an accidental tap on the level badge would otherwise silently
   // destroy.
   const [showChangeLevel, setShowChangeLevel] = useState(false);
-  // Explicit "Reset" affordance next to the level chip. Change level and
-  // Reset both call `handleReset` under the hood (both wipe the session),
-  // but the two-button surface makes "quit and start over" a
-  // first-class action instead of hiding it inside a level-change flow
-  // where the user has to also pick a new level.
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
   // Milestone toast state — fires once per crossing of a MILESTONES value.
   // Ref tracks the highest match count already celebrated so re-renders
   // (Firestore snapshots landing, tab switches, etc.) don't retrigger the
@@ -712,34 +706,24 @@ export default function WouldYouRatherScreen() {
 
       <View style={styles.content}>
         {/* Level badge doubles as the escape hatch: tap to change level
-            mid-session. Without this, once startWYR runs the couple is
-            locked into that level until they finish all 90 questions.
-            Modal-gated so an accidental tap doesn't nuke the score.
-            "⟳ Reset" text link on the right is a first-class way to
-            quit without picking a new level (also modal-gated). */}
-        <View style={styles.levelChipRow}>
-          <TouchableOpacity
-            style={[styles.levelBadge, { backgroundColor: cfg.color }]}
-            onPress={() => setShowChangeLevel(true)}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel={`Current level: ${cfg.label}. Tap to change.`}
-          >
-            <Text style={styles.levelBadgeEmoji}>{activePack ? activePack.emoji : cfg.emoji}</Text>
-            <Text style={[styles.levelBadgeText, { color: cfg.textColor }]}>
-              {activePack ? `${activePack.name} · ${session.questionIndex + 1}/${activePack.questions.length}` : cfg.label}
-            </Text>
-            <Text style={[styles.levelBadgeChange, { color: cfg.textColor }]}>Change ›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.resetLink}
-            onPress={() => setShowResetConfirm(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Reset the WYR session and start over"
-          >
-            <Text style={styles.resetLinkText}>⟳ Reset</Text>
-          </TouchableOpacity>
-        </View>
+            mid-session (also acts as the quit-and-start-over path since
+            picking a level resets the session). Without this, once
+            startWYR runs the couple is locked into that level until
+            they finish all 90 questions. Modal-gated so an accidental
+            tap doesn't nuke the score. */}
+        <TouchableOpacity
+          style={[styles.levelBadge, { backgroundColor: cfg.color }]}
+          onPress={() => setShowChangeLevel(true)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={`Current level: ${cfg.label}. Tap to change.`}
+        >
+          <Text style={styles.levelBadgeEmoji}>{activePack ? activePack.emoji : cfg.emoji}</Text>
+          <Text style={[styles.levelBadgeText, { color: cfg.textColor }]}>
+            {activePack ? `${activePack.name} · ${session.questionIndex + 1}/${activePack.questions.length}` : cfg.label}
+          </Text>
+          <Text style={[styles.levelBadgeChange, { color: cfg.textColor }]}>Change ›</Text>
+        </TouchableOpacity>
 
         {/* Compatibility band — appears once the couple has answered 3+
             questions, so a single match doesn't over-claim "Twin flames"
@@ -981,18 +965,6 @@ export default function WouldYouRatherScreen() {
         onCancel={() => setShowChangeLevel(false)}
       />
 
-      <ConfirmModal
-        visible={showResetConfirm}
-        title="Reset session?"
-        message={`Your current score (${session.score.match}/${session.score.total}) will be cleared and you'll go back to the level picker.`}
-        confirmLabel="Reset"
-        destructive
-        onConfirm={async () => {
-          setShowResetConfirm(false);
-          await handleReset();
-        }}
-        onCancel={() => setShowResetConfirm(false)}
-      />
 
     </View>
   );
@@ -1101,13 +1073,6 @@ const styles = StyleSheet.create({
   levelArrow: { fontFamily: Fonts.heading, fontSize: 28 },
 
   content: { flex: 1, paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, gap: Spacing.md },
-  // Row wrapping the level badge + the reset text link, so they share
-  // the same horizontal space just below the header. Level chip stays
-  // left-aligned (flex-start), Reset link floats right (marginLeft
-  // auto).
-  levelChipRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  resetLink: { marginLeft: 'auto', paddingVertical: 6, paddingHorizontal: 8 },
-  resetLinkText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, letterSpacing: 0.3 },
   levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 14, borderRadius: Radius.full },
   levelBadgeEmoji: { fontSize: 16 },
   levelBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 13 },
