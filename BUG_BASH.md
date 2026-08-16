@@ -20,8 +20,8 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## ⏳ Pending — Bug bash Round 2 remainder
 
-- [ ] **#7 T-or-D Truth flow** — text answer path + audio recording path (record → upload → reveal on both phones) + score bump + next turn transition
-- [ ] **#7 T-or-D Skip flow** — picker `↺ Try another` (max 2 redraws) + doer "Skip this one" (turn switches, no score change, `skipsUsed` increments per uid)
+- [x] **#7 T-or-D Truth flow** — ✅ PASSED. Text answer path + audio recording path (record → upload → reveal on both phones) + score bump + next turn. Send-my-answer button padding polish fix landed same session.
+- [x] **#7 T-or-D Skip flow** — ✅ PASSED. Picker redraw (max 2) + doer skip (turn switches, no score change, `skipsUsed` increments per uid).
 - [x] **#7 WYR full flow** — ✅ PASSED. Includes H21 daily cap (5/day free, "Draw 5 more" paid up to 3 packs = 20/day max), 56 discussion prompt rewrites for A/B-flavored bugs, 6 role-flipped question rewrites to symmetric shared-preference form, summary modal "Continue later" copy. Post-launch item added to POST_LAUNCH.md: WYR saved-matches overview + stats page.
 - [x] **#7 Bingo full flow** — ✅ PASSED across multiple commits: activity reciprocity rewording (`d46dabc`), "Tonight's Activity" / "picked for us" copy (`7bd6210`), sender-picks-again on skip B logic (`0e937c1`), in-app passed-try-another status text (`6b54798`). Includes Bingo activities render partner name (personalise fix from `d830fed` verified in-flow).
 - [ ] **#9 Auth flows** — register (with 18+ checkbox + consent write) + login + pairing (invite code generation + entry) + couple-connect + password reset via email

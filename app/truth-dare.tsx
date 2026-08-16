@@ -1040,7 +1040,7 @@ const styles = StyleSheet.create({
   playbackBtn: { backgroundColor: Colors.cream, borderRadius: Radius.full, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderWidth: 1, borderColor: Colors.border },
   playbackBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
 
-  actionBtn: { paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  actionBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, alignItems: 'center', alignSelf: 'stretch' },
   truthActionBtn: { backgroundColor: '#1565C0' },
   dareActionBtn: { backgroundColor: Colors.burgundy },
   actionBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
