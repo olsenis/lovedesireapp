@@ -225,16 +225,41 @@ export default function HomeScreen() {
 
   const [challengeState, setChallengeState] = useState<ChallengeState | null>(null);
   const [notes, setNotes] = useState<LoveNote[]>([]);
-  // Force a re-render every 30s so time-based nudges (Love Note openAt
-  // passing, Sensate 14-day inactivity, day-rollover checks) go live as
-  // time passes rather than only after a Firestore snapshot fires.
-  // MUST be included in the nudges useMemo deps below so the recompute
-  // fires — otherwise React re-renders but useMemo returns the stale
-  // list because none of its declared deps changed.
+  // Force a re-render every 60s as a baseline for slow-moving time-based
+  // nudges (Sensate 14-day inactivity, day-rollover). MUST be included
+  // in the nudges useMemo deps below so the recompute actually fires.
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const int = setInterval(() => setTick(t => t + 1), 30000);
+    const int = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(int);
+  }, []);
+
+  // Additionally: schedule a precise setTimeout for each pending Love
+  // Note's openAt moment. Browser tabs throttle setInterval when
+  // backgrounded (Chrome clamps to 1s+, then suspends after ~5min), so
+  // a plain interval isn't reliable for time-sensitive unlock nudges.
+  // Per-note timers fire exactly when they should, regardless of tab
+  // focus state. Same setTick trigger reuses the nudges recompute.
+  useEffect(() => {
+    const myUid = user?.uid ?? '';
+    if (!myUid) return;
+    const now = Date.now();
+    const pending = notes.filter(n => n.fromUid !== myUid && n.openAt > now && !n.opened);
+    if (pending.length === 0) return;
+    const timers = pending.map(n =>
+      setTimeout(() => setTick(t => t + 1), Math.max(0, n.openAt - now) + 250)
+    );
+    return () => { timers.forEach(clearTimeout); };
+  }, [notes, user?.uid]);
+
+  // Also refresh when the user returns to the tab (web) — visibility
+  // changes catch cases where a note unlocked while the tab was hidden
+  // and the setInterval was suspended.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handler = () => { if (!document.hidden) setTick(t => t + 1); };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
   }, []);
   const [fwItems, setFwItems] = useState<FantasyWishesItem[]>([]);
   const [dailyQDoc, setDailyQDoc] = useState<DailyQuestionDoc | null>(null);
