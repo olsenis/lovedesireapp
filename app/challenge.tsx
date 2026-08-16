@@ -110,7 +110,12 @@ export default function ChallengeScreen() {
     const tasks = CHALLENGE_PROGRAMS[state.program!];
     const current = state.customTasks?.[day] ?? tasks.find(t => t.day === day)?.text ?? '';
     setEditDay(day);
-    setEditText(current);
+    // Substitute {partner} for the actual partner name at edit time so the
+    // user sees a readable prompt, not a raw template token. Whatever the
+    // user then saves is stored substituted (Ola instead of {partner}). If
+    // partner ever renames after a custom save, that day's task keeps the
+    // old name, acceptable since MAX_EDITS caps at 2 per uid / 4 per couple.
+    setEditText(personalise(current, partnerName));
     setEditModal(true);
   };
 
@@ -130,18 +135,21 @@ export default function ChallengeScreen() {
     if (!state?.program || editDay === null) return;
     const defaults = CHALLENGE_PROGRAMS[state.program];
     const alternates = CHALLENGE_ALTERNATES[state.program] ?? [];
+    // Normalise everything to personalised form for comparison so a raw
+    // {partner}-tokenised default doesn't accidentally match against a
+    // customTask that already had the substitution baked in.
     const claimed = new Set<string>();
     for (let d = 1; d <= 30; d++) {
       if (d === editDay) continue;
       const t = state.customTasks?.[d] ?? defaults.find(x => x.day === d)?.text;
-      if (t) claimed.add(t);
+      if (t) claimed.add(personalise(t, partnerName));
     }
     claimed.add(editText);
-    const pool = [...alternates, ...defaults.map(t => t.text)];
-    const candidates = pool.filter(t => !claimed.has(t));
+    const rawPool = [...alternates, ...defaults.map(t => t.text)];
+    const candidates = rawPool.filter(raw => !claimed.has(personalise(raw, partnerName)));
     if (candidates.length === 0) return;
-    const pick = candidates[Math.floor(Math.random() * candidates.length)];
-    setEditText(pick);
+    const pickRaw = candidates[Math.floor(Math.random() * candidates.length)];
+    setEditText(personalise(pickRaw, partnerName));
     Haptics.selectionAsync();
   };
 
@@ -302,7 +310,7 @@ export default function ChallengeScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modal}>
               <Text style={styles.modalTitle}>Edit Day {editDay}</Text>
-              <Text style={styles.modalSubtitle}>Replace this day's task with your own, or refresh for another suggestion.</Text>
+              <Text style={styles.modalSubtitle}>Replace this day's task with your own, or tap Suggest another for a different one.</Text>
               <View style={styles.refreshBtnRow}>
                 <TouchableOpacity
                   style={styles.refreshBtn}
@@ -310,7 +318,7 @@ export default function ChallengeScreen() {
                   activeOpacity={0.8}
                   accessibilityRole="button"
                   accessibilityLabel="Suggest a different task">
-                  <Text style={styles.refreshBtnText}>🔄 Refresh</Text>
+                  <Text style={styles.refreshBtnText}>🔄 Suggest another</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
