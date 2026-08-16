@@ -310,16 +310,20 @@ export default function ChallengeScreen() {
             )}
             {isCustom && !canEditFreely && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
             {canEditFreely && (
-              // Dedicated drag handle. onPressIn (immediate) is more reliable
-              // than the TouchableOpacity + onLongPress approach, which the
-              // press-feedback layer can swallow before the long-press timer
-              // completes. Users see the handle affordance too.
+              // Dedicated drag handle. onLongPress with a short 200ms delay
+              // so scroll gestures (which resolve in <100ms of movement)
+              // don't accidentally trigger drag. onPressIn used to be here
+              // but it fired on every finger-touch and blocked scroll on
+              // the entire list. Small handle target means TouchableOpacity's
+              // press-feedback layer doesn't compete with the long-press.
               <TouchableOpacity
-                onPressIn={drag}
+                onLongPress={drag}
+                delayLongPress={200}
                 disabled={isActive}
+                activeOpacity={0.5}
                 style={styles.dragHandle}
                 accessibilityRole="button"
-                accessibilityLabel="Drag to reorder">
+                accessibilityLabel="Press and hold to reorder">
                 <Text style={styles.dragHandleText}>☰</Text>
               </TouchableOpacity>
             )}
@@ -350,7 +354,7 @@ export default function ChallengeScreen() {
         </View>
         {canEditFreely && (
           <View style={styles.reorderHint}>
-            <Text style={styles.reorderHintText}>☰ Drag the handle to reorder days</Text>
+            <Text style={styles.reorderHintText}>☰ Press and hold to reorder days</Text>
           </View>
         )}
       </>
@@ -382,7 +386,7 @@ export default function ChallengeScreen() {
           ListHeaderComponent={ListHeader}
           ListFooterComponent={ListFooter}
           contentContainerStyle={styles.setupContent}
-          activationDistance={10}
+          dragItemOverflow={true}
         />
 
         {/* Edit day modal */}
