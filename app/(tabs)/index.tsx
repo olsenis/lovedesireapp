@@ -227,11 +227,11 @@ export default function HomeScreen() {
   const [notes, setNotes] = useState<LoveNote[]>([]);
   // Force a re-render every 30s so time-based nudges (Love Note openAt
   // passing, Sensate 14-day inactivity, day-rollover checks) go live as
-  // time passes rather than only after a Firestore snapshot fires. Value
-  // is unused — just a re-render trigger. Without this, a note that
-  // unlocks at 15:00 while the user has Home open at 14:58 stays hidden
-  // until they close and reopen the app.
-  const [, setTick] = useState(0);
+  // time passes rather than only after a Firestore snapshot fires.
+  // MUST be included in the nudges useMemo deps below so the recompute
+  // fires — otherwise React re-renders but useMemo returns the stale
+  // list because none of its declared deps changed.
+  const [tick, setTick] = useState(0);
   useEffect(() => {
     const int = setInterval(() => setTick(t => t + 1), 30000);
     return () => clearInterval(int);
@@ -868,7 +868,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name, tick]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {
