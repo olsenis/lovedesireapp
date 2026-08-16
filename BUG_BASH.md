@@ -46,6 +46,7 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## ✅ Shipped this session (Aug 2026)
 
+- `d2068f2` — H20 Truth or Dare Home "Waiting for you" nudges (2 mutually-exclusive branches: answering-waiting + picking-fresh-turn). **User-tested PASS.**
 - `b1bb14a` — Round 3 copy sweep: 9 findings fixed (leaked internal errors, bare pronouns on Home + T-or-D + love hub + state-union + sensate + profile) + defensive personalise() on versus
 - `b10c986` — CLAUDE.md companion-docs index (so future sessions know BUG_BASH / POLISH_TODO / TEST_CHECKLIST / etc. exist)
 - `51dedba` — Created BUG_BASH.md (this file)
