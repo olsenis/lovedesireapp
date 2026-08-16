@@ -171,7 +171,7 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 |------|---------|
 | `firebase.ts` | `auth`, `db`, `storage` |
 | `authService.ts` | `register`, `login`, `logout`, `getUserProfile`, `createUserProfile`, `disconnectFromCouple` |
-| `coupleService.ts` | `createCouple`, `joinCouple`, `getCouple`, `setCoupleStartDate` |
+| `coupleService.ts` | `createCouple`, `joinCouple`, `getCouple`, `setCoupleStartDate`, `acceptPairing`, `declinePairing`, `cancelPairingRequest` |
 | `todoService.ts` | `subscribeTodos`, `addTodo`, `toggleTodo`, `deleteTodo` — category: daily/dates/intimacy/goals (legacy `fantasy` category from before July 2026 is normalised to `intimacy` at read time) |
 | `moodService.ts` | `setMood`, `getTodaysMood`, `subscribeToMoods` |
 | `noteService.ts` | `subscribeNotes`, `createNote`, `openNote` |

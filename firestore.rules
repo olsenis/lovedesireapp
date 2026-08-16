@@ -49,36 +49,47 @@ service cloud.firestore {
 
     // ── Couples ───────────────────────────────────────────────────────────────
     match /couples/{coupleId} {
-      // Read: use resource.data directly (avoids circular get() call)
+      // Read: existing members, OR the pending joiner while their pair
+      // request is unresolved (needed for their waiting-screen snapshot
+      // subscription in pairing.tsx).
       allow read: if request.auth != null && (
         resource.data.partner1Uid == request.auth.uid ||
-        resource.data.partner2Uid == request.auth.uid
+        resource.data.partner2Uid == request.auth.uid ||
+        resource.data.get('pendingPartner2Uid', null) == request.auth.uid
       );
 
       // Create: user must be setting themselves as partner1Uid
       allow create: if request.auth != null
         && request.resource.data.partner1Uid == request.auth.uid;
 
-      // Update: existing member, OR a non-member filling an empty partner slot.
-      // Both slots can be filled by a non-member because a disconnect can leave
-      // either slot empty (not just partner2).
+      // Update — Aug 2026 H22 pairing accept flow. Three client-side
+      // paths are allowed; server (admin SDK) bypasses rules for the
+      // pending-write that happens in `rateLimitedJoin`.
       //
-      // BLOCKED FROM CLIENT WRITE: isPremium + premiumSince — subscription
-      // status lives on the couple doc but is authoritative only when written
-      // by the RevenueCat webhook (Cloud Function admin SDK, which bypasses
-      // rules). Prevents any client from unlocking paid features by editing
-      // its own couple doc. Same lock applies to non-member "filling a slot"
-      // path since that flow shouldn't touch subscription fields either.
+      //   1. Existing member (partner1 or partner2) updates couple state
+      //      as before (settings, LDR toggle, etc.). The isPremium diff
+      //      guard still blocks the two subscription fields — those are
+      //      RevenueCat-webhook-only.
+      //   2. Existing member ACCEPTS a pending pair request — moves
+      //      `pendingPartner2Uid` into whichever slot is empty and
+      //      clears the pending fields.
+      //   3. Existing member DECLINES a pending pair request — just
+      //      clears the pending fields.
+      //   4. Pending party CANCELS their own request — clears the
+      //      pending fields; only the pendingPartner2Uid uid can do
+      //      this.
+      //
+      // The old "non-member fills empty slot" path is removed — every
+      // client-side slot fill now goes through the accept flow.
       allow update: if request.auth != null
         && (
-          isMemberOfCouple(coupleId) ||
+          // (1) Existing member — general update
+          isMemberOfCouple(coupleId)
+          ||
+          // (4) Pending party clearing their own request (cancel)
           (
-            resource.data.get('partner2Uid', null) == null &&
-            request.resource.data.partner2Uid == request.auth.uid
-          ) ||
-          (
-            resource.data.get('partner1Uid', null) == null &&
-            request.resource.data.partner1Uid == request.auth.uid
+            resource.data.get('pendingPartner2Uid', null) == request.auth.uid
+            && !request.resource.data.keys().hasAny(['pendingPartner2Uid'])
           )
         )
         && !request.resource.data.diff(resource.data).affectedKeys()

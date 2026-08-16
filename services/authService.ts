@@ -18,6 +18,13 @@ export interface UserProfile {
   name: string;
   photoURL?: string;
   coupleId?: string;
+  // Aug 2026 (H22 pairing accept flow). Set on the joiner's user doc by
+  // the server function `rateLimitedJoin` when they submit a valid invite
+  // code. Lets the pairing screen resume the "waiting for accept" state
+  // after an app close/reopen without needing to query all couples for
+  // pendingPartner2Uid. Cleared on accept (replaced by coupleId), on
+  // decline (via cascade), or on cancel (via cancelPairingRequest).
+  pendingCoupleId?: string;
   inviteCode?: string;
   pushToken?: string;
   notificationsEnabled?: boolean; // user's in-app toggle, separate from OS-level permission. Defaults to true when token is first registered.

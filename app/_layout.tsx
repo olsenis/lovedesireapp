@@ -15,9 +15,11 @@ import {
   Lato_400Regular_Italic,
   Lato_700Bold,
 } from '@expo-google-fonts/lato';
+import { Modal, ActivityIndicator } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { createUserProfile } from '../services/authService';
+import { acceptPairing, declinePairing } from '../services/coupleService';
 import { getConsent, confirmConsent } from '../services/consentService';
 import { getOnboardingState } from '../services/onboardingService';
 import { markCoupleActive } from '../services/statsService';
@@ -197,7 +199,10 @@ export default function RootLayout() {
   // relevant change so a rename or a re-quiz refreshes the notification
   // body. Cancels when partner or their language disappears (unpaired,
   // partner deleted quiz result).
-  const { partner: nudgePartner } = useCouple(user?.uid, profile?.coupleId);
+  //
+  // Same subscription doubles as the source for the H22 pairing accept
+  // modal below — one useCouple listener, two consumers.
+  const { partner: nudgePartner, couple: rootCouple } = useCouple(user?.uid, profile?.coupleId);
   useEffect(() => {
     if (loading || !user) return;
     if (nudgePartner?.name && nudgePartner?.loveLanguage) {
@@ -220,6 +225,52 @@ export default function RootLayout() {
     });
     return () => sub.remove();
   }, []);
+
+  // H22 pairing accept modal state — separate from render so tapping
+  // Accept or Decline can show an in-flight indicator on the button
+  // and prevent double-taps.
+  const [acceptingPair, setAcceptingPair] = useState(false);
+  const [decliningPair, setDecliningPair] = useState(false);
+  const [pairError, setPairError] = useState<string | null>(null);
+
+  const showPairingModal = !!(
+    rootCouple?.pendingPartner2Uid &&
+    user &&
+    (rootCouple.partner1Uid === user.uid || rootCouple.partner2Uid === user.uid)
+  );
+  const pendingName = rootCouple?.pendingPartner2Name?.trim() || 'someone';
+
+  const handlePairAccept = async () => {
+    if (!rootCouple || !user || acceptingPair) return;
+    setAcceptingPair(true);
+    setPairError(null);
+    try {
+      const result = await acceptPairing(rootCouple.id, user.uid);
+      if (!result.ok) {
+        setPairError(
+          result.reason === 'cancelled' ? `${pendingName} cancelled the request.` :
+          result.reason === 'already_paired' ? 'This couple is already paired.' :
+          'Could not accept, please try again.',
+        );
+      }
+    } catch (e: any) {
+      setPairError('Could not accept, please try again.');
+    } finally {
+      setAcceptingPair(false);
+    }
+  };
+
+  const handlePairDecline = async () => {
+    if (!rootCouple || !user || decliningPair) return;
+    setDecliningPair(true);
+    try {
+      await declinePairing(rootCouple.id, user.uid);
+    } catch (e: any) {
+      setPairError('Could not decline, please try again.');
+    } finally {
+      setDecliningPair(false);
+    }
+  };
 
   if (!fontsLoaded && !fontError) return null;
 
@@ -261,9 +312,70 @@ export default function RootLayout() {
     <>
       <StatusBar style="dark" backgroundColor={Colors.cream} />
       <Stack screenOptions={{ headerShown: false }} />
+      {/* H22 pairing accept modal — root-level so it appears on any
+          screen the moment `couple.pendingPartner2Uid` fires via the
+          useCouple snapshot listener. Non-dismissable except via
+          Accept or Decline. Auto-hides when the couple snapshot
+          resolves the pending state (accept: partner2Uid set; decline:
+          pending fields cleared; cancel by the joiner: pending fields
+          cleared). */}
+      <Modal visible={showPairingModal} transparent animationType="fade">
+        <View style={pairModalStyles.overlay}>
+          <View style={pairModalStyles.card}>
+            <Text style={pairModalStyles.emoji}>🤝</Text>
+            <Text style={pairModalStyles.title}>Pair request</Text>
+            <Text style={pairModalStyles.body}>
+              <Text style={pairModalStyles.name}>{pendingName}</Text> wants to pair with you.
+            </Text>
+            <Text style={pairModalStyles.hint}>This will link your accounts as a couple.</Text>
+            {pairError && (
+              <Text style={pairModalStyles.error}>{pairError}</Text>
+            )}
+            <TouchableOpacity
+              style={[pairModalStyles.acceptBtn, (acceptingPair || decliningPair) && { opacity: 0.6 }]}
+              onPress={handlePairAccept}
+              disabled={acceptingPair || decliningPair}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`Accept pair request from ${pendingName}`}
+            >
+              {acceptingPair
+                ? <ActivityIndicator color={Colors.cream} size="small" />
+                : <Text style={pairModalStyles.acceptBtnText}>Accept</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[pairModalStyles.declineBtn, (acceptingPair || decliningPair) && { opacity: 0.6 }]}
+              onPress={handlePairDecline}
+              disabled={acceptingPair || decliningPair}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`Decline pair request from ${pendingName}`}
+            >
+              {decliningPair
+                ? <ActivityIndicator color={Colors.burgundy} size="small" />
+                : <Text style={pairModalStyles.declineBtnText}>Decline</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
+
+const pairModalStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.6)', alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
+  card: { backgroundColor: Colors.cream, borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md, width: '100%', maxWidth: 400, alignItems: 'center' },
+  emoji: { fontSize: 48 },
+  title: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
+  body: { fontFamily: Fonts.body, fontSize: 16, color: Colors.text, textAlign: 'center', lineHeight: 24 },
+  name: { fontFamily: Fonts.bodyBold, color: Colors.burgundy },
+  hint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+  error: { fontFamily: Fonts.body, fontSize: 13, color: '#B00020', textAlign: 'center', marginTop: 4 },
+  acceptBtn: { marginTop: Spacing.md, backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full, alignSelf: 'stretch', alignItems: 'center' },
+  acceptBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  declineBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, alignSelf: 'stretch', alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  declineBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+});
 
 const consentStyles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },

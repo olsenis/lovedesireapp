@@ -15,9 +15,9 @@ import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../../hooks/useAuth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, deleteField, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import { createCouple, joinCouple } from '../../services/coupleService';
+import { createCouple, joinCouple, cancelPairingRequest, Couple } from '../../services/coupleService';
 import { createUserProfile } from '../../services/authService';
 import { getOnboardingState } from '../../services/onboardingService';
 import { QRScannerModal, buildQRPayload } from '../../components/QRScannerModal';
@@ -47,6 +47,17 @@ export default function PairingScreen() {
   // screen while the couple doc is still being written. Previously we slept
   // 2.5s which either wasted time or wasn't enough on bad networks.
   const createPromiseRef = useRef<Promise<void> | null>(null);
+
+  // Aug 2026 H22 pairing accept flow. When Ola submits a code, the
+  // server function writes pendingPartner2Uid on the couple doc +
+  // pendingCoupleId on Ola's user doc. Ola then sits on a waiting
+  // screen until Óli accepts (partner2Uid becomes ola.uid) or
+  // declines (pending fields cleared). Local state mirrors
+  // profile.pendingCoupleId so a mid-flow app close/reopen resumes.
+  const [pendingCoupleId, setPendingCoupleId] = useState<string | null>(null);
+  const [pendingInviterName, setPendingInviterName] = useState<string>('your partner');
+  const [waitingDeclined, setWaitingDeclined] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!user || authLoading) return;
@@ -109,26 +120,132 @@ export default function PairingScreen() {
       if (!result.couple) {
         const msg =
           result.reason === 'own' ? "That's your own code. Share it with your partner instead." :
-          result.reason === 'taken' ? 'This couple is already full.' :
+          result.reason === 'taken' ? 'Someone is already pairing with this code, or the couple is full.' :
           result.reason === 'expired' ? 'This invite code has expired.' :
           result.reason === 'not_found' ? 'Code not found. Double-check the 8 characters.' :
           result.reason === 'no_connection' ? 'No internet connection. Check your connection and try again.' :
-          `Could not join (reason: ${result.reason ?? 'unknown'})`;
+          'Could not join, please try again.';
         setJoinError(msg);
         return;
       }
-      await createUserProfile(user.uid, {
-        name: profile?.name ?? '',
-        photoURL: profile?.photoURL,
-        coupleId: result.couple.id,
-        inviteCode: result.couple.inviteCode,
-      });
-      await routeAfterPair();
+      // H22 pairing accept flow: server wrote pendingPartner2Uid on
+      // the couple doc + pendingCoupleId on our user profile. Don't
+      // route to Home — sit on the waiting screen until Óli accepts
+      // or declines. Look up the existing member's name for display.
+      const memberUid = result.couple.partner1Uid || result.couple.partner2Uid;
+      if (memberUid) {
+        try {
+          const memberSnap = await getDoc(doc(db, 'users', memberUid));
+          if (memberSnap.exists()) {
+            const name = (memberSnap.data() as { name?: string })?.name?.trim();
+            if (name) setPendingInviterName(name);
+          }
+        } catch {
+          // Fall back to the "your partner" default set in useState above.
+        }
+      }
+      setPendingCoupleId(result.couple.id);
+      setWaitingDeclined(false);
     } catch (e: any) {
       setJoinError(e?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setLoadingJoin(false);
     }
+  };
+
+  // Hydrate the waiting state from the user profile on mount so a
+  // force-quit-and-reopen mid-request lands back on the waiting screen
+  // instead of the code-entry state. Looks up the inviter's name for
+  // the resumed case.
+  useEffect(() => {
+    const resumedCoupleId = profile?.pendingCoupleId;
+    if (!resumedCoupleId || pendingCoupleId) return;
+    setPendingCoupleId(resumedCoupleId);
+    setWaitingDeclined(false);
+    (async () => {
+      try {
+        const coupleSnap = await getDoc(doc(db, 'couples', resumedCoupleId));
+        if (!coupleSnap.exists()) return;
+        const couple = coupleSnap.data() as Couple;
+        const memberUid = couple.partner1Uid || couple.partner2Uid;
+        if (!memberUid) return;
+        const memberSnap = await getDoc(doc(db, 'users', memberUid));
+        if (memberSnap.exists()) {
+          const name = (memberSnap.data() as { name?: string })?.name?.trim();
+          if (name) setPendingInviterName(name);
+        }
+      } catch { /* keep default label */ }
+    })();
+  }, [profile?.pendingCoupleId, pendingCoupleId]);
+
+  // Subscribe to the pending couple doc to detect accept / decline /
+  // remote-cancel. Snapshot handler resolves the wait state.
+  useEffect(() => {
+    if (!pendingCoupleId || !user) return;
+    const unsub = onSnapshot(doc(db, 'couples', pendingCoupleId), async (snap) => {
+      if (!snap.exists()) {
+        setWaitingDeclined(true);
+        return;
+      }
+      const couple = snap.data() as Couple;
+      const iAmAccepted = couple.partner1Uid === user.uid || couple.partner2Uid === user.uid;
+      if (iAmAccepted) {
+        // Existing member tapped Accept — write coupleId onto our
+        // profile and route away. Also explicitly clear pendingCoupleId
+        // since createUserProfile is a merge write that wouldn't touch
+        // it otherwise.
+        try {
+          await createUserProfile(user.uid, {
+            name: profile?.name ?? '',
+            photoURL: profile?.photoURL,
+            coupleId: couple.id,
+            inviteCode: couple.inviteCode,
+          });
+          await updateDoc(doc(db, 'users', user.uid), { pendingCoupleId: deleteField() });
+        } catch (e) {
+          console.warn('[pairing] profile write after accept failed', e);
+        }
+        setPendingCoupleId(null);
+        await routeAfterPair();
+        return;
+      }
+      // Not accepted yet — declined when pending fields cleared AND
+      // at least one slot is still empty (paired-with-someone-else
+      // shouldn't trigger the decline branch).
+      const declined =
+        !couple.pendingPartner2Uid &&
+        (!couple.partner1Uid || !couple.partner2Uid);
+      if (declined) {
+        setWaitingDeclined(true);
+      }
+    });
+    return unsub;
+  }, [pendingCoupleId, user, profile?.name, profile?.photoURL]);
+
+  const handleCancelWaiting = async () => {
+    if (!pendingCoupleId || !user || cancelling) return;
+    setCancelling(true);
+    try {
+      await cancelPairingRequest(pendingCoupleId, user.uid);
+      await updateDoc(doc(db, 'users', user.uid), { pendingCoupleId: deleteField() });
+    } catch (e) {
+      console.warn('[pairing] cancel failed', e);
+    } finally {
+      setPendingCoupleId(null);
+      setWaitingDeclined(false);
+      setCancelling(false);
+      setPartnerCode('');
+    }
+  };
+
+  const handleBackToPairEntry = async () => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), { pendingCoupleId: deleteField() });
+    } catch { /* non-fatal */ }
+    setPendingCoupleId(null);
+    setWaitingDeclined(false);
+    setPartnerCode('');
   };
 
   const handleJoin = async () => {
@@ -166,6 +283,46 @@ export default function PairingScreen() {
     }
     await routeAfterPair();
   };
+
+  // H22 waiting sub-view — takes over the entire screen once Ola has
+  // submitted a code and is waiting for Óli to accept. Two flavours:
+  // spinner-and-cancel while pending, or a friendly declined message
+  // with a button back to the code-entry state.
+  if (pendingCoupleId) {
+    return (
+      <View style={[styles.container, { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.cream }]}>
+        {waitingDeclined ? (
+          <>
+            <Text style={styles.waitEmoji}>🌱</Text>
+            <Text style={styles.waitTitle}>{pendingInviterName} didn't accept this time</Text>
+            <Text style={styles.waitBody}>
+              Might have been the wrong code, or they weren't ready. You can try again with a different code.
+            </Text>
+            <TouchableOpacity style={styles.waitPrimaryBtn} onPress={handleBackToPairEntry} accessibilityRole="button">
+              <Text style={styles.waitPrimaryBtnText}>Back to pair entry</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.waitEmoji}>🤝</Text>
+            <Text style={styles.waitTitle}>Waiting for {pendingInviterName} to accept…</Text>
+            <ActivityIndicator color={Colors.burgundy} size="large" style={{ marginVertical: Spacing.lg }} />
+            <Text style={styles.waitBody}>
+              We sent {pendingInviterName} a notification. They just need to open the app and tap Accept.
+            </Text>
+            <TouchableOpacity
+              style={[styles.waitSecondaryBtn, cancelling && { opacity: 0.5 }]}
+              onPress={handleCancelWaiting}
+              disabled={cancelling}
+              accessibilityRole="button"
+            >
+              <Text style={styles.waitSecondaryBtnText}>{cancelling ? 'Cancelling…' : 'Cancel request'}</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -458,4 +615,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.burgundy,
   },
   confirmJoinText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+
+  // H22 waiting sub-view styles — used only when pendingCoupleId is set
+  // (Ola has submitted a code, waiting for Óli to accept/decline).
+  waitEmoji: { fontSize: 56, marginBottom: Spacing.md },
+  waitTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy, textAlign: 'center', paddingHorizontal: Spacing.xl },
+  waitBody: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted, textAlign: 'center', paddingHorizontal: Spacing.xl, lineHeight: 20, marginTop: Spacing.sm },
+  waitPrimaryBtn: { marginTop: Spacing.xl, backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, borderRadius: Radius.full },
+  waitPrimaryBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  waitSecondaryBtn: { marginTop: Spacing.lg, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl },
+  waitSecondaryBtnText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted, textDecorationLine: 'underline' },
 });

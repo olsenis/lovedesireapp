@@ -88,6 +88,12 @@ export const rateLimitedJoin = onCall({ invoker: 'public' }, async (req) => {
   if (q.empty) return { joined: false };
   const coupleRef = q.docs[0].ref;
 
+  // Look up the joiner's display name for the pending fields (shown in
+  // the inviter's accept modal). Best-effort — falls back to empty
+  // string if the user has no name yet.
+  const joinerSnap = await db.collection('users').doc(uid).get();
+  const joinerName = (joinerSnap.data() as { name?: string } | undefined)?.name?.trim() ?? '';
+
   // Wrap slot check + write in a transaction so two concurrent joins with
   // the same code can't both pass the "slot open" check before either
   // writes. Prior version had a read-then-write gap where an attacker
@@ -95,43 +101,88 @@ export const rateLimitedJoin = onCall({ invoker: 'public' }, async (req) => {
   // legit joiner's client thought they succeeded (M2 in Aug 2026 review).
   // Transaction retries automatically on conflict; the losing caller sees
   // `taken` instead of a silent overwrite.
-  return await db.runTransaction(async (tx) => {
+  //
+  // Aug 2026 H22: instead of filling the slot directly, we write into
+  // pendingPartner2Uid + pendingPartner2Name + pendingPartner2At. An
+  // existing member (partner1 in initial pairing, partner2 in re-pair
+  // after disconnect) must call `acceptPairing` from the client to
+  // move the pending value into the empty slot. Slot-taken check also
+  // considers pending as blocking so we never overwrite an in-flight
+  // request.
+  const txResult = await db.runTransaction(async (tx) => {
     const snap = await tx.get(coupleRef);
     if (!snap.exists) return { joined: false };
     const couple = snap.data()!;
 
-    // Slot accounting — either slot may be empty (initial pairing, or one
-    // partner disconnected and the remaining partner is sharing the code for
-    // re-pair). Fill whichever slot is empty.
     const slot1Filled = !!couple.partner1Uid;
     const slot2Filled = !!couple.partner2Uid;
+    const pendingFilled = !!couple.pendingPartner2Uid;
 
-    // Both slots filled by someone else → couple is full
     if (slot1Filled && slot2Filled && couple.partner1Uid !== uid && couple.partner2Uid !== uid) {
       return { joined: false, reason: 'taken' };
     }
-    // Already a member of this couple
     if (couple.partner1Uid === uid || couple.partner2Uid === uid) {
       return { joined: false, reason: 'own' };
     }
-    // Expiry only matters before the first partner joins (couple is "open" for
-    // initial pairing). Once any partner is in, the code stays usable for
-    // re-pair scenarios after one disconnects, and there is no expiry.
+    if (pendingFilled && couple.pendingPartner2Uid !== uid) {
+      return { joined: false, reason: 'taken' };
+    }
+    if (pendingFilled && couple.pendingPartner2Uid === uid) {
+      // Idempotent re-request by the same joiner — treat as success so a
+      // network retry surfaces the same coupleId instead of an error.
+      return { joined: true, coupleId: coupleRef.id, partner1Uid: couple.partner1Uid ?? couple.partner2Uid ?? null };
+    }
     if (couple.inviteExpiresAt && couple.inviteExpiresAt < now && !slot1Filled && !slot2Filled) {
       return { joined: false, reason: 'expired' };
     }
 
-    // Fill the empty slot — prefer partner2 to preserve original creator's
-    // partner1 position when this is the initial pairing.
-    // NOTE: we no longer clear inviteCode here. Clearing on first join broke
-    // every re-pair scenario after a disconnect because the code lookup would
-    // miss. The code now stays active throughout the couple's lifetime;
-    // disconnectFromCouple regenerates it so old codes can't be reused by
-    // anyone who only had the original code.
-    const updates = slot2Filled ? { partner1Uid: uid } : { partner2Uid: uid };
-    tx.update(coupleRef, updates);
-    return { joined: true, coupleId: coupleRef.id };
+    tx.update(coupleRef, {
+      pendingPartner2Uid: uid,
+      pendingPartner2Name: joinerName,
+      pendingPartner2At: now,
+    });
+    // Mirror onto the joiner's user profile so pairing.tsx can resume
+    // the waiting screen on app relaunch without needing a wildcard
+    // query on the couples collection.
+    tx.update(db.collection('users').doc(uid), {
+      pendingCoupleId: coupleRef.id,
+    });
+    // Also carry the existing member's uid out so we can push-notify
+    // them below without a second read.
+    return {
+      joined: true,
+      coupleId: coupleRef.id,
+      partner1Uid: (couple.partner1Uid ?? couple.partner2Uid ?? null) as string | null,
+    };
   });
+
+  // Push notification to the existing member (real device only). Best
+  // effort — silently swallow failures so the caller's response isn't
+  // gated on push infra. Skipped for the same-user idempotent path.
+  if (txResult.joined && txResult.partner1Uid && joinerName) {
+    try {
+      const memberSnap = await db.collection('users').doc(txResult.partner1Uid).get();
+      const member = memberSnap.data() as { pushToken?: string; notificationsEnabled?: boolean } | undefined;
+      if (member?.pushToken && member.notificationsEnabled !== false) {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            to: member.pushToken,
+            title: '🤝 Pair request',
+            body: `${joinerName} wants to pair with you. Open the app to accept.`,
+            data: { route: '/(tabs)' },
+          }),
+        });
+      }
+    } catch (e) {
+      console.warn('rateLimitedJoin push failed', e);
+    }
+  }
+
+  // Return the same shape the client wrapper expects. `partner1Uid`
+  // is internal; strip before returning.
+  return { joined: txResult.joined, coupleId: txResult.coupleId, reason: txResult.reason };
 });
 
 // ─── Tier 1.6: GDPR delete-user cascade ─────────────────────────────────────

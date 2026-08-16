@@ -89,6 +89,20 @@ Ordered roughly by impact / effort ratio (best first).
 ### H5 Async Dares launcher tile — ✅ shipped, then ↩️ reversed by H14 (Aug 2026)
 Tile added, then removed 2 days later when async dares got consolidated into Truth or Dare's mode picker. Reason: after H5 landed, Home + Discover + Home-nudge stack all surfaced "Dares" independently of "Truth or Dare", creating a naming/brand collision. H14 fixes the collision; the discoverability gap that H5 was solving is now covered by the T-or-D tile → Send a Dare mode. Home nudges for in-flight dares still deep-link to /dares.
 
+### H22 Pairing accept/decline flow — ✅ shipped (next commit)
+**Files:** `services/coupleService.ts` (Couple interface + acceptPairing / declinePairing / cancelPairingRequest), `services/authService.ts` (UserProfile.pendingCoupleId), `functions/src/index.ts` (rateLimitedJoin writes pending fields + fires push), `firestore.rules` (read + update gates for pending), `app/(auth)/pairing.tsx` (waiting sub-view + resume logic), `app/_layout.tsx` (root-level accept modal)
+**Change:**
+- Old flow: Ola scans code → server fills `partner2Uid` instantly → both paired silently. Inviter (Óli) had no consent moment; anyone with the 8-char code could join without approval.
+- New flow: Ola submits code → server writes `pendingPartner2Uid` + `pendingPartner2Name` + `pendingPartner2At` on couple doc AND `pendingCoupleId` on Ola's user profile. Fires Expo Push to Óli. Ola sees full-screen waiting sub-view (spinner + "Waiting for {name} to accept…" + Cancel button). Óli sees root-level accept modal on any screen ("🤝 Ola wants to pair with you" + Accept + Decline).
+- Accept path: `acceptPairing` service moves `pendingPartner2Uid` → whichever slot is empty (partner2 in initial pairing, partner1 in re-pair after disconnect), clears pending fields. Ola's snapshot detects `partner2Uid === her.uid` → writes coupleId to her profile + routes to Home.
+- Decline path: `declinePairing` clears pending fields, keeps couple + invite code intact for a re-try. Ola's snapshot detects pending cleared + slot still empty → shows "Óli didn't accept this time" + "Back to pair entry" button.
+- Cancel path: Ola taps Cancel → `cancelPairingRequest` clears pending fields → Óli's modal auto-dismisses via snapshot.
+- Resume path: Ola force-quits + reopens → pairing.tsx hydrates from `profile.pendingCoupleId` → waiting sub-view rendered immediately.
+- Firestore rules: read gate extended to include `pendingPartner2Uid == request.auth.uid` (so Ola's waiting screen can subscribe). Update gate: existing members can update as before; pending party can only clear their own pending fields (cancel); non-member slot-fill removed (server writes pending only).
+- rateLimitedJoin also implements idempotency for same-user re-request (returns success with same coupleId instead of `taken`).
+**Deploy sequence:** Firestore rules + Cloud Functions must be deployed BEFORE the Vercel client build lands, otherwise clients hit new logic against old backends. Run `firebase deploy --only firestore:rules,functions --account lovedesireapp@gmail.com --project lovedesireapp-8c7f2 FUNCTIONS_DISCOVERY_TIMEOUT=60` first.
+**Why:** User caught during Bug bash Round 2 auth test that Ola sees "you're paired with Óli" but Óli gets zero acknowledgment. Security angle: any leaked invite code let anyone silently pair. Accept flow adds explicit inviter consent + clear confirmation on both sides.
+
 ### H21 WYR daily cap (5/day free, "Draw 5 more" paid) — ✅ shipped (next commit)
 **Files:** `services/wyrService.ts` (interface + constants + answerWYR mod + drawMoreWYR), `app/would-you-rather.tsx` (derive + DoneState render + styles), `CLAUDE.md` (WYR docs)
 **Change:**
