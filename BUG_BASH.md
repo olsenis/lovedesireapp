@@ -46,6 +46,9 @@ _(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 
 ## ✅ Shipped this session (Aug 2026)
 
+- `ec07482` — Challenge drag-to-reorder via react-native-sortables (Reanimated 4-compat drag library, replaces broken draggable-flatlist attempt + HTML5 hack + arrows fallback). Works on web + native. **User-tested PASS.**
+- `2086517` — Challenge: unlimited edits for paid tier (server-side isPremium in editTask transaction, UI shows "Unlimited edits, premium" + always-on edit pencil).
+- `5182649` + `9095387` — Challenge Edit modal: Save button resize + 🔄 Suggest another button + 150 alternate tasks authored (30 per program via 5 parallel agents against memory/challenge_alternates_prompt.md).
 - `c7341b5` — H22 pairing: accepter always leaves /pairing after successful accept (was silently stuck when `ob.completed` was true or lookup threw). **User-tested PASS.**
 - `36a39dd` — H22 pairing: route accepter to /onboarding-tour after successful accept (mirror joiner-side routing).
 - `e03f766` — H22 pairing: fix accept-side stuck-on-pairing race — `justAccepted` flag + useEffect watches `profile.coupleId` before routing.
