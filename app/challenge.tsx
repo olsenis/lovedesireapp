@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
@@ -310,22 +310,20 @@ export default function ChallengeScreen() {
             )}
             {isCustom && !canEditFreely && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
             {canEditFreely && (
-              // Dedicated drag handle. onLongPress with a short 200ms delay
-              // so scroll gestures (which resolve in <100ms of movement)
-              // don't accidentally trigger drag. onPressIn used to be here
-              // but it fired on every finger-touch and blocked scroll on
-              // the entire list. Small handle target means TouchableOpacity's
-              // press-feedback layer doesn't compete with the long-press.
-              <TouchableOpacity
+              // Dedicated drag handle. Pressable (not TouchableOpacity) so
+              // hold-and-drag works in one motion — TouchableOpacity's
+              // press-feedback layer forced a tap-then-hold-then-drag pattern
+              // that felt broken. Pressable's raw gesture pipeline lets the
+              // long-press timer fire on the first sustained touch.
+              <Pressable
                 onLongPress={drag}
                 delayLongPress={200}
                 disabled={isActive}
-                activeOpacity={0.5}
-                style={styles.dragHandle}
+                style={({ pressed }) => [styles.dragHandle, pressed && { opacity: 0.5 }]}
                 accessibilityRole="button"
                 accessibilityLabel="Press and hold to reorder">
                 <Text style={styles.dragHandleText}>☰</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         </ScaleDecorator>
@@ -386,7 +384,9 @@ export default function ChallengeScreen() {
           ListHeaderComponent={ListHeader}
           ListFooterComponent={ListFooter}
           contentContainerStyle={styles.setupContent}
+          style={{ flex: 1 }}
           dragItemOverflow={true}
+          showsVerticalScrollIndicator={true}
         />
 
         {/* Edit day modal */}
