@@ -227,13 +227,18 @@ export default function ChallengeScreen() {
               <Text style={styles.modalTitle}>Desire, 18+ only</Text>
               <Text style={styles.modalSubtitle}>This program contains explicit sexual content. Make sure you're both comfortable before starting.</Text>
               <Text style={styles.rulesTitle}>Rules</Text>
-              {[
+              {(isSubscribed ? [
+                'Rewrite, refresh, or reorder any of the 30 days before starting. No edits after.',
+                'Each partner gets 2 VETO days, use them to skip a day and just have regular sex.',
+                'If a day is missed, the challenge extends by one day (max 40 days total).',
+                'Periods, illness, or travel can be treated as a pause.',
+              ] : [
                 'Each partner can modify or replace 2 days before the challenge starts. No edits after.',
                 'Each partner gets 2 VETO days, use them to skip a day and just have regular sex.',
                 'If a day is missed, the challenge extends by one day (max 40 days total).',
                 "If a partner has no edits or vetoes left, they can borrow their partner's veto. That partner picks the replacement.",
                 'Periods, illness, or travel can be treated as a pause.',
-              ].map((rule, i) => (
+              ]).map((rule, i) => (
                 <View key={i} style={styles.ruleRow}>
                   <Text style={styles.ruleDot}>·</Text>
                   <Text style={styles.ruleText}>{rule}</Text>
@@ -289,14 +294,7 @@ export default function ChallengeScreen() {
       const isCustom = !!custom;
       return (
         <ScaleDecorator>
-          <TouchableOpacity
-            onLongPress={canEditFreely ? drag : undefined}
-            disabled={isActive}
-            delayLongPress={250}
-            activeOpacity={canEditFreely ? 0.85 : 1}
-            style={[styles.dayCard, isCustom && styles.dayCardEdited, isActive && styles.dayCardDragging]}
-            accessibilityRole="button"
-            accessibilityLabel={canEditFreely ? 'Long-press to reorder' : undefined}>
+          <View style={[styles.dayCard, isCustom && styles.dayCardEdited, isActive && styles.dayCardDragging]}>
             <View style={styles.dayCardLeft}>
               <Text style={[styles.dayNum, { color: cfg.textColor }]}>{task.day}</Text>
             </View>
@@ -307,7 +305,21 @@ export default function ChallengeScreen() {
               </TouchableOpacity>
             )}
             {isCustom && !canEditFreely && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
-          </TouchableOpacity>
+            {canEditFreely && (
+              // Dedicated drag handle. onPressIn (immediate) is more reliable
+              // than the TouchableOpacity + onLongPress approach, which the
+              // press-feedback layer can swallow before the long-press timer
+              // completes. Users see the handle affordance too.
+              <TouchableOpacity
+                onPressIn={drag}
+                disabled={isActive}
+                style={styles.dragHandle}
+                accessibilityRole="button"
+                accessibilityLabel="Drag to reorder">
+                <Text style={styles.dragHandleText}>☰</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </ScaleDecorator>
       );
     };
@@ -333,7 +345,9 @@ export default function ChallengeScreen() {
           </Text>
         </View>
         {canEditFreely && (
-          <Text style={styles.reorderHint}>Long-press a day to reorder.</Text>
+          <View style={styles.reorderHint}>
+            <Text style={styles.reorderHintText}>☰ Drag the handle to reorder days</Text>
+          </View>
         )}
       </>
     );
@@ -611,9 +625,13 @@ const styles = StyleSheet.create({
   refreshBtnRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: -Spacing.xs },
   refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: 'rgba(136,14,79,0.04)' },
   refreshBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.4 },
-  // Paid-tier drag-to-reorder hint under the edit counter. Long-press is
-  // not a self-advertising gesture so users need a tiny nudge.
-  reorderHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', marginTop: Spacing.xs, marginBottom: Spacing.sm },
+  // Paid-tier drag hint. Same pill treatment as editCounter so the two
+  // premium affordances read as siblings (both burgundy-on-blush).
+  reorderHint: { backgroundColor: Colors.blush, borderRadius: Radius.md, padding: Spacing.sm, alignItems: 'center', marginTop: Spacing.xs },
+  reorderHintText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  // Dedicated ☰ drag handle rendered on paid users' day cards.
+  dragHandle: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, alignItems: 'center', justifyContent: 'center' },
+  dragHandleText: { fontFamily: Fonts.bodyBold, fontSize: 22, color: Colors.muted },
   // Applied while a day card is being dragged (isActive from DraggableFlatList).
   dayCardDragging: { opacity: 0.92, ...Shadow.md },
 });
