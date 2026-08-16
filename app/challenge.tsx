@@ -255,6 +255,12 @@ export default function ChallengeScreen() {
   const myEditsUsed = state.editsUsed?.[uid] ?? 0;
   const myEditsLeft = MAX_EDITS - myEditsUsed;
   const myVetoesLeft = MAX_VETOES - (state.vetoesUsed?.[uid] ?? 0);
+  // Paid tier unlocks unlimited edits so a couple can build their own
+  // list (rewrite every Desire day to fit their taste, for example).
+  // Server-side check in editTask is the authoritative gate — this flag
+  // only controls whether the UI shows the cap counter or the "Unlimited"
+  // label + always-visible edit pencil.
+  const canEditFreely = isSubscribed;
 
   // ─── Setup phase, review & edit days ───────────────────────────────────────
   if (state.phase === 'setup') {
@@ -270,10 +276,18 @@ export default function ChallengeScreen() {
             <Text style={styles.setupBadgeEmoji}>{cfg.emoji}</Text>
             <Text style={[styles.setupBadgeLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
           </View>
-          <Text style={styles.setupIntro}>Review all 30 days. You can swap up to {MAX_EDITS} of them before starting.</Text>
-          <View style={[styles.editCounter, myEditsLeft === 0 && styles.editCounterDone]}>
+          <Text style={styles.setupIntro}>
+            {canEditFreely
+              ? 'Review all 30 days. Rewrite as many as you like to build your own list.'
+              : `Review all 30 days. You can swap up to ${MAX_EDITS} of them before starting.`}
+          </Text>
+          <View style={[styles.editCounter, !canEditFreely && myEditsLeft === 0 && styles.editCounterDone]}>
             <Text style={styles.editCounterText}>
-              {myEditsLeft > 0 ? `✏️ You have ${myEditsLeft} edit${myEditsLeft > 1 ? 's' : ''} remaining` : '✓ No edits remaining'}
+              {canEditFreely
+                ? '✏️ Unlimited edits, premium'
+                : myEditsLeft > 0
+                  ? `✏️ You have ${myEditsLeft} edit${myEditsLeft > 1 ? 's' : ''} remaining`
+                  : '✓ No edits remaining'}
             </Text>
           </View>
 
@@ -287,12 +301,12 @@ export default function ChallengeScreen() {
                   <Text style={[styles.dayNum, { color: cfg.textColor }]}>{task.day}</Text>
                 </View>
                 <Text style={styles.dayText}>{personalise(displayText, partner?.name)}</Text>
-                {myEditsLeft > 0 && (
+                {(canEditFreely || myEditsLeft > 0) && (
                   <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Edit day">
                     <Text style={styles.editBtnText}>✏️</Text>
                   </TouchableOpacity>
                 )}
-                {isCustom && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
+                {isCustom && !canEditFreely && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
               </View>
             );
           })}

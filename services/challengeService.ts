@@ -48,6 +48,12 @@ export async function activateChallenge(coupleId: string): Promise<void> {
 // Edit a day's task during setup phase. Uses a transaction so two rapid
 // edits (partner and me clicking the same day) don't both see the same
 // stale `editsUsed` and cause the counter to under-count.
+//
+// Paid couples get UNLIMITED edits, so they can fully customise a program
+// as their own list (e.g. author every Desire day themselves). Free tier
+// still caps at MAX_EDITS per uid. isPremium is read server-side from the
+// couple doc rather than trusted from the client, so a spoofed local
+// subscription state can't unlock the paid cap.
 export async function editTask(
   coupleId: string,
   day: number,
@@ -56,12 +62,15 @@ export async function editTask(
   _state: ChallengeState
 ): Promise<void> {
   const ref = doc(db, 'couples', coupleId, 'challenge', 'active');
+  const coupleRef = doc(db, 'couples', coupleId);
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) return;
+    const coupleSnap = await tx.get(coupleRef);
+    const isPremium = coupleSnap.exists() && (coupleSnap.data() as { isPremium?: boolean }).isPremium === true;
     const current = snap.data() as ChallengeState;
     const used = current.editsUsed[uid] ?? 0;
-    if (used >= MAX_EDITS) return;
+    if (!isPremium && used >= MAX_EDITS) return;
     tx.update(ref, {
       [`customTasks.${day}`]: text,
       [`editsUsed.${uid}`]: used + 1,
