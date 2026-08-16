@@ -89,6 +89,17 @@ Ordered roughly by impact / effort ratio (best first).
 ### H5 Async Dares launcher tile — ✅ shipped, then ↩️ reversed by H14 (Aug 2026)
 Tile added, then removed 2 days later when async dares got consolidated into Truth or Dare's mode picker. Reason: after H5 landed, Home + Discover + Home-nudge stack all surfaced "Dares" independently of "Truth or Dare", creating a naming/brand collision. H14 fixes the collision; the discoverability gap that H5 was solving is now covered by the T-or-D tile → Send a Dare mode. Home nudges for in-flight dares still deep-link to /dares.
 
+### H21 WYR daily cap (5/day free, "Draw 5 more" paid) — ✅ shipped (next commit)
+**Files:** `services/wyrService.ts` (interface + constants + answerWYR mod + drawMoreWYR), `app/would-you-rather.tsx` (derive + DoneState render + styles), `CLAUDE.md` (WYR docs)
+**Change:**
+- WYR had no daily cap — pool wrapped infinitely via modulo, content burned out fast, no pacing. User asked for the Daily Picks bonus-draw pattern applied to WYR.
+- Extended `WYRSession` interface with three optional fields: `dayKey`, `answeredToday`, `bonusDraws`. Exports three new constants: `WYR_DAILY_CAP = 5`, `WYR_BONUS_PER_DRAW = 5`, `WYR_MAX_BONUS_DRAWS = 3` (mirrors dailyWishService's `MAX_BONUS_DRAWS = 3`).
+- `answerWYR` transaction now increments `answeredToday` on fresh reveal only (guards against duplicate-tap flip), with a day-rollover check that resets the counter + bonusDraws when `live.dayKey !== today`. Zero destructive migration — existing sessions with no `dayKey` treat their next reveal as a rollover.
+- New `drawMoreWYR(coupleId)` service function — atomic increment of `bonusDraws` bounded by `WYR_MAX_BONUS_DRAWS`. Ships `wyr_draw_more` stat event.
+- `would-you-rather.tsx` reveal state: when `capReached = answeredToday >= dailyCap`, the Next Question button is replaced by an inline DoneState (mirrors daily.tsx's DoneState in shape). Paid users see "+ Draw 5 more" button + hint "{N} of 3 draws left today"; free users see burgundy upsell card routing to `/upgrade`. Tail line: "Come back tomorrow for a fresh set ✨" / "Fresh set every morning ✨" / "You've drawn everything today, fresh set tomorrow ✨" depending on tier + draws-left state.
+- `handleDrawMore` bumps bonusDraws AND immediately advances to next question (user tapped Draw More from the DoneState → implicitly done with current reveal).
+**Why:** User caught during Bug bash Round 2 that WYR looped infinitely with no pacing. Same shape as the Daily pattern users already know — one less mental model to learn.
+
 ### H20 Truth or Dare Home nudges — ✅ shipped (next commit)
 **Files:** `app/(tabs)/index.tsx`, `CLAUDE.md`
 **Change:**

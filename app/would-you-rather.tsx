@@ -7,7 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, updateCustomWYRQuestion, deleteCustomWYRQuestion, WYRRecords, WYRCustomQuestion } from '../services/wyrService';
+import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, updateCustomWYRQuestion, deleteCustomWYRQuestion, WYRRecords, WYRCustomQuestion, drawMoreWYR, WYR_DAILY_CAP, WYR_BONUS_PER_DRAW, WYR_MAX_BONUS_DRAWS } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYR_PACKS, WYRLevel, WYRPack } from '../constants/content';
 import { personalise } from '../services/personalise';
@@ -254,6 +254,30 @@ export default function WouldYouRatherScreen() {
   const partnerAnswer = session?.answers[partnerId ?? ''];
   const bothAnswered = session?.revealed;
   const matched = bothAnswered && myAnswer === partnerAnswer;
+
+  // Daily-cap state (Aug 2026 pacing). `answeredToday` is client-derived
+  // with a day-rollover guard: if the session's stored dayKey is not
+  // today's, treat the counter as 0 even before the next `answerWYR`
+  // reveal writes the reset. `dailyCap` scales with the paid-tier
+  // `bonusDraws`; `capReached` gates the DoneState render below.
+  const todayLocal = new Date().toISOString().slice(0, 10);
+  const answeredToday = session && session.dayKey === todayLocal
+    ? (session.answeredToday ?? 0)
+    : 0;
+  const dailyCap = WYR_DAILY_CAP + (session?.bonusDraws ?? 0) * WYR_BONUS_PER_DRAW;
+  const capReached = !!bothAnswered && answeredToday >= dailyCap;
+  const bonusDrawsLeft = WYR_MAX_BONUS_DRAWS - (session?.bonusDraws ?? 0);
+
+  const handleDrawMore = async () => {
+    if (!coupleId || !partnerId || !session) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Bump the bonusDraws counter first (extends today's cap), then
+    // immediately advance to the next question — the user tapped
+    // "Draw more" from the DoneState, so they're implicitly done with
+    // the current reveal and expect a fresh question next.
+    await drawMoreWYR(coupleId);
+    await nextWYRQuestion(coupleId, session, [uid, partnerId]);
+  };
 
   const handleStart = async (level: WYRLevel, packId?: string) => {
     if (!coupleId) return;
@@ -796,9 +820,56 @@ export default function WouldYouRatherScreen() {
                 </TouchableOpacity>
               )
             )}
-            <TouchableOpacity style={[styles.nextBtn, { backgroundColor: cfg.textColor }]} onPress={handleNext} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.nextBtnText}>Next question →</Text>
-            </TouchableOpacity>
+            {capReached ? (
+              // Daily-cap DoneState replaces the Next Question button once
+              // today's answered count reaches the paid+bonus cap. Mirrors
+              // daily.tsx's DoneState shape and copy for consistency.
+              <View style={styles.doneStateWrap}>
+                <Text style={styles.doneStateEmoji}>✨</Text>
+                <Text style={styles.doneStateTitle}>
+                  {answeredToday > WYR_DAILY_CAP
+                    ? `You've done ${answeredToday} today`
+                    : 'Daily 5 done'}
+                </Text>
+                <View style={styles.doneStateStats}>
+                  <View style={styles.doneStateStat}>
+                    <Text style={styles.doneStateStatNum}>{session.score.match}</Text>
+                    <Text style={styles.doneStateStatLabel}>matches</Text>
+                  </View>
+                  <View style={styles.doneStateStatDiv} />
+                  <View style={styles.doneStateStat}>
+                    <Text style={styles.doneStateStatNum}>{session.score.total}</Text>
+                    <Text style={styles.doneStateStatLabel}>total</Text>
+                  </View>
+                </View>
+                {isSubscribed && bonusDrawsLeft > 0 && (
+                  <TouchableOpacity style={styles.wyrDrawMoreBtn} onPress={handleDrawMore} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={`Draw 5 more questions. ${bonusDrawsLeft} of ${WYR_MAX_BONUS_DRAWS} draws left today`}>
+                    <Text style={styles.wyrDrawMoreBtnText}>+ Draw 5 more</Text>
+                    <Text style={styles.wyrDrawMoreBtnHint}>{bonusDrawsLeft} of {WYR_MAX_BONUS_DRAWS} draws left today</Text>
+                  </TouchableOpacity>
+                )}
+                {!isSubscribed && (
+                  <TouchableOpacity style={styles.wyrUpsellCard} onPress={() => { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); }} activeOpacity={0.85} accessibilityRole="button">
+                    <Text style={styles.wyrUpsellTitle}>Want more today?</Text>
+                    <Text style={styles.wyrUpsellBody}>Premium unlocks Spicy level and up to 3 extra sets of questions per day.</Text>
+                    <View style={styles.wyrUpsellCta}>
+                      <Text style={styles.wyrUpsellCtaText}>Try Premium →</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                <Text style={styles.wyrDoneComeBack}>
+                  {!isSubscribed
+                    ? 'Or come back tomorrow for a fresh set ✨'
+                    : bonusDrawsLeft > 0
+                      ? 'Fresh set every morning ✨'
+                      : "You've drawn everything today, fresh set tomorrow ✨"}
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity style={[styles.nextBtn, { backgroundColor: cfg.textColor }]} onPress={handleNext} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.nextBtnText}>Next question →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -1154,4 +1225,26 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   savedChipText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: '#2E7D32', letterSpacing: 0.3 },
+
+  // Daily-cap DoneState (Aug 2026). Mirrors daily.tsx DoneState visual
+  // language — same emoji size, stat row shape, upsell card treatment,
+  // "come back tomorrow" tail. Style names prefixed `wyr` where they
+  // could collide with existing style keys defined earlier in this file.
+  doneStateWrap: { alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.lg, paddingHorizontal: Spacing.md, marginTop: Spacing.md },
+  doneStateEmoji: { fontSize: 48 },
+  doneStateTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy, textAlign: 'center' },
+  doneStateStats: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, marginTop: Spacing.xs },
+  doneStateStat: { alignItems: 'center' },
+  doneStateStatNum: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.text },
+  doneStateStatLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.muted, letterSpacing: 0.4, textTransform: 'uppercase' },
+  doneStateStatDiv: { width: 1, height: 32, backgroundColor: Colors.border },
+  wyrDrawMoreBtn: { marginTop: Spacing.md, backgroundColor: Colors.blush, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, alignItems: 'center', gap: 2, borderWidth: 1, borderColor: Colors.rose },
+  wyrDrawMoreBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  wyrDrawMoreBtnHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
+  wyrUpsellCard: { marginTop: Spacing.md, backgroundColor: Colors.burgundy, paddingVertical: Spacing.lg, paddingHorizontal: Spacing.lg, borderRadius: Radius.xl, alignItems: 'center', gap: Spacing.sm, maxWidth: 340, ...Shadow.sm },
+  wyrUpsellTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.cream },
+  wyrUpsellBody: { fontFamily: Fonts.body, fontSize: 13, color: Colors.blush, textAlign: 'center', lineHeight: 20 },
+  wyrUpsellCta: { marginTop: Spacing.sm, backgroundColor: Colors.cream, paddingVertical: 10, paddingHorizontal: Spacing.lg, borderRadius: Radius.full },
+  wyrUpsellCtaText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  wyrDoneComeBack: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
 });

@@ -156,7 +156,7 @@ couples/{coupleId}/reminders/{id}    FlirtReminder — message, time, days[], ac
 couples/{coupleId}/dates/{id}        ImportantDate — label, date, emoji, createdBy
 couples/{coupleId}/challenge/active  ChallengeState — program, phase, currentDay, completedDays[], completedBy, customTasks, editsUsed, vetoesUsed
 couples/{coupleId}/blueprints/{uid}  BlueprintResult — type, scores, completedAt (readable by both)
-couples/{coupleId}/wyr/active        WYRSession — level, questionIndex, answers{uid:a|b}, revealed, score, savedToList?
+couples/{coupleId}/wyr/active        WYRSession — level, questionIndex, answers{uid:a|b}, revealed, score, savedToList?, dayKey?, answeredToday?, bonusDraws? (H21 daily-cap fields Aug 2026)
 couples/{coupleId}/bingo/{month}     ActivityCardsSession — squares[], revealed[], revealedBy{}, completed[], pendingCard, turnUid, passes{}, receiverPasses{}, resetCount
 couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(picking|answering|done), card{type,text,answer,audioURL,answeredBy,dareConfirmed[]}, scores, round, skipsUsed
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
@@ -186,7 +186,7 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `helpService.ts` | `getHelpState`, `markFeatureSeen`, `setHelpEnabled`, `disableAllHelp`, `resetHelp` |
 | `dailyWishService.ts` | `subscribeDailyWishes`, `voteDailyWish`, `markAddToList`, `bothWantToAdd` |
 | `dailyQuestionsService.ts` | `subscribeDailyQuestions`, `submitAnswer`, `bothAnswered`, `markDiscussed`, `bothDiscussed` |
-| `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR`, `saveMatchToList` |
+| `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR`, `saveMatchToList`, `drawMoreWYR`, exports `WYR_DAILY_CAP` / `WYR_BONUS_PER_DRAW` / `WYR_MAX_BONUS_DRAWS` |
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 | `versusService.ts` | `loadVersusPool`, `getPartnerBinaryAnswerCount`, `VERSUS_UNLOCK_THRESHOLD` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items. Threshold gates whether Versus is shown in Discover at all (see below). |
@@ -233,7 +233,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Truth or Dare multiplayer:** Phase-based state machine (picking/answering/done) in Firestore. Picker draws card locally first (can skip/redraw before sending), then commits with `playCard()`. Truth: partner types text OR records audio (expo-av, uploaded to Firebase Storage). Dare: single-tap confirmation — challenged partner taps "Dare completed" and the round immediately moves to done (double-confirm removed Aug 2026, picker no longer has to also confirm; the extra click added zero trust value between partners who already share everything). Score goes to challenged person, not picker. `skipsUsed` tracks skips per uid. Picker screen has 2 live-play mode cards: Together Right Here (solo spin) and Wherever You Are (2-phone live). Inside Wherever You Are picking phase, partner can either DRAW random from the DARES / TRUTHS pool (top [Truth] [Dare] row) OR write their own via the "✏️ Truth" / "✏️ Dare" secondary row (Aug 2026 H19). Manual authoring writes to the same `playCard` service with a custom `text` field; partner-side rendering + answer/dare-complete flow is identical to pool-drawn cards. **The async-dares feature was deleted entirely Aug 2026 (H19)** — no more standalone `/dares` route, no `AsyncDaresPanel`, no `dareService`, no dare Home nudges, no deadline mechanic, no proof-photo upload. Manual live-mode authoring covers the same user-value (custom content) with dramatically less surface area.
 
-**WYR session persistence:** Session stored in Firestore — Back button and app exit do NOT reset the game. Push notification sent when you answer. Home screen nudge appears when partner answered but you haven't.
+**WYR session persistence:** Session stored in Firestore — Back button and app exit do NOT reset the game. Push notification sent when you answer. Home screen nudge appears when partner answered but you haven't. **Daily-cap pacing (Aug 2026, H21):** session carries `dayKey` + `answeredToday` + `bonusDraws` counters. Free tier caps at `WYR_DAILY_CAP` (5) reveals per day; paid tier can tap "Draw 5 more" from the DoneState to bump `bonusDraws` up to `WYR_MAX_BONUS_DRAWS` (3) packs = 20/day max. Counter resets on the first `answerWYR` reveal of a new day (`dayKey !== today` check inside the transaction). Cap applies per-couple-per-day across levels — switching from Playful to Romantic doesn't refresh the counter. Mirrors the Daily Picks bonus-draws pattern.
 
 **Questions Game reveal:** Both partners answer privately. Open-text uses TextInput. Binary uses two large buttons (q.options[0] | or | q.options[1]). Scale uses 1-5 chips with "1 = not at all · 5 = completely" hint. Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side.
 

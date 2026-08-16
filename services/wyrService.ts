@@ -21,6 +21,29 @@ export interface WYRSession {
   // means unsaved. Reset back to false on nextWYRQuestion so the next
   // match's Save button starts fresh.
   savedToList?: boolean;
+  // Aug 2026 daily-cap pacing (mirrors Daily Picks' bonusDraws pattern).
+  // Free tier: WYR_DAILY_CAP (5) reveals per day. Paid tier: same 5 base
+  // plus optional "Load 5 more" packs (bonusDraws) up to
+  // WYR_MAX_BONUS_DRAWS (3), giving a max of 20 reveals/day for paid.
+  // All three fields reset on the first answerWYR reveal of a new day
+  // (detected by comparing `dayKey` to the local `todayKey()`).
+  dayKey?: string;         // YYYY-MM-DD the counter belongs to
+  answeredToday?: number;  // Reveals so far today (counter, not questionIndex)
+  bonusDraws?: number;     // "Load 5 more" packs consumed today
+}
+
+// WYR daily-cap constants — reused by the screen for cap math + UI.
+export const WYR_DAILY_CAP = 5;
+export const WYR_BONUS_PER_DRAW = 5;
+export const WYR_MAX_BONUS_DRAWS = 3;
+
+// Local day key for cap rollover — inlined rather than shared because
+// exactly one other service (dailyWishService) has the same 3-line
+// helper, and extracting a common util for two callers is more overhead
+// than the duplication. Same shape (YYYY-MM-DD from ISO string) so if
+// we ever extract, both callers can migrate together.
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export function subscribeWYR(coupleId: string, onChange: (s: WYRSession | null) => void): Unsubscribe {
@@ -50,12 +73,42 @@ export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer
     const live = snap.data() as WYRSession;
     const newAnswers = { ...live.answers, [uid]: answer };
     const bothAnswered = Object.keys(newAnswers).length >= 2;
+    const freshReveal = bothAnswered && !live.revealed;
+    // Daily-cap counter (Aug 2026): increment on the FRESH reveal only,
+    // not on a duplicate flip. Day rollover check happens here — if the
+    // stored dayKey doesn't match today's, we reset the counter and the
+    // bonusDraws so tomorrow starts fresh regardless of when the last
+    // session was played.
+    const today = todayKey();
+    const isNewDay = live.dayKey !== today;
+    const capPatch = freshReveal
+      ? isNewDay
+        ? { dayKey: today, answeredToday: 1, bonusDraws: 0 }
+        : { answeredToday: (live.answeredToday ?? 0) + 1 }
+      : {};
     tx.update(ref, {
       [`answers.${uid}`]: answer,
       ...(bothAnswered ? { revealed: true } : {}),
+      ...capPatch,
     });
   });
   trackEvent('wyr_answered');
+}
+
+// "Load 5 more" — paid users can extend the daily cap by 5 reveals per
+// tap, up to WYR_MAX_BONUS_DRAWS packs. Mirrors drawMoreActions in
+// dailyWishService. Transaction so a double-tap can't blow past the cap.
+export async function drawMoreWYR(coupleId: string): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'wyr', 'active');
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const live = snap.data() as WYRSession;
+    const current = live.bonusDraws ?? 0;
+    if (current >= WYR_MAX_BONUS_DRAWS) return;
+    tx.update(ref, { bonusDraws: current + 1 });
+  });
+  trackEvent('wyr_draw_more');
 }
 
 // Transaction so two rapid "Next question" taps (partner and me at reveal
