@@ -10,7 +10,7 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## 🟡 In progress
 
-- [ ] **Test Bingo activities render partner name** (not literal `{partner}`) after `d830fed`. Open Activity Cards, verify the 3 activities with `{partner}` in text now show "Ola7" (or partner's actual name).
+_(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 
 ## ⏳ Pending — regression tests for recent commits
 
@@ -24,7 +24,7 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 - [x] **#7 T-or-D Skip flow** — ✅ PASSED. Picker redraw (max 2) + doer skip (turn switches, no score change, `skipsUsed` increments per uid).
 - [x] **#7 WYR full flow** — ✅ PASSED. Includes H21 daily cap (5/day free, "Draw 5 more" paid up to 3 packs = 20/day max), 56 discussion prompt rewrites for A/B-flavored bugs, 6 role-flipped question rewrites to symmetric shared-preference form, summary modal "Continue later" copy. Post-launch item added to POST_LAUNCH.md: WYR saved-matches overview + stats page.
 - [x] **#7 Bingo full flow** — ✅ PASSED across multiple commits: activity reciprocity rewording (`d46dabc`), "Tonight's Activity" / "picked for us" copy (`7bd6210`), sender-picks-again on skip B logic (`0e937c1`), in-app passed-try-another status text (`6b54798`). Includes Bingo activities render partner name (personalise fix from `d830fed` verified in-flow).
-- [ ] **#9 Auth flows** — register (with 18+ checkbox + consent write) + login + pairing (invite code generation + entry) + couple-connect + password reset via email
+- [x] **#9 Auth flows** — ✅ PASSED. Register (18+ checkbox + consent write) + login + pairing (invite code generation + entry) + couple-connect + password reset. H22 accept/decline shipped over `aa358b3` → `e03f766` → `36a39dd` → `c7341b5` (final: accepter always leaves /pairing after successful accept, sensible fallback if onboarding lookup fails).
 
 ## ⏳ Pending — Manual content read-through (user, self-paced)
 
@@ -46,6 +46,10 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## ✅ Shipped this session (Aug 2026)
 
+- `c7341b5` — H22 pairing: accepter always leaves /pairing after successful accept (was silently stuck when `ob.completed` was true or lookup threw). **User-tested PASS.**
+- `36a39dd` — H22 pairing: route accepter to /onboarding-tour after successful accept (mirror joiner-side routing).
+- `e03f766` — H22 pairing: fix accept-side stuck-on-pairing race — `justAccepted` flag + useEffect watches `profile.coupleId` before routing.
+- `aa358b3` — H22 pairing accept/decline flow — Óli approves Ola's pair request before couple confirmed. Server writes pending fields, root modal on any screen, waiting screen + Cancel for joiner, snapshot-driven cancel/decline.
 - `6b54798` — Bingo: in-app "partner passed, try another" signal on picker's turn indicator (derived from `receiverPasses` counter, no new schema field). **User-tested PASS.**
 - `0e937c1` — Bingo skip B logic: turn stays with sender on skip (they pick another), 3-consecutive-skip safeguard flips to receiver. **User-tested PASS.**
 - `7bd6210` — Bingo copy: "Tonight's Activity" (picker) + "picked activity card for us" (receiver) + "Send this to {partner}" CTA — reframe from solo-challenge to joint activity. **User-tested PASS.**
