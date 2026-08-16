@@ -187,7 +187,7 @@ export default function ActivityCardsScreen() {
         <View style={[styles.turnBadge, { backgroundColor: isReceiver ? '#E8F5E9' : isMyTurn ? Colors.burgundy : Colors.blush }]}>
           <Text style={[styles.turnText, { color: isReceiver ? '#2E7D32' : isMyTurn ? Colors.white : Colors.burgundy }]}>
             {isReceiver
-              ? `${partnerName} sent you a challenge!`
+              ? `${partnerName} picked an activity card for us!`
               : isMyTurn
               ? 'Your turn, pick any card'
               : `${partnerName}'s turn to pick`}
@@ -259,7 +259,7 @@ export default function ActivityCardsScreen() {
       <Modal visible={isReceiver} transparent animationType="fade">
         <View style={styles.revealOverlay}>
           <Animated.View style={styles.revealCard}>
-            <Text style={styles.revealLabel}>{partnerName} sent you a challenge</Text>
+            <Text style={styles.revealLabel}>{partnerName} picked activity card for us</Text>
             <Text style={styles.revealActivity}>
               {hasPendingCard ? personalise(session.squares[session.pendingCard!], partner?.name) : ''}
             </Text>
@@ -300,13 +300,13 @@ export default function ActivityCardsScreen() {
       <Modal visible={revealIndex !== null} transparent animationType="fade" onRequestClose={() => setRevealIndex(null)}>
         <View style={styles.revealOverlay}>
           <Animated.View style={[styles.revealCard, { transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.revealLabel}>Your challenge</Text>
+            <Text style={styles.revealLabel}>Tonight's activity</Text>
             <Text style={styles.revealActivity}>
               {revealIndex !== null ? personalise(session.squares[revealIndex], partner?.name) : ''}
             </Text>
             <Text style={styles.revealHint}>Do this together, then it's {partnerName}'s turn</Text>
             <TouchableOpacity style={styles.acceptBtn} onPress={handleAccept} activeOpacity={0.85} accessibilityRole="button">
-              <Text style={styles.acceptBtnText}>✓ Accept this challenge</Text>
+              <Text style={styles.acceptBtnText}>✓ Send this to {partnerName}</Text>
             </TouchableOpacity>
             {passesLeft > 0 ? (
               <TouchableOpacity style={styles.cancelRevealBtn} onPress={handlePass} accessibilityRole="button">
