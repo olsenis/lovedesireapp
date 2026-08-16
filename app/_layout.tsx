@@ -252,7 +252,19 @@ export default function RootLayout() {
           result.reason === 'already_paired' ? 'This couple is already paired.' :
           'Could not accept, please try again.',
         );
+        return;
       }
+      // Mirror the joiner-side routing behaviour so both partners land
+      // on the same post-pairing screen. If the accepter hasn't finished
+      // the onboarding tour yet (usually true for a fresh signup that
+      // just paired), route them to /onboarding-tour so they see the
+      // tour alongside the newly-paired state. If already completed,
+      // stay wherever they were (they might have been on Home mid-life
+      // for a re-pair after disconnect — don't yank them).
+      try {
+        const ob = await getOnboardingState(user.uid);
+        if (!ob?.completed) router.replace('/onboarding-tour' as any);
+      } catch { /* non-fatal */ }
     } catch (e: any) {
       setPairError('Could not accept, please try again.');
     } finally {
