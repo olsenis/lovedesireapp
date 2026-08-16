@@ -58,6 +58,12 @@ export default function PairingScreen() {
   const [pendingInviterName, setPendingInviterName] = useState<string>('your partner');
   const [waitingDeclined, setWaitingDeclined] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  // Set immediately after a successful accept-snapshot handler run.
+  // Paired with the useEffect that routes when profile.coupleId flips
+  // in to distinguish "just paired via accept" from "creator whose
+  // coupleId was set by createCouple" (creator must NOT route away —
+  // they need to stay on /pairing to see their code).
+  const [justAccepted, setJustAccepted] = useState(false);
 
   useEffect(() => {
     if (!user || authLoading) return;
@@ -191,9 +197,13 @@ export default function PairingScreen() {
       const iAmAccepted = couple.partner1Uid === user.uid || couple.partner2Uid === user.uid;
       if (iAmAccepted) {
         // Existing member tapped Accept — write coupleId onto our
-        // profile and route away. Also explicitly clear pendingCoupleId
-        // since createUserProfile is a merge write that wouldn't touch
-        // it otherwise.
+        // profile and clear pendingCoupleId (createUserProfile merges
+        // rather than touching that field, so needs an explicit
+        // deleteField). DON'T route here — routing before the useAuth
+        // profile subscription has received the coupleId update causes
+        // _layout's routeAfterConsent to bounce us back to /pairing on
+        // stale profile.coupleId=undefined. Instead, the useEffect
+        // below watches profile.coupleId and routes once it lands.
         try {
           await createUserProfile(user.uid, {
             name: profile?.name ?? '',
@@ -206,7 +216,7 @@ export default function PairingScreen() {
           console.warn('[pairing] profile write after accept failed', e);
         }
         setPendingCoupleId(null);
-        await routeAfterPair();
+        setJustAccepted(true);
         return;
       }
       // Not accepted yet — declined when pending fields cleared AND
@@ -221,6 +231,20 @@ export default function PairingScreen() {
     });
     return unsub;
   }, [pendingCoupleId, user, profile?.name, profile?.photoURL]);
+
+  // Route to Home / onboarding-tour only after a fresh accept. Guarded
+  // by `justAccepted` so the creator role (whose coupleId is set by
+  // createCouple while they wait to be joined) doesn't get bounced
+  // away from their invite-code screen. Runs when the profile
+  // subscription has actually received the coupleId update — routing
+  // any earlier lets _layout's routeAfterConsent see stale profile
+  // and bounce back to /pairing.
+  useEffect(() => {
+    if (!justAccepted || !user || !profile?.coupleId) return;
+    setJustAccepted(false);
+    routeAfterPair();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justAccepted, user, profile?.coupleId]);
 
   const handleCancelWaiting = async () => {
     if (!pendingCoupleId || !user || cancelling) return;
