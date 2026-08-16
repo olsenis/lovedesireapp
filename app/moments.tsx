@@ -28,6 +28,9 @@ export default function MomentsScreen() {
   const [moments, setMoments] = useState<MomentEntry[]>([]);
   const [uploading, setUploading] = useState(false);
   const [viewingMoment, setViewingMoment] = useState<MomentEntry | null>(null);
+  // Preview state — captured photo waits for user confirmation before
+  // uploading, so a bad shot can be retaken without committing.
+  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -52,25 +55,41 @@ export default function MomentsScreen() {
       mediaTypes: ['images'],
       quality: 0.85,
     });
+    // Don't upload immediately — stash the URI and let the preview modal
+    // give the user a Retake vs Send choice. Prevents a bad shot from
+    // being committed with no way to redo.
     if (!result.canceled) {
-      setUploading(true);
-      try {
-        const url = await uploadMomentPhoto(coupleId, uid, result.assets[0].uri);
-        await submitMomentPhoto(coupleId, uid, url);
-        notifyPartner(
-          coupleId, uid,
-          `${profile?.name ?? 'Partner'} captured today's moment 📸`,
-          'Take yours to reveal both photos'
-        ).catch(() => {});
-      } catch (err) {
-        const msg = err instanceof UploadTooLargeError
-          ? `Photo is too large after compression (${Math.round(err.actualBytes / 1024 / 1024)} MB). Please try a smaller photo.`
-          : 'Please try again.';
-        Alert.alert('Upload failed', msg);
-      } finally {
-        setUploading(false);
-      }
+      setPendingPhotoUri(result.assets[0].uri);
     }
+  };
+
+  const confirmSend = async () => {
+    if (!pendingPhotoUri) return;
+    setUploading(true);
+    try {
+      const url = await uploadMomentPhoto(coupleId, uid, pendingPhotoUri);
+      await submitMomentPhoto(coupleId, uid, url);
+      notifyPartner(
+        coupleId, uid,
+        `${profile?.name ?? 'Partner'} captured today's moment 📸`,
+        'Take yours to reveal both photos'
+      ).catch(() => {});
+      setPendingPhotoUri(null);
+    } catch (err) {
+      const msg = err instanceof UploadTooLargeError
+        ? `Photo is too large after compression (${Math.round(err.actualBytes / 1024 / 1024)} MB). Please try a smaller photo.`
+        : 'Please try again.';
+      Alert.alert('Upload failed', msg);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const retakePhoto = () => {
+    setPendingPhotoUri(null);
+    // Re-open camera on the next tick so the preview modal has time to
+    // dismiss cleanly before the camera launches.
+    setTimeout(() => { openCamera(); }, 100);
   };
 
   const formatDate = (dateStr: string) => {
@@ -199,6 +218,41 @@ export default function MomentsScreen() {
           )}
         </View>
       </Modal>
+
+      {/* Preview + confirm modal — user picked/captured a photo, hasn't
+          committed yet. Retake reopens the camera, Send uploads. */}
+      <Modal visible={!!pendingPhotoUri} animationType="slide" presentationStyle="fullScreen">
+        <View style={styles.previewContainer}>
+          <View style={styles.previewHeader}>
+            <Text style={styles.previewTitle}>Send this moment?</Text>
+          </View>
+          {pendingPhotoUri && (
+            <View style={styles.previewImageWrap}>
+              <Image source={{ uri: pendingPhotoUri }} style={styles.previewImage} contentFit="contain" />
+            </View>
+          )}
+          <View style={styles.previewActions}>
+            <TouchableOpacity
+              onPress={retakePhoto}
+              disabled={uploading}
+              style={[styles.previewRetake, uploading && { opacity: 0.5 }]}
+              activeOpacity={0.85}
+              accessibilityRole="button">
+              <Text style={styles.previewRetakeText}>Retake</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={confirmSend}
+              disabled={uploading}
+              style={[styles.previewSend, uploading && { opacity: 0.6 }]}
+              activeOpacity={0.85}
+              accessibilityRole="button">
+              {uploading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.previewSendText}>Send photo</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -277,4 +331,16 @@ const styles = StyleSheet.create({
   viewerLabels: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', paddingVertical: Spacing.sm },
   viewerLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#fff' },
   viewerDate: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
+  // Preview modal for captured photo before upload — user can Retake
+  // or Send. Full-screen, matches Moments' dark viewer aesthetic.
+  previewContainer: { flex: 1, backgroundColor: '#000' },
+  previewHeader: { paddingTop: 56, paddingBottom: Spacing.md, alignItems: 'center' },
+  previewTitle: { fontFamily: Fonts.heading, fontSize: 22, color: '#fff' },
+  previewImageWrap: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', padding: Spacing.md },
+  previewImage: { width: '100%', height: '100%' },
+  previewActions: { flexDirection: 'row', gap: Spacing.md, padding: Spacing.lg, paddingBottom: Spacing.xxl },
+  previewRetake: { flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.4)', alignItems: 'center' },
+  previewRetakeText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: '#fff' },
+  previewSend: { flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.burgundy, alignItems: 'center' },
+  previewSendText: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.cream },
 });
