@@ -6,6 +6,34 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## Live time-based Home nudges (raised August 2026)
+
+### What
+Home "Waiting for you" nudges that depend on real time passing (Love Note openAt unlock, Sensate 14-day inactivity, day rollover on Daily/WYR bonus draws) currently only refresh when the user reloads the app. On web Vercel preview, a Love Note that unlocks at 15:00 while the user has Home open at 14:58 stays hidden until they cold-start the tab.
+
+Attempted fix stack (commits `23479a5` → `c9181fd` → `d7cbe47`, all shipped, all ineffective on web preview):
+- 60s ticker `setInterval` triggering `setTick`
+- Per-note precise `setTimeout` scheduled at each pending `openAt`
+- `visibilitychange` listener to refresh on tab return
+- All wired into the `nudges` useMemo deps
+
+None fired the live nudge on Vercel — user still had to reload. Root cause not identified in the session (would need live DevTools debugging — possibly React 19 concurrent rendering deferring, useMemo memoization edge case, or Vercel bundle-caching layer).
+
+### Why deferred
+- App is mobile-only per CLAUDE.md; web is preview only. Native Expo Go / EAS build has different timing behavior — the fix stack (all standard React APIs) is likely to work on native. Deferring verification to real device testing rather than chasing a web-specific quirk pre-launch.
+- Cold-start nudge works everywhere. Users who close/reopen the app (typical mobile usage pattern) never see this issue.
+- 4 iteration attempts already burned; diminishing returns.
+
+### Decision criteria for revisiting
+- Verify on Expo Go once dev switches to phone testing. If nudge fires live there, mark web-only and ignore.
+- If nudge is also broken on native, then debug: add console instrumentation to confirm tick fires, useMemo recomputes, readyNotes filter includes the note.
+- User feedback: "I missed a love note because the app didn't tell me it was ready" → then it's a real bug worth chasing regardless of platform.
+
+### Effort estimate
+~1-2h with live DevTools + a test device. Fix code is likely already in place (d7cbe47); just need to verify the recompute chain actually fires on the target platform.
+
+---
+
 ## Extend session pacing to other decks (raised August 2026)
 
 ### What
