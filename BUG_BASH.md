@@ -33,8 +33,8 @@ _(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 ## ⏳ Pending — Bug bash Round 3
 
 - [x] **Copy sweep** across all screens — ✅ shipped `b1bb14a`. Round 3 agent audit found 8 lingering issues + 1 defensive opportunity. All fixed: challenge.tsx error message (leaked "Permission denied, check Firebase rules"), profile.tsx pairing error fallback (leaked reason codes), inactive-partner hint on Home, T-or-D sent-truth banner, Us tab "Speak their language" card, state-union wait hint, 2 sensate guided prompts, T-or-D mode picker sub. Also defensive-wrapped `versus.tsx` question text in personalise(). **Zero em dashes** and **zero unwrapped `{partner}` tokens** confirmed clean across app/ and components/.
-- [ ] **LDR mode toggle test** — Profile → flip `isLongDistance` on/off → verify T-or-D pool filters (LDR sees `ldr + either`, non-LDR sees `physical + either`), Home ritual copy adapts, Notes / Countdowns / Roulette LDR variants surface correctly
-- [ ] **Unpaid user coverage** — create QA account with `couples/{id}.isPremium = false` in Firebase Console → verify gates on Discover / Us / paywalled screens / category gates in Daily + WYR + T-or-D + Challenge. Deferred to a dedicated session since user is currently on paid tier.
+- [x] **LDR mode toggle test** — ✅ PASSED. Profile toggle flips filters cleanly: T-or-D pool switches between `ldr + either` and `physical + either`, Home ritual copy adapts, Notes / Countdowns / Roulette LDR variants surface.
+- [ ] **Unpaid user coverage** — flip `couples/{id}.isPremium = false` on QA couple in Firebase Console → verify gates on Discover / Us / paywalled screens / category gates in Daily + WYR + T-or-D + Challenge.
 
 ## ⏳ Launch-prep chain (after bug bash passes)
 
