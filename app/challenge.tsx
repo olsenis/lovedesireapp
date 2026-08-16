@@ -288,15 +288,19 @@ export default function ChallengeScreen() {
       reorderChallenge(coupleId, newOrder).catch(() => { /* subscription re-hydrates on failure */ });
     };
 
-    const renderDayCard = ({ item: task, drag, isActive }: RenderItemParams<ChallengeTask>) => {
+    const renderDayCard = ({ item: task, drag, isActive, getIndex }: RenderItemParams<ChallengeTask>) => {
       const custom = state.customTasks?.[task.day];
       const displayText = custom ?? task.text;
       const isCustom = !!custom;
+      // Number by display position so the arc always reads Day 1..30 in
+      // sequence, no matter which slot got dragged where. slot ID (task.day)
+      // stays the identity used for customTasks lookup + edit writes.
+      const displayDay = (getIndex?.() ?? 0) + 1;
       return (
         <ScaleDecorator>
           <View style={[styles.dayCard, isCustom && styles.dayCardEdited, isActive && styles.dayCardDragging]}>
             <View style={styles.dayCardLeft}>
-              <Text style={[styles.dayNum, { color: cfg.textColor }]}>{task.day}</Text>
+              <Text style={[styles.dayNum, { color: cfg.textColor }]}>{displayDay}</Text>
             </View>
             <Text style={styles.dayText}>{personalise(displayText, partner?.name)}</Text>
             {(canEditFreely || myEditsLeft > 0) && (
@@ -385,7 +389,7 @@ export default function ChallengeScreen() {
         <Modal visible={editModal} transparent animationType="slide">
           <View style={styles.modalOverlay}>
             <View style={styles.modal}>
-              <Text style={styles.modalTitle}>Edit Day {editDay}</Text>
+              <Text style={styles.modalTitle}>Edit Day {editDay !== null ? orderedSlots.indexOf(editDay) + 1 : ''}</Text>
               <Text style={styles.modalSubtitle}>Replace this day's task with your own, or tap Suggest another for a different one.</Text>
               <View style={styles.refreshBtnRow}>
                 <TouchableOpacity
