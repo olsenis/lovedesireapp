@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Platform } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -293,6 +293,42 @@ export default function ChallengeScreen() {
       reorderChallenge(coupleId, next).catch(() => { /* subscription re-hydrates */ });
     };
 
+    // HTML5 drag-and-drop on web. RN Web transpiles View → div, so browser
+    // native drag events work when we pass draggable + onDragStart/Over/Drop
+    // through the props (cast to any because RN types don't know about
+    // DOM drag events). No library, works with the existing ScrollView.
+    // Not exposed on native — arrows above handle that platform.
+    const isWeb = Platform.OS === 'web';
+    const dragMoveByIndex = (from: number, to: number) => {
+      if (!coupleId || !canEditFreely || from === to) return;
+      if (from < 0 || from > 29 || to < 0 || to > 29) return;
+      const next = [...orderedSlots];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      reorderChallenge(coupleId, next).catch(() => { /* subscription re-hydrates */ });
+    };
+    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+    const webDragProps = (idx: number) => !isWeb || !canEditFreely ? {} : ({
+      draggable: true,
+      onDragStart: (e: any) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(idx));
+      },
+      onDragOver: (e: any) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragOverIdx !== idx) setDragOverIdx(idx);
+      },
+      onDragLeave: () => setDragOverIdx((cur) => (cur === idx ? null : cur)),
+      onDrop: (e: any) => {
+        e.preventDefault();
+        const from = Number(e.dataTransfer.getData('text/plain'));
+        setDragOverIdx(null);
+        if (!Number.isNaN(from)) dragMoveByIndex(from, idx);
+      },
+      onDragEnd: () => setDragOverIdx(null),
+    } as any);
+
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
@@ -321,7 +357,9 @@ export default function ChallengeScreen() {
           </View>
           {canEditFreely && (
             <View style={styles.reorderHint}>
-              <Text style={styles.reorderHintText}>↑↓ Tap arrows to reorder days</Text>
+              <Text style={styles.reorderHintText}>
+                {isWeb ? '☰ Drag a day to reorder' : '↑↓ Tap arrows to reorder days'}
+              </Text>
             </View>
           )}
 
@@ -333,8 +371,12 @@ export default function ChallengeScreen() {
             // in sequence. slot ID (task.day) stays the identity used for
             // customTasks lookup + edit writes.
             const displayDay = idx + 1;
+            const isDragTarget = dragOverIdx === idx;
             return (
-              <View key={`slot-${task.day}`} style={[styles.dayCard, isCustom && styles.dayCardEdited]}>
+              <View
+                key={`slot-${task.day}`}
+                style={[styles.dayCard, isCustom && styles.dayCardEdited, isDragTarget && styles.dayCardDragOver]}
+                {...webDragProps(idx)}>
                 <View style={styles.dayCardLeft}>
                   <Text style={[styles.dayNum, { color: cfg.textColor }]}>{displayDay}</Text>
                 </View>
@@ -345,7 +387,17 @@ export default function ChallengeScreen() {
                   </TouchableOpacity>
                 )}
                 {isCustom && !canEditFreely && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
-                {canEditFreely && (
+                {canEditFreely && isWeb && (
+                  // Web drag handle indicator — the whole card is draggable
+                  // via HTML5 drag/drop, this ☰ is just a visual affordance.
+                  <View style={styles.webDragAffordance} pointerEvents="none">
+                    <Text style={styles.webDragAffordanceText}>☰</Text>
+                  </View>
+                )}
+                {canEditFreely && !isWeb && (
+                  // Native fallback: tap ↑/↓ arrows since HTML5 drag doesn't
+                  // exist on iOS/Android. Post-launch we can add a native
+                  // gesture-handler-based drag if analytics show usage.
                   <View style={styles.arrowStack}>
                     <TouchableOpacity
                       onPress={() => handleMove(idx, 'up')}
@@ -626,11 +678,17 @@ const styles = StyleSheet.create({
   reorderHint: { backgroundColor: Colors.blush, borderRadius: Radius.md, padding: Spacing.sm, alignItems: 'center', marginTop: Spacing.xs },
   reorderHintText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
   // Paid-tier ↑/↓ reorder arrows stacked on the right side of each card.
-  // Replaced drag-to-reorder after react-native-draggable-flatlist proved
-  // incompatible with Reanimated 4 (peer-dep drift). Arrows work identical
-  // on web + Expo Go + EAS build, no gesture library brittleness.
+  // Native fallback for iOS/Android — HTML5 drag doesn't exist there.
   arrowStack: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 },
   arrowBtn: { paddingHorizontal: Spacing.sm, paddingVertical: 2 },
   arrowBtnDisabled: { opacity: 0.25 },
   arrowBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  // Web ☰ affordance — the whole card is draggable via HTML5 drag/drop,
+  // this icon is just a visual cue. pointerEvents=none so it doesn't
+  // steal the drag gesture from the parent View.
+  webDragAffordance: { paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs, alignItems: 'center', justifyContent: 'center' },
+  webDragAffordanceText: { fontFamily: Fonts.bodyBold, fontSize: 20, color: Colors.muted },
+  // Applied to the day card currently being hovered over during a web
+  // drag operation. Highlights the drop target.
+  dayCardDragOver: { borderColor: Colors.burgundy, borderWidth: 2, backgroundColor: Colors.blush },
 });
