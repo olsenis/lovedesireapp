@@ -189,13 +189,21 @@ export default function ActivityCardsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.month}>{currentMonthName}</Text>
 
-        {/* Turn indicator */}
+        {/* Turn indicator. When it's my turn AND partner has a non-zero
+            consecutive-skip counter, they just passed on my last card
+            (counter resets on accept and on the 3-in-a-row safeguard
+            flip, so a non-zero value means the last resolution was a
+            skip). Show a context-aware "passed, try another" message
+            instead of the generic "pick any card" so the in-app signal
+            matches the push copy that only fires on real devices. */}
         <View style={[styles.turnBadge, { backgroundColor: isReceiver ? '#E8F5E9' : isMyTurn ? Colors.burgundy : Colors.blush }]}>
           <Text style={[styles.turnText, { color: isReceiver ? '#2E7D32' : isMyTurn ? Colors.white : Colors.burgundy }]}>
             {isReceiver
               ? `${partnerName} picked an activity card for us!`
               : isMyTurn
-              ? 'Your turn, pick any card'
+              ? ((session.receiverPasses?.[partnerId ?? ''] ?? 0) > 0
+                  ? `${partnerName} passed, try another`
+                  : 'Your turn, pick any card')
               : `${partnerName}'s turn to pick`}
           </Text>
         </View>
