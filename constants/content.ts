@@ -1401,6 +1401,20 @@ export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
   ],
 };
 
+// Alternate task pool per program, powers the Refresh button in the Edit Day
+// modal. Not day-slotted, just pooled per program at the same intensity /
+// theme register as the defaults. Refresh picks from [alternates + defaults]
+// minus texts already assigned to another day in the current challenge.
+// Empty arrays are fine, the Refresh button silently no-ops. Populate via
+// the authoring prompt at memory/challenge_alternates_prompt.md.
+export const CHALLENGE_ALTERNATES: Record<ChallengeProgram, string[]> = {
+  reconnect: [],
+  spark: [],
+  fire: [],
+  desire: [],
+  distance: [],
+};
+
 // ─── TRUTH OR DARE, TRUTHS ───────────────────────────────────────────────────
 
 export interface Truth {

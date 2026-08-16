@@ -12,7 +12,7 @@ import {
   ChallengeState, subscribeChallenge, startChallenge, activateChallenge,
   editTask, markDayComplete, vetoDay, resetChallenge, MAX_EDITS, MAX_VETOES,
 } from '../services/challengeService';
-import { CHALLENGE_PROGRAMS, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '../constants/content';
+import { CHALLENGE_PROGRAMS, CHALLENGE_ALTERNATES, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '../constants/content';
 import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -119,6 +119,30 @@ export default function ChallengeScreen() {
     await editTask(coupleId, editDay, uid, editText.trim(), state);
     setEditModal(false);
     setEditDay(null);
+  };
+
+  // Refresh button in Edit Day modal: pull next unused task text from the
+  // program's pool (alternates + defaults). "Unused" means not already
+  // assigned to another day in the current challenge, and not the text
+  // currently in the field (so tapping always changes something).
+  // Client-only, doesn't touch Firestore, doesn't count as an edit.
+  const handleRefresh = () => {
+    if (!state?.program || editDay === null) return;
+    const defaults = CHALLENGE_PROGRAMS[state.program];
+    const alternates = CHALLENGE_ALTERNATES[state.program] ?? [];
+    const claimed = new Set<string>();
+    for (let d = 1; d <= 30; d++) {
+      if (d === editDay) continue;
+      const t = state.customTasks?.[d] ?? defaults.find(x => x.day === d)?.text;
+      if (t) claimed.add(t);
+    }
+    claimed.add(editText);
+    const pool = [...alternates, ...defaults.map(t => t.text)];
+    const candidates = pool.filter(t => !claimed.has(t));
+    if (candidates.length === 0) return;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    setEditText(pick);
+    Haptics.selectionAsync();
   };
 
   const handleMark = async () => {
@@ -278,7 +302,17 @@ export default function ChallengeScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modal}>
               <Text style={styles.modalTitle}>Edit Day {editDay}</Text>
-              <Text style={styles.modalSubtitle}>Replace this day's task with your own.</Text>
+              <Text style={styles.modalSubtitle}>Replace this day's task with your own, or refresh for another suggestion.</Text>
+              <View style={styles.refreshBtnRow}>
+                <TouchableOpacity
+                  style={styles.refreshBtn}
+                  onPress={handleRefresh}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Suggest a different task">
+                  <Text style={styles.refreshBtnText}>🔄 Refresh</Text>
+                </TouchableOpacity>
+              </View>
               <TextInput
                 style={styles.editInput}
                 value={editText}
@@ -291,7 +325,7 @@ export default function ChallengeScreen() {
                 <TouchableOpacity style={styles.editCancelBtn} onPress={() => setEditModal(false)} accessibilityRole="button">
                   <Text style={styles.cancelLinkText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.confirmBtn} onPress={handleSaveEdit} activeOpacity={0.85} accessibilityRole="button">
+                <TouchableOpacity style={styles.editSaveBtn} onPress={handleSaveEdit} activeOpacity={0.85} accessibilityRole="button">
                   <Text style={styles.confirmBtnText}>Save edit</Text>
                 </TouchableOpacity>
               </View>
@@ -501,4 +535,10 @@ const styles = StyleSheet.create({
   editInput: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, minHeight: 100, borderWidth: 1, borderColor: Colors.border },
   editModalBtns: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
   editCancelBtn: { flex: 1, alignItems: 'center', paddingVertical: Spacing.md },
+  // Edit modal Save button, scoped so it doesn't share confirmBtn's stray
+  // marginTop and no-flex behaviour that made Save shrink next to Cancel.
+  editSaveBtn: { flex: 1, backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, borderRadius: Radius.full, alignItems: 'center' },
+  refreshBtnRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: -Spacing.xs },
+  refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: 'rgba(136,14,79,0.04)' },
+  refreshBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.4 },
 });
