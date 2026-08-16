@@ -23,7 +23,7 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 - [ ] **#7 T-or-D Truth flow** — text answer path + audio recording path (record → upload → reveal on both phones) + score bump + next turn transition
 - [ ] **#7 T-or-D Skip flow** — picker `↺ Try another` (max 2 redraws) + doer "Skip this one" (turn switches, no score change, `skipsUsed` increments per uid)
 - [ ] **#7 WYR full flow** — Playful / Romantic / Spicy start, private answer, side-by-side reveal, match banner, save-to-list, session persistence across app close/reopen
-- [ ] **#7 Bingo full flow** — 5×5 grid renders face-down, flip + 2 picker passes, pending state, receiver Accept vs Skip, completed green state, reset month
+- [x] **#7 Bingo full flow** — ✅ PASSED across multiple commits: activity reciprocity rewording (`d46dabc`), "Tonight's Activity" / "picked for us" copy (`7bd6210`), sender-picks-again on skip B logic (`0e937c1`), in-app passed-try-another status text (`6b54798`). Includes Bingo activities render partner name (personalise fix from `d830fed` verified in-flow).
 - [ ] **#9 Auth flows** — register (with 18+ checkbox + consent write) + login + pairing (invite code generation + entry) + couple-connect + password reset via email
 
 ## ⏳ Pending — Manual content read-through (user, self-paced)
@@ -46,6 +46,10 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ## ✅ Shipped this session (Aug 2026)
 
+- `6b54798` — Bingo: in-app "partner passed, try another" signal on picker's turn indicator (derived from `receiverPasses` counter, no new schema field). **User-tested PASS.**
+- `0e937c1` — Bingo skip B logic: turn stays with sender on skip (they pick another), 3-consecutive-skip safeguard flips to receiver. **User-tested PASS.**
+- `7bd6210` — Bingo copy: "Tonight's Activity" (picker) + "picked activity card for us" (receiver) + "Send this to {partner}" CTA — reframe from solo-challenge to joint activity. **User-tested PASS.**
+- `d46dabc` — Bingo: reword 3 asymmetric activities to reciprocal ("Send each other voice notes..."). **User-tested PASS.**
 - `d2068f2` — H20 Truth or Dare Home "Waiting for you" nudges (2 mutually-exclusive branches: answering-waiting + picking-fresh-turn). **User-tested PASS.**
 - `b1bb14a` — Round 3 copy sweep: 9 findings fixed (leaked internal errors, bare pronouns on Home + T-or-D + love hub + state-union + sensate + profile) + defensive personalise() on versus
 - `b10c986` — CLAUDE.md companion-docs index (so future sessions know BUG_BASH / POLISH_TODO / TEST_CHECKLIST / etc. exist)
