@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
@@ -10,8 +11,9 @@ import { HelpModal } from '../components/HelpModal';
 import { notifyPartner } from '../services/notificationService';
 import {
   ChallengeState, subscribeChallenge, startChallenge, activateChallenge,
-  editTask, markDayComplete, vetoDay, resetChallenge, MAX_EDITS, MAX_VETOES,
+  editTask, markDayComplete, vetoDay, resetChallenge, reorderChallenge, MAX_EDITS, MAX_VETOES,
 } from '../services/challengeService';
+import { ChallengeTask } from '../constants/content';
 import { CHALLENGE_PROGRAMS, CHALLENGE_ALTERNATES, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '../constants/content';
 import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
@@ -264,6 +266,89 @@ export default function ChallengeScreen() {
 
   // ─── Setup phase, review & edit days ───────────────────────────────────────
   if (state.phase === 'setup') {
+    // Resolve display order. dayOrder is a permutation of 1..30 written by
+    // paid-tier reorderChallenge. Undefined = default sequential order.
+    // customTasks stays keyed by slot ID (task.day), so edits follow the
+    // slot across reorders.
+    const defaultOrder = Array.from({ length: 30 }, (_, i) => i + 1);
+    const orderedSlots = state.dayOrder && state.dayOrder.length === 30 ? state.dayOrder : defaultOrder;
+    const orderedTasks: ChallengeTask[] = orderedSlots
+      .map(slot => tasks.find(t => t.day === slot))
+      .filter((t): t is ChallengeTask => !!t);
+
+    const handleDragEnd = ({ data }: { data: ChallengeTask[] }) => {
+      if (!coupleId || !canEditFreely) return;
+      const newOrder = data.map(t => t.day);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      reorderChallenge(coupleId, newOrder).catch(() => { /* subscription re-hydrates on failure */ });
+    };
+
+    const renderDayCard = ({ item: task, drag, isActive }: RenderItemParams<ChallengeTask>) => {
+      const custom = state.customTasks?.[task.day];
+      const displayText = custom ?? task.text;
+      const isCustom = !!custom;
+      return (
+        <ScaleDecorator>
+          <TouchableOpacity
+            onLongPress={canEditFreely ? drag : undefined}
+            disabled={isActive}
+            delayLongPress={250}
+            activeOpacity={canEditFreely ? 0.85 : 1}
+            style={[styles.dayCard, isCustom && styles.dayCardEdited, isActive && styles.dayCardDragging]}
+            accessibilityRole="button"
+            accessibilityLabel={canEditFreely ? 'Long-press to reorder' : undefined}>
+            <View style={styles.dayCardLeft}>
+              <Text style={[styles.dayNum, { color: cfg.textColor }]}>{task.day}</Text>
+            </View>
+            <Text style={styles.dayText}>{personalise(displayText, partner?.name)}</Text>
+            {(canEditFreely || myEditsLeft > 0) && (
+              <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Edit day">
+                <Text style={styles.editBtnText}>✏️</Text>
+              </TouchableOpacity>
+            )}
+            {isCustom && !canEditFreely && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
+          </TouchableOpacity>
+        </ScaleDecorator>
+      );
+    };
+
+    const ListHeader = (
+      <>
+        <View style={[styles.setupBadge, { backgroundColor: cfg.color }]}>
+          <Text style={styles.setupBadgeEmoji}>{cfg.emoji}</Text>
+          <Text style={[styles.setupBadgeLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
+        </View>
+        <Text style={styles.setupIntro}>
+          {canEditFreely
+            ? 'Review all 30 days. Rewrite as many as you like to build your own list.'
+            : `Review all 30 days. You can swap up to ${MAX_EDITS} of them before starting.`}
+        </Text>
+        <View style={[styles.editCounter, !canEditFreely && myEditsLeft === 0 && styles.editCounterDone]}>
+          <Text style={styles.editCounterText}>
+            {canEditFreely
+              ? '✏️ Unlimited edits, premium'
+              : myEditsLeft > 0
+                ? `✏️ You have ${myEditsLeft} edit${myEditsLeft > 1 ? 's' : ''} remaining`
+                : '✓ No edits remaining'}
+          </Text>
+        </View>
+        {canEditFreely && (
+          <Text style={styles.reorderHint}>Long-press a day to reorder.</Text>
+        )}
+      </>
+    );
+
+    const ListFooter = (
+      <>
+        <TouchableOpacity style={[styles.activateBtn, { backgroundColor: cfg.textColor }]} onPress={handleActivate} activeOpacity={0.85} accessibilityRole="button">
+          <Text style={styles.activateBtnText}>Start Challenge →</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleReset} style={styles.cancelLink} accessibilityRole="button">
+          <Text style={styles.cancelLinkText}>Choose a different program</Text>
+        </TouchableOpacity>
+      </>
+    );
+
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
@@ -271,53 +356,16 @@ export default function ChallengeScreen() {
           <Text style={styles.title}>Review Days</Text>
           <View style={{ width: 60 }} />
         </View>
-        <ScrollView contentContainerStyle={styles.setupContent}>
-          <View style={[styles.setupBadge, { backgroundColor: cfg.color }]}>
-            <Text style={styles.setupBadgeEmoji}>{cfg.emoji}</Text>
-            <Text style={[styles.setupBadgeLabel, { color: cfg.textColor }]}>{cfg.label}</Text>
-          </View>
-          <Text style={styles.setupIntro}>
-            {canEditFreely
-              ? 'Review all 30 days. Rewrite as many as you like to build your own list.'
-              : `Review all 30 days. You can swap up to ${MAX_EDITS} of them before starting.`}
-          </Text>
-          <View style={[styles.editCounter, !canEditFreely && myEditsLeft === 0 && styles.editCounterDone]}>
-            <Text style={styles.editCounterText}>
-              {canEditFreely
-                ? '✏️ Unlimited edits, premium'
-                : myEditsLeft > 0
-                  ? `✏️ You have ${myEditsLeft} edit${myEditsLeft > 1 ? 's' : ''} remaining`
-                  : '✓ No edits remaining'}
-            </Text>
-          </View>
-
-          {tasks.map((task) => {
-            const custom = state.customTasks?.[task.day];
-            const displayText = custom ?? task.text;
-            const isCustom = !!custom;
-            return (
-              <View key={task.day} style={[styles.dayCard, isCustom && styles.dayCardEdited]}>
-                <View style={styles.dayCardLeft}>
-                  <Text style={[styles.dayNum, { color: cfg.textColor }]}>{task.day}</Text>
-                </View>
-                <Text style={styles.dayText}>{personalise(displayText, partner?.name)}</Text>
-                {(canEditFreely || myEditsLeft > 0) && (
-                  <TouchableOpacity onPress={() => openEditModal(task.day)} style={styles.editBtn} accessibilityRole="button" accessibilityLabel="Edit day">
-                    <Text style={styles.editBtnText}>✏️</Text>
-                  </TouchableOpacity>
-                )}
-                {isCustom && !canEditFreely && myEditsLeft === 0 && <Text style={styles.editedBadge}>edited</Text>}
-              </View>
-            );
-          })}
-
-          <TouchableOpacity style={[styles.activateBtn, { backgroundColor: cfg.textColor }]} onPress={handleActivate} activeOpacity={0.85} accessibilityRole="button">
-            <Text style={styles.activateBtnText}>Start Challenge →</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleReset} style={styles.cancelLink} accessibilityRole="button">
-            <Text style={styles.cancelLinkText}>Choose a different program</Text>
-          </TouchableOpacity>
-        </ScrollView>
+        <DraggableFlatList
+          data={orderedTasks}
+          onDragEnd={handleDragEnd}
+          keyExtractor={(item) => `slot-${item.day}`}
+          renderItem={renderDayCard}
+          ListHeaderComponent={ListHeader}
+          ListFooterComponent={ListFooter}
+          contentContainerStyle={styles.setupContent}
+          activationDistance={10}
+        />
 
         {/* Edit day modal */}
         <Modal visible={editModal} transparent animationType="slide">
@@ -563,4 +611,9 @@ const styles = StyleSheet.create({
   refreshBtnRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: -Spacing.xs },
   refreshBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, backgroundColor: 'rgba(136,14,79,0.04)' },
   refreshBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, letterSpacing: 0.4 },
+  // Paid-tier drag-to-reorder hint under the edit counter. Long-press is
+  // not a self-advertising gesture so users need a tiny nudge.
+  reorderHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', marginTop: Spacing.xs, marginBottom: Spacing.sm },
+  // Applied while a day card is being dragged (isActive from DraggableFlatList).
+  dayCardDragging: { opacity: 0.92, ...Shadow.md },
 });

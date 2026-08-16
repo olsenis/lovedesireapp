@@ -10,9 +10,14 @@ export interface ChallengeState {
   completedDays: number[];
   startedAt: number;
   completedBy: Record<number, string[]>;
-  customTasks: Record<number, string>;   // day -> custom text (overrides default)
-  editsUsed: Record<string, number>;     // uid -> edits used (max 2 per person)
-  vetoesUsed: Record<string, number>;    // uid -> vetoes used (max 2 per person)
+  customTasks: Record<number, string>;   // slot -> custom text (overrides default). Keyed by original task slot ID, not display position, so edits follow the slot across reorders.
+  editsUsed: Record<string, number>;     // uid -> edits used (free tier max 2 per person, paid unlimited)
+  vetoesUsed: Record<string, number>;    // uid -> vetoes used (max 2 per person, both tiers)
+  // Paid-only reordering, setup phase only. Length 30, permutation of 1..30.
+  // dayOrder[displayIdx-1] = slot ID that displays at day displayIdx.
+  // Undefined = default order [1,2,...,30]. Server-side isPremium + phase
+  // check in reorderChallenge; free-tier writes rejected in transaction.
+  dayOrder?: number[];
 }
 
 export const MAX_EDITS = 2;
@@ -75,6 +80,32 @@ export async function editTask(
       [`customTasks.${day}`]: text,
       [`editsUsed.${uid}`]: used + 1,
     });
+  });
+}
+
+// Reorder days during setup phase (paid tier only). newOrder must be a
+// permutation of 1..30. Server-side reads couple.isPremium + verifies
+// phase === 'setup' inside the transaction, so a spoofed client can't
+// bypass either gate. Also defensively validates the permutation shape
+// (no dupes, in range) to prevent corrupted-write attacks.
+export async function reorderChallenge(coupleId: string, newOrder: number[]): Promise<void> {
+  const ref = doc(db, 'couples', coupleId, 'challenge', 'active');
+  const coupleRef = doc(db, 'couples', coupleId);
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) return;
+    const coupleSnap = await tx.get(coupleRef);
+    const isPremium = coupleSnap.exists() && (coupleSnap.data() as { isPremium?: boolean }).isPremium === true;
+    if (!isPremium) return;
+    const current = snap.data() as ChallengeState;
+    if (current.phase !== 'setup') return;
+    if (newOrder.length !== 30) return;
+    const seen = new Set<number>();
+    for (const n of newOrder) {
+      if (!Number.isInteger(n) || n < 1 || n > 30 || seen.has(n)) return;
+      seen.add(n);
+    }
+    tx.update(ref, { dayOrder: newOrder });
   });
 }
 

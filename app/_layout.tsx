@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -327,7 +328,10 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    // GestureHandlerRootView is required so descendant screens (like the
+    // 30-Day Challenge setup-phase DraggableFlatList) receive gesture
+    // events. Without this wrap, long-press-drag silently no-ops.
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="dark" backgroundColor={Colors.cream} />
       <Stack screenOptions={{ headerShown: false }} />
       {/* H22 pairing accept modal — root-level so it appears on any
@@ -376,7 +380,7 @@ export default function RootLayout() {
           </View>
         </View>
       </Modal>
-    </>
+    </GestureHandlerRootView>
   );
 }
 
