@@ -229,7 +229,12 @@ export default function IntimacyTrackerScreen() {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Where</Text>
-                  <Text style={styles.detailValue}>{LOC_LABELS[selectedEntry.location].emoji} {LOC_LABELS[selectedEntry.location].label}</Text>
+                  <Text style={styles.detailValue}>
+                    {LOC_LABELS[selectedEntry.location].emoji}{' '}
+                    {selectedEntry.location === 'other' && selectedEntry.otherLocationLabel
+                      ? selectedEntry.otherLocationLabel
+                      : LOC_LABELS[selectedEntry.location].label}
+                  </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>What</Text>
@@ -249,7 +254,9 @@ export default function IntimacyTrackerScreen() {
                     <View style={styles.chipRow}>
                       {selectedEntry.positions.map(p => (
                         <View key={p} style={styles.chipSelected}>
-                          <Text style={styles.chipTextSelected}>{p}</Text>
+                          <Text style={styles.chipTextSelected}>
+                            {p === 'Other' && selectedEntry.otherPositionLabel ? selectedEntry.otherPositionLabel : p}
+                          </Text>
                         </View>
                       ))}
                     </View>
@@ -496,6 +503,10 @@ function DetailSheet({
   // Persists to IntimacyEntry.otherLabel so entry display can show a
   // specific description instead of just "Other".
   const [otherLabel, setOtherLabel] = useState('');
+  // Same "describe your other" pattern for Where? (location === 'other')
+  // and Positions? ('Other' included in positions array).
+  const [otherLocationLabel, setOtherLocationLabel] = useState('');
+  const [otherPositionLabel, setOtherPositionLabel] = useState('');
   const [duration, setDuration] = useState('');
   const [positions, setPositions] = useState<string[]>([]);
   const [mood, setMood] = useState<IntimacyMood | null>(null);
@@ -513,7 +524,8 @@ function DetailSheet({
 
   const reset = () => {
     setInitiatedBy(null); setLocation(null); setTypes([]); setOtherLabel(''); setDuration('');
-    setPositions([]); setMood(null); setNote(''); setRating(0);
+    setPositions([]); setOtherPositionLabel(''); setOtherLocationLabel('');
+    setMood(null); setNote(''); setRating(0);
     setMyOrgasm(null); setMyOrgasmCount(1); setPartnerOrgasm(null); setPartnerOrgasmCount(1);
     setEntryDate(new Date());
     setSaving(false);
@@ -536,6 +548,8 @@ function DetailSheet({
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(rating > 0 ? { rating: rating as 1 | 2 | 3 | 4 | 5 } : {}),
         ...(types.includes('other') && otherLabel.trim() ? { otherLabel: otherLabel.trim() } : {}),
+        ...(location === 'other' && otherLocationLabel.trim() ? { otherLocationLabel: otherLocationLabel.trim() } : {}),
+        ...(positions.includes('Other') && otherPositionLabel.trim() ? { otherPositionLabel: otherPositionLabel.trim() } : {}),
         ...((myOrgasm !== null || partnerOrgasm !== null) ? {
           orgasm: {
             me:      { had: myOrgasm      === 'yes', count: myOrgasm      === 'yes' ? myOrgasmCount      : 0 },
@@ -619,6 +633,18 @@ function DetailSheet({
               ))}
             </View>
 
+            {location === 'other' && (
+              <TextInput
+                style={styles.otherInput}
+                value={otherLocationLabel}
+                onChangeText={setOtherLocationLabel}
+                placeholder="Optional, describe the location..."
+                placeholderTextColor={Colors.muted}
+                maxLength={60}
+                returnKeyType="done"
+              />
+            )}
+
             {/* What */}
             <Text style={styles.sheetSection}>What?</Text>
             <View style={styles.chipRow}>
@@ -664,6 +690,18 @@ function DetailSheet({
                 <Chip key={p} label={p} selected={positions.includes(p)} onPress={() => togglePosition(p)} />
               ))}
             </View>
+
+            {positions.includes('Other') && (
+              <TextInput
+                style={styles.otherInput}
+                value={otherPositionLabel}
+                onChangeText={setOtherPositionLabel}
+                placeholder="Optional, describe the position..."
+                placeholderTextColor={Colors.muted}
+                maxLength={60}
+                returnKeyType="done"
+              />
+            )}
 
             {/* Mood */}
             <Text style={styles.sheetSection}>Connection?</Text>

@@ -34,8 +34,15 @@ export interface IntimacyEntry {
   types: IntimacyType[];
   // Custom label for the 'other' type — free-text field surfaced when
   // 'other' is included in types. Optional. When present, entry display
-  // shows "Other: {otherLabel}" instead of just "Other".
+  // shows the custom text instead of just "Other".
   otherLabel?: string;
+  // Custom label for the 'other' Where? location — same pattern as
+  // otherLabel but for location. Surfaces when location === 'other'.
+  otherLocationLabel?: string;
+  // Custom label for the "Other" Positions? chip — free-text field
+  // surfaced when positions array includes 'Other'. Same substitution
+  // pattern on display.
+  otherPositionLabel?: string;
   positions: string[];
   duration?: number;
   mood: IntimacyMood;
