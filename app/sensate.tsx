@@ -304,10 +304,18 @@ export default function SensateScreen() {
   };
 
   const startMini = () => {
-    // 5-min mini variant of Stage 1 — same instruction + prompt pool, half
-    // duration, doesn't advance the cycle counter. Ease-boost on-ramp.
+    // 5-min mini variant of Stage 1 — same prompt pool, half duration,
+    // doesn't advance the cycle counter. Ease-boost on-ramp. Instruction
+    // is rewritten to say "5 minutes" (baseline text says "15 minutes")
+    // so the timer + instruction stay consistent.
     const stage1 = STAGES[0];
-    startStage({ ...stage1, durationMinutes: 5, subtitle: '5-min mini · non-genital touch' }, true);
+    const miniInstruction = 'Partner A touches Partner B for 5 minutes, back, arms, face, scalp. Partner B only receives and notices. No goal. This is a mini version, no need to switch.';
+    startStage({
+      ...stage1,
+      durationMinutes: 5,
+      subtitle: '5-min mini · non-genital touch',
+      instruction: miniInstruction,
+    }, true);
   };
 
   const exitStage = () => {
@@ -403,29 +411,6 @@ export default function SensateScreen() {
             </View>
           )}
 
-          {/* 5-min mini-stage on-ramp — half-duration Stage 1 for busy nights
-              or first-time nervousness. Doesn't count toward cycle completion
-              (avoids gaming the arc); just a low-friction entry point. */}
-          <TouchableOpacity
-            style={styles.miniCard}
-            onPress={startMini}
-            activeOpacity={0.85}
-            accessibilityRole="button"
-            accessibilityLabel="Start 5 minute mini session">
-            <View style={styles.miniLeft}>
-              <Text style={styles.miniEmoji}>⏱️</Text>
-            </View>
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniTitle}>Just 5 minutes tonight</Text>
-              <Text style={styles.miniSub}>
-                {(progress.miniSessionsCompleted ?? 0) > 0
-                  ? `Non-genital touch, mini variant · you've done this ${progress.miniSessionsCompleted}×`
-                  : 'Non-genital touch, mini variant of Stage 1'}
-              </Text>
-            </View>
-            <Text style={styles.miniArrow}>›</Text>
-          </TouchableOpacity>
-
           {STAGES.map((stage) => {
             const key = `stage${stage.id}` as 'stage1' | 'stage2' | 'stage3';
             const count = progress[key].count;
@@ -456,7 +441,26 @@ export default function SensateScreen() {
                   </View>
                 </View>
                 <Text style={styles.stageInst}>{stage.instruction}</Text>
-                <Text style={[styles.stageStart, { color: stage.textColor }]}>Begin stage {stage.id} →</Text>
+                <View style={styles.stageActions}>
+                  <Text style={[styles.stageStart, { color: stage.textColor }]}>Begin stage {stage.id} →</Text>
+                  {/* Stage 1 gets an inline 5-min mini shortcut. Ease-boost
+                      on-ramp folded into the same card instead of a floating
+                      pill above, so the mini reads as "another way to enter
+                      Stage 1" rather than a competing item. Doesn't advance
+                      the cycle counter (completeMini stays separate from
+                      completeStage). */}
+                  {stage.id === 1 && (
+                    <TouchableOpacity
+                      onPress={(e) => { e.stopPropagation?.(); startMini(); }}
+                      style={styles.miniLink}
+                      accessibilityRole="button"
+                      accessibilityLabel="Start 5 minute mini session instead">
+                      <Text style={[styles.miniLinkText, { color: stage.textColor }]}>
+                        Or just 5 min tonight →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -701,7 +705,7 @@ const styles = StyleSheet.create({
   countBadge: { borderRadius: Radius.full, paddingVertical: 3, paddingHorizontal: 8 },
   countBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.white },
   stageInst: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22 },
-  stageStart: { fontFamily: Fonts.bodyBold, fontSize: 14, alignSelf: 'flex-end' },
+  stageStart: { fontFamily: Fonts.bodyBold, fontSize: 14 },
 
   sessionContent: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, alignItems: 'center', gap: Spacing.xl, paddingTop: Spacing.lg },
   sessionSub: { fontFamily: Fonts.bodyItalic, fontSize: 15, textAlign: 'center' },
@@ -775,22 +779,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.burgundy,
   },
   cycleBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream },
-  // 5-min mini-stage card — compact row above the full 3 stages. Ease-boost
-  // on-ramp. Visually secondary (no color emphasis, no big number) so it
-  // reads as helper option, not competing with the main 3-stage arc.
-  miniCard: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    padding: Spacing.md, borderRadius: Radius.lg,
-    backgroundColor: 'rgba(136,14,79,0.04)',
-    borderWidth: 1, borderColor: Colors.border,
-    marginBottom: Spacing.xs,
-  },
-  miniLeft: { width: 40, alignItems: 'center' },
-  miniEmoji: { fontSize: 22 },
-  miniInfo: { flex: 1 },
-  miniTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
-  miniSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
-  miniArrow: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.muted },
+  // Stage 1 gets an inline "or 5-min mini" link. Row keeps the primary
+  // "Begin stage" CTA left-aligned with the mini shortcut right-aligned so
+  // both actions sit at the same eye-line without one dominating.
+  stageActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.xs },
+  miniLink: { paddingVertical: 4, paddingHorizontal: 8 },
+  miniLinkText: { fontFamily: Fonts.bodyItalic, fontSize: 13, opacity: 0.75 },
   // Post-session reflection card — one-line optional input, becomes a
   // mutual-reveal card once both partners submit for the same cycle+stage.
   reflectionCard: {
