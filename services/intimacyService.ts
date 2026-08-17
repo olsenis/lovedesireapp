@@ -32,6 +32,10 @@ export interface IntimacyEntry {
   initiatedBy: 'me' | 'partner' | 'both';
   location: IntimacyLocation;
   types: IntimacyType[];
+  // Custom label for the 'other' type — free-text field surfaced when
+  // 'other' is included in types. Optional. When present, entry display
+  // shows "Other: {otherLabel}" instead of just "Other".
+  otherLabel?: string;
   positions: string[];
   duration?: number;
   mood: IntimacyMood;

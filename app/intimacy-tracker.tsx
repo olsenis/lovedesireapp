@@ -189,7 +189,9 @@ export default function IntimacyTrackerScreen() {
                   <View style={styles.entryTypes}>
                     {entry.types.slice(0, 3).map(t => (
                       <View key={t} style={styles.entryTypePill}>
-                        <Text style={styles.entryTypePillText}>{TYPE_LABELS[t]}</Text>
+                        <Text style={styles.entryTypePillText}>
+                          {t === 'other' && entry.otherLabel ? entry.otherLabel : TYPE_LABELS[t]}
+                        </Text>
                       </View>
                     ))}
                   </View>
@@ -234,7 +236,9 @@ export default function IntimacyTrackerScreen() {
                   <View style={styles.chipRow}>
                     {selectedEntry.types.map(t => (
                       <View key={t} style={styles.chipSelected}>
-                        <Text style={styles.chipTextSelected}>{TYPE_LABELS[t]}</Text>
+                        <Text style={styles.chipTextSelected}>
+                          {t === 'other' && selectedEntry.otherLabel ? selectedEntry.otherLabel : TYPE_LABELS[t]}
+                        </Text>
                       </View>
                     ))}
                   </View>
@@ -488,6 +492,10 @@ function DetailSheet({
   const [initiatedBy, setInitiatedBy] = useState<'me' | 'partner' | 'both' | null>(null);
   const [location, setLocation] = useState<IntimacyLocation | null>(null);
   const [types, setTypes] = useState<IntimacyType[]>([]);
+  // Free-text label surfaced when 'other' is selected in the type chips.
+  // Persists to IntimacyEntry.otherLabel so entry display can show a
+  // specific description instead of just "Other".
+  const [otherLabel, setOtherLabel] = useState('');
   const [duration, setDuration] = useState('');
   const [positions, setPositions] = useState<string[]>([]);
   const [mood, setMood] = useState<IntimacyMood | null>(null);
@@ -504,7 +512,7 @@ function DetailSheet({
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
-    setInitiatedBy(null); setLocation(null); setTypes([]); setDuration('');
+    setInitiatedBy(null); setLocation(null); setTypes([]); setOtherLabel(''); setDuration('');
     setPositions([]); setMood(null); setNote(''); setRating(0);
     setMyOrgasm(null); setMyOrgasmCount(1); setPartnerOrgasm(null); setPartnerOrgasmCount(1);
     setEntryDate(new Date());
@@ -527,6 +535,7 @@ function DetailSheet({
         ...(duration ? { duration: parseInt(duration) } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(rating > 0 ? { rating: rating as 1 | 2 | 3 | 4 | 5 } : {}),
+        ...(types.includes('other') && otherLabel.trim() ? { otherLabel: otherLabel.trim() } : {}),
         ...((myOrgasm !== null || partnerOrgasm !== null) ? {
           orgasm: {
             me:      { had: myOrgasm      === 'yes', count: myOrgasm      === 'yes' ? myOrgasmCount      : 0 },
@@ -617,6 +626,21 @@ function DetailSheet({
                 <Chip key={t.key} label={t.label} selected={types.includes(t.key)} onPress={() => toggleType(t.key)} />
               ))}
             </View>
+
+            {/* Free-text label surfaces when 'other' is selected so the
+                entry captures what "other" specifically was. Empty is fine
+                — the entry still saves, just displays "Other" plainly. */}
+            {types.includes('other') && (
+              <TextInput
+                style={styles.otherInput}
+                value={otherLabel}
+                onChangeText={setOtherLabel}
+                placeholder="Optional, describe what other was..."
+                placeholderTextColor={Colors.muted}
+                maxLength={60}
+                returnKeyType="done"
+              />
+            )}
 
             {/* How long — optional */}
             <Text style={styles.sheetSection}>How long? <Text style={styles.optional}>optional</Text></Text>
@@ -889,6 +913,10 @@ const styles = StyleSheet.create({
   moodBtnLabelSelected: { color: Colors.white },
 
   noteInput: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border, minHeight: 72 },
+  // Free-text field surfaced when the "Other" type chip is selected —
+  // captures what "other" specifically was so entries display something
+  // more specific than the generic "Other" label.
+  otherInput: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 14, color: Colors.text, borderWidth: 1, borderColor: Colors.border, marginTop: -Spacing.xs },
   charCount: { fontFamily: Fonts.body, fontSize: 11, color: Colors.muted, textAlign: 'right' },
   missingHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.error, textAlign: 'center' },
 
