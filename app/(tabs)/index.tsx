@@ -553,25 +553,37 @@ export default function HomeScreen() {
     }
   }
 
-  // Sensate Focus: gently surface a return-to prompt if the couple has
-  // done at least one cycle (proves they engaged with it) but hasn't
-  // touched any stage in a while. Threshold: 14 days of quiet since the
-  // most recent session across any stage. Only fires when cyclesCompleted
-  // >= 1 so first-time users aren't pushed toward a paid feature they
-  // haven't opted into.
+  // Sensate Focus: two-tier gentle return nudge for couples who have done
+  // at least one full cycle. lastActivityAt captures both full-stage and
+  // mini-session touches. 7-14 days: soft 5-min mini pitch (lower friction).
+  // 14+ days: original "consider returning" prompt. Both suppressed until
+  // cyclesCompleted >= 1 so first-time users aren't pushed toward a paid
+  // feature they haven't opted into.
   if (sensateProgress && (sensateProgress.cyclesCompleted ?? 0) >= 1) {
-    const dates = [sensateProgress.stage1.lastDate, sensateProgress.stage2.lastDate, sensateProgress.stage3.lastDate]
-      .filter(Boolean)
-      .sort()
-      .reverse();
-    const mostRecent = dates[0];
-    if (mostRecent) {
-      const daysSince = Math.floor((Date.now() - new Date(mostRecent).getTime()) / 86400000);
+    const lastActivity = sensateProgress.lastActivityAt
+      ?? (() => {
+        // Fallback for pre-migration docs: derive from stage lastDate strings.
+        const dates = [sensateProgress.stage1.lastDate, sensateProgress.stage2.lastDate, sensateProgress.stage3.lastDate]
+          .filter(Boolean)
+          .sort()
+          .reverse();
+        return dates[0] ? new Date(dates[0]).getTime() : 0;
+      })();
+    if (lastActivity > 0) {
+      const daysSince = Math.floor((Date.now() - lastActivity) / 86400000);
       if (daysSince >= 14) {
         list.push({
           emoji: '🫁',
           title: 'Sensate Focus',
           subtitle: `${daysSince} days since your last session, consider returning`,
+          route: '/sensate',
+          bg: '#FAEEF2',
+        });
+      } else if (daysSince >= 7) {
+        list.push({
+          emoji: '⏱️',
+          title: 'Been a busy week?',
+          subtitle: 'Try a 5-min Sensate mini tonight, low pressure',
           route: '/sensate',
           bg: '#FAEEF2',
         });

@@ -1401,6 +1401,81 @@ export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
   ],
 };
 
+// Extended Sensate prompt pool (20 per stage, merged with the 10 in
+// app/sensate.tsx STAGES to form the full 30-per-stage rotation). Shuffled
+// deterministically per (coupleId + cycleNumber + stageId) so both partners
+// see the same rotation but each cycle feels new. Authored via
+// memory/sensate_prompt_pool.md — same meditative anti-performance register
+// as the baseline 10.
+export const SENSATE_PROMPT_POOLS: Record<1 | 2 | 3, string[]> = {
+  1: [
+    "Trace the edges of the shoulder blades slowly.",
+    "Let your hands rest before they move again.",
+    "Notice the small hairs along the forearm.",
+    "Feel the pulse under the wrist. Stay there.",
+    "Feel the coolness at the nape of the neck.",
+    "Softness at the temple. Bone at the jaw.",
+    "Move at half the speed you think is slow.",
+    "Notice where the skin is warm and where it cools.",
+    "Let your palms listen more than they touch.",
+    "Follow the grain of the hair on the scalp.",
+    "Feel the weight of the hand you are holding.",
+    "There is no next moment. Only this one.",
+    "The receiver softens into the touch, nothing more.",
+    "Notice the give and resistance under your fingers.",
+    "Rest one hand still while the other explores.",
+    "Breath, sensation, breath. That is enough.",
+    "Feel the difference between skin and skin over bone.",
+    "Let the fingertips lead, not the mind.",
+    "Notice quiet places, the elbow crease, the ankle.",
+    "Nothing to fix. Nothing to give. Only presence.",
+  ],
+  2: [
+    "Notice the contours where softness meets warmth.",
+    "Trace slowly, without asking anything to change.",
+    "Let your palm rest, feel the breath beneath.",
+    "There is nothing to build, only to notice.",
+    "Follow the pulse under your fingertips.",
+    "Let stillness be its own kind of touch.",
+    "The whole body is worth this much attention.",
+    "Move as if you have all evening.",
+    "Notice where the breath deepens, and stay there.",
+    "Let curiosity replace intention.",
+    "Feel the weight of your partner's body settling.",
+    "Slower still, there is no next.",
+    "Let your fingers listen, not decide.",
+    "Every inch of skin is worth arriving at.",
+    "Notice warmth pooling under your hands.",
+    "Stay with one place until it feels known.",
+    "Nothing needs to lead anywhere.",
+    "Let the receiver's guiding hand join the rhythm.",
+    "This is exploration, not seduction.",
+    "Breathe into the quiet between touches.",
+  ],
+  3: [
+    "This moment is already whole.",
+    "Let time soften around you.",
+    "Nothing needs to happen next.",
+    "Your body knows the way.",
+    "Rest in the pulse you share.",
+    "Let touch be its own reason.",
+    "Arriving is the only practice.",
+    "The invitation is simply to be here.",
+    "Meet each sensation as it comes.",
+    "There is spaciousness in the smallest gesture.",
+    "Let stillness be as full as movement.",
+    "Nothing to hold, nothing to release.",
+    "Trust the pace your bodies find.",
+    "This is enough. This has always been enough.",
+    "Feel the quiet underneath everything.",
+    "Let breath lead where it wants to go.",
+    "You are being met, exactly as you are.",
+    "Welcome whatever is here.",
+    "Soften into what is already true.",
+    "Presence is the whole of it.",
+  ],
+};
+
 // Alternate task pool per program, powers the Refresh button in the Edit Day
 // modal. Not day-slotted, just pooled per program at the same intensity /
 // theme register as the defaults. Refresh picks from [alternates + defaults]

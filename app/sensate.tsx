@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, AppState, Platform } from 'react-native';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, AppState, Platform, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -9,7 +9,8 @@ import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
-import { SensateProgress, subscribeSensateProgress, completeStage } from '../services/sensateService';
+import { SensateProgress, subscribeSensateProgress, completeStage, submitReflection, bothReflected, completeMini } from '../services/sensateService';
+import { SENSATE_PROMPT_POOLS } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -109,6 +110,20 @@ export default function SensateScreen() {
   }, [subLoading, isSubscribed]);
   const [activeStage, setActiveStage] = useState<Stage | null>(null);
   const [marked, setMarked] = useState(false);
+  // True when the current session is the 5-min mini variant of Stage 1
+  // (Ease-boost on-ramp). Doesn't count toward cycle completion — service
+  // completeMini bumps miniSessionsCompleted + lastActivityAt only.
+  const [isMini, setIsMini] = useState(false);
+  // Post-session reflection state — one-line reaction after "Mark complete".
+  // Cleared when user leaves the active-stage view. Text stays local until
+  // Save; skip = clear + hide the card.
+  const [reflectionText, setReflectionText] = useState('');
+  const [reflectionSaved, setReflectionSaved] = useState(false);
+  const [reflectionSkipped, setReflectionSkipped] = useState(false);
+  // Cycle number in which the current session sits — captured at session
+  // start so a mid-session cycle-completion doesn't shift the reflection
+  // key mid-flow. Falls back to 1 for pre-cycle-tracking docs.
+  const [sessionCycleNumber, setSessionCycleNumber] = useState<number>(1);
   const [progress, setProgress] = useState<SensateProgress>({
     stage1: { count: 0, lastDate: '' },
     stage2: { count: 0, lastDate: '' },
@@ -150,6 +165,34 @@ export default function SensateScreen() {
     if (!coupleId) return;
     return subscribeSensateProgress(coupleId, setProgress);
   }, [coupleId]);
+
+  // Deterministic seeded shuffle so both partners see the same prompt order
+  // for a given cycle+stage but each new cycle rotates. Merges the baseline
+  // 10 (STAGES) with the 20 extended pool (SENSATE_PROMPT_POOLS) for 30 total.
+  // Cheap Fisher-Yates using a mulberry32 PRNG seeded from a string hash of
+  // (coupleId + cycleNumber + stageId).
+  const shuffledPrompts = useMemo(() => {
+    if (!activeStage) return [];
+    const stageIdKey = activeStage.id as 1 | 2 | 3;
+    const pool = [...activeStage.prompts, ...(SENSATE_PROMPT_POOLS[stageIdKey] ?? [])];
+    const seedStr = `${coupleId ?? 'none'}_${sessionCycleNumber}_${stageIdKey}`;
+    let seed = 0;
+    for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+    let a = seed || 1;
+    const rand = () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const arr = [...pool];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, [activeStage, coupleId, sessionCycleNumber]);
 
   const totalSeconds = (activeStage?.durationMinutes ?? 0) * 60;
   const remaining = Math.max(totalSeconds - elapsed, 0);
@@ -193,7 +236,7 @@ export default function SensateScreen() {
         Animated.timing(promptAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
         Animated.timing(promptAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
       ]).start();
-      setPromptIndex((i) => (i + 1) % (activeStage?.prompts.length ?? 1));
+      setPromptIndex((i) => (i + 1) % (shuffledPrompts.length || 1));
     }
   }, [elapsed, running, activeStage, promptAnim]);
 
@@ -241,29 +284,55 @@ export default function SensateScreen() {
     try { await Notifications.cancelScheduledNotificationAsync(id); } catch { /* already fired */ }
   }
 
-  const startStage = (stage: Stage) => {
+  const startStage = (stage: Stage, mini = false) => {
     // Cancel any leftover notification from a prior stage before switching.
     cancelCompletionNotif();
     setActiveStage(stage);
+    setIsMini(mini);
     setAccumulatedMs(0);
     setRunStartMs(null);
     setPromptIndex(0);
     setMarked(false);
+    setReflectionText('');
+    setReflectionSaved(false);
+    setReflectionSkipped(false);
+    // Freeze the cycle number for this session so reflection storage stays
+    // stable even if the mid-session completeStage rolls the cycle over.
+    setSessionCycleNumber((progress.cyclesCompleted ?? 0) + 1);
     lastPromptRotateSecRef.current = 0;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const startMini = () => {
+    // 5-min mini variant of Stage 1 — same instruction + prompt pool, half
+    // duration, doesn't advance the cycle counter. Ease-boost on-ramp.
+    const stage1 = STAGES[0];
+    startStage({ ...stage1, durationMinutes: 5, subtitle: '5-min mini · non-genital touch' }, true);
   };
 
   const exitStage = () => {
     cancelCompletionNotif();
     setActiveStage(null);
+    setIsMini(false);
     setRunStartMs(null);
     setAccumulatedMs(0);
+    setReflectionText('');
+    setReflectionSaved(false);
+    setReflectionSkipped(false);
   };
 
   const handleMarkComplete = async () => {
     if (!coupleId || !activeStage) return;
     cancelCompletionNotif();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Mini sessions bump miniSessionsCompleted + lastActivityAt only —
+    // no stage count, no currentCycleStages advance, no cycle overlay.
+    if (isMini) {
+      await completeMini(coupleId);
+      trackEvent('sensate_mini_completed');
+      setMarked(true);
+      return;
+    }
     const { cycleJustCompleted, cyclesCompleted } = await completeStage(coupleId, activeStage.id as 1 | 2 | 3, progress);
     trackEvent('sensate_stage_completed');
     setMarked(true);
@@ -299,7 +368,7 @@ export default function SensateScreen() {
       Animated.timing(promptAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
       Animated.timing(promptAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
     ]).start();
-    setPromptIndex((i) => (i + 1) % (activeStage?.prompts.length ?? 1));
+    setPromptIndex((i) => (i + 1) % (shuffledPrompts.length || 1));
   };
 
   const done = totalSeconds > 0 && elapsed >= totalSeconds;
@@ -333,6 +402,30 @@ export default function SensateScreen() {
               </Text>
             </View>
           )}
+
+          {/* 5-min mini-stage on-ramp — half-duration Stage 1 for busy nights
+              or first-time nervousness. Doesn't count toward cycle completion
+              (avoids gaming the arc); just a low-friction entry point. */}
+          <TouchableOpacity
+            style={styles.miniCard}
+            onPress={startMini}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Start 5 minute mini session">
+            <View style={styles.miniLeft}>
+              <Text style={styles.miniEmoji}>⏱️</Text>
+            </View>
+            <View style={styles.miniInfo}>
+              <Text style={styles.miniTitle}>Just 5 minutes tonight</Text>
+              <Text style={styles.miniSub}>
+                {(progress.miniSessionsCompleted ?? 0) > 0
+                  ? `Non-genital touch, mini variant · you've done this ${progress.miniSessionsCompleted}×`
+                  : 'Non-genital touch, mini variant of Stage 1'}
+              </Text>
+            </View>
+            <Text style={styles.miniArrow}>›</Text>
+          </TouchableOpacity>
+
           {STAGES.map((stage) => {
             const key = `stage${stage.id}` as 'stage1' | 'stage2' | 'stage3';
             const count = progress[key].count;
@@ -423,7 +516,7 @@ export default function SensateScreen() {
         <TouchableOpacity onPress={nextPrompt} activeOpacity={0.9} style={styles.promptWrap} accessibilityRole="button">
           <Animated.View style={[styles.promptCard, { opacity: promptAnim }]}>
             <Text style={[styles.promptText, { color: activeStage.textColor }]}>
-              {activeStage.prompts[promptIndex]}
+              {shuffledPrompts[promptIndex] ?? activeStage.prompts[0]}
             </Text>
             <Text style={[styles.promptHint, { color: activeStage.textColor, opacity: 0.5 }]}>Tap for next prompt</Text>
           </Animated.View>
@@ -457,6 +550,87 @@ export default function SensateScreen() {
             </TouchableOpacity>
           )
         )}
+
+        {/* Post-session mutual reflection. Only for full stages (mini skips
+            this — it's a lightweight on-ramp). Shown once marked + not yet
+            saved/skipped. On save, if the partner has already submitted for
+            the same cycle+stage, both words reveal side-by-side. */}
+        {marked && !isMini && activeStage && (() => {
+          const uid = user?.uid ?? '';
+          const p1 = couple?.partner1Uid ?? '';
+          const p2 = couple?.partner2Uid ?? '';
+          const stageIdKey = activeStage.id as 1 | 2 | 3;
+          const { both, entries } = bothReflected(progress, sessionCycleNumber, stageIdKey, p1, p2);
+          const mine = entries[uid];
+          const theirs = entries[uid === p1 ? p2 : p1];
+          const partnerName = (uid === p1 ? couple?.partner2Uid : couple?.partner1Uid) ? 'your partner' : 'your partner';
+
+          if (both) {
+            return (
+              <View style={[styles.reflectionCard, { borderColor: activeStage.textColor }]}>
+                <Text style={styles.reflectionRevealLabel}>How that felt</Text>
+                <View style={styles.reflectionRevealRow}>
+                  <View style={styles.reflectionRevealCol}>
+                    <Text style={[styles.reflectionRevealWord, { color: activeStage.textColor }]}>{mine || '—'}</Text>
+                    <Text style={styles.reflectionRevealWho}>You</Text>
+                  </View>
+                  <Text style={[styles.reflectionRevealDot, { color: activeStage.textColor }]}>·</Text>
+                  <View style={styles.reflectionRevealCol}>
+                    <Text style={[styles.reflectionRevealWord, { color: activeStage.textColor }]}>{theirs || '—'}</Text>
+                    <Text style={styles.reflectionRevealWho}>{partnerName === 'your partner' ? 'Partner' : partnerName}</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          }
+
+          if (reflectionSkipped || (mine && !theirs)) {
+            return (
+              <View style={[styles.reflectionCard, { borderColor: activeStage.textColor }]}>
+                <Text style={styles.reflectionRevealWho}>
+                  {mine ? 'Saved. Waiting for your partner to share their word.' : 'Skipped. You can always write one after your next session.'}
+                </Text>
+              </View>
+            );
+          }
+
+          return (
+            <View style={[styles.reflectionCard, { borderColor: activeStage.textColor }]}>
+              <Text style={styles.reflectionPrompt}>What was that like for you?</Text>
+              <TextInput
+                style={styles.reflectionInput}
+                value={reflectionText}
+                onChangeText={setReflectionText}
+                placeholder="One word or short phrase"
+                placeholderTextColor={Colors.muted}
+                maxLength={60}
+                autoCapitalize="none"
+                returnKeyType="done"
+              />
+              <View style={styles.reflectionActions}>
+                <TouchableOpacity
+                  onPress={() => { setReflectionSkipped(true); setReflectionText(''); }}
+                  style={styles.reflectionSkipBtn}
+                  accessibilityRole="button">
+                  <Text style={styles.reflectionSkipText}>Skip</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  disabled={!reflectionText.trim() || !coupleId}
+                  style={[styles.reflectionSaveBtn, { backgroundColor: activeStage.textColor }, (!reflectionText.trim() || !coupleId) && { opacity: 0.4 }]}
+                  onPress={async () => {
+                    if (!coupleId || !reflectionText.trim()) return;
+                    await submitReflection(coupleId, uid, sessionCycleNumber, stageIdKey, reflectionText.trim());
+                    setReflectionSaved(true);
+                    Haptics.selectionAsync();
+                  }}
+                  activeOpacity={0.85}
+                  accessibilityRole="button">
+                  <Text style={styles.reflectionSaveText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })()}
       </ScrollView>
 
       <HelpModal
@@ -601,4 +775,48 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.burgundy,
   },
   cycleBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream },
+  // 5-min mini-stage card — compact row above the full 3 stages. Ease-boost
+  // on-ramp. Visually secondary (no color emphasis, no big number) so it
+  // reads as helper option, not competing with the main 3-stage arc.
+  miniCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    padding: Spacing.md, borderRadius: Radius.lg,
+    backgroundColor: 'rgba(136,14,79,0.04)',
+    borderWidth: 1, borderColor: Colors.border,
+    marginBottom: Spacing.xs,
+  },
+  miniLeft: { width: 40, alignItems: 'center' },
+  miniEmoji: { fontSize: 22 },
+  miniInfo: { flex: 1 },
+  miniTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  miniSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  miniArrow: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.muted },
+  // Post-session reflection card — one-line optional input, becomes a
+  // mutual-reveal card once both partners submit for the same cycle+stage.
+  reflectionCard: {
+    marginTop: Spacing.lg,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    gap: Spacing.sm,
+  },
+  reflectionPrompt: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text, textAlign: 'center' },
+  reflectionInput: {
+    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+    fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
+    backgroundColor: '#fff',
+  },
+  reflectionActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+  reflectionSkipBtn: { flex: 1, alignItems: 'center', paddingVertical: Spacing.sm },
+  reflectionSkipText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+  reflectionSaveBtn: { flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.full, alignItems: 'center' },
+  reflectionSaveText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream },
+  reflectionRevealLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 1.5, textAlign: 'center' },
+  reflectionRevealRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
+  reflectionRevealCol: { alignItems: 'center', minWidth: 90 },
+  reflectionRevealWord: { fontFamily: Fonts.heading, fontSize: 22 },
+  reflectionRevealWho: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 4, textAlign: 'center' },
+  reflectionRevealDot: { fontFamily: Fonts.heading, fontSize: 28 },
 });
