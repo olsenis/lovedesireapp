@@ -15,7 +15,12 @@ const RITUALS = [
   { emoji: '🌅', title: 'Sunday Check-in',   subtitle: '5-question weekly ritual, answer privately, reveal together', route: '/state-union', bg: '#FFF0F3', paid: false },
   { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',                 route: '/moments',   bg: '#FFF9C4', paid: false },
   { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',      route: '/notes',     bg: '#FCE4EC', paid: false },
-  { emoji: '📓', title: 'Journal',           subtitle: 'Shared space for thoughts, reflections, and gratitude',       route: '/journal',   bg: '#FCE4EC', paid: false },
+  // Journal removed August 2026 — shared-journaling has notoriously low
+  // retention in couples apps (solo journal is already <5% weekly active
+  // after 30 days; "partner will read this" adds performance anxiety on
+  // top). Sunday Check-in already carries the reflection/gratitude value
+  // with a mutual-reveal mechanic that Journal lacked. Can revisit post-
+  // launch if analytics show demand.
   // Time Capsules removed July 2026 — abstract long-timeline payoff didn't
   // demo well at launch; can revisit post-launch if users request "sealed
   // for later" mechanics with concrete use cases.

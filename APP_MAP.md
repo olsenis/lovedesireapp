@@ -41,8 +41,7 @@ Living overview of every feature, content pool size, and connection between feat
    ├─ Messages / async
    │  ├─ notes              Us > Rituals ("Love Notes")
    │  ├─ moments            Us > Rituals (BeReal-style)
-   │  ├─ flashes            Home Quick tile ("Tease")
-   │  └─ journal            Us > Rituals
+   │  └─ flashes            Home Quick tile ("Tease")
    │
    ├─ Insights
    │  ├─ quiz               Us > Discover yourselves ("Love Language Quiz")
@@ -99,7 +98,6 @@ Categories:
 | Love Notes | Timed / mood-gated / stash | Free | User-generated | 4/5 | 4/5 | 4 unlock conditions (right now / timed / mood / visit / stash). Surprise mechanic. |
 | Moments | BeReal-style daily photo | Free | User-generated | 4/5 | 4/5 | Mutual reveal + nudge. Strong daily ritual. |
 | Tease (Flashes) | 24h ephemeral photo/video/voice | Free | User-generated | 4/5 | 4/5 | Snapchat-for-couples. Unique to Desire. |
-| Journal | Written entries | Free | User-generated | 3/5 | 2/5 | Overlaps heavily with Notes. Redundancy candidate. |
 
 ### Insights
 
@@ -162,11 +160,7 @@ Ranked by strength of case.
 
 ### Strong candidates (open)
 
-1. **Journal → cut or fold into Love Notes**
-   - Both are "write a message that lives in the shared space"
-   - Notes has a stronger hook (timed/mood-gated/visit unlock)
-   - Journal has no unlock condition — just a running log
-   - **Recommendation:** Add a "Journal / just save it" occasion to Love Notes and delete Journal.
+1. ~~**Journal → cut or fold into Love Notes**~~ ✅ CUT August 2026 — shared-journaling has notoriously low retention in couples apps; Sunday Check-in carries the reflection value with mutual-reveal.
 
 3. **Calendar + Countdown → merge into single "Dates" surface**
    - Calendar shows list of important dates; Countdown shows next date ticker
@@ -197,7 +191,7 @@ Ranked by strength of case.
 30+ full-screen features + 4 hubs. That's genuinely large for a couples app — competitors typically ship with 8–15 features.
 
 **Why big can work here:**
-- Different couples want different rituals (mood-focused vs game-focused vs journaling)
+- Different couples want different rituals (mood-focused vs game-focused vs reflection-focused)
 - Hub structure (Home / Discover / Us) breaks it into digestible chunks
 - Content-driven features (Questions / Daily Picks / TorD) age well — more items = more play
 - Paid tier gates the heaviest surfaces (Fantasy Wishes, Blueprint, Sensate, Activity Cards) so free-tier surface stays leaner

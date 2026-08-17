@@ -615,7 +615,7 @@ const TRACKED_SCREENS = [
   'home', 'discover', 'us', 'together_list', 'profile',
   'daily', 'truth_dare', 'would_you_rather', 'activity_cards',
   'fantasy_wishes', 'versus', 'roulette', 'dares',
-  'sunday_checkin', 'moments', 'notes', 'journal', 'intimacy_log',
+  'sunday_checkin', 'moments', 'notes', 'intimacy_log',
   'pulse', 'blueprint', 'sensate',
   'reminders', 'countdown', 'calendar',
   'upgrade', 'quiz', 'challenge', 'flashes',
