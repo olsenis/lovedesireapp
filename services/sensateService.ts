@@ -11,15 +11,19 @@ export interface SensateProgress {
   stage1: StageProgress;
   stage2: StageProgress;
   stage3: StageProgress;
-  // Number of complete cycles the couple has finished. A cycle = all three
-  // stages completed at least once. When the third missing stage gets its
+  // Stage 4 added in the Presence 4-stage redesign (Aug 2026). Optional to
+  // stay back-compat with any pre-launch test docs that only have 3 stages.
+  stage4?: StageProgress;
+  // Number of complete cycles the couple has finished. A cycle = ALL FOUR
+  // stages completed at least once. When the fourth missing stage gets its
   // first completion within a cycle, this increments and currentCycleStages
   // resets so a new cycle can accumulate.
   cyclesCompleted?: number;
   // Tracks which stages have been completed in the CURRENT (in-progress)
   // cycle. Reset back to all-false when a cycle completes. Absent =
-  // treated as all false (fresh cycle or pre-migration doc).
-  currentCycleStages?: { stage1: boolean; stage2: boolean; stage3: boolean };
+  // treated as all false (fresh cycle or pre-migration doc). stage4
+  // optional for the same reason.
+  currentCycleStages?: { stage1: boolean; stage2: boolean; stage3: boolean; stage4?: boolean };
   // Post-session mutual-reveal reflections. Keyed by `${cycleNumber}_${stageId}`,
   // then by uid. Each partner types a one-word or short-phrase reaction after
   // a stage completes; both stay hidden until both have written. Optional
@@ -39,8 +43,9 @@ const empty = (): SensateProgress => ({
   stage1: { count: 0, lastDate: '' },
   stage2: { count: 0, lastDate: '' },
   stage3: { count: 0, lastDate: '' },
+  stage4: { count: 0, lastDate: '' },
   cyclesCompleted: 0,
-  currentCycleStages: { stage1: false, stage2: false, stage3: false },
+  currentCycleStages: { stage1: false, stage2: false, stage3: false, stage4: false },
   reflections: {},
   miniSessionsCompleted: 0,
 });
@@ -66,30 +71,36 @@ export function subscribeSensateProgress(
 // currentCycleStages tracker resets so a fresh cycle can start.
 export async function completeStage(
   coupleId: string,
-  stageId: 1 | 2 | 3,
+  stageId: 1 | 2 | 3 | 4,
   _current: SensateProgress,
 ): Promise<{ cycleJustCompleted: boolean; cyclesCompleted: number }> {
   const ref = doc(db, 'couples', coupleId, 'sensate', 'progress');
-  const stageKey = `stage${stageId}` as 'stage1' | 'stage2' | 'stage3';
+  const stageKey = `stage${stageId}` as 'stage1' | 'stage2' | 'stage3' | 'stage4';
   const today = new Date().toISOString().slice(0, 10);
   const result = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     const live: SensateProgress = snap.exists() ? (snap.data() as SensateProgress) : empty();
     // Mark stage as completed in the current cycle. Falsy default handles
-    // docs written before currentCycleStages was introduced.
-    const currentCycle = live.currentCycleStages ?? { stage1: false, stage2: false, stage3: false };
+    // docs written before currentCycleStages was introduced (pre-4-stage).
+    const currentCycle = live.currentCycleStages ?? { stage1: false, stage2: false, stage3: false, stage4: false };
     const nextCycle = { ...currentCycle, [stageKey]: true };
-    const allDone = nextCycle.stage1 && nextCycle.stage2 && nextCycle.stage3;
+    // A cycle now requires ALL FOUR stages completed. Old test docs with
+    // 3-stage cycles won't retroactively complete until they also do
+    // Stage 4 (Presence redesign, Aug 2026).
+    const allDone = !!(nextCycle.stage1 && nextCycle.stage2 && nextCycle.stage3 && nextCycle.stage4);
     const cyclesCompleted = (live.cyclesCompleted ?? 0) + (allDone ? 1 : 0);
     // On cycle completion, reset cycle tracker so the couple can go
     // through the arc again. Lifetime stage counts keep growing.
     const finalCycleTracker = allDone
-      ? { stage1: false, stage2: false, stage3: false }
+      ? { stage1: false, stage2: false, stage3: false, stage4: false }
       : nextCycle;
+    // Read current stage's count via optional fallback for docs missing
+    // stage4 pre-migration. Same pattern for stage3 in even older docs.
+    const currentStageProgress = live[stageKey] ?? { count: 0, lastDate: '' };
     const next: SensateProgress = {
       ...live,
       [stageKey]: {
-        count: live[stageKey].count + 1,
+        count: currentStageProgress.count + 1,
         lastDate: today,
       },
       cyclesCompleted,
@@ -111,7 +122,7 @@ export async function submitReflection(
   coupleId: string,
   uid: string,
   cycleNumber: number,
-  stageId: 1 | 2 | 3,
+  stageId: 1 | 2 | 3 | 4,
   text: string,
 ): Promise<void> {
   const ref = doc(db, 'couples', coupleId, 'sensate', 'progress');
@@ -132,7 +143,7 @@ export async function submitReflection(
 export function bothReflected(
   progress: SensateProgress | null,
   cycleNumber: number,
-  stageId: 1 | 2 | 3,
+  stageId: 1 | 2 | 3 | 4,
   partner1: string,
   partner2: string,
 ): { both: boolean; entries: Record<string, string> } {

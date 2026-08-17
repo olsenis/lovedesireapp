@@ -1401,13 +1401,13 @@ export const CHALLENGE_PROGRAMS: Record<ChallengeProgram, ChallengeTask[]> = {
   ],
 };
 
-// Extended Sensate prompt pool (20 per stage, merged with the 10 in
+// Extended Presence prompt pool (20 per stage, merged with the 10 in
 // app/sensate.tsx STAGES to form the full 30-per-stage rotation). Shuffled
 // deterministically per (coupleId + cycleNumber + stageId) so both partners
 // see the same rotation but each cycle feels new. Authored via
 // memory/sensate_prompt_pool.md — same meditative anti-performance register
-// as the baseline 10.
-export const SENSATE_PROMPT_POOLS: Record<1 | 2 | 3, string[]> = {
+// as the baseline 10. 4 stages: Discover / Connect / Together / Flow.
+export const SENSATE_PROMPT_POOLS: Record<1 | 2 | 3 | 4, string[]> = {
   1: [
     "Trace the edges of the shoulder blades slowly.",
     "Let your hands rest before they move again.",
@@ -1453,6 +1453,28 @@ export const SENSATE_PROMPT_POOLS: Record<1 | 2 | 3, string[]> = {
     "Breathe into the quiet between touches.",
   ],
   3: [
+    "Your hand moves, their hand moves, one motion.",
+    "Feel touch on your skin and under your fingertips.",
+    "Meet each other in the same slow breath.",
+    "Both giving, both receiving, both here.",
+    "Let your palms echo what theirs are doing.",
+    "Feel their hands on you and yours on them.",
+    "Move together, no leader, no follower.",
+    "Two rhythms weaving into one.",
+    "Feel the warmth arriving and leaving at once.",
+    "Your attention widens to hold both bodies.",
+    "Every touch you give is also touch you feel.",
+    "Let stillness settle in both of you at once.",
+    "Mirror without trying, just follow the shared pulse.",
+    "Breathe in together, breathe out together.",
+    "There is no direction here, only meeting.",
+    "Sensation flows both ways at once.",
+    "Both hands, both bodies, one slow field.",
+    "Notice the balance between giving and being given to.",
+    "Attention softens until both bodies feel like one.",
+    "Nothing to lead. Nothing to follow. Just meeting.",
+  ],
+  4: [
     "This moment is already whole.",
     "Let time soften around you.",
     "Nothing needs to happen next.",

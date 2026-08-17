@@ -123,7 +123,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
       { tip: `Play Daily tonight. Three questions, no phones, eye contact.`, cta: 'Open Daily', route: '/daily' },
     ],
     touch: [
-      { tip: `Try a Sensate Focus stage tonight. Touch without goal is exactly ${partnerName}'s language.`, cta: 'Open Sensate', route: '/sensate' },
+      { tip: `Try a Presence stage tonight. Touch without goal is exactly ${partnerName}'s language.`, cta: 'Open Presence', route: '/sensate' },
       { tip: `Long hug today. 20 seconds at least. Don't talk during it.`, cta: '', route: '' },
       { tip: `Hands on, eye contact, slow. Pick one Dare from Sweet level for tonight.`, cta: 'Open Truth or Dare', route: '/truth-dare' },
     ],
@@ -574,7 +574,7 @@ export default function HomeScreen() {
       if (daysSince >= 14) {
         list.push({
           emoji: '🫁',
-          title: 'Sensate Focus',
+          title: 'Presence',
           subtitle: `${daysSince} days since your last session, consider returning`,
           route: '/sensate',
           bg: '#FAEEF2',
@@ -583,7 +583,7 @@ export default function HomeScreen() {
         list.push({
           emoji: '⏱️',
           title: 'Been a busy week?',
-          subtitle: 'Try a 5-min Sensate mini tonight, low pressure',
+          subtitle: 'Try a 5-min Presence mini tonight, low pressure',
           route: '/sensate',
           bg: '#FAEEF2',
         });

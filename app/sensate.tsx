@@ -26,6 +26,12 @@ interface Stage {
   textColor: string;
   prompts: string[];
   instruction: string;
+  // One-liner shown above the instruction on each stage card. Frames
+  // "what this stage is doing" so users understand the arc.
+  blurb: string;
+  // Shown after "Mark session complete", before the reflection input.
+  // Stage-specific invitation to talk / notice / land.
+  takeaway: string;
 }
 
 const STAGES: Stage[] = [
@@ -36,6 +42,8 @@ const STAGES: Stage[] = [
     durationMinutes: 15,
     color: '#FAEEF2',
     textColor: '#A4366A',
+    blurb: 'Breaking the touch-equals-goal reflex.',
+    takeaway: 'Take a moment to share with each other, what did you notice about sensation without goal?',
     instruction: 'Partner A touches Partner B for 15 minutes, back, arms, face, scalp. Partner B only receives and notices. No goal. No performance. Switch when the timer ends.',
     prompts: [
       "Notice the temperature of your partner's skin.",
@@ -57,6 +65,8 @@ const STAGES: Stage[] = [
     durationMinutes: 20,
     color: '#FCE4EC',
     textColor: '#880E4F',
+    blurb: 'Reintroducing the sexual body without performance pressure.',
+    takeaway: 'How did it feel to explore without chasing arousal?',
     instruction: 'Full body now, including intimate areas, but the rule is the same. No goal, no performance. The receiver can guide with their hand (show, don\'t tell). Switch after 20 minutes.',
     prompts: [
       'Let your hands be curious, not purposeful.',
@@ -73,11 +83,36 @@ const STAGES: Stage[] = [
   },
   {
     id: 3,
+    title: 'Together',
+    subtitle: 'Mutual touch, no turn-taking',
+    durationMinutes: 20,
+    color: '#F8C3D2',
+    textColor: '#7d0a48',
+    blurb: 'Mutual attention, both giving and receiving at once.',
+    takeaway: 'What was different about touching and being touched at the same time?',
+    instruction: 'Both of you touch each other at the same time now, no turn-taking. Full body still allowed, and the rule stays, no orgasm goal, no chasing arousal. Extended presence with mutual attention. 20 minutes.',
+    prompts: [
+      'Both of you touching, both of you receiving.',
+      'Notice their hand as your hand moves.',
+      'Let your rhythms find each other.',
+      'Give and receive are the same thing now.',
+      'Two bodies, one slow attention.',
+      'Feel their touch and your own touch together.',
+      'Move in mirror. Move in echo.',
+      'There is no giver here, no receiver, only meeting.',
+      'Notice where your rhythms differ, and where they meet.',
+      'Both hands, both bodies, one slow field.',
+    ],
+  },
+  {
+    id: 4,
     title: 'Flow',
     subtitle: 'Mindful, no agenda',
     durationMinutes: 0,
     color: '#F4A7B9',
     textColor: '#6a0a3e',
+    blurb: 'Letting whatever comes, come. Presence over agenda.',
+    takeaway: 'Whatever happened tonight was welcome. Nothing needed to happen.',
     instruction: 'No timer. No goal. Move together with full sensory awareness, sensation, not performance. If arousal comes, let it be part of the experience without chasing it. Stay curious.',
     prompts: [
       'There is nothing to achieve.',
@@ -136,7 +171,7 @@ export default function SensateScreen() {
   // need to sync across partners; each partner sees it locally when
   // their own action triggered the completion).
   const [cycleModalCount, setCycleModalCount] = useState<number | null>(null);
-  const help = useHelp('sensate');
+  const help = useHelp('presence');
   // Wall-clock timer state. `runStartMs` is when the current run leg began
   // (Date.now()); `accumulatedMs` is time from earlier legs (before the
   // most recent pause). Deriving elapsed from Date.now() means the timer
@@ -173,7 +208,7 @@ export default function SensateScreen() {
   // (coupleId + cycleNumber + stageId).
   const shuffledPrompts = useMemo(() => {
     if (!activeStage) return [];
-    const stageIdKey = activeStage.id as 1 | 2 | 3;
+    const stageIdKey = activeStage.id as 1 | 2 | 3 | 4;
     const pool = [...activeStage.prompts, ...(SENSATE_PROMPT_POOLS[stageIdKey] ?? [])];
     const seedStr = `${coupleId ?? 'none'}_${sessionCycleNumber}_${stageIdKey}`;
     let seed = 0;
@@ -264,7 +299,7 @@ export default function SensateScreen() {
     try {
       const id = await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Sensate Focus 🌸',
+          title: 'Presence 🌸',
           body: `Stage ${stage.id}: ${stage.title} complete. Switch or rest together.`,
           sound: true,
         },
@@ -341,7 +376,7 @@ export default function SensateScreen() {
       setMarked(true);
       return;
     }
-    const { cycleJustCompleted, cyclesCompleted } = await completeStage(coupleId, activeStage.id as 1 | 2 | 3, progress);
+    const { cycleJustCompleted, cyclesCompleted } = await completeStage(coupleId, activeStage.id as 1 | 2 | 3 | 4, progress);
     trackEvent('sensate_stage_completed');
     setMarked(true);
     // If this completion filled the last missing stage in the cycle,
@@ -393,15 +428,15 @@ export default function SensateScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
             <Text style={styles.backText}>‹ Back</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Sensate Focus</Text>
+          <Text style={styles.title}>Presence</Text>
           <View style={{ width: 60 }} />
         </View>
         <ScrollView contentContainerStyle={styles.stageList}>
           <Text style={styles.intro}>
-            A research-backed approach to rekindling physical intimacy. Three stages, each building presence, not performance.
+            A slow-touch practice for reconnection and presence. Four stages, each building on the last.
           </Text>
           {/* Cycles-completed pill. Shows once the couple has done at
-              least one full 3-stage cycle. Small, non-competitive framing
+              least one full 4-stage cycle. Small, non-competitive framing
               — it's a record of the journey, not a scoreboard. */}
           {(progress.cyclesCompleted ?? 0) > 0 && (
             <View style={styles.cyclesPill}>
@@ -411,57 +446,83 @@ export default function SensateScreen() {
             </View>
           )}
 
-          {STAGES.map((stage) => {
-            const key = `stage${stage.id}` as 'stage1' | 'stage2' | 'stage3';
-            const count = progress[key].count;
+          {STAGES.map((stage, idx) => {
+            const key = `stage${stage.id}` as 'stage1' | 'stage2' | 'stage3' | 'stage4';
+            const count = progress[key]?.count ?? 0;
+            // Soft cadence hint: shown when the immediate predecessor stage
+            // hasn't been done twice yet. Card stays tappable — this is a
+            // gentle nudge, not a gate. Stage 1 never shows a hint.
+            const priorStage = stage.id > 1 ? STAGES[idx - 1] : null;
+            const priorKey = priorStage ? (`stage${priorStage.id}` as 'stage1' | 'stage2' | 'stage3' | 'stage4') : null;
+            const priorCount = priorKey ? (progress[priorKey]?.count ?? 0) : 0;
+            const showCadenceHint = priorStage !== null && priorCount < 2;
+            const cadenceHint = showCadenceHint
+              ? `Try Stage ${priorStage!.id} at least twice first, it works better that way.`
+              : null;
             return (
-              <TouchableOpacity
-                key={stage.id}
-                style={[styles.stageCard, { backgroundColor: stage.color, borderColor: stage.color }]}
-                onPress={() => startStage(stage)}
-                activeOpacity={0.85}
-               accessibilityRole="button">
-                <View style={styles.stageTop}>
-                  <View style={[styles.stageNumWrap, { borderColor: stage.textColor }]}>
-                    <Text style={[styles.stageNum, { color: stage.textColor }]}>{stage.id}</Text>
+              <View key={stage.id}>
+                {/* Vertical connector between cards to signal progression.
+                    Skipped before Stage 1 since there's nothing to chain from. */}
+                {idx > 0 && (
+                  <View style={styles.stageConnectorWrap}>
+                    <View style={[styles.stageConnectorLine, { backgroundColor: stage.textColor, opacity: 0.3 }]} />
+                    <Text style={[styles.stageConnectorArrow, { color: stage.textColor, opacity: 0.5 }]}>↓</Text>
                   </View>
-                  <View style={styles.stageInfo}>
-                    <Text style={[styles.stageTitle, { color: stage.textColor }]}>{stage.title}</Text>
-                    <Text style={styles.stageSub}>{stage.subtitle}</Text>
+                )}
+                <TouchableOpacity
+                  style={[styles.stageCard, { backgroundColor: stage.color, borderColor: stage.color }]}
+                  onPress={() => startStage(stage)}
+                  activeOpacity={0.85}
+                  accessibilityRole="button">
+                  <View style={styles.stageTop}>
+                    <View style={[styles.stageNumWrap, { borderColor: stage.textColor }]}>
+                      <Text style={[styles.stageNum, { color: stage.textColor }]}>{stage.id}</Text>
+                    </View>
+                    <View style={styles.stageInfo}>
+                      <Text style={[styles.stageTitle, { color: stage.textColor }]}>{stage.title}</Text>
+                      <Text style={styles.stageSub}>{stage.subtitle}</Text>
+                    </View>
+                    <View style={styles.stageRight}>
+                      {stage.durationMinutes > 0 && (
+                        <Text style={[styles.stageDur, { color: stage.textColor }]}>{stage.durationMinutes} min</Text>
+                      )}
+                      {count > 0 && (
+                        <View style={[styles.countBadge, { backgroundColor: stage.textColor }]}>
+                          <Text style={styles.countBadgeText}>✓ {count}×</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                  <View style={styles.stageRight}>
-                    {stage.durationMinutes > 0 && (
-                      <Text style={[styles.stageDur, { color: stage.textColor }]}>{stage.durationMinutes} min</Text>
-                    )}
-                    {count > 0 && (
-                      <View style={[styles.countBadge, { backgroundColor: stage.textColor }]}>
-                        <Text style={styles.countBadgeText}>✓ {count}×</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-                <Text style={styles.stageInst}>{stage.instruction}</Text>
-                <View style={styles.stageActions}>
-                  <Text style={[styles.stageStart, { color: stage.textColor }]}>Begin stage {stage.id} →</Text>
-                  {/* Stage 1 gets an inline 5-min mini shortcut. Ease-boost
-                      on-ramp folded into the same card instead of a floating
-                      pill above, so the mini reads as "another way to enter
-                      Stage 1" rather than a competing item. Doesn't advance
-                      the cycle counter (completeMini stays separate from
-                      completeStage). */}
-                  {stage.id === 1 && (
-                    <TouchableOpacity
-                      onPress={(e) => { e.stopPropagation?.(); startMini(); }}
-                      style={styles.miniLink}
-                      accessibilityRole="button"
-                      accessibilityLabel="Start 5 minute mini session instead">
-                      <Text style={[styles.miniLinkText, { color: stage.textColor }]}>
-                        Or just 5 min tonight →
-                      </Text>
-                    </TouchableOpacity>
+                  {/* Per-stage "what this stage is doing" blurb — sits between
+                      the header and the full instruction so the user knows
+                      the arc goal in one glance. */}
+                  <Text style={[styles.stageBlurb, { color: stage.textColor }]}>{stage.blurb}</Text>
+                  <Text style={styles.stageInst}>{stage.instruction}</Text>
+                  {cadenceHint && (
+                    <Text style={styles.stageCadenceHint}>{`💡 ${cadenceHint}`}</Text>
                   )}
-                </View>
-              </TouchableOpacity>
+                  <View style={styles.stageActions}>
+                    <Text style={[styles.stageStart, { color: stage.textColor }]}>Begin stage {stage.id} →</Text>
+                    {/* Stage 1 gets an inline 5-min mini shortcut. Ease-boost
+                        on-ramp folded into the same card instead of a floating
+                        pill above, so the mini reads as "another way to enter
+                        Stage 1" rather than a competing item. Doesn't advance
+                        the cycle counter (completeMini stays separate from
+                        completeStage). */}
+                    {stage.id === 1 && (
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation?.(); startMini(); }}
+                        style={styles.miniLink}
+                        accessibilityRole="button"
+                        accessibilityLabel="Start 5 minute mini session instead">
+                        <Text style={[styles.miniLinkText, { color: stage.textColor }]}>
+                          Or just 5 min tonight →
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
             );
           })}
         </ScrollView>
@@ -555,6 +616,17 @@ export default function SensateScreen() {
           )
         )}
 
+        {/* Post-session takeaway banner — stage-specific insight or
+            invitation to talk, shown after Mark complete but before the
+            reflection input. Sets the emotional register for the reflection
+            that follows. Mini sessions skip this (they're a lightweight
+            on-ramp, no debrief needed). */}
+        {marked && !isMini && activeStage && (
+          <View style={[styles.takeawayBanner, { borderLeftColor: activeStage.textColor }]}>
+            <Text style={styles.takeawayText}>{activeStage.takeaway}</Text>
+          </View>
+        )}
+
         {/* Post-session mutual reflection. Only for full stages (mini skips
             this — it's a lightweight on-ramp). Shown once marked + not yet
             saved/skipped. On save, if the partner has already submitted for
@@ -563,7 +635,7 @@ export default function SensateScreen() {
           const uid = user?.uid ?? '';
           const p1 = couple?.partner1Uid ?? '';
           const p2 = couple?.partner2Uid ?? '';
-          const stageIdKey = activeStage.id as 1 | 2 | 3;
+          const stageIdKey = activeStage.id as 1 | 2 | 3 | 4;
           const { both, entries } = bothReflected(progress, sessionCycleNumber, stageIdKey, p1, p2);
           const mine = entries[uid];
           const theirs = entries[uid === p1 ? p2 : p1];
@@ -639,13 +711,16 @@ export default function SensateScreen() {
 
       <HelpModal
         visible={help.visible}
-        title="Sensate Focus"
-        description="A research-backed approach from sex therapy (Masters & Johnson) for rekindling physical intimacy through mindful touch."
+        title="Presence"
+        description="A slow-touch practice inspired by decades of sex therapy research (Masters & Johnson, 1970). Use it for reconnection after a busy stretch, if performance pressure has crept in, or before and after time apart."
         tips={[
-          '3 progressive stages, start with Stage 1',
-          'Stage 1: non-sexual touch only, 15 min each',
-          'Stage 2: full body, still no goal, 20 min each',
-          'Stage 3: no timer, no goal, just presence and sensation',
+          '4 stages, done in order over weeks (not one evening)',
+          'Stage 1 Discover: non-genital touch, sensation only',
+          'Stage 2 Connect: full body, turn-taking, no goal',
+          'Stage 3 Together: mutual touch, no turn-taking',
+          'Stage 4 Flow: open-ended, allow whatever comes',
+          'Try each stage twice before moving on. Once a week works well.',
+          "This isn't a game, it's practice. No goal, no performance.",
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
@@ -654,15 +729,15 @@ export default function SensateScreen() {
       {/* Cycle completion moment — full-screen overlay fired when the
           couple's completeStage transaction filled the final missing
           stage in the current cycle. Deliberately quiet copy (this is
-          Sensate Focus, not a game — no confetti, no leaderboard).
-          Dismisses back to the stage list. */}
+          Presence, not a game — no confetti, no leaderboard). Dismisses
+          back to the stage list. */}
       {cycleModalCount !== null && (
         <View style={styles.cycleOverlay}>
           <View style={styles.cycleCard}>
             <Text style={styles.cycleEmoji}>🌸</Text>
             <Text style={styles.cycleTitle}>Cycle {cycleModalCount} complete</Text>
             <Text style={styles.cycleBody}>
-              You've moved through all three stages together. What you learned about each other is yours to keep. The cycle resets whenever you'd like to walk it again.
+              You've moved through all four stages together. What you learned about each other is yours to keep. The cycle resets whenever you'd like to walk it again.
             </Text>
             <TouchableOpacity
               style={styles.cycleBtn}
@@ -785,6 +860,26 @@ const styles = StyleSheet.create({
   stageActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.xs },
   miniLink: { paddingVertical: 4, paddingHorizontal: 8 },
   miniLinkText: { fontFamily: Fonts.bodyItalic, fontSize: 13, opacity: 0.75 },
+  // Per-stage "what this stage is doing" blurb — italic, between the
+  // number/title header and the fuller instruction. Frames the arc goal.
+  stageBlurb: { fontFamily: Fonts.bodyItalic, fontSize: 14, marginTop: -4, marginBottom: 2, opacity: 0.85 },
+  // Soft cadence hint on later stages when the predecessor hasn't been
+  // done twice. Muted, italic, small — reads as guidance, not warning.
+  stageCadenceHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: Spacing.xs },
+  // Vertical connector between stage cards to visually chain them as a
+  // 4-step sequence, not four independent options. Line + arrow.
+  stageConnectorWrap: { alignItems: 'center', paddingVertical: 4 },
+  stageConnectorLine: { width: 2, height: 12, borderRadius: 1 },
+  stageConnectorArrow: { fontFamily: Fonts.bodyBold, fontSize: 14, marginTop: -2 },
+  // Post-session takeaway banner — stage-specific insight before the
+  // reflection card. Left-border accent color per stage.
+  takeawayBanner: {
+    marginTop: Spacing.md, padding: Spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderLeftWidth: 3,
+    borderRadius: Radius.md,
+  },
+  takeawayText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.text, lineHeight: 20 },
   // Post-session reflection card — one-line optional input, becomes a
   // mutual-reveal card once both partners submit for the same cycle+stage.
   reflectionCard: {
