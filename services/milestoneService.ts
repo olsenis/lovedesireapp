@@ -7,6 +7,8 @@ import {
   onSnapshot,
   query,
   orderBy,
+  runTransaction,
+  arrayUnion,
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -34,6 +36,12 @@ export interface Milestone {
   note?: string;      // optional reflection
   createdBy: string;
   createdAt: number;
+  // Marks a system-generated milestone. Present values are unique keys
+  // like 'started-dating', 'first-presence-cycle'. Paired with
+  // couple.autoMilestonesCreated: once an autoKey is in that list, the
+  // corresponding milestone is never re-added even if the user deletes
+  // it. Absent = user-added milestone.
+  autoKey?: string;
 }
 
 export const MILESTONE_PRESETS: { kind: MilestoneKind; label: string; emoji: string }[] = [
@@ -81,4 +89,29 @@ export async function updateMilestone(
 
 export async function deleteMilestone(coupleId: string, milestoneId: string): Promise<void> {
   await deleteDoc(doc(db, 'couples', coupleId, 'milestones', milestoneId));
+}
+
+// Idempotent auto-milestone creator. Reads couple.autoMilestonesCreated in
+// a transaction: if autoKey is already present → no-op (milestone was
+// created before, user may have since deleted it, respect that). If not →
+// writes the milestone doc + appends autoKey to the tracker list. Never
+// re-creates the same auto milestone once its autoKey has been recorded.
+export async function ensureAutoMilestone(
+  coupleId: string,
+  autoKey: string,
+  data: Omit<Milestone, 'id' | 'createdAt' | 'autoKey'>,
+): Promise<void> {
+  const coupleRef = doc(db, 'couples', coupleId);
+  const milestonesRef = collection(db, 'couples', coupleId, 'milestones');
+  await runTransaction(db, async (tx) => {
+    const coupleSnap = await tx.get(coupleRef);
+    if (!coupleSnap.exists()) return;
+    const existing: string[] = (coupleSnap.data() as { autoMilestonesCreated?: string[] }).autoMilestonesCreated ?? [];
+    if (existing.includes(autoKey)) return;
+    // addDoc-equivalent inside a transaction: we can't addDoc, must use
+    // a preallocated doc ref.
+    const newMilestoneRef = doc(milestonesRef);
+    tx.set(newMilestoneRef, { ...data, autoKey, createdAt: Date.now() });
+    tx.update(coupleRef, { autoMilestonesCreated: arrayUnion(autoKey) });
+  });
 }

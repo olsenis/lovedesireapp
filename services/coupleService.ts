@@ -47,6 +47,13 @@ export interface Couple {
   pendingPartner2Uid?: string;
   pendingPartner2Name?: string;
   pendingPartner2At?: number;
+  // Our Story auto-milestone tracker. Contains autoKey strings for every
+  // system-generated milestone that has ever been added for this couple
+  // (e.g. 'started-dating', 'first-presence-cycle'). Delete of a milestone
+  // does NOT remove its autoKey from this list — user's delete is
+  // permanent, no re-add on next scan. See ensureAutoMilestone in
+  // services/milestoneService.ts for the transaction that maintains this.
+  autoMilestonesCreated?: string[];
 }
 
 // Exclude visually ambiguous characters (0/O, 1/I/L) for easier sharing verbally

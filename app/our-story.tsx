@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -12,7 +12,12 @@ import {
   addMilestone,
   updateMilestone,
   deleteMilestone,
+  ensureAutoMilestone,
 } from '../services/milestoneService';
+import { subscribeSensateProgress, SensateProgress } from '../services/sensateService';
+import { subscribeMoments, MomentEntry } from '../services/momentService';
+import { subscribeChallenge, ChallengeState } from '../services/challengeService';
+import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../services/fantasyWishesService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -30,10 +35,15 @@ function formatLongDate(ts: number): string {
 
 export default function OurStoryScreen() {
   const { user, profile } = useAuth();
-  const { partner } = useCouple(user?.uid, profile?.coupleId);
+  const { partner, couple } = useCouple(user?.uid, profile?.coupleId);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<Milestone | null>(null);
+  // Cross-feature data for the stats card + auto-milestone scan.
+  const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
+  const [moments, setMoments] = useState<MomentEntry[]>([]);
+  const [challengeState, setChallengeState] = useState<ChallengeState | null>(null);
+  const [fwItems, setFwItems] = useState<FantasyWishesItem[]>([]);
 
   // Form state
   const [kind, setKind] = useState<MilestoneKind>('met');
@@ -50,6 +60,90 @@ export default function OurStoryScreen() {
     if (!coupleId) return;
     return subscribeMilestones(coupleId, setMilestones);
   }, [coupleId]);
+
+  // Cross-feature subscriptions for stats + auto-milestone scan.
+  useEffect(() => {
+    if (!coupleId) return;
+    const u1 = subscribeSensateProgress(coupleId, setSensateProgress);
+    const u2 = subscribeMoments(coupleId, setMoments);
+    const u3 = subscribeChallenge(coupleId, setChallengeState);
+    const u4 = subscribeFantasyWishes(coupleId, setFwItems);
+    return () => { u1(); u2(); u3(); u4(); };
+  }, [coupleId]);
+
+  // Auto-milestone scan — writes system-generated milestones when the
+  // couple's data indicates a threshold was hit. Each ensureAutoMilestone
+  // call is idempotent (transaction reads couple.autoMilestonesCreated,
+  // no-ops if the autoKey is present, appends to the tracker otherwise).
+  // Delete of an auto milestone is permanent because the autoKey stays
+  // in the tracker after creation.
+  useEffect(() => {
+    if (!coupleId || !couple) return;
+
+    // 1. "We started dating" — from couple.startDate (Profile setup).
+    if (couple.startDate) {
+      ensureAutoMilestone(coupleId, 'started-dating', {
+        label: 'We started dating',
+        date: couple.startDate,
+        emoji: '💖',
+        kind: 'made-it-official',
+        createdBy: 'system',
+      });
+    }
+
+    // 2. First Presence cycle — sensateProgress.cyclesCompleted >= 1.
+    if ((sensateProgress?.cyclesCompleted ?? 0) >= 1) {
+      ensureAutoMilestone(coupleId, 'first-presence-cycle', {
+        label: 'Our first Presence cycle',
+        date: Date.now(),
+        emoji: '🌸',
+        kind: 'custom',
+        createdBy: 'system',
+      });
+    }
+
+    // 3. First 30-day challenge activated — challengeState.startedAt.
+    if (challengeState?.phase === 'active' && challengeState.startedAt) {
+      ensureAutoMilestone(coupleId, 'first-challenge-started', {
+        label: 'Started our first 30-day challenge',
+        date: challengeState.startedAt,
+        emoji: '💪',
+        kind: 'custom',
+        createdBy: 'system',
+      });
+    }
+
+    // 4. First Fantasy Wishes match — any FW item with mutual yes.
+    const p1 = couple.partner1Uid;
+    const p2 = couple.partner2Uid;
+    if (p1 && p2 && fwItems.some(item => isFWMatch(item, p1, p2))) {
+      ensureAutoMilestone(coupleId, 'first-fw-match', {
+        label: 'Our first shared fantasy',
+        date: Date.now(),
+        emoji: '✨',
+        kind: 'custom',
+        createdBy: 'system',
+      });
+    }
+  }, [coupleId, couple, sensateProgress?.cyclesCompleted, challengeState?.phase, challengeState?.startedAt, fwItems]);
+
+  // Days-together stat — from couple.startDate if set, else fallback to
+  // couple.createdAt with the softer "Days on Desire" label.
+  const daysStat = useMemo(() => {
+    const anchor = couple?.startDate ?? couple?.createdAt;
+    if (!anchor) return { count: 0, label: 'Days together' };
+    const days = Math.max(0, Math.floor((Date.now() - anchor) / 86400000));
+    return {
+      count: days,
+      label: couple?.startDate ? 'Days together' : 'Days on Desire',
+    };
+  }, [couple?.startDate, couple?.createdAt]);
+
+  // Shared moments — count of days where BOTH partners submitted a photo
+  // (mutual-reveal is the meaningful signal, not solo captures).
+  const sharedMomentsCount = useMemo(() => {
+    return moments.filter(m => m.photos && Object.keys(m.photos).length >= 2).length;
+  }, [moments]);
 
   const openAdd = () => {
     setEditing(null);
@@ -121,6 +215,28 @@ export default function OurStoryScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
+        {/* Stats card — 2×2 grid of live-derived numbers from other
+            features. Fills the top of the screen so Our Story never
+            feels empty even before user adds milestones. */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statTile}>
+            <Text style={styles.statNum}>{daysStat.count}</Text>
+            <Text style={styles.statLabel}>{daysStat.label}</Text>
+          </View>
+          <View style={styles.statTile}>
+            <Text style={styles.statNum}>{milestones.length}</Text>
+            <Text style={styles.statLabel}>Milestones</Text>
+          </View>
+          <View style={styles.statTile}>
+            <Text style={styles.statNum}>{sensateProgress?.cyclesCompleted ?? 0}</Text>
+            <Text style={styles.statLabel}>Presence cycles</Text>
+          </View>
+          <View style={styles.statTile}>
+            <Text style={styles.statNum}>{sharedMomentsCount}</Text>
+            <Text style={styles.statLabel}>Shared moments</Text>
+          </View>
+        </View>
+
         {milestones.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>📖</Text>
@@ -323,4 +439,19 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   saveBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   saveBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  // 2x2 stats grid at the top of Our Story — live-derived numbers from
+  // other features (days together, milestones, presence cycles, shared
+  // moments). Fills the cold-start empty space.
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
+  statTile: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    backgroundColor: Colors.blush,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    alignItems: 'center',
+  },
+  statNum: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
+  statLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2, textAlign: 'center' },
 });
