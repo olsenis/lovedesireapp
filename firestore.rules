@@ -110,6 +110,14 @@ service cloud.firestore {
           && isMemberOfCouple(coupleId);
       }
 
+      // ── Love Language results: same shape as blueprints (both read, owner-only write) ─────
+      match /loveLanguages/{userId} {
+        allow read: if request.auth != null && isMemberOfCouple(coupleId);
+        allow write: if request.auth != null
+          && request.auth.uid == userId
+          && isMemberOfCouple(coupleId);
+      }
+
       // Time Capsules feature was removed July 2026 — no rules block needed
       // for /timeCapsules/{id}. Any leftover pre-launch test data is cleaned
       // up by the GDPR cascade in functions/src/index.ts (still walks the

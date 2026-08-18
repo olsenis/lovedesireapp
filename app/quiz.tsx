@@ -1,11 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LoveLanguage } from '../constants/content';
+import { LinearGradient } from 'expo-linear-gradient';
+import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LOVE_LANGUAGE_TYPE_CONFIG, LOVE_LANGUAGE_COMPATIBILITY, LoveLanguage, LoveLanguagePairKey } from '../constants/content';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { createUserProfile } from '../services/authService';
+import {
+  saveLoveLanguageResult,
+  subscribeCoupleLoveLanguages,
+  CoupleLoveLanguages,
+} from '../services/loveLanguageService';
+import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -30,8 +36,16 @@ export default function QuizScreen() {
   // than a fresh run through the quiz. In this mode we don't have the score
   // breakdown, so we hide the bars and show a plain result card.
   const [viewingSaved, setViewingSaved] = useState(false);
+  // Both partners' full results from couples/{id}/loveLanguages subcoll.
+  // Powers the partner-side reveal + compatibility card on the results view.
+  const [coupleResults, setCoupleResults] = useState<CoupleLoveLanguages>({});
   const help = useHelp('love-language');
   useTrackScreen('love_language_quiz');
+
+  useEffect(() => {
+    if (!profile?.coupleId) return;
+    return subscribeCoupleLoveLanguages(profile.coupleId, setCoupleResults);
+  }, [profile?.coupleId]);
 
   // Auto-restore should fire ONCE when the profile arrives on mount.
   // Without this guard, pressing "Retake quiz" would immediately snap
@@ -76,13 +90,31 @@ export default function QuizScreen() {
     : sorted[0][0];
   const max = sorted[0][1];
 
-  // Persist the top result on the user profile so partner-side insight
-  // generation can read it. Skip when just viewing a previously saved
-  // result — nothing new to write.
+  // Persist the full result via loveLanguageService. Dual-write: mirrors
+  // primary to profile.loveLanguage (existing Sunday-nudge + Insight-card
+  // reads keep working) AND saves scores + timestamp to
+  // couples/{id}/loveLanguages/{uid} so partner-side reveal + compatibility
+  // card work. Falls back to users/{uid}/private/loveLanguage when unpaired.
   useEffect(() => {
     if (!done || viewingSaved || !user) return;
-    createUserProfile(user.uid, { loveLanguage: primary } as any).catch(() => {});
-  }, [done, viewingSaved, primary, user]);
+    saveLoveLanguageResult(user.uid, profile?.coupleId, scores).catch(() => {});
+  }, [done, viewingSaved, user, profile?.coupleId, scores]);
+
+  // Partner-side reveal + compatibility lookup
+  const partnerUid = partner?.uid;
+  const partnerResult = partnerUid ? coupleResults[partnerUid] : undefined;
+  const partnerLanguage = partnerResult?.language;
+  const myTypeConfig = LOVE_LANGUAGE_TYPE_CONFIG[primary];
+  const partnerTypeConfig = partnerLanguage ? LOVE_LANGUAGE_TYPE_CONFIG[partnerLanguage] : undefined;
+  // Compatibility keyed `${primary}-${partnerPrimary}`. Author's canonical
+  // order isn't guaranteed to match user-partner direction, so check both
+  // orderings before falling back to a friendly placeholder.
+  const compatibility = useMemo(() => {
+    if (!partnerLanguage) return undefined;
+    const forward = `${primary}-${partnerLanguage}` as LoveLanguagePairKey;
+    const reverse = `${partnerLanguage}-${primary}` as LoveLanguagePairKey;
+    return LOVE_LANGUAGE_COMPATIBILITY[forward] ?? LOVE_LANGUAGE_COMPATIBILITY[reverse];
+  }, [primary, partnerLanguage]);
 
   return (
     <View style={styles.screen}>
@@ -122,38 +154,107 @@ export default function QuizScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.results}>
-          <Text style={styles.resultTitle}>Your Love Language</Text>
-          <Text style={styles.primaryEmoji}>{LOVE_LANGUAGE_LABELS[primary].emoji}</Text>
-          <Text style={styles.primaryLabel}>{LOVE_LANGUAGE_LABELS[primary].label}</Text>
-          <Text style={styles.primaryDesc}>{LOVE_LANGUAGE_LABELS[primary].description}</Text>
+          {/* Your language hero */}
+          <LinearGradient
+            colors={[myTypeConfig.color, '#FFFFFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.heroCard}
+          >
+            <Text style={styles.heroOrnamentTop}>✦</Text>
+            <Text style={styles.heroEyebrow}>Your love language</Text>
+            <Text style={styles.heroEmoji}>{myTypeConfig.emoji}</Text>
+            <Text style={styles.heroLabel}>{myTypeConfig.label}</Text>
+            <View style={styles.heroDivider} />
+            <Text style={styles.heroDesc}>{myTypeConfig.description}</Text>
+          </LinearGradient>
+
+          {/* Feels most loved by / less meaningful */}
+          <View style={styles.traitRow}>
+            <View style={[styles.traitCard, styles.traitOn]}>
+              <Text style={styles.traitTitle}>Feels most loved by</Text>
+              <Text style={styles.traitText}>{myTypeConfig.mostLovedBy}</Text>
+            </View>
+            <View style={[styles.traitCard, styles.traitOff]}>
+              <Text style={styles.traitTitle}>Less meaningful</Text>
+              <Text style={styles.traitText}>{myTypeConfig.lessMeaningful}</Text>
+            </View>
+          </View>
+
+          {/* Partner result */}
+          {partnerResult && partnerTypeConfig ? (
+            <>
+              <Text style={styles.sectionLabel}>{partner?.name ?? 'Your partner'}'s language</Text>
+              <View style={[styles.partnerCard, { backgroundColor: partnerTypeConfig.color }]}>
+                <Text style={styles.partnerEmoji}>{partnerTypeConfig.emoji}</Text>
+                <View style={styles.partnerInfo}>
+                  <Text style={styles.partnerLabel}>{partnerTypeConfig.label}</Text>
+                  <Text style={styles.partnerDesc}>{partnerTypeConfig.description}</Text>
+                </View>
+              </View>
+
+              {compatibility && (
+                <View style={[styles.compatCard, { borderLeftColor: partnerTypeConfig.color }]}>
+                  <Text style={styles.compatTitle}>
+                    {myTypeConfig.emoji} {myTypeConfig.label} + {partnerTypeConfig.emoji} {partnerTypeConfig.label}
+                  </Text>
+                  <Text style={styles.compatText}>{personalise(compatibility.summary, partner?.name)}</Text>
+
+                  <View style={styles.compatSection}>
+                    <Text style={styles.compatSectionLabel}>⚠ Watch out for</Text>
+                    <Text style={styles.compatChallenge}>{personalise(compatibility.challenge, partner?.name)}</Text>
+                  </View>
+
+                  <View style={styles.compatSection}>
+                    <Text style={styles.compatSectionLabel}>✦ Try this</Text>
+                    {compatibility.tips.map((tip, i) => (
+                      <View key={i} style={styles.tipRow}>
+                        <Text style={styles.tipDot}>·</Text>
+                        <Text style={styles.tipText}>{personalise(tip, partner?.name)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
+          ) : partner ? (
+            <View style={styles.partnerPending}>
+              <Text style={styles.partnerPendingEmoji}>⏳</Text>
+              <Text style={styles.partnerPendingText}>
+                Waiting for {partner?.name ?? 'your partner'} to complete the quiz
+              </Text>
+              <Text style={styles.partnerPendingHint}>When {partner?.name ?? 'your partner'} finishes, your compatibility will appear here.</Text>
+            </View>
+          ) : null}
 
           {viewingSaved ? (
-            <Text style={styles.savedNote}>
-              Saved from your last quiz. Retake anytime.
-            </Text>
+            <Text style={styles.savedNote}>Saved from your last quiz. Retake anytime.</Text>
           ) : (
-            <View style={styles.scoreList}>
-              {sorted.map(([lang, score]) => {
-                const cfg = LOVE_LANGUAGE_LABELS[lang];
-                const pct = max > 0 ? (score / max) * 100 : 0;
-                return (
-                  <View key={lang} style={styles.scoreRow}>
-                    <Text style={styles.scoreEmoji}>{cfg.emoji}</Text>
-                    <View style={styles.scoreBarWrap}>
-                      <Text style={styles.scoreLang}>{cfg.label}</Text>
-                      <View style={styles.scoreBarBg}>
-                        <View style={[styles.scoreBarFill, { width: `${pct}%` }]} />
+            <>
+              <Text style={styles.sectionLabel}>Your full profile</Text>
+              <View style={styles.scoreList}>
+                {sorted.map(([lang, score]) => {
+                  const cfg = LOVE_LANGUAGE_LABELS[lang];
+                  const pct = max > 0 ? (score / max) * 100 : 0;
+                  return (
+                    <View key={lang} style={styles.scoreRow}>
+                      <Text style={styles.scoreEmoji}>{cfg.emoji}</Text>
+                      <View style={styles.scoreBarWrap}>
+                        <Text style={styles.scoreLang}>{cfg.label}</Text>
+                        <View style={styles.scoreBarBg}>
+                          <View style={[styles.scoreBarFill, { width: `${pct}%` }]} />
+                        </View>
                       </View>
+                      <Text style={styles.scoreNum}>{score}</Text>
                     </View>
-                    <Text style={styles.scoreNum}>{score}</Text>
-                  </View>
-                );
-              })}
-            </View>
+                  );
+                })}
+              </View>
+            </>
           )}
 
           <TouchableOpacity style={styles.restartBtn} onPress={restart} accessibilityRole="button">
-            <Text style={styles.restartText}>{viewingSaved ? 'Retake quiz ↻' : 'Retake quiz ↻'}</Text>
+            <Text style={styles.restartText}>Retake quiz ↻</Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -237,4 +338,44 @@ const styles = StyleSheet.create({
 
   restartBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   restartText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
+
+  // Result-screen enrichment styles — mirror blueprint.tsx pattern so
+  // Love Language reads as sibling feature not lesser cousin.
+  heroCard: { width: '100%', alignItems: 'center', paddingVertical: Spacing.xl, paddingHorizontal: Spacing.lg, borderRadius: Radius.xl, gap: Spacing.sm },
+  heroOrnamentTop: { fontFamily: Fonts.body, fontSize: 18, color: Colors.burgundy, opacity: 0.6 },
+  heroEyebrow: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, letterSpacing: 2, textTransform: 'uppercase' },
+  heroEmoji: { fontSize: 64, marginTop: Spacing.xs },
+  heroLabel: { fontFamily: Fonts.headingItalic, fontSize: 32, color: Colors.burgundy, textAlign: 'center' },
+  heroDivider: { width: 40, height: 1, backgroundColor: Colors.burgundy, opacity: 0.4, marginVertical: 4 },
+  heroDesc: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.text, textAlign: 'center', lineHeight: 22, paddingHorizontal: Spacing.md },
+
+  traitRow: { flexDirection: 'row', gap: Spacing.sm, width: '100%' },
+  traitCard: { flex: 1, borderRadius: Radius.lg, padding: Spacing.md, gap: 4 },
+  traitOn: { backgroundColor: '#F1F8E9' },
+  traitOff: { backgroundColor: '#FFF3E0' },
+  traitTitle: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 1 },
+  traitText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 18 },
+
+  sectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, letterSpacing: 2, textTransform: 'uppercase', alignSelf: 'flex-start', marginTop: Spacing.md },
+
+  partnerCard: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: Radius.lg },
+  partnerEmoji: { fontSize: 40 },
+  partnerInfo: { flex: 1, gap: 4 },
+  partnerLabel: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
+  partnerDesc: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.text, lineHeight: 18 },
+
+  compatCard: { width: '100%', backgroundColor: '#FFFFFF', borderLeftWidth: 4, borderRadius: Radius.md, padding: Spacing.lg, gap: Spacing.md },
+  compatTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  compatText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 21 },
+  compatSection: { gap: 6 },
+  compatSectionLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 1 },
+  compatChallenge: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.text, lineHeight: 20 },
+  tipRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  tipDot: { fontFamily: Fonts.body, fontSize: 14, color: Colors.rose, lineHeight: 20 },
+  tipText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20 },
+
+  partnerPending: { width: '100%', alignItems: 'center', padding: Spacing.lg, backgroundColor: '#F5F5F5', borderRadius: Radius.lg, gap: 6 },
+  partnerPendingEmoji: { fontSize: 28 },
+  partnerPendingText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text, textAlign: 'center' },
+  partnerPendingHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center' },
 });
