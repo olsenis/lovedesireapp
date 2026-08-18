@@ -87,7 +87,7 @@ Categories:
 |---|---|---|---|---|---|---|
 | Erotic Blueprint | 15-Q assessment + couple compat | Paid | 15 Q + 5 types + **25 pairs** | 4/5 | 4/5 | High-value insight. Blueprint compatibility is unique. |
 | Sensate Focus | Guided 3-stage session + timer | Paid | 3 stages | 4/5 | 3/5 | Deliberate, therapeutic. Lower "fun" but high value. |
-| Intimacy Log | Opt-in tracking | Free (opt-in from Profile) | N/A | 3/5 | 2/5 | Utility, not fun. Some may find it clinical. |
+| Intimacy Log | Reflection tracker + monthly narrative + cross-flow prompts | Paid + per-user opt-in | User-generated | 4/5 | 3/5 | Reframed Aug 2026 (H25) — subtitle + composer reflection copy + cross-flow toast prompts from Sensate cycle / Daily Spicy match / FW match. Not "fun" but valuable for self-selected users. |
 
 ### Async / messages
 

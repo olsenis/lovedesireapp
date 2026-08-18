@@ -474,7 +474,7 @@ export default function ProfileScreen() {
           <View style={styles.row}>
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>Intimacy Log</Text>
-              <Text style={styles.rowHint}>Track intimate moments and get smart nudges based on your shared picks and wishes</Text>
+              <Text style={styles.rowHint}>A private record of what you build together</Text>
             </View>
             <Switch
               value={intimacyLogOn}

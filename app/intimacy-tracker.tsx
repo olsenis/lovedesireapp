@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput, Alert } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -59,6 +59,28 @@ function todayStart(): number {
   const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime();
 }
 
+// Prefill presets — cross-flow contexts that hand off to the log composer
+// via `?prefill=<source>`. Each preset supplies the minimum required
+// fields (initiatedBy, types, mood) so the composer's Save button is
+// enabled on open; user is expected to review and adjust. `location` is
+// deliberately NOT prefilled — that varies too much to guess.
+type PrefillPreset = {
+  initiatedBy: 'me' | 'partner' | 'both';
+  types: IntimacyType[];
+  mood: IntimacyMood;
+};
+const PREFILL_PRESETS: Record<string, PrefillPreset> = {
+  // Sensate cycle just completed — connected mood, foreplay-only default
+  // (Sensate practice explicitly excludes intercourse; user can add if the
+  // session progressed beyond the guided cycle).
+  'sensate':     { initiatedBy: 'both', types: ['foreplay_only'], mood: 'amazing' },
+  // Daily Spicy Picks mutual-yes — playful mood, types left blank because
+  // "we both want to try this" is intent, not necessarily what happened.
+  'daily-spicy': { initiatedBy: 'both', types: [],                mood: 'good'    },
+  // Fantasy Wishes match — connected mood, types blank for same reason.
+  'fantasy':     { initiatedBy: 'both', types: [],                mood: 'amazing' },
+};
+
 function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
@@ -91,13 +113,33 @@ export default function IntimacyTrackerScreen() {
     }
   }, [subLoading, isSubscribed]);
   const [entries, setEntries] = useState<IntimacyEntry[]>([]);
-  // Deep-link support: /intimacy-tracker?tab=stats opens straight into
-  // the Stats tab. Home's Monthly Narrative nudge uses this to hand off
-  // into the story surface without a manual tap on the tab pill.
-  const params = useLocalSearchParams<{ tab?: string }>();
+  // Deep-link support:
+  //   ?tab=stats           opens straight into the Stats tab (used by Home's
+  //                        Monthly Narrative nudge)
+  //   ?prefill=sensate|daily-spicy|fantasy
+  //                        auto-opens the composer with context-appropriate
+  //                        defaults. Used by H7 Phase 2 cross-flow toasts
+  //                        (Sensate cycle complete, Daily Spicy match, FW
+  //                        match) so the user reviews & saves in one flow.
+  //                        Unknown prefill values fall through — the tab
+  //                        opens normally and no composer fires.
+  const params = useLocalSearchParams<{ tab?: string; prefill?: string }>();
   const [tab, setTab] = useState<'log' | 'stats'>(params.tab === 'stats' ? 'stats' : 'log');
   const [showSheet, setShowSheet] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<IntimacyEntry | null>(null);
+
+  // Auto-open composer once per navigation when a valid prefill lands. Use
+  // a ref keyed on the param value so re-renders (Firestore snapshots,
+  // etc.) don't reopen the sheet after the user closes it.
+  const prefillHandledRef = useRef<string | null>(null);
+  const prefillPreset = params.prefill && PREFILL_PRESETS[params.prefill] ? PREFILL_PRESETS[params.prefill] : null;
+  useEffect(() => {
+    const key = params.prefill ?? null;
+    if (!key || !prefillPreset) return;
+    if (prefillHandledRef.current === key) return;
+    prefillHandledRef.current = key;
+    setShowSheet(true);
+  }, [params.prefill, prefillPreset]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -292,6 +334,7 @@ export default function IntimacyTrackerScreen() {
         visible={showSheet}
         onClose={() => setShowSheet(false)}
         partnerName={partnerName}
+        prefill={prefillPreset}
         onSave={async (data, when) => {
           if (!coupleId) throw new Error('No coupleId');
           // Clamp to now-or-earlier — future dates would be weird and
@@ -489,12 +532,17 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
 
 // ── Detail sheet ──────────────────────────────────────────────────────────────
 function DetailSheet({
-  visible, onClose, onSave, partnerName,
+  visible, onClose, onSave, partnerName, prefill,
 }: {
   visible: boolean;
   onClose: () => void;
   onSave: (data: Omit<IntimacyEntry, 'id' | 'createdAt' | 'loggedBy'>, when: number) => Promise<void>;
   partnerName: string;
+  // Optional cross-flow prefill (H7 Phase 2). Populates initiatedBy /
+  // types / mood on open so the composer opens ready-to-save, but user
+  // can override any field before Save. `location` is still required
+  // manually — too context-dependent to guess.
+  prefill?: PrefillPreset | null;
 }) {
   const [initiatedBy, setInitiatedBy] = useState<'me' | 'partner' | 'both' | null>(null);
   const [location, setLocation] = useState<IntimacyLocation | null>(null);
@@ -511,6 +559,19 @@ function DetailSheet({
   const [positions, setPositions] = useState<string[]>([]);
   const [mood, setMood] = useState<IntimacyMood | null>(null);
   const [note, setNote] = useState('');
+
+  // Seed prefill fields when sheet opens (visible transitions false→true).
+  // Runs on every open so /intimacy-tracker?prefill=X still applies after
+  // save+navigate. User can still override any field before Save.
+  const prevVisibleRef = useRef(false);
+  useEffect(() => {
+    if (visible && !prevVisibleRef.current && prefill) {
+      setInitiatedBy(prefill.initiatedBy);
+      setTypes(prefill.types);
+      setMood(prefill.mood);
+    }
+    prevVisibleRef.current = visible;
+  }, [visible, prefill]);
   const [rating, setRating] = useState<number>(0);
   const [myOrgasm, setMyOrgasm] = useState<'yes' | 'no' | null>(null);
   const [myOrgasmCount, setMyOrgasmCount] = useState(1);
@@ -745,13 +806,16 @@ function DetailSheet({
               </View>
             ))}
 
-            {/* Note — optional */}
-            <Text style={styles.sheetSection}>Note <Text style={styles.optional}>optional</Text></Text>
+            {/* One thing memorable — optional reflection field. Copy tuned
+                Aug 2026 (H7 reframe) — was "Note / Add a note..." which
+                read as data-entry. Reflection framing surfaces the field's
+                real value (a one-liner future-you can read back). */}
+            <Text style={styles.sheetSection}>One thing memorable about this? <Text style={styles.optional}>optional</Text></Text>
             <TextInput
               style={styles.noteInput}
               value={note}
               onChangeText={t => setNote(t.slice(0, 200))}
-              placeholder="Add a note..."
+              placeholder="A word or a sentence."
               placeholderTextColor={Colors.muted}
               multiline
               maxLength={200}

@@ -7,6 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useToast } from '../components/Toast';
 import {
   DailyWishDoc, DailyVote,
   subscribeDailyWishes, voteDailyWish, isMatch, markAddToListAtomic, bothWantToAdd,
@@ -97,6 +98,13 @@ export default function DailyScreen() {
 
   const [wishDoc, setWishDoc] = useState<DailyWishDoc | null>(null);
   const [qDoc, setQDoc] = useState<DailyQuestionDoc | null>(null);
+  // Shared toast for the cross-flow Intimacy Log hand-off on fresh Spicy
+  // Picks matches (H7 Phase 2). Silent when the feature isn't enabled.
+  const { toast, showToast } = useToast();
+  // Snapshot Spicy match set at last render so we only fire the log
+  // prompt on NEW mutual-yes events, not historical ones on mount.
+  // Mirrors the same pattern in fantasy-wishes.tsx.
+  const prevSpicyMatchGisRef = useRef<Set<number> | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [showMatches, setShowMatches] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -129,6 +137,36 @@ export default function DailyScreen() {
     if (!coupleId) return;
     return subscribeDailyWishes(coupleId, setWishDoc);
   }, [coupleId]);
+
+  // Fresh Spicy match detection → Intimacy Log cross-flow toast (H7
+  // Phase 2). Only fires when the current user has the Intimacy Log
+  // feature enabled. Non-Spicy category matches (Sweet, Deep) never
+  // trigger — those aren't intimate acts. First snapshot is captured
+  // silently so pre-existing matches from prior sessions don't fire.
+  useEffect(() => {
+    if (!partnerId || !wishDoc) return;
+    const currentSpicyMatchGis = new Set<number>();
+    wishDoc.items.forEach((item, gi) => {
+      const isSpicyCat = DP_SOURCES.spicy.includes(item.category);
+      if (isSpicyCat && isMatch(wishDoc, gi, uid, partnerId)) {
+        currentSpicyMatchGis.add(gi);
+      }
+    });
+    if (prevSpicyMatchGisRef.current === null) {
+      prevSpicyMatchGisRef.current = currentSpicyMatchGis;
+      return;
+    }
+    const freshGis = [...currentSpicyMatchGis].filter((gi) => !prevSpicyMatchGisRef.current!.has(gi));
+    prevSpicyMatchGisRef.current = currentSpicyMatchGis;
+    if (freshGis.length > 0 && profile?.features?.intimacyLog) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('You both want this. Log it if you tried it', {
+        onTap: () => router.push('/intimacy-tracker?prefill=daily-spicy' as any),
+        duration: 4000,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wishDoc, partnerId, uid, profile?.features?.intimacyLog]);
 
   useEffect(() => {
     if (!coupleId) return;
@@ -711,6 +749,7 @@ export default function DailyScreen() {
           </View>
         </View>
       </Modal>
+      {toast}
     </View>
   );
 }

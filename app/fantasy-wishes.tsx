@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -7,6 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useToast } from '../components/Toast';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
 import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd } from '../services/fantasyWishesService';
@@ -59,13 +60,11 @@ export default function FantasyWishesScreen() {
   // celebration was tried Aug 2026 and reverted — too loud, interrupted
   // flow when matches happened rapidly.
   const [newMatchId, setNewMatchId] = useState<string | null>(null);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const [toastActive, setToastActive] = useState(false);
-  // Whether the current toast should jump to the Matches tab on tap. Set
-  // per-show instead of parsing the message string so copy tweaks don't
-  // silently break the interaction.
-  const [toastTappable, setToastTappable] = useState(false);
-  const toastAnim = useRef(new Animated.Value(0)).current;
+  // Migrated to shared useToast hook Aug 2026 (H7 Phase 2). Same visual
+  // as the inline version; adds a second toast for the Intimacy Log
+  // cross-flow prompt after a match. Match toast is emphasis-style
+  // (burgundy fill), info toasts (+Add confirmation) are default style.
+  const { toast, showToast } = useToast();
   // Track which items were already matched at last render so we only
   // celebrate NEW mutual Yes events, not historical ones on mount.
   const prevMatchIdsRef = useRef<Set<string> | null>(null);
@@ -79,25 +78,6 @@ export default function FantasyWishesScreen() {
     if (!coupleId) return;
     return subscribeFantasyWishes(coupleId, setItems);
   }, [coupleId]);
-
-  // Small floating banner top of screen. Same helper for match reveal and
-  // +Add confirmation. Match variant is tappable (jumps to Matches tab);
-  // +Add variant is passive info. Auto-dismisses after 3s.
-  const showToast = (msg: string, tappable: boolean = false) => {
-    setToastMsg(msg);
-    setToastTappable(tappable);
-    setToastActive(true);
-    toastAnim.setValue(0);
-    Animated.sequence([
-      Animated.timing(toastAnim, { toValue: 1, duration: 220, useNativeDriver: true }),
-      Animated.delay(3000),
-      Animated.timing(toastAnim, { toValue: 0, duration: 260, useNativeDriver: true }),
-    ]).start(() => {
-      setToastActive(false);
-      setToastMsg(null);
-      setToastTappable(false);
-    });
-  };
 
   // Detect fresh mutual Yes matches. On first snapshot we snapshot existing
   // matches into the ref without celebrating (those are historical). Any
@@ -119,10 +99,26 @@ export default function FantasyWishesScreen() {
       if (matchedItem) {
         setNewMatchId(matchedItem.id);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showToast("It's a Match! ✨ Tap to see", true);
+        showToast("It's a Match! ✨ Tap to see", {
+          emphasis: true,
+          onTap: () => setActiveTab('matches'),
+        });
         // Clear the match highlight after the animation window so the
         // Matches list card returns to its normal appearance.
         setTimeout(() => setNewMatchId(null), 2200);
+        // H7 Phase 2 cross-flow: if Intimacy Log is enabled for this
+        // user, offer a hand-off to log the moment ~4s after the match
+        // toast fades. Kept as a second toast (not a replacement) so
+        // the celebration reads first, the log ask comes as a soft
+        // secondary prompt only if opted in.
+        if (profile?.features?.intimacyLog) {
+          setTimeout(() => {
+            showToast('Did you try this? Log the moment', {
+              onTap: () => router.push('/intimacy-tracker?prefill=fantasy' as any),
+              duration: 4000,
+            });
+          }, 3600);
+        }
       }
     }
     prevMatchIdsRef.current = currentMatchIds;
@@ -149,8 +145,8 @@ export default function FantasyWishesScreen() {
     // added. If we added the item locally, handleAdd already showed
     // "Added ✓" and we'd otherwise race two toasts against each other.
     const partnerOnlyIds = newIds.filter((id) => !locallyAddedIdsRef.current.has(id));
-    if (partnerOnlyIds.length > 0 && !toastActive && !isLocallyAddingRef.current) {
-      showToast('✨ New wish added', false);
+    if (partnerOnlyIds.length > 0 && !isLocallyAddingRef.current) {
+      showToast('✨ New wish added');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
@@ -206,7 +202,7 @@ export default function FantasyWishesScreen() {
       locallyAddedIdsRef.current.add(newId);
       setNewText('');
       setShowAdd(false);
-      showToast('Added ✓ · At the end of your deck', false);
+      showToast('Added ✓ · At the end of your deck');
     } finally {
       isLocallyAddingRef.current = false;
     }
@@ -323,31 +319,11 @@ export default function FantasyWishesScreen() {
         <Text style={styles.infoText}>✨ Vote privately, only mutual Yes matches are ever revealed</Text>
       </View>
 
-      {/* Floating toast — fires on new match ("It's a Match! ✨ Tap to see",
-          tappable → Matches tab) and on +Add / partner add (passive). */}
-      {toastActive && toastMsg && (
-        <Animated.View
-          style={[
-            styles.toast,
-            toastTappable && styles.toastMatch,
-            {
-              opacity: toastAnim,
-              transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
-            },
-          ]}
-          pointerEvents="box-none"
-        >
-          <TouchableOpacity
-            onPress={() => { if (toastTappable) setActiveTab('matches'); }}
-            activeOpacity={toastTappable ? 0.85 : 1}
-            disabled={!toastTappable}
-            accessibilityRole={toastTappable ? 'button' : 'text'}
-            accessibilityLabel={toastMsg}
-          >
-            <Text style={[styles.toastText, toastTappable && styles.toastTextMatch]}>{toastMsg}</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+      {/* Shared toast (components/Toast.tsx) — fires on new match
+          (emphasis + onTap→Matches tab), on +Add / partner add (default,
+          passive), and on H7 cross-flow log prompt (default + onTap
+          →/intimacy-tracker?prefill=fantasy). */}
+      {toast}
 
       <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tab, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')} accessibilityRole="button">
@@ -773,29 +749,7 @@ const styles = StyleSheet.create({
   addedText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.success, marginTop: 4 },
   waitingText: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginTop: 4 },
 
-  // ─── Toast (unchanged) ────────────────────────────────────────────────
-  toast: {
-    position: 'absolute',
-    top: 100,
-    left: Spacing.lg,
-    right: Spacing.lg,
-    backgroundColor: Colors.cream,
-    borderColor: Colors.burgundy,
-    borderWidth: 1,
-    borderRadius: Radius.full,
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.md,
-    alignItems: 'center',
-    zIndex: 50,
-    elevation: 8,
-    shadowColor: Colors.burgundy,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-  },
-  toastText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.3 },
-  toastMatch: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
-  toastTextMatch: { color: Colors.cream, fontSize: 14, letterSpacing: 0.4 },
+  // Toast styles moved to components/Toast.tsx Aug 2026.
 
   // ─── Add modal (unchanged) ────────────────────────────────────────────
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

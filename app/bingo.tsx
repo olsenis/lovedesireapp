@@ -7,6 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useToast } from '../components/Toast';
 import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
@@ -137,7 +138,8 @@ export default function ActivityCardsScreen() {
   // removed from the deck like a normal completion, turn alternates.
   // Toast surfaces briefly so the user knows the save actually happened
   // and where the item went — tap the toast to jump straight to the list.
-  const [savedToast, setSavedToast] = useState(false);
+  // Migrated to shared useToast Aug 2026.
+  const { toast, showToast } = useToast();
   const handleSaveForLater = async () => {
     if (!coupleId || !session || !partnerId) return;
     if (session.pendingCard === null || session.pendingCard === undefined) return;
@@ -147,8 +149,10 @@ export default function ActivityCardsScreen() {
       await addTodo(coupleId, activityText, 'intimacy', uid, 'activity-cards');
     } catch { /* non-fatal */ }
     await markCardDone(coupleId, session.pendingCard, uid);
-    setSavedToast(true);
-    setTimeout(() => setSavedToast(false), 6000);
+    showToast('💾 Saved to Together List, tap to view', {
+      onTap: () => router.push('/todo' as any),
+      duration: 6000,
+    });
     notifyPartner(coupleId, uid, 'Activity Cards 💾', `${profile?.name ?? 'Your partner'} saved this challenge to your Together List`).catch(() => {});
   };
 
@@ -164,18 +168,6 @@ export default function ActivityCardsScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Save-to-list toast: tap to jump to the list where the item now lives. */}
-      {savedToast && (
-        <TouchableOpacity
-          style={styles.savedToast}
-          onPress={() => { setSavedToast(false); router.push('/todo' as any); }}
-          activeOpacity={0.9}
-          accessibilityRole="button"
-          accessibilityLabel="View Together List"
-        >
-          <Text style={styles.savedToastText}>💾 Saved to Together List, tap to view</Text>
-        </TouchableOpacity>
-      )}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
@@ -417,6 +409,7 @@ export default function ActivityCardsScreen() {
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />
+      {toast}
     </View>
   );
 }
@@ -480,17 +473,8 @@ const styles = StyleSheet.create({
   saveLaterBtn: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   saveLaterBtnText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
   deckModeText: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, textAlign: 'center', marginTop: 4 },
-  // Floating confirmation toast after Save to Together List — sits on top
-  // of the screen so it's visible whether the user is at the deck or has
-  // scrolled. Burgundy fill matches the celebratory Fantasy Wishes match
-  // toast so users learn one visual language for "action succeeded".
-  savedToast: {
-    position: 'absolute', top: 60, left: Spacing.lg, right: Spacing.lg,
-    backgroundColor: Colors.burgundy, borderRadius: Radius.full,
-    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg,
-    zIndex: 10, ...Shadow.md,
-  },
-  savedToastText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream, textAlign: 'center' },
+  // Floating confirmation toast after Save to Together List — moved to
+  // shared components/Toast.tsx Aug 2026.
   cancelRevealBtn: { paddingVertical: Spacing.xs },
   cancelRevealText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   noPassesText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.error, textAlign: 'center' },

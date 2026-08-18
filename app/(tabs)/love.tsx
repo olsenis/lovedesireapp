@@ -32,7 +32,7 @@ const RITUALS = [
 // this is for when they're together, but the feature stays fully
 // accessible (they can plan for the next visit).
 const NURTURE = [
-  { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Log and reflect on your intimate moments',               route: '/intimacy-tracker', bg: '#FFF0F3', paid: true },
+  { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Your shared story of closeness',                          route: '/intimacy-tracker', bg: '#FFF0F3', paid: true },
   { emoji: '🧬', title: 'The Lovers',        subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true },
   { emoji: '🫁', title: 'Presence',           subtitle: 'Slow-touch practice for reconnection and presence',      route: '/sensate',   bg: '#E8F5E9', paid: true, inPerson: true },
 ];

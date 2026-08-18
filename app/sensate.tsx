@@ -9,6 +9,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { useToast } from '../components/Toast';
 import { SensateProgress, subscribeSensateProgress, completeStage, submitReflection, bothReflected, completeMini } from '../services/sensateService';
 import { SENSATE_PROMPT_POOLS } from '../constants/content';
 import { Colors } from '../constants/colors';
@@ -133,6 +134,10 @@ export default function SensateScreen() {
   const { user, profile } = useAuth();
   const { couple } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
+  // Toast for cross-flow prompts (Intimacy Log hand-off after cycle
+  // completion, H7 Phase 2). Silent no-op when the Intimacy Log feature
+  // is off for this user.
+  const { toast, showToast } = useToast();
   useTrackScreen('sensate');
   // Screen-level paywall gate — Us tab card is gated but Home nudges
   // (Insight tip + "return to Sensate" nudge) route directly here and
@@ -395,6 +400,18 @@ export default function SensateScreen() {
     // stage's own "session saved" banner.
     if (cycleJustCompleted) {
       setTimeout(() => setCycleModalCount(cyclesCompleted), 400);
+      // Cross-flow prompt (H7 Phase 2): if the user has Intimacy Log on,
+      // offer to hand off into the log composer with sensate defaults.
+      // Fires only for full cycle completion (mini sessions early-return
+      // above). Tap-through opens /intimacy-tracker?prefill=sensate.
+      if (profile?.features?.intimacyLog) {
+        setTimeout(() => {
+          showToast('Log this cycle in Intimacy?', {
+            onTap: () => router.push('/intimacy-tracker?prefill=sensate' as any),
+            duration: 4000,
+          });
+        }, 1400);
+      }
     }
   };
 
@@ -770,6 +787,7 @@ export default function SensateScreen() {
           </View>
         </View>
       )}
+      {toast}
     </View>
   );
 }

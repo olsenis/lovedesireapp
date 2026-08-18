@@ -48,19 +48,42 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **Streak-lite** — small `🔥 N-day streak` pill in the header when streak ≥ 3. Client-derived from the entry stream (no Firestore writes, no schema change). Breaks silently on missed day — no shame, no punishment.
 **Deferred:** no Home nudge (Journal is low-frequency; adding it would compete with actual waiting-for-you signals). No push notification. No per-prompt storage on entries. No prompt customization. No retro archive.
 
-### #7 Intimacy Log narrative — Phase 1 ✅ shipped (next commit); Phase 2+3 deferred
+### #7 Intimacy Log narrative — Phase 1 ✅ shipped; Phase 2 ✅ shipping now; Phase 3 deferred
+**Phase 1 (shipped earlier):** Monthly narrative + NarrativeCard + Home nudge + `?tab=stats` deep-link. See original block below for detail.
+**Phase 2 (this commit):** Reframe + cross-flow toast prompts (H24 below merges the full scope).
+**Deferred (Phase 3):** anonymised cross-couple benchmark ("couples in year 3 log an average of 6/month"). Requires scheduled Cloud Function writing anonymised aggregates + opt-in settings toggle + Privacy Policy addendum.
+
+---
+**Phase 1 detail (kept for history):**
 **File:** `services/intimacyService.ts` + `app/intimacy-tracker.tsx` + `app/(tabs)/index.tsx`
 **Change:** Pure client-side monthly narrative surface + Home discoverability nudge.
 - New helpers: `generateMonthlyNarrative(entries, monthDate)`, `computeMonthlyDelta(entries, monthDate)`, `previousMonthDate()`
 - New NarrativeCard at top of Stats tab, past-month only (≥3 entries threshold), rose-stripe blush card. 2-4 warm sentences + Pulse-style delta pill (up/down/flat) + optional reflection prompt when Disconnected entries exist.
 - New Home nudge: days 1-7 of new month, prev-month ≥3 entries → `✨ Your {month} in intimacy · N moments · read the story →` routing to `/intimacy-tracker?tab=stats`
 - Deep-link `?tab=stats` support added to intimacy-tracker mount
-**Deferred (Phase 2):** ties to Sensate + Daily via one-tap "want to log this?" prompts on stage completion / spicy pick vote. Requires suppressing `notifyPartner` side-effect for auto-logged entries.
-**Deferred (Phase 3):** anonymised cross-couple benchmark ("couples in year 3 log an average of 6/month"). Requires scheduled Cloud Function writing anonymised aggregates + opt-in settings toggle + Privacy Policy addendum.
 
 ### Deferred
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
+
+### H25 Intimacy Log reframe + cross-flow toast prompts (H7 Phase 2) — ✅ shipping now
+**Files:** NEW `components/Toast.tsx`, `app/(tabs)/love.tsx`, `app/profile.tsx`, `app/intimacy-tracker.tsx`, `app/sensate.tsx`, `app/fantasy-wishes.tsx`, `app/daily.tsx`, `app/bingo.tsx`
+**Change:**
+- **A. Rename + reframe (subtitle only):** Us tab card subtitle changed from `"Log and reflect on your intimate moments"` → `"Your shared story of closeness"`. Profile toggle hint tightened to `"A private record of what you build together"`. Screen name unchanged — full rename would churn users who already know the feature.
+- **D. Reflection field polish:** composer's "Note" field renamed to `"One thing memorable about this?"` with warmer placeholder `"A word or a sentence."`. Same 200-char cap, same schema — copy-only shift from data-entry framing to reflection framing. Entry-detail modal keeps "Note" label (reads clean as past-tense noun).
+- **C.1 Shared Toast component:** extracted the fantasy-wishes inline animated toast into `components/Toast.tsx` — `useToast()` hook returns `{ toast, showToast, dismiss }` with two visual variants (`default` cream+burgundy, `emphasis` burgundy fill) + optional tap callback. Migrated fantasy-wishes.tsx and bingo.tsx to the shared version at the same time (de-dupes ~30 lines of animation code between the two).
+- **C.2 Prefill deep-link:** `/intimacy-tracker?prefill=<source>` opens the composer automatically with contextual defaults. `PREFILL_PRESETS` table inline in intimacy-tracker.tsx: `sensate` → both / foreplay-only / amazing (connected mood), `daily-spicy` → both / [] / good (playful mood), `fantasy` → both / [] / amazing. User can override any field before Save. Ref-gated so re-renders don't re-open the sheet after the user closes it. DetailSheet gained an optional `prefill` prop + a `useEffect` that seeds state on visibility open.
+- **C.3 Three cross-flow hooks, all gated on `profile?.features?.intimacyLog === true`:**
+  - **Sensate cycle complete** (`app/sensate.tsx` handleMarkComplete): after `cycleJustCompleted === true`, toast `"Log this cycle in Intimacy?"` fires ~1.4s after the cycle overlay animates in. Tap → `/intimacy-tracker?prefill=sensate`. Mini sessions early-return above, so mini flow never triggers.
+  - **Fantasy Wishes match** (`app/fantasy-wishes.tsx` existing freshMatchIds effect): after the celebratory `"It's a Match! ✨"` toast, a second toast `"Did you try this? Log the moment"` fires ~3.6s later. Tap → `/intimacy-tracker?prefill=fantasy`. Feature off → celebratory toast only, no second toast.
+  - **Daily Spicy Picks match** (`app/daily.tsx` new fresh-match ref pattern mirroring FW's): watches `wishDoc.items` for fresh mutual-yes on Spicy category items (via `DP_SOURCES.spicy`). Toast `"You both want this. Log it if you tried it"`. Non-Spicy matches (Sweet/Deep) never trigger — those aren't intimate. First-snapshot silent so historical matches from prior sessions don't fire.
+- **Zero schema changes.** `IntimacyEntry` type unchanged. Prefill lives entirely in route params. Firestore rules unchanged.
+**Why:** Intimacy Log scored 5.6 on entertainment axes — but user's own analysis identified the rating was misapplied: this is a *reflection* feature, not entertainment. Right response is reframe + polish. H7 Phase 1 (monthly narrative surface + Home nudge) shipped earlier and did the big lift. This closes out Phase 2 (deferred cross-flow prompts) by hooking the three concrete intimate-adjacent moments (Sensate cycle, Daily Spicy match, FW match) into a low-friction hand-off. Expected 5.6 → ~7.2 for the self-selected opt-in user base.
+**Deferred:**
+- H7 Phase 3 (anonymised cross-couple benchmark) still deferred — needs Cloud Function + opt-in toggle + Privacy Policy addendum.
+- No `source: 'sensate'|'daily-spicy'|'fantasy'` field added to `IntimacyEntry` schema. Route param carries prefill; nothing writes source to Firestore. Add later if stats aggregation ever needs attribution.
+- No cross-flow prompts for Truth or Dare (dares span wholesome-to-sexy, no clean signal), Mood pick (too many hooks already), Sunday Check-in (self-reflective, different territory).
+- Full "Intimacy Reflection" / "Our Intimacy Story" rename still on table; revisit if reframed subtitle doesn't shift feel enough post-launch.
 
 ### H24 Pulse merged into Sunday Check-in — ✅ Commit A shipped (7a7748b), Commit B shipping now
 **Files:** `services/stateUnionService.ts`, `app/state-union.tsx`, `app/pulse.tsx`, `app/profile.tsx`, `app/(tabs)/love.tsx`, `app/(tabs)/index.tsx`, `services/yearInReviewService.ts`, deleted: `services/pulseService.ts`
