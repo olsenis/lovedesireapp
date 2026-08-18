@@ -14,7 +14,7 @@ import {
 } from '../services/dailyWishService';
 import {
   DailyQuestionDoc,
-  subscribeDailyQuestions, submitAnswer, bothAnswered,
+  subscribeDailyQuestions, submitAnswer, submitGuess, bothAnswered,
   drawMoreQuestions, MAX_BONUS_DRAWS as MAX_QUESTION_DRAWS,
 } from '../services/dailyQuestionsService';
 import { addTodo } from '../services/todoService';
@@ -242,7 +242,28 @@ export default function DailyScreen() {
   // Question helpers — mirror questions-game.tsx behavior verbatim.
   const myAnswer = (gi: number) => qDoc?.answers?.[uid]?.[String(gi)] ?? null;
   const partnerAnswer = (gi: number) => (partnerId ? qDoc?.answers?.[partnerId]?.[String(gi)] ?? null : null);
-  const revealed = (gi: number) => !!partnerId && !!qDoc && bothAnswered(qDoc, gi, uid, partnerId);
+  // Guess-partner-answer state (Versus merged into Daily, Aug 2026). For
+  // binary questions only: after user submits their own answer, a modal
+  // asks if they want to guess partner's pick before reveal. If they
+  // skip, we track that per-gi in local state so reveal fires without
+  // re-showing the modal on scroll. Modal itself is auto-triggered by
+  // submitValue when the user just answered a binary question they
+  // haven't yet guessed or skipped.
+  const [guessModalGi, setGuessModalGi] = useState<number | null>(null);
+  const [skippedGuesses, setSkippedGuesses] = useState<Set<number>>(new Set());
+
+  const revealed = (gi: number) => {
+    if (!partnerId || !qDoc) return false;
+    if (!bothAnswered(qDoc, gi, uid, partnerId)) return false;
+    const item = qDoc.items[gi];
+    // Non-binary questions: reveal as soon as both have answered (no
+    // guess step exists for open-text or scale).
+    if (item?.format !== 'binary') return true;
+    // Binary: hide partner's answer until user has either guessed or
+    // explicitly tapped "Just show me" (tracked in skippedGuesses).
+    const alreadyGuessed = !!qDoc.guesses?.[uid]?.[String(gi)];
+    return alreadyGuessed || skippedGuesses.has(gi);
+  };
 
   const submitValue = async (gi: number, value: string) => {
     if (!coupleId || !qDoc || !value) return;
@@ -257,6 +278,29 @@ export default function DailyScreen() {
     if (!partnerAlreadyAnswered) {
       notifyPartner(coupleId, uid, 'Daily 💬', `${profile?.name ?? 'Your partner'} played today, your turn!`);
     }
+    // Trigger guess modal on binary Qs the user hasn't yet guessed or
+    // explicitly skipped. Fires whether or not partner has already
+    // answered — either way, guess happens before reveal.
+    const item = qDoc.items[gi];
+    if (
+      item?.format === 'binary' &&
+      !qDoc.guesses?.[uid]?.[String(gi)] &&
+      !skippedGuesses.has(gi)
+    ) {
+      setGuessModalGi(gi);
+    }
+  };
+
+  const handleGuessSubmit = async (gi: number, guessOption: string) => {
+    if (!coupleId) return;
+    Haptics.selectionAsync();
+    await submitGuess(coupleId, uid, gi, guessOption);
+    setGuessModalGi(null);
+  };
+
+  const handleGuessSkip = (gi: number) => {
+    setSkippedGuesses((prev) => { const n = new Set(prev); n.add(gi); return n; });
+    setGuessModalGi(null);
   };
 
   const handleSubmit = (gi: number) => submitValue(gi, (drafts[gi] ?? '').trim());
@@ -497,6 +541,8 @@ export default function DailyScreen() {
                 mine={myAnswer(currentCard.gi)}
                 theirs={partnerAnswer(currentCard.gi)}
                 both={revealed(currentCard.gi)}
+                myGuess={qDoc?.guesses?.[uid]?.[String(currentCard.gi)]}
+                onAskWhy={() => router.push('/(tabs)?openSpark=1' as any)}
                 draft={drafts[currentCard.gi] ?? ''}
                 onDraftChange={(t) => setDrafts((d) => ({ ...d, [currentCard.gi]: t }))}
                 onSubmit={() => handleSubmit(currentCard.gi)}
@@ -613,11 +659,58 @@ export default function DailyScreen() {
           'Actions come first, quick Yes / Not for me on each',
           'When you both say Yes → tap Add to save it to your Together List',
           'Questions are private until both partners answer, then reveal at the same time',
+          'On binary questions, guess your partner\'s pick before reveal for a little bonus game',
           'Playful is free · Deep and Spicy unlock with subscription',
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />
+
+      {/* Guess-partner-answer modal (Versus mechanic merged into Daily
+          Aug 2026). Fires from submitValue when the user has just
+          answered a binary question they haven't yet guessed or skipped.
+          Reveal gate in revealed() holds partner's answer back until
+          user either taps A/B here or "Just show me". */}
+      <Modal visible={guessModalGi !== null} transparent animationType="slide">
+        <View style={styles.guessOverlay}>
+          <View style={styles.guessSheet}>
+            {guessModalGi !== null && qDoc?.items[guessModalGi] && (() => {
+              const item = qDoc.items[guessModalGi];
+              const myAns = qDoc.answers?.[uid]?.[String(guessModalGi)];
+              if (!item.options) return null;
+              return (
+                <>
+                  <Text style={styles.guessSheetPicked}>✓ You picked {myAns}</Text>
+                  <Text style={styles.guessSheetTitle}>Wanna guess {partnerName}'s pick first?</Text>
+                  <Text style={styles.guessSheetHint}>Optional, you learn either way</Text>
+                  <View style={styles.guessSheetBtns}>
+                    <TouchableOpacity
+                      style={styles.guessOptionBtn}
+                      onPress={() => handleGuessSubmit(guessModalGi, item.options![0])}
+                      activeOpacity={0.85}
+                      accessibilityRole="button">
+                      <Text style={styles.guessOptionText}>{item.options[0]}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.guessOptionBtn}
+                      onPress={() => handleGuessSubmit(guessModalGi, item.options![1])}
+                      activeOpacity={0.85}
+                      accessibilityRole="button">
+                      <Text style={styles.guessOptionText}>{item.options[1]}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleGuessSkip(guessModalGi)}
+                    style={styles.guessSkipBtn}
+                    accessibilityRole="button">
+                    <Text style={styles.guessSkipText}>Just show me →</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            })()}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -836,7 +929,7 @@ function ActionCard({
 }
 
 function QuestionCard({
-  gi, q, partnerName, mine, theirs, both, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
+  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
 }: {
   gi: number;
   q: Question;
@@ -844,18 +937,34 @@ function QuestionCard({
   mine: string | null;
   theirs: string | null;
   both: boolean;
+  // Undefined = user skipped guess for this binary Q. String = the option
+  // text they guessed. Only meaningful for binary questions.
+  myGuess?: string;
+  onAskWhy?: () => void;
   draft: string;
   onDraftChange: (t: string) => void;
   onSubmit: () => void;
   onQuickSubmit: (value: string) => void;
   cardBg: string;
 }) {
+  // Guess feedback state — only for binary Qs where user guessed (not skipped)
+  const guessed = q.format === 'binary' && !!myGuess;
+  const correctGuess = guessed && myGuess === theirs;
   return (
     <View style={[styles.card, styles.questionCard, { backgroundColor: both ? '#F1F8E9' : cardBg }, both && { borderColor: Colors.success }]}>
       <View style={styles.typePill}>
         <Text style={styles.typePillText}>QUESTION</Text>
       </View>
       <Text style={styles.cardQuestion}>{personalise(q.text, partnerName)}</Text>
+
+      {both && guessed && (
+        <View style={[styles.guessBanner, correctGuess ? styles.guessBannerCorrect : styles.guessBannerWrong]}>
+          <Text style={styles.guessBannerText}>
+            {correctGuess ? `🎯 You knew ${partnerName}` : `🌱 Didn't see that coming`}
+          </Text>
+          <Text style={styles.guessBannerSub}>Your guess: {myGuess} {correctGuess ? '✓' : '✗'}</Text>
+        </View>
+      )}
 
       {both && (
         <View style={styles.revealWrap}>
@@ -868,6 +977,12 @@ function QuestionCard({
             <Text style={styles.revealAnswer}>{theirs}</Text>
           </View>
         </View>
+      )}
+
+      {both && guessed && !correctGuess && onAskWhy && (
+        <TouchableOpacity style={styles.askWhyBtn} onPress={onAskWhy} activeOpacity={0.85} accessibilityRole="button">
+          <Text style={styles.askWhyText}>💬 Ask {partnerName} why</Text>
+        </TouchableOpacity>
       )}
 
       {mine && !both && (
@@ -1102,4 +1217,24 @@ const styles = StyleSheet.create({
   catBadgeSm: { alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 10, borderRadius: Radius.full },
   catBadgeSmText: { fontFamily: Fonts.bodyBold, fontSize: 11 },
   matchModalText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
+  // Guess-partner-answer bottom sheet + reveal banners (Versus mechanic
+  // merged into Daily, Aug 2026). Sheet fires from submitValue after a
+  // binary answer; banner + Ask-why button render in QuestionCard reveal.
+  guessOverlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.55)', justifyContent: 'flex-end' },
+  guessSheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
+  guessSheetPicked: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+  guessSheetTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.burgundy, textAlign: 'center' },
+  guessSheetHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
+  guessSheetBtns: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.xs },
+  guessOptionBtn: { flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.lg, backgroundColor: Colors.blush, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  guessOptionText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  guessSkipBtn: { alignItems: 'center', paddingVertical: Spacing.sm },
+  guessSkipText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+  guessBanner: { padding: Spacing.md, borderRadius: Radius.md, marginTop: Spacing.sm },
+  guessBannerCorrect: { backgroundColor: '#DCEDC8', borderWidth: 1, borderColor: '#AED581' },
+  guessBannerWrong: { backgroundColor: '#F8BBD0', borderWidth: 1, borderColor: '#F48FB1' },
+  guessBannerText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy, textAlign: 'center' },
+  guessBannerSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', marginTop: 2 },
+  askWhyBtn: { alignSelf: 'center', paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.rose, marginTop: Spacing.xs },
+  askWhyText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
 });

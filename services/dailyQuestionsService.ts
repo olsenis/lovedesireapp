@@ -8,6 +8,12 @@ export interface DailyQuestionDoc {
   items: Question[];
   discussed: Record<string, number[]>;
   answers: Record<string, Record<string, string>>; // uid -> { "gi": answer }
+  // Guess-partner-answer map added Aug 2026 when Versus was merged into
+  // Daily. Only populated for binary questions. Keyed same as answers:
+  // uid -> gi (as string) -> option text guessed. Absent = user skipped
+  // the guess step (no negative score signal). Compare with
+  // answers[partnerUid][gi] for correct/wrong evaluation.
+  guesses?: Record<string, Record<string, string>>;
   // Paid-only bonus draws stacked on top of the base daily set. Each draw
   // extends items by 3 per category (playful/deep/spicy). Capped at 3.
   bonusDraws?: number;
@@ -156,6 +162,87 @@ export function bothAnswered(
   uid2: string
 ): boolean {
   return !!(dailyDoc.answers?.[uid1]?.[String(index)]) && !!(dailyDoc.answers?.[uid2]?.[String(index)]);
+}
+
+// Guess-partner-answer submission. Only meaningful for binary questions
+// (caller should gate on item.format === 'binary'). Stores the option
+// TEXT (not 'a'/'b') for direct string equality against answers on the
+// compare side — mirrors how answers themselves are stored.
+export async function submitGuess(
+  coupleId: string,
+  uid: string,
+  globalIndex: number,
+  guessOptionText: string,
+  dateKey: string = todayKey(),
+): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', dateKey), {
+    [`guesses.${uid}.${globalIndex}`]: guessOptionText,
+  });
+  trackEvent('daily_guess_submitted');
+}
+
+// Read-computed weekly hit rate. Iterates last-7-days dailyQuestions
+// docs, cross-references caller's guesses against partner's answers.
+// Ignores questions the partner didn't answer (can't score a guess with
+// no ground truth). Absent guesses map = graceful zero.
+export async function getWeeklyGuessStats(
+  coupleId: string,
+  myUid: string,
+  partnerUid: string,
+): Promise<{ correct: number; total: number }> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 7);
+  const cutoffKey = cutoff.toISOString().slice(0, 10);
+  // Firestore query on the collection filtered by date key >= cutoff.
+  // Docs are keyed by YYYY-MM-DD so string ordering matches date order.
+  const { collection: coll, query: q, where, getDocs } = await import('firebase/firestore');
+  const snap = await getDocs(q(coll(db, 'couples', coupleId, 'dailyQuestions'), where('date', '>=', cutoffKey)));
+  let correct = 0;
+  let total = 0;
+  snap.docs.forEach((d) => {
+    const data = d.data() as DailyQuestionDoc;
+    const myGuesses = data.guesses?.[myUid] ?? {};
+    const partnerAnswers = data.answers?.[partnerUid] ?? {};
+    Object.entries(myGuesses).forEach(([gi, guess]) => {
+      const partnerAns = partnerAnswers[gi];
+      if (!partnerAns) return;
+      total++;
+      if (guess === partnerAns) correct++;
+    });
+  });
+  return { correct, total };
+}
+
+// Consecutive-days streak of at least one correct guess. Iterates
+// backward from today. Days with zero guesses OR zero correct guesses
+// break the streak. Days with a mix of correct and wrong still count.
+// Skip-only days DO break (need at least one correct signal). Cap at
+// 30 days scan to keep the query bounded.
+export async function getGuessStreak(
+  coupleId: string,
+  myUid: string,
+  partnerUid: string,
+): Promise<number> {
+  const { collection: coll, query: q, orderBy, limit, getDocs } = await import('firebase/firestore');
+  const snap = await getDocs(q(coll(db, 'couples', coupleId, 'dailyQuestions'), orderBy('date', 'desc'), limit(30)));
+  let streak = 0;
+  for (const d of snap.docs) {
+    const data = d.data() as DailyQuestionDoc;
+    const myGuesses = data.guesses?.[myUid] ?? {};
+    const partnerAnswers = data.answers?.[partnerUid] ?? {};
+    let hadCorrect = false;
+    let hadAnyGuess = false;
+    for (const [gi, guess] of Object.entries(myGuesses)) {
+      const partnerAns = partnerAnswers[gi];
+      if (!partnerAns) continue;
+      hadAnyGuess = true;
+      if (guess === partnerAns) { hadCorrect = true; break; }
+    }
+    if (!hadAnyGuess) continue; // day with no scoreable guesses is not counted (neither breaks nor extends)
+    if (hadCorrect) streak++;
+    else break;
+  }
+  return streak;
 }
 
 export async function markDiscussed(

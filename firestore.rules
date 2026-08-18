@@ -223,6 +223,16 @@ service cloud.firestore {
             || request.resource.data.get('discussed', {}).size() == 0
             || request.resource.data.get('discussed', {}).diff(resource.data.get('discussed', {}))
                  .affectedKeys().hasOnly([request.auth.uid])
+          )
+          && (
+            // Guess-partner-answer field added Aug 2026 when Versus merged
+            // into Daily. Same per-uid nested-map guard as answers/votes/
+            // discussed — caller can only write their own uid slot so
+            // partner-guess spoofing is blocked at the rule layer.
+            !('guesses' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('guesses', {}).size() == 0
+            || request.resource.data.get('guesses', {}).diff(resource.data.get('guesses', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
           );
         allow delete: if request.auth != null && isMemberOfCouple(coupleId);
       }
