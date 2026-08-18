@@ -13,6 +13,7 @@ import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, delete
 import { auth } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
 import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
 import { uploadProfilePhoto, UploadTooLargeError } from '../services/storageService';
@@ -26,6 +27,7 @@ import { useTrackScreen } from '../hooks/useTrackScreen';
 export default function ProfileScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
+  const { isSubscribed, isLoading: subLoading } = useSubscription();
   useTrackScreen('profile');
 
   const [editNameModal, setEditNameModal] = useState(false);
@@ -332,6 +334,27 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <Text style={styles.profileName}>{profile?.name ?? '...'}</Text>
           <Text style={styles.profileEmail}>{user?.email ?? ''}</Text>
+          {/* Account status pill — Premium (burgundy) or Free (muted with
+              Upgrade CTA). Also useful in QA for seeing which tier the
+              current couple is on without leaving the screen. Hidden
+              during the transient useSubscription resolve so we don't
+              flash Free on premium couples during first paint. */}
+          {!subLoading && (
+            isSubscribed ? (
+              <View style={styles.planPill} accessibilityLabel="Premium plan">
+                <Text style={styles.planPillText}>✨ Premium</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.planPillFree}
+                onPress={() => router.push('/upgrade' as any)}
+                accessibilityRole="button"
+                accessibilityLabel="Free plan, tap to upgrade"
+              >
+                <Text style={styles.planPillFreeText}>Free · Upgrade →</Text>
+              </TouchableOpacity>
+            )
+          )}
         </View>
 
         {/* Account */}
@@ -884,6 +907,34 @@ const styles = StyleSheet.create({
   avatarEditIcon: { fontSize: 14 },
   profileName: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.text },
   profileEmail: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+  planPill: {
+    marginTop: Spacing.sm,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.burgundy,
+  },
+  planPillText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 11,
+    color: Colors.cream,
+    letterSpacing: 0.8,
+  },
+  planPillFree: {
+    marginTop: Spacing.sm,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.blush,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  planPillFreeText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 11,
+    color: Colors.burgundy,
+    letterSpacing: 0.6,
+  },
 
   sectionLabel: {
     fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted,
