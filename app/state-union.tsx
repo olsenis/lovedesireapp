@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -8,12 +8,14 @@ import {
   STATE_UNION_QUESTIONS,
   StateUnionDoc,
   StateUnionEntry,
+  PulseDimensionKey,
   getCurrentWeekId,
   subscribeStateUnion,
   subscribeStateUnionEntry,
   getStateUnionEntry,
   ensureStateUnionDoc,
   submitStateUnionAnswer,
+  submitStateUnionPulse,
   markStateUnionCompleted,
   answeredCount,
   hasUserCompleted,
@@ -33,6 +35,23 @@ function weekIdToLabel(weekId: string): string {
   return `Week ${parseInt(week, 10)} · ${year}`;
 }
 
+// 5 quick dimensions asked before the text questions. Same set as the old
+// standalone Pulse screen (fun/communication/closeness/sex/teamwork) so
+// weeks post-merge carry the exact same signal the Pulse trend chart used
+// to visualise. Merged Aug 2026.
+type PulseDim = { key: PulseDimensionKey; label: string; emoji: string };
+const PULSE_DIMENSIONS: PulseDim[] = [
+  { key: 'fun',            label: 'Fun & Laughter',      emoji: '😄' },
+  { key: 'communication',  label: 'Communication',       emoji: '💬' },
+  { key: 'closeness',      label: 'Closeness',           emoji: '🕯️' },
+  { key: 'sex',            label: 'Physical Intimacy',   emoji: '🔥' },
+  { key: 'teamwork',       label: 'Teamwork',            emoji: '🙌' },
+];
+
+// Compose is a two-phase step-through: first a single pulse screen (all 5
+// dimensions on one page), then the existing 5-question text wizard.
+type ComposeStep = 'pulse' | number;
+
 export default function StateUnionScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
@@ -49,10 +68,15 @@ export default function StateUnionScreen() {
   const [history, setHistory] = useState<StateUnionDoc[]>([]);
   const [historyEntries, setHistoryEntries] = useState<Record<string, { mine: StateUnionEntry | null; theirs: StateUnionEntry | null }>>({});
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState<ComposeStep>('pulse');
+  const [pulseDraft, setPulseDraft] = useState<Partial<Record<PulseDimensionKey, number>>>({});
   const [draftAnswer, setDraftAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
+  // Prevent the pulse-seed effect from clobbering user navigation after
+  // the initial myEntry snapshot arrives. Without this, tapping "← Back"
+  // from text step 0 back to pulse would immediately snap forward again.
+  const pulseSeededRef = useRef(false);
 
   // Ensure doc exists, subscribe to it + history
   useEffect(() => {
@@ -82,21 +106,52 @@ export default function StateUnionScreen() {
   // Sync the draft with the saved answer when navigating between questions.
   // Depends on `step` only — depending on `myEntry` too would wipe in-progress
   // typing every time the Firestore snapshot arrives (e.g. after our own
-  // submit for the previous question fires the listener).
+  // submit for the previous question fires the listener). Pulse step has
+  // its own draft state so we skip the text-answer sync for it.
   useEffect(() => {
+    if (step === 'pulse') return;
     const saved = myEntry?.answers?.[String(step)] ?? '';
     setDraftAnswer(saved);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
-  const handleSaveAndNext = async () => {
-    if (!coupleId || !draftAnswer.trim()) return;
+  // Seed pulse draft + jump straight to text step 0 for returning users
+  // who already completed the pulse step this week. Runs once when the
+  // first myEntry snapshot arrives; subsequent snapshots (from our own
+  // writes) are ignored so Back navigation to the pulse step still works.
+  useEffect(() => {
+    if (pulseSeededRef.current) return;
+    if (myEntry === null && suDoc === null) return;
+    pulseSeededRef.current = true;
+    const saved = myEntry?.pulseScores ?? {};
+    setPulseDraft(saved);
+    const allPulseDone = PULSE_DIMENSIONS.every((d) => typeof saved[d.key] === 'number');
+    if (allPulseDone && step === 'pulse') setStep(0);
+  }, [myEntry, suDoc, step]);
+
+  const allPulseComplete = PULSE_DIMENSIONS.every((d) => typeof pulseDraft[d.key] === 'number');
+
+  const handleSavePulse = async () => {
+    if (!coupleId || !allPulseComplete) return;
     setSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await submitStateUnionAnswer(coupleId, weekId, uid, step, draftAnswer.trim());
-      if (step < STATE_UNION_QUESTIONS.length - 1) {
-        setStep(step + 1);
+      await submitStateUnionPulse(coupleId, weekId, uid, pulseDraft as Record<PulseDimensionKey, number>);
+      setStep(0);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveAndNext = async () => {
+    if (!coupleId || !draftAnswer.trim() || step === 'pulse') return;
+    const textStep = step;
+    setSubmitting(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await submitStateUnionAnswer(coupleId, weekId, uid, textStep, draftAnswer.trim());
+      if (textStep < STATE_UNION_QUESTIONS.length - 1) {
+        setStep(textStep + 1);
       }
     } finally {
       setSubmitting(false);
@@ -104,13 +159,14 @@ export default function StateUnionScreen() {
   };
 
   const handleComplete = async () => {
-    if (!coupleId) return;
+    if (!coupleId || step === 'pulse') return;
+    const textStep = step;
     setSubmitting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       // Save the current draft for the last question if not already saved
       if (draftAnswer.trim()) {
-        await submitStateUnionAnswer(coupleId, weekId, uid, step, draftAnswer.trim());
+        await submitStateUnionAnswer(coupleId, weekId, uid, textStep, draftAnswer.trim());
       }
       await markStateUnionCompleted(coupleId, weekId, uid);
       trackEvent('sunday_checkin_submitted');
@@ -149,8 +205,51 @@ export default function StateUnionScreen() {
           A short weekly ritual. 5 questions to keep you both close. Answer privately, reveal together.
         </Text>
 
-        {/* ─── PHASE 1: I haven't completed yet — show step-through ─── */}
-        {!iCompleted && (
+        {/* ─── PHASE 1A: Pulse step (5 quick dimensions before text) ─── */}
+        {!iCompleted && step === 'pulse' && (
+          <View style={styles.card}>
+            <Text style={styles.questionLabel}>Quick pulse first · 30 sec</Text>
+            <Text style={styles.pulseIntro}>Rate 1-5 across five dimensions. We reveal both sides once {partnerName} is done too.</Text>
+            {PULSE_DIMENSIONS.map((d) => (
+              <View key={d.key} style={styles.pulseDimRow}>
+                <Text style={styles.pulseDimLabel}>{d.emoji}  {d.label}</Text>
+                <View style={styles.pulseScoreRow}>
+                  {[1, 2, 3, 4, 5].map((n) => {
+                    const active = pulseDraft[d.key] === n;
+                    return (
+                      <TouchableOpacity
+                        key={n}
+                        style={[styles.pulseScoreBtn, active && styles.pulseScoreBtnActive]}
+                        onPress={() => {
+                          Haptics.selectionAsync();
+                          setPulseDraft((prev) => ({ ...prev, [d.key]: n }));
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${d.label} ${n}`}
+                      >
+                        <Text style={[styles.pulseScoreText, active && styles.pulseScoreTextActive]}>{n}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+            <View style={styles.actionsRow}>
+              <View style={{ flex: 1 }} />
+              <TouchableOpacity
+                style={[styles.primaryBtn, (!allPulseComplete || submitting) && styles.btnDisabled]}
+                onPress={handleSavePulse}
+                disabled={!allPulseComplete || submitting}
+                accessibilityRole="button"
+              >
+                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Save and reflect →</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ─── PHASE 1B: Text-question wizard (5 Gottman questions) ─── */}
+        {!iCompleted && step !== 'pulse' && (
           <View style={styles.card}>
             <View style={styles.progressRow}>
               {STATE_UNION_QUESTIONS.map((_, i) => (
@@ -164,8 +263,8 @@ export default function StateUnionScreen() {
                 />
               ))}
             </View>
-            <Text style={styles.questionLabel}>Question {step + 1} of {STATE_UNION_QUESTIONS.length}</Text>
-            <Text style={styles.questionText}>{STATE_UNION_QUESTIONS[step]}</Text>
+            <Text style={styles.questionLabel}>Question {(step as number) + 1} of {STATE_UNION_QUESTIONS.length}</Text>
+            <Text style={styles.questionText}>{STATE_UNION_QUESTIONS[step as number]}</Text>
 
             <TextInput
               style={styles.input}
@@ -179,15 +278,17 @@ export default function StateUnionScreen() {
 
             <View style={styles.actionsRow}>
               <TouchableOpacity
-                style={[styles.secondaryBtn, step === 0 && styles.btnDisabled]}
-                onPress={() => step > 0 && setStep(step - 1)}
-                disabled={step === 0}
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  if (step === 0) setStep('pulse');
+                  else setStep((step as number) - 1);
+                }}
                 accessibilityRole="button"
               >
                 <Text style={styles.secondaryBtnText}>← Back</Text>
               </TouchableOpacity>
 
-              {step < STATE_UNION_QUESTIONS.length - 1 ? (
+              {(step as number) < STATE_UNION_QUESTIONS.length - 1 ? (
                 <TouchableOpacity
                   style={[styles.primaryBtn, (!draftAnswer.trim() || submitting) && styles.btnDisabled]}
                   onPress={handleSaveAndNext}
@@ -228,6 +329,40 @@ export default function StateUnionScreen() {
         {both && partnerId && (
           <View style={styles.revealCard}>
             <Text style={styles.revealTitle}>You both checked in 💗</Text>
+
+            {/* Pulse comparison — only renders when BOTH sides carry pulseScores.
+                Legacy weeks (pre-merge) skip this block gracefully. */}
+            {myEntry?.pulseScores && partnerEntry?.pulseScores && (
+              <View style={styles.pulseCompareBlock}>
+                <Text style={styles.pulseCompareTitle}>Quick pulse</Text>
+                {PULSE_DIMENSIONS.map((d) => {
+                  const mine = myEntry.pulseScores?.[d.key];
+                  const theirs = partnerEntry.pulseScores?.[d.key];
+                  if (typeof mine !== 'number' || typeof theirs !== 'number') return null;
+                  const gap = Math.abs(mine - theirs);
+                  const matched = gap <= 1;
+                  return (
+                    <View key={d.key} style={styles.pulseCompareRow}>
+                      <Text style={styles.pulseCompareLabel}>{d.emoji}  {d.label}</Text>
+                      <View style={styles.pulseCompareRight}>
+                        <Text style={styles.pulseCompareScore}>
+                          You <Text style={styles.pulseCompareNum}>{mine}</Text>
+                          <Text style={styles.pulseCompareSep}>  ·  </Text>
+                          {partnerName} <Text style={styles.pulseCompareNum}>{theirs}</Text>
+                        </Text>
+                        <Text style={[styles.pulseIndicator, matched ? styles.pulseMatch : styles.pulseGap]}>
+                          {matched ? '✓' : '↕'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {(myEntry?.pulseScores || partnerEntry?.pulseScores) && (
+              <Text style={styles.revealSectionHeader}>Answers</Text>
+            )}
             {STATE_UNION_QUESTIONS.map((q, i) => (
               <View key={i} style={styles.revealBlock}>
                 <Text style={styles.revealQ}>{i + 1}. {q}</Text>
@@ -346,6 +481,45 @@ const styles = StyleSheet.create({
   waitText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text, textAlign: 'center' },
   waitHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
 
+  pulseIntro: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', lineHeight: 20, marginBottom: Spacing.sm },
+  pulseDimRow: { gap: 6, marginBottom: Spacing.sm },
+  pulseDimLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  pulseScoreRow: { flexDirection: 'row', gap: 6 },
+  pulseScoreBtn: {
+    flex: 1, paddingVertical: 12,
+    borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.cream, alignItems: 'center',
+  },
+  pulseScoreBtnActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
+  pulseScoreText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  pulseScoreTextActive: { color: Colors.cream },
+
+  pulseCompareBlock: {
+    backgroundColor: Colors.cream, borderRadius: Radius.md,
+    padding: Spacing.md, gap: Spacing.sm, marginBottom: Spacing.sm,
+  },
+  pulseCompareTitle: {
+    fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 1.5,
+    textTransform: 'uppercase', color: Colors.burgundy, marginBottom: 4,
+  },
+  pulseCompareRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 4, gap: Spacing.sm,
+  },
+  pulseCompareLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, flex: 1 },
+  pulseCompareRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pulseCompareScore: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
+  pulseCompareNum: { fontFamily: Fonts.bodyBold, color: Colors.burgundy, fontSize: 14 },
+  pulseCompareSep: { color: Colors.border },
+  pulseIndicator: { fontSize: 14, fontFamily: Fonts.bodyBold, width: 18, textAlign: 'center' },
+  pulseMatch: { color: '#7BB661' },
+  pulseGap: { color: Colors.rose },
+
+  revealSectionHeader: {
+    fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 1.5,
+    textTransform: 'uppercase', color: Colors.muted,
+    marginTop: Spacing.sm, marginBottom: 2,
+  },
   revealCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md, borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm },
   revealTitle: { fontFamily: Fonts.headingItalic, fontSize: 24, color: Colors.burgundy, textAlign: 'center', marginBottom: Spacing.sm },
   revealBlock: { gap: 6, marginBottom: Spacing.sm },

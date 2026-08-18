@@ -36,8 +36,22 @@ export interface StateUnionDoc {
 // Per-user entries subdoc — readable by owner always, by partner only after both completed.
 export interface StateUnionEntry {
   answers: Record<string, string>; // questionIndex -> answer text
+  // Added Aug 2026 when standalone /pulse was merged into Sunday Check-in.
+  // 5 dimensions, 1-5 each. Optional so weeks predating the merge still
+  // render — reveal card only shows the pulse comparison block when BOTH
+  // entries carry pulseScores. Same rules-gated privacy as answers.
+  pulseScores?: {
+    fun?: number;
+    communication?: number;
+    closeness?: number;
+    sex?: number;
+    teamwork?: number;
+  };
   updatedAt: number;
 }
+
+export const PULSE_DIMENSION_KEYS = ['fun', 'communication', 'closeness', 'sex', 'teamwork'] as const;
+export type PulseDimensionKey = typeof PULSE_DIMENSION_KEYS[number];
 
 export function getCurrentWeekId(d: Date = new Date()): string {
   // ISO 8601 week number, YYYY-WW
@@ -135,6 +149,27 @@ export async function submitStateUnionAnswer(
         .filter((s) => s && s.trim().length > 0).length
     : 0;
   await updateDoc(parentRef, { [`answeredCount.${uid}`]: count });
+}
+
+// One-shot write of the 5 pulse dimensions to the caller's own entries doc.
+// Same setDoc({merge:true}) + nested-object pattern as submitStateUnionAnswer
+// to avoid the dot-notation-literal-key gotcha. All 5 batched — pulse UX
+// asks user to fill all before advancing, so single write is the right shape.
+export async function submitStateUnionPulse(
+  coupleId: string,
+  weekId: string,
+  uid: string,
+  scores: Record<PulseDimensionKey, number>,
+): Promise<void> {
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  await setDoc(
+    entryRef,
+    {
+      pulseScores: scores,
+      updatedAt: Date.now(),
+    },
+    { merge: true },
+  );
 }
 
 export async function markStateUnionCompleted(
