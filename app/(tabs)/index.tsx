@@ -9,7 +9,8 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
-import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, MoodEntry } from '../../services/moodService';
+import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
+import { subscribePulseHistory, PulseResult } from '../../services/pulseService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
 import { subscribeSensateProgress, SensateProgress } from '../../services/sensateService';
 import { subscribeNotes, LoveNote, unlockMoodNotes, unlockVisitNotes } from '../../services/noteService';
@@ -222,6 +223,11 @@ export default function HomeScreen() {
 
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
+  // History-backed subscriptions for cross-flow nudges. Pulse 4-week
+  // return nudge + intimacy-log prompts triggered by low pulse closeness
+  // or 3+ low-mood check-ins in the last 7 days.
+  const [pulseHistory, setPulseHistory] = useState<PulseResult[]>([]);
+  const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
 
   const [challengeState, setChallengeState] = useState<ChallengeState | null>(null);
   const [notes, setNotes] = useState<LoveNote[]>([]);
@@ -359,7 +365,12 @@ export default function HomeScreen() {
     const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
     const u15 = subscribeTodos(coupleId, setTodos);
     const u16 = subscribeSensateProgress(coupleId, setSensateProgress);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); };
+    // History-backed subscriptions for pre-launch cross-flow nudges.
+    // Pulse: 4-week return + low-closeness cross-prompt to intimacy.
+    // Mood history: 3+ low emotional check-ins in 7 days cross-prompt.
+    const u19 = subscribePulseHistory(coupleId, user?.uid ?? '', setPulseHistory);
+    const u20 = subscribeMoodHistory(coupleId, setMoodHistory);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -703,6 +714,72 @@ export default function HomeScreen() {
     }
   }
 
+  // Pulse: 4-week return nudge — if user has done at least one pulse
+  // AND it's been 28+ days since the most recent one, surface a card.
+  // Reuses the 60s tick + history subscription. Keeps its own dismiss
+  // via natural expiry (any new pulse write makes daysSince < 28).
+  if (pulseHistory.length > 0) {
+    const latestPulse = pulseHistory[0];
+    const daysSincePulse = Math.floor((Date.now() - latestPulse.createdAt) / 86400000);
+    if (daysSincePulse >= 28) {
+      list.push({
+        emoji: '📊',
+        title: 'Pulse check',
+        subtitle: `${daysSincePulse} days since your last check-in, how's the relationship this month?`,
+        route: '/pulse',
+        bg: '#F5F5F5',
+      });
+    }
+  }
+
+  // Intimacy Log cross-flow: low pulse closeness score → nudge to log an
+  // intimate moment. Only fires if the intimacy feature is enabled AND
+  // most recent pulse's closeness dimension is 1 or 2 AND the pulse was
+  // done in the last 14 days (older data is stale signal).
+  if (profile?.features?.intimacyLog && pulseHistory.length > 0) {
+    const latestPulse = pulseHistory[0];
+    const closenessScore = latestPulse.scores?.closeness;
+    const pulseAge = Date.now() - latestPulse.createdAt;
+    if (closenessScore !== undefined && closenessScore <= 2 && pulseAge < 14 * 86400000) {
+      // Suppress if user has already logged intimacy since the pulse
+      const loggedSincePulse = intimacyEntries.some(e => e.createdAt > latestPulse.createdAt);
+      if (!loggedSincePulse) {
+        list.push({
+          emoji: '💗',
+          title: 'Closeness dipped',
+          subtitle: 'Log one moment that felt close, big or small, so you can spot the pattern.',
+          route: '/intimacy-tracker',
+          bg: '#FCE4EC',
+        });
+      }
+    }
+  }
+
+  // Intimacy Log cross-flow: 3+ low-mood check-ins in the last 7 days
+  // (from CURRENT user's mood history only, not partner's) → nudge to
+  // log a reflection. Low moods are 😢/🥺/😰/😤 per moodService MoodEmoji.
+  if (profile?.features?.intimacyLog && moodHistory.length > 0) {
+    const weekAgo = Date.now() - 7 * 86400000;
+    const LOW_MOOD_SET = new Set<MoodEmoji>(['😢', '🥺', '😰', '😤']);
+    const recentLowCount = moodHistory
+      .filter(m => m.uid === uid && m.createdAt >= weekAgo)
+      .filter(m => LOW_MOOD_SET.has(m.emoji))
+      .length;
+    if (recentLowCount >= 3) {
+      // Suppress if user has already logged intimacy in the same week
+      const loggedThisWeek = intimacyEntries.some(e => e.createdAt >= weekAgo);
+      if (!loggedThisWeek) {
+        list.push({
+          emoji: '🌿',
+          title: 'A hard week',
+          subtitle: 'A few tough moods lately. Some closeness might help, big or small.',
+          route: '/intimacy-tracker',
+          bg: '#F0F4C3',
+        });
+      }
+    }
+  }
+
   // Smart intimacy nudge — only if feature enabled AND entries exist AND > 7 days ago
   if (profile?.features?.intimacyLog && partnerId && intimacyEntries.length > 0) {
     const last = intimacyEntries[0].createdAt;
@@ -915,7 +992,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name, tick]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name, tick, pulseHistory, moodHistory]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

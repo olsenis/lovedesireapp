@@ -1,6 +1,6 @@
 import { collection, doc, query, getDoc, getDocs, orderBy, limit, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { Question } from '../constants/content';
+import { Question, VERSUS_STARTER_POOL } from '../constants/content';
 
 // Persistent stats across sessions — best score / longest streak the couple
 // has ever hit. Encourages return visits ("beat our record") without the
@@ -107,6 +107,45 @@ export async function loadVersusPool(
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
+
+  // Starter-pool fallback: fresh couples have zero (or too few) real
+  // binary answers on record. Without a fallback, Versus opens to an
+  // empty state on day 1 and users bounce. Fill from VERSUS_STARTER_POOL
+  // with a deterministic per-day shuffle so both partners see the same
+  // items in the same order if they play the same day. Once real data
+  // catches up (>= maxItems binary answers on record), we drop back to
+  // pure real data — no mixing to avoid "the fake ones are obvious" tells.
+  if (pool.length < maxItems) {
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const seedStr = `${coupleId}_${dayKey}`;
+    let seed = 0;
+    for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+    let a = seed || 1;
+    const rand = () => {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const starter = [...VERSUS_STARTER_POOL];
+    for (let i = starter.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [starter[i], starter[j]] = [starter[j], starter[i]];
+    }
+    const starterItems: VersusItem[] = starter.slice(0, maxItems).map((s, idx) => {
+      const optOrder = rand() < 0.5 ? [s.partnerAnswer, s.partnerAnswer === s.options[0] ? s.options[1] : s.options[0]] : [s.partnerAnswer === s.options[0] ? s.options[1] : s.options[0], s.partnerAnswer];
+      return {
+        question: { text: s.text, category: 'playful' as const, format: 'binary' as const, options: s.options },
+        partnerAnswer: s.partnerAnswer,
+        options: optOrder,
+        date: `starter_${dayKey}`,
+        gi: idx,
+      };
+    });
+    return starterItems;
+  }
+
   return pool.slice(0, maxItems);
 }
 

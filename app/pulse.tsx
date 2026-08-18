@@ -404,7 +404,7 @@ export default function HitaScreen() {
         title="Relationship Pulse"
         description={`A private check-in on how you're feeling about your relationship. ${partner?.name ?? 'Your partner'} never sees your individual scores.`}
         tips={[
-          "Rate 10 areas from 1 (needs work) to 5 (amazing)",
+          "Rate 5 dimensions across your relationship from 1 (needs work) to 5 (amazing)",
           `Completely private, ${partnerName} cannot see your answers`,
           "After submitting, you see your score, a suggestion, and your history",
           "Come back monthly to track how things change over time",

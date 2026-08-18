@@ -6,6 +6,66 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## D1 Emotional Weather — cross-partner pattern detection (raised Aug 2026)
+
+Passive Cloud Function computes weekly patterns across mood + Sunday Check-in + Pulse data, surfaces as an actionable Home card ("this app noticed we always feel disconnected on Sundays"). Viral one-liner potential — nothing in market does this.
+
+**Why deferred:** Cloud Function scope (~8-12h). Analytics-gated: pattern detection needs weeks of user data to be meaningful. Not a launch blocker.
+
+**Decision criteria:** post-launch when we have 2-3 months of mood/pulse/su data across enough couples to validate patterns produce real signal, not noise.
+
+---
+
+## D4 Repair Ritual — 5-Q guided post-fight repair with mutual reveal (raised Aug 2026)
+
+Ad-hoc 5-question flow after a fight. Partner taps "we had a fight, wanna repair?", partner notified, both answer privately, reveal-together after both done. Reuses stateUnion-like weekly-reveal pattern. Ephemeral, not stored in a log — feeling is meant to pass.
+
+**Why deferred:** New surface + Firestore doc + reveal-gate logic (~6-8h). Strong word-of-mouth story ("we use this app when we've had a fight and it actually helps") but not a launch-day essential. Existing Sunday Check-in already fills related emotional-processing need.
+
+**Decision criteria:** post-launch if user feedback indicates conflict-recovery is a felt gap, or if we see couples using Sunday Check-in for de facto post-fight repair (misuse signal → real feature need).
+
+---
+
+## D5 Together, Apart — synchronized LDR activity room (raised Aug 2026)
+
+One couple opens the mode, app shows same content on both phones with 1-2s heartbeat sync. Options: shared meditation audio, shared journaling prompt (parallel private writing), shared movie clock, shared bedtime countdown.
+
+**Why deferred:** ~10-14h including 4-6 activity types. Captures 20-25% LDR user segment currently getting scattered features (LDR mood UTC, virtual dates, distance tips), but not launch-critical — LDR users can still use every existing feature.
+
+**Decision criteria:** post-launch when analytics show LDR retention lagging non-LDR retention, or when user feedback specifically asks for "we want to do something together but we're apart".
+
+---
+
+## Voice Notes with condition unlocks (raised Aug 2026, D2 from prior review)
+
+Audio Love Notes with unlock conditions matching the existing text-note openCondition system (sad / visit / missing / sleepless). Existing audio infra from Truth or Dare + existing condition-unlock infra from noteService — combining them, not building either.
+
+**Why deferred:** ~4-6h. Nice emotional-payoff + shareability lift but the current text-note openCondition system already delivers the mechanic; audio is a variant. Post-launch A/B or feature-flag rollout to see if audio genuinely outperforms.
+
+**Decision criteria:** post-launch when we have data on text openCondition note engagement — if <30% of created notes use conditions, audio won't fix the low-adoption issue. If >30%, audio variant is worth building.
+
+---
+
+## Intimacy Log cross-couple anonymized benchmark (raised Aug 2026)
+
+"Couples like you typically log 3× per week" style aggregate stats card in the Intimacy Log stats view. Anonymized aggregation via Cloud Function (bucket by relationship-age + frequency-bucket, no identifying data).
+
+**Why deferred:** Cloud Function + admin-side aggregator + client benchmark call (~4-6h). Cannot ship until we have real production data to aggregate — analytics-gated by definition.
+
+**Decision criteria:** post-launch after we have 3+ months of data across 100+ couples using Intimacy Log. Requires the paid feature to have meaningful adoption first.
+
+---
+
+## Calendar / Special Days Home surface (raised Aug 2026)
+
+Optional Special Days pill on Home Insight rotation when the next date is within 7 days. Surfaces the Special Days ledger value without adding a tab. Small polish item, ~10 min.
+
+**Why deferred:** Not blocking — Special Days ledger already lives in Profile → Reminders & tools. Home surface would add visibility but Insight rotation is already tight.
+
+**Decision criteria:** post-launch if analytics show <10% of couples ever open Special Days from Profile, add the Home pill to lift visibility.
+
+---
+
 ## Live time-based Home nudges (raised August 2026)
 
 ### What
