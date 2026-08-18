@@ -15,6 +15,7 @@ import {
 } from '../services/challengeService';
 import { ChallengeTask } from '../constants/content';
 import { CHALLENGE_PROGRAMS, CHALLENGE_ALTERNATES, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '../constants/content';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -169,6 +170,24 @@ export default function ChallengeScreen() {
   };
 
   const handleReset = async () => { if (!coupleId) return; await resetChallenge(coupleId); };
+  // Track whether the user has actually customised setup — determines
+  // whether the "Choose a different program" reset needs confirmation.
+  // Fresh state (no edits, no reorder) can reset silently. Once the
+  // couple has invested effort, we ask first.
+  const [resetConfirmVisible, setResetConfirmVisible] = useState(false);
+  const hasSetupInvestment = !!state && (
+    Object.values(state.editsUsed ?? {}).some(n => (n ?? 0) > 0) ||
+    Object.values(state.vetoesUsed ?? {}).some(n => (n ?? 0) > 0) ||
+    (state.dayOrder && state.dayOrder.length === 30)
+  );
+  const handleResetPress = () => {
+    if (hasSetupInvestment) setResetConfirmVisible(true);
+    else handleReset();
+  };
+  const handleResetConfirm = async () => {
+    setResetConfirmVisible(false);
+    await handleReset();
+  };
 
   // ─── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -321,7 +340,11 @@ export default function ChallengeScreen() {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleReset} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+          {/* Back is now a pure navigation affordance — leaves setup in
+              place. Discarding setup is the explicit "Choose a different
+              program" link below with its own confirm. Previously Back
+              silently wiped 2 edits + reorder, which read as a bug. */}
+          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Review Days</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -386,10 +409,24 @@ export default function ChallengeScreen() {
           <TouchableOpacity style={[styles.activateBtn, { backgroundColor: cfg.textColor }]} onPress={handleActivate} activeOpacity={0.85} accessibilityRole="button">
             <Text style={styles.activateBtnText}>Start Challenge →</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleReset} style={styles.cancelLink} accessibilityRole="button">
+          <TouchableOpacity onPress={handleResetPress} style={styles.cancelLink} accessibilityRole="button">
             <Text style={styles.cancelLinkText}>Choose a different program</Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Confirm-modal path only fires when there's setup investment
+            to lose (edits, vetoes, or a custom day order). Fresh setups
+            reset silently. See handleResetPress + hasSetupInvestment. */}
+        <ConfirmModal
+          visible={resetConfirmVisible}
+          title="Discard setup?"
+          message="You'll lose your edits, vetoes, and any reorder. This can't be undone."
+          confirmLabel="Discard"
+          cancelLabel="Keep editing"
+          destructive
+          onConfirm={handleResetConfirm}
+          onCancel={() => setResetConfirmVisible(false)}
+        />
 
         {/* Edit day modal */}
         <Modal visible={editModal} transparent animationType="slide">

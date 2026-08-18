@@ -244,7 +244,17 @@ export default function HomeScreen() {
     const myUid = user?.uid ?? '';
     if (!myUid) return;
     const now = Date.now();
-    const pending = notes.filter(n => n.fromUid !== myUid && n.openAt > now && !n.opened);
+    // Skip condition-based notes (openCondition: 'sad' | 'visit' | ...) —
+    // they use openAt = year 9999 sentinel and are unlocked via
+    // unlockMoodNotes / unlockVisitNotes, not the time ticker. Scheduling
+    // a setTimeout for year 9999 overflows the JS int32 max, clamps to
+    // ~1ms delay, and fires an immediate wasted re-render per note.
+    const pending = notes.filter(n =>
+      n.fromUid !== myUid &&
+      n.openAt > now &&
+      !n.opened &&
+      !n.openCondition
+    );
     if (pending.length === 0) return;
     const timers = pending.map(n =>
       setTimeout(() => setTick(t => t + 1), Math.max(0, n.openAt - now) + 250)

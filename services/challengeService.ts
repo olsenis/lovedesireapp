@@ -29,18 +29,33 @@ export function subscribeChallenge(coupleId: string, onChange: (state: Challenge
   });
 }
 
-// Start enters setup phase first so partners can edit days
+// Paid programs, mirrored from app/challenge.tsx PAID_PROGRAMS. Duplicated
+// here (small, stable set) so the service transaction can enforce paywall
+// server-side without a cross-import from a screen component.
+const PAID_PROGRAMS_SET = new Set<ChallengeProgram>(['fire', 'desire']);
+
+// Start enters setup phase first so partners can edit days. Runs inside a
+// transaction that reads couple.isPremium server-side and no-ops if a
+// spoofed client tries to start a paid program without a subscription.
+// Mirrors the isPremium-in-transaction pattern used by editTask + reorderChallenge.
 export async function startChallenge(coupleId: string, program: ChallengeProgram): Promise<void> {
-  await setDoc(doc(db, 'couples', coupleId, 'challenge', 'active'), {
-    program,
-    phase: 'setup',
-    currentDay: 1,
-    completedDays: [],
-    startedAt: Date.now(),
-    completedBy: {},
-    customTasks: {},
-    editsUsed: {},
-    vetoesUsed: {},
+  const ref = doc(db, 'couples', coupleId, 'challenge', 'active');
+  const coupleRef = doc(db, 'couples', coupleId);
+  await runTransaction(db, async (tx) => {
+    const coupleSnap = await tx.get(coupleRef);
+    const isPremium = coupleSnap.exists() && (coupleSnap.data() as { isPremium?: boolean }).isPremium === true;
+    if (PAID_PROGRAMS_SET.has(program) && !isPremium) return; // silent no-op, client is already gated
+    tx.set(ref, {
+      program,
+      phase: 'setup',
+      currentDay: 1,
+      completedDays: [],
+      startedAt: Date.now(),
+      completedBy: {},
+      customTasks: {},
+      editsUsed: {},
+      vetoesUsed: {},
+    });
   });
 }
 

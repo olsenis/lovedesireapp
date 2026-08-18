@@ -64,6 +64,15 @@ export default function PairingScreen() {
   // coupleId was set by createCouple" (creator must NOT route away —
   // they need to stay on /pairing to see their code).
   const [justAccepted, setJustAccepted] = useState(false);
+  // Post-accept profile-write state. Retries with exponential backoff.
+  // If all retries fail we DO NOT advance state (previously the catch
+  // silently swallowed, then setJustAccepted + clear pendingCoupleId
+  // → next mount saw no coupleId, ran createCouple, ghost couple).
+  const [acceptRetrying, setAcceptRetrying] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
+  // Kept around so the Retry button knows which couple to write to
+  // after the snapshot listener has cleared its snapshot data.
+  const [pendingFinalize, setPendingFinalize] = useState<{ coupleId: string; inviteCode: string } | null>(null);
 
   useEffect(() => {
     if (!user || authLoading) return;
@@ -184,6 +193,46 @@ export default function PairingScreen() {
     })();
   }, [profile?.pendingCoupleId, pendingCoupleId]);
 
+  // Writes the paired coupleId + clears pendingCoupleId with 3 retries at
+  // 0/500/1500ms. Returns true on success. Used by both the snapshot
+  // handler on first acceptance AND the Retry button after a failed
+  // finalize. Both writes are idempotent (createUserProfile is a merge,
+  // deleteField is a no-op if the field is already gone).
+  const finalizeAccept = async (coupleId: string, inviteCode: string): Promise<boolean> => {
+    if (!user) return false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await createUserProfile(user.uid, {
+          name: profile?.name ?? '',
+          photoURL: profile?.photoURL,
+          coupleId,
+          inviteCode,
+        });
+        await updateDoc(doc(db, 'users', user.uid), { pendingCoupleId: deleteField() });
+        return true;
+      } catch (e) {
+        console.warn('[pairing] finalize attempt', attempt + 1, 'failed', e);
+        if (attempt < 2) await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
+      }
+    }
+    return false;
+  };
+
+  const handleRetryFinalize = async () => {
+    if (!pendingFinalize) return;
+    setAcceptRetrying(true);
+    setAcceptError(null);
+    const ok = await finalizeAccept(pendingFinalize.coupleId, pendingFinalize.inviteCode);
+    setAcceptRetrying(false);
+    if (!ok) {
+      setAcceptError("Still can't finish pairing. Check your connection and try again in a moment.");
+      return;
+    }
+    setPendingFinalize(null);
+    setPendingCoupleId(null);
+    setJustAccepted(true);
+  };
+
   // Subscribe to the pending couple doc to detect accept / decline /
   // remote-cancel. Snapshot handler resolves the wait state.
   useEffect(() => {
@@ -204,17 +253,23 @@ export default function PairingScreen() {
         // _layout's routeAfterConsent to bounce us back to /pairing on
         // stale profile.coupleId=undefined. Instead, the useEffect
         // below watches profile.coupleId and routes once it lands.
-        try {
-          await createUserProfile(user.uid, {
-            name: profile?.name ?? '',
-            photoURL: profile?.photoURL,
-            coupleId: couple.id,
-            inviteCode: couple.inviteCode,
-          });
-          await updateDoc(doc(db, 'users', user.uid), { pendingCoupleId: deleteField() });
-        } catch (e) {
-          console.warn('[pairing] profile write after accept failed', e);
+        //
+        // Previously the catch silently swallowed a failed profile
+        // write, then setJustAccepted + clear pendingCoupleId → ghost
+        // dual-couple state on next mount (createCouple fires because
+        // profile.coupleId still undefined). Now: retry with exponential
+        // backoff, and if all retries fail, surface a Retry UI and
+        // keep pendingCoupleId set so the user isn't dropped into limbo.
+        setPendingFinalize({ coupleId: couple.id, inviteCode: couple.inviteCode ?? '' });
+        setAcceptRetrying(true);
+        const ok = await finalizeAccept(couple.id, couple.inviteCode ?? '');
+        setAcceptRetrying(false);
+        if (!ok) {
+          setAcceptError("Couldn't finish pairing. Check your connection and retry.");
+          return;
         }
+        setAcceptError(null);
+        setPendingFinalize(null);
         setPendingCoupleId(null);
         setJustAccepted(true);
         return;
@@ -315,7 +370,22 @@ export default function PairingScreen() {
   if (pendingCoupleId) {
     return (
       <View style={[styles.container, { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.cream }]}>
-        {waitingDeclined ? (
+        {acceptError && pendingFinalize ? (
+          <>
+            <Text style={styles.waitEmoji}>⚠️</Text>
+            <Text style={styles.waitTitle}>Almost there</Text>
+            <Text style={styles.waitBody}>{acceptError}</Text>
+            <TouchableOpacity
+              style={[styles.waitPrimaryBtn, acceptRetrying && { opacity: 0.5 }]}
+              onPress={handleRetryFinalize}
+              disabled={acceptRetrying}
+              accessibilityRole="button">
+              {acceptRetrying
+                ? <ActivityIndicator color={Colors.cream} />
+                : <Text style={styles.waitPrimaryBtnText}>Retry</Text>}
+            </TouchableOpacity>
+          </>
+        ) : waitingDeclined ? (
           <>
             <Text style={styles.waitEmoji}>🌱</Text>
             <Text style={styles.waitTitle}>{pendingInviterName} didn't accept this time</Text>
