@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, AppState, Platform, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, AppState, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
@@ -166,6 +166,13 @@ export default function SensateScreen() {
     cyclesCompleted: 0,
     currentCycleStages: { stage1: false, stage2: false, stage3: false },
   });
+  // Flips true once the Firestore subscribe has delivered its first
+  // snapshot. Guards startStage so a cold-start rapid tap doesn't
+  // capture a stale progress.cyclesCompleted = 0 into sessionCycleNumber,
+  // which would then key reflections under cycle 1 while the partner
+  // (on already-loaded state) keys them under the real cycle number →
+  // bothReflected never returns true → mutual reveal never fires.
+  const [progressLoaded, setProgressLoaded] = useState(false);
   // Cycle completion modal state — fires when a completeStage call fills
   // the final missing stage in the current cycle. Local-only state (no
   // need to sync across partners; each partner sees it locally when
@@ -198,7 +205,10 @@ export default function SensateScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    return subscribeSensateProgress(coupleId, setProgress);
+    return subscribeSensateProgress(coupleId, (p) => {
+      setProgress(p);
+      setProgressLoaded(true);
+    });
   }, [coupleId]);
 
   // Deterministic seeded shuffle so both partners see the same prompt order
@@ -420,6 +430,16 @@ export default function SensateScreen() {
   // redirect to /upgrade — otherwise a free user briefly sees the stage
   // picker flash before being sent away.
   if (subLoading || !isSubscribed) return null;
+  // Wait for the first Firestore snapshot before allowing any startStage
+  // taps — otherwise sessionCycleNumber captures stale cyclesCompleted=0
+  // and reflection storage keys mismatch between partners. See B6.
+  if (!progressLoaded && !activeStage) {
+    return (
+      <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={Colors.burgundy} size="large" />
+      </View>
+    );
+  }
 
   if (!activeStage) {
     return (

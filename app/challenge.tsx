@@ -175,13 +175,19 @@ export default function ChallengeScreen() {
   // Fresh state (no edits, no reorder) can reset silently. Once the
   // couple has invested effort, we ask first.
   const [resetConfirmVisible, setResetConfirmVisible] = useState(false);
-  const hasSetupInvestment = !!state && (
+  // hasInvestment covers both setup-phase edits/vetoes/reorder AND
+  // active-phase progress (any day marked or vetoed). Active phase always
+  // counts as investment — a 30-day arc that's been running for days is
+  // never a "reset silently" case, even with 0 completed days if the
+  // couple has been tapping through.
+  const hasInvestment = !!state && (
+    state.phase === 'active' ||
     Object.values(state.editsUsed ?? {}).some(n => (n ?? 0) > 0) ||
     Object.values(state.vetoesUsed ?? {}).some(n => (n ?? 0) > 0) ||
     (state.dayOrder && state.dayOrder.length === 30)
   );
   const handleResetPress = () => {
-    if (hasSetupInvestment) setResetConfirmVisible(true);
+    if (hasInvestment) setResetConfirmVisible(true);
     else handleReset();
   };
   const handleResetConfirm = async () => {
@@ -417,6 +423,10 @@ export default function ChallengeScreen() {
         {/* Confirm-modal path only fires when there's setup investment
             to lose (edits, vetoes, or a custom day order). Fresh setups
             reset silently. See handleResetPress + hasSetupInvestment. */}
+        {/* Setup-phase confirm — this render block only runs when
+            state.phase === 'setup', so copy is hard-coded to that case.
+            The active-phase render at end of file has its own ConfirmModal
+            with the reset-in-progress copy. */}
         <ConfirmModal
           visible={resetConfirmVisible}
           title="Discard setup?"
@@ -480,7 +490,7 @@ export default function ChallengeScreen() {
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>30-Day Challenge</Text>
-        <TouchableOpacity onPress={handleReset} accessibilityRole="button" accessibilityHint="Cannot be undone"><Text style={styles.resetBtn}>Reset</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleResetPress} accessibilityRole="button" accessibilityHint="Cannot be undone"><Text style={styles.resetBtn}>Reset</Text></TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -559,6 +569,19 @@ export default function ChallengeScreen() {
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
+      />
+      {/* Active-phase Reset confirm — this render block only runs when
+          state.phase === 'active', so copy is hard-coded to that case.
+          The setup-phase render above has its own ConfirmModal. */}
+      <ConfirmModal
+        visible={resetConfirmVisible}
+        title="Reset the challenge?"
+        message="All progress across the days you have marked is deleted, and this cannot be undone."
+        confirmLabel="Reset"
+        cancelLabel="Keep going"
+        destructive
+        onConfirm={handleResetConfirm}
+        onCancel={() => setResetConfirmVisible(false)}
       />
     </View>
   );

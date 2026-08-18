@@ -86,10 +86,17 @@ service cloud.firestore {
           // (1) Existing member — general update
           isMemberOfCouple(coupleId)
           ||
-          // (4) Pending party clearing their own request (cancel)
+          // (4) Pending party clearing their own request (cancel).
+          // Restricted to ONLY the three pending-* fields so an attacker
+          // who has become pendingPartner2Uid cannot self-assign
+          // partner2Uid in the same update — the H22 accept flow is
+          // supposed to require the existing member's explicit accept.
+          // Without hasOnly the pending party could bypass H22 entirely.
           (
             resource.data.get('pendingPartner2Uid', null) == request.auth.uid
             && !request.resource.data.keys().hasAny(['pendingPartner2Uid'])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['pendingPartner2Uid', 'pendingPartner2Name', 'pendingPartner2At'])
           )
         )
         && !request.resource.data.diff(resource.data).affectedKeys()
