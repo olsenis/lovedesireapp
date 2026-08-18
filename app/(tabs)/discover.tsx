@@ -1,12 +1,9 @@
-import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
 import { useSubscription } from '../../hooks/useSubscription';
 import { personalise } from '../../services/personalise';
-import { getPartnerBinaryAnswerCount, VERSUS_UNLOCK_THRESHOLD } from '../../services/versusService';
-import { getFeatureUnlockState, markVersusUnlocked, isVersusUnlockRecent } from '../../services/featureUnlockService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
@@ -16,9 +13,9 @@ type GameCard = {
   emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; inPerson?: boolean;
 };
 
-// Versus is data-gated (see below), so it isn't in the static GAMES list —
-// it's inserted at render time only when the partner has enough binary-
-// question history to make it playable.
+// Versus was cut Aug 2026 — its guess-partner-answer mechanic merged
+// into Daily's binary-question reveal flow, where it fits naturally
+// with real partner data + mutual reveal. Standalone screen deleted.
 const GAMES: GameCard[] = [
   { emoji: '💫', title: 'Daily',                subtitle: 'Picks to vote on and questions to answer, fresh every day', route: '/daily',          bg: '#E3F2FD', paid: false },
   { emoji: '🎯', title: 'Truth or Dare',        subtitle: 'Solo spin or 2-phone multiplayer round',        route: '/truth-dare',     bg: '#F3E5F5', paid: false },
@@ -31,11 +28,6 @@ const GAMES: GameCard[] = [
   // brand, not two. Home nudges still deep-link to /dares directly.
   { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5', paid: true },
 ];
-
-const VERSUS_CARD: GameCard = {
-  emoji: '🆚', title: 'Versus', subtitle: 'How well do you know {partner}? Guess their answers',
-  route: '/versus', bg: '#FFE5EC', paid: false,
-};
 
 const CHALLENGES = [
   { emoji: '🗓️', title: '30-Day Challenge', subtitle: 'Reconnect, Spark, or Fire, a daily practice', route: '/challenge', bg: '#FFF9C4', paid: false },
@@ -84,64 +76,7 @@ export default function DiscoverScreen() {
 
   useTrackScreen('discover');
 
-  const uid = user?.uid ?? '';
-  const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
-  const coupleId = profile?.coupleId;
   const isLDR = !!couple?.isLongDistance;
-
-  // Versus visibility state.
-  //  - null   = still checking (first mount, before Firestore reads land)
-  //  - false  = locked (partner doesn't have enough binary history yet)
-  //  - true   = unlocked (either previously persisted, or crossed threshold this session)
-  const [versusUnlocked, setVersusUnlocked] = useState<boolean | null>(null);
-  const [versusIsNew, setVersusIsNew] = useState(false);
-
-  useEffect(() => {
-    if (!uid || !partnerId || !coupleId) {
-      setVersusUnlocked(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      // Read persisted unlock first — cheap doc read via in-memory cache.
-      // Once unlocked, we never re-query the expensive partner-answer
-      // count. This is the whole point of persistence: keep the 45-day
-      // dailyQuestions scan gated behind still-locked-users only.
-      const state = await getFeatureUnlockState(uid);
-      if (cancelled) return;
-      if (state.versusUnlockedAt) {
-        setVersusUnlocked(true);
-        setVersusIsNew(isVersusUnlockRecent(state.versusUnlockedAt));
-        return;
-      }
-      // Still locked → check partner's binary answer count against the
-      // threshold. If met, persist the unlock so future mounts skip this
-      // query entirely.
-      try {
-        const count = await getPartnerBinaryAnswerCount(coupleId, partnerId);
-        if (cancelled) return;
-        if (count >= VERSUS_UNLOCK_THRESHOLD) {
-          await markVersusUnlocked(uid);
-          if (cancelled) return;
-          setVersusUnlocked(true);
-          setVersusIsNew(true); // Fresh unlock — decorate with NEW badge
-        } else {
-          setVersusUnlocked(false);
-        }
-      } catch {
-        // Fail closed — hide Versus rather than show a card that could
-        // dead-end. Next mount will retry.
-        if (!cancelled) setVersusUnlocked(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [uid, partnerId, coupleId]);
-
-  // Assemble Games list. Versus slots in between Daily and Truth or Dare
-  // when unlocked, matching its original position.
-  const gamesToRender: GameCard[] = versusUnlocked
-    ? [GAMES[0], VERSUS_CARD, ...GAMES.slice(1)]
-    : GAMES;
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
@@ -149,14 +84,13 @@ export default function DiscoverScreen() {
       <Text style={styles.subtitle}>Games & challenges for the two of you</Text>
 
       <Text style={styles.sectionLabel}>Games</Text>
-      {gamesToRender.map((f) => (
+      {GAMES.map((f) => (
         <FeatureCard
           key={f.route}
           {...f}
           subtitle={personalise(f.subtitle, partner?.name)}
           isSubscribed={isSubscribed}
           isLDR={isLDR}
-          isNew={f.route === '/versus' && versusIsNew}
         />
       ))}
 

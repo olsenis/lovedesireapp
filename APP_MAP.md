@@ -25,7 +25,6 @@ Living overview of every feature, content pool size, and connection between feat
    ├─ Games / interactive
    │  ├─ questions-game     Discover
    │  ├─ daily-wishes       Discover ("Daily Picks")
-   │  ├─ versus             Discover
    │  ├─ would-you-rather   Discover
    │  ├─ truth-dare         Discover (Solo Dare + 2-phone multiplayer; ex-Dare Wheel folded in)
    │  ├─ bingo              Discover ("Activity Cards", paid)
@@ -74,8 +73,7 @@ Categories:
 | Feature | Type | Tier | Pool | UI | Fun | Notes |
 |---|---|---|---|---|---|---|
 | Questions Game | Daily card + mutual reveal | Mixed (Playful free, Deep + Spicy paid) | **474** (P 87 · D 241 · S 146) | 4/5 | **5/5** | Strongest replay + mutual reveal. Content is the moat. |
-| Daily Picks | Daily voting + Together List seed | Mixed (Sweet + Flirty free, Spicy paid) | **224** (Sw 60 · Fl 60 · Sp 104) | 4/5 | 4/5 | Real payoff (feeds Together List). Post-merge to 3 cats. |
-| Versus | Guessing quiz | Free | Uses binary answers from Questions Game (last 45d) | 4/5 | 3/5 | No own pool — parasitic on Questions Game. Empty until you play Questions. |
+| Daily Picks | Daily voting + Together List seed | Mixed (Sweet + Flirty free, Spicy paid) | **224** (Sw 60 · Fl 60 · Sp 104) | 4/5 | 4/5 | Real payoff (feeds Together List). Post-merge to 3 cats. Binary Qs include inline guess-partner-answer sheet (ex-Versus, merged Aug 2026). |
 | Would You Rather | Simultaneous reveal | Mixed (Playful + Romantic free, Spicy paid) | **191** (Pl 70 · Rm 60 · Sp 61) | 4/5 | 3/5 | Same DNA as Questions binary format. Some overlap. |
 | Truth or Dare | Multiplayer state machine + audio + Solo Dare mode | Mixed (Sweet + Flirty free, Spicy paid) | Truths **311** (Sw 95 · Fl 95 · Sp 121) + Dares **189** (Sw 45 · Fl 46 · Sp 98) | **5/5** | **5/5** | Deepest interaction. Audio + skip system + score. Solo Dare (ex-Dare Wheel) folded in July 2026. |
 | Activity Cards | Turn-based reveal grid | Paid | Activities **55** + Rewards **10** | 4/5 | 4/5 | Passes system + 3-state cards is a strong pattern. Paid-only limits reach. |
@@ -136,8 +134,6 @@ Categories:
    Mood pick (Home) ──► logs Mood History
    Mood pick (Home) ──► partner push (EAS)
 
-   Questions Game ──► Versus (parasitic — reads binary answers)
-
    Truth or Dare (Solo mode) ──► same DARES pool as multiplayer
 
    Fantasy Wishes match ──► Together List (Intimacy category)
@@ -175,11 +171,7 @@ Ranked by strength of case.
    - WYR is more playful ("would you rather...") vs Questions Game more thoughtful
    - **Recommendation:** Keep both. Tonal difference is meaningful even if mechanic overlaps.
 
-5. **Versus is parasitic**
-   - No own content pool
-   - Empty state nudges to play Questions Game
-   - Adds a Discover tile but doesn't stand alone
-   - **Recommendation:** Keep for now — free-tier bonus makes Questions Game feel more valuable.
+5. ~~**Versus is parasitic**~~ ✅ MERGED August 2026 — the guess-partner-answer mechanic moved inline into Daily's binary-question reveal flow (bottom-sheet after your answer, gated reveal, weekly hit-rate on Home). Standalone screen + data-gate + starter pool deleted.
 
 6. **Intimacy Log**
    - Opt-in, hidden by default

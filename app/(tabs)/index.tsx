@@ -11,6 +11,7 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
 import { subscribePulseHistory, PulseResult } from '../../services/pulseService';
+import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
 import { subscribeSensateProgress, SensateProgress } from '../../services/sensateService';
 import { subscribeNotes, LoveNote, unlockMoodNotes, unlockVisitNotes } from '../../services/noteService';
@@ -228,9 +229,14 @@ export default function HomeScreen() {
   // or 3+ low-mood check-ins in the last 7 days.
   const [pulseHistory, setPulseHistory] = useState<PulseResult[]>([]);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
+  // Weekly Versus-in-Daily hit rate (guesses of partner's binary answers).
+  // Fetched via getWeeklyGuessStats on mount + tick — one Firestore
+  // query per minute is cheap, avoids adding another subscription.
+  const [weeklyGuessStats, setWeeklyGuessStats] = useState<{ correct: number; total: number }>({ correct: 0, total: 0 });
 
   const [challengeState, setChallengeState] = useState<ChallengeState | null>(null);
   const [notes, setNotes] = useState<LoveNote[]>([]);
+
   // Force a re-render every 60s as a baseline for slow-moving time-based
   // nudges (Sensate 14-day inactivity, day-rollover). MUST be included
   // in the nudges useMemo deps below so the recompute actually fires.
@@ -334,6 +340,18 @@ export default function HomeScreen() {
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
+
+  // Weekly guess-hit-rate refresh — fires whenever today's dailyQDoc
+  // updates (new guess or answer landed) plus on mount. Older days'
+  // stats are frozen once written so no need to refetch on those.
+  useEffect(() => {
+    if (!coupleId || !partnerId || !uid) return;
+    let cancelled = false;
+    getWeeklyGuessStats(coupleId, uid, partnerId)
+      .then((stats) => { if (!cancelled) setWeeklyGuessStats(stats); })
+      .catch(() => { /* keep last known */ });
+    return () => { cancelled = true; };
+  }, [coupleId, partnerId, uid, dailyQDoc?.guesses, dailyQDoc?.answers]);
 
   // Mood subscription
   useEffect(() => {
@@ -1360,6 +1378,14 @@ export default function HomeScreen() {
         <View style={styles.gameText}>
           <Text style={styles.gameTitle}>Daily</Text>
           <Text style={styles.gameSub}>See what you both feel like tonight</Text>
+          {/* Weekly guess hit-rate — Versus mechanic merged into Daily's
+              binary-question flow. Shows only after at least one guess
+              this week so it's not empty noise on first-use. */}
+          {weeklyGuessStats.total > 0 && (
+            <Text style={styles.gameStatSub}>
+              You knew {partner?.name ?? 'your partner'} {weeklyGuessStats.correct}/{weeklyGuessStats.total} this week
+            </Text>
+          )}
         </View>
         <Text style={styles.gameArrow}>›</Text>
       </TouchableOpacity>
@@ -1471,6 +1497,7 @@ const styles = StyleSheet.create({
   gameText: { flex: 1 },
   gameTitle: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.burgundy, fontWeight: '500' },
   gameSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 1 },
+  gameStatSub: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.burgundy, marginTop: 2 },
   gameArrow: { fontFamily: Fonts.body, fontSize: 18, color: Colors.muted },
   seeAllGamesRow: { alignItems: 'center', paddingVertical: Spacing.sm, marginTop: 2, marginBottom: Spacing.sm },
   seeAllGamesText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, letterSpacing: 0.5 },

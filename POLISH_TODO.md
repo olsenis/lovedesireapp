@@ -60,7 +60,22 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 
 ### Deferred
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
-- **#4b Versus starter pool** — cold-start fix. Revisit if user reports post-launch.
+- ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
+
+### H23 Versus merged into Daily — ✅ Commit A shipped (fe97f75), Commit B shipping now
+**Files:** `firestore.rules`, `services/dailyQuestionsService.ts`, `app/daily.tsx`, `app/(tabs)/index.tsx`, `app/(tabs)/discover.tsx`, `constants/content.ts`, deleted: `app/versus.tsx` + `services/versusService.ts` + `services/featureUnlockService.ts`
+**Change:**
+- Guess-partner-answer mechanic (formerly standalone `/versus`) now fires inline inside Daily's binary-Q reveal flow. After user submits their own binary answer, a bottom-sheet appears: "Wanna guess Ola's pick first?" with two big option buttons + a "Just show me" skip link.
+- Reveal is gated on guess-or-skip. Three reveal states: correct (🎯 + streak pill), wrong (🌱 + [💬 Ask why] deep-links to `/(tabs)?openSpark=1`), skipped (normal answers side-by-side, no guess row).
+- Weekly hit-rate stat added to Home's Daily row via new `getWeeklyGuessStats(coupleId, myUid, partnerUid)` helper. Displays only when `total > 0`, subtitle style, format: `you knew {partner} X/Y this week`.
+- New `guesses: Record<uid, Record<globalIndex, optionText>>` map on `couples/{id}/dailyQuestions/{date}`. Rules-guarded per-uid via existing `hasOnly([request.auth.uid])` diff pattern used for `answers`/`votes`/`discussed`.
+- Commit B cleanup: standalone Versus screen deleted, `versusService` deleted, `featureUnlockService` deleted (only had Versus data), `VERSUS_STARTER_POOL` + `VersusStarterItem` type deleted from `constants/content.ts`, `memory/versus_starter_prompt.md` deleted + MEMORY.md index entry removed, Versus row removed from Discover tab, `APP_MAP.md` + `ENTERTAINMENT_REVIEW.md` updated.
+**Why:** Standalone Versus scored 5.6 in two entertainment reviews. Root causes were structural: parasitic on Daily, cold-start data gate, solo mechanic broke mutual-reveal DNA. Merge solves every weakness (no gate, real data day 1, bilateral, discoverable via Daily traffic) with no new content pipeline.
+**Deferred:**
+- Ask-why doesn't yet pre-fill the Sparks compose body with question + guess context — small Sparks extension needed. Post-launch polish.
+- Sunday Check-in weekly summary (`app/state-union.tsx`) — planned but deferred: the reveal card already carries enough weight, adding another data block clutters it. Revisit if Sunday reveal feels thin.
+- `/versus` deep-link redirect to `/daily` — deferred since versus was pre-launch, no external links exist yet.
+- Category-level scores ("You know Ola's Playful side 85%") — post-launch, needs 30+ days of data to be meaningful.
 
 ---
 

@@ -54,7 +54,7 @@ Sorted composite desc. Free/paid tag from [app/(tabs)/love.tsx:12-38](app/(tabs)
 | Journal | Free | 2 | 3 | 3 | 2 | 5 | 6.0 |
 | The Lovers (Blueprint) | Paid | 3 | 2 | 4 | 2 | 4 | 6.0 |
 | Our Story | Free | 3 | 2 | 4 | 2 | 4 | 6.0 |
-| Versus | Free (data-gated) | 4 | 2 | 3 | 2 | 3 | 5.6 |
+| ~~Versus~~ (merged into Daily Aug 2026) | Free | — | — | — | — | — | — |
 | Intimacy Log | Paid | 3 | 4 | 2 | 3 | 2 | 5.6 |
 | Pulse | Free | 3 | 3 | 3 | 2 | 3 | 5.6 |
 | Love Language quiz | Free | 2 | 2 | 3 | 2 | 5 | 5.6 |
@@ -91,7 +91,7 @@ Every Love Desire feature vs. best-in-class competitor for that feature.
 | Journal | Coral guided journaling, Ferly journal prompts | Worse | Coral has structured guided prompts; Ferly has journaling built into intimacy program. Love Desire's is just a free-form textbox with mood tag. |
 | The Lovers (Blueprint) | Erotic Blueprint quizzes (many web) | On par | Blueprint is well-known concept from Jaiya. Love Desire packages it well with couple compatibility. One-time use limits depth. |
 | Our Story | Between Memory Lane | On par | Between has photo timeline. Love Desire's milestone-based timeline is different angle but not more compelling. |
-| Versus | Loverse, Lovify guess-partner games | On par | Question-guess mechanic is common in casual couple games. Love Desire's is nice but data-gated (needs partner's Daily history), which trips first-time users. |
+| ~~Versus~~ (merged) | Loverse, Lovify guess-partner games | Better | Aug 2026: standalone Versus deleted, mechanic folded inline into Daily's binary-question reveal. Bottom-sheet after your answer, gated reveal, weekly hit-rate on Home. No cold-start (real Q + real partner answer from day 1), no separate tile to discover, mutual-reveal DNA preserved. |
 | Intimacy Log | Coral tracking, standalone sex trackers | On par to better | Detailed log with location/type/positions/mood/orgasm stats is comprehensive. But privacy-conscious segment may prefer paper. |
 | Pulse | Lasting relationship health scores | Worse | Lasting has structured relationship-health assessments backed by Gottman research. Love Desire's Pulse is a self-report checkbox thing without benchmark or coaching. |
 | Love Language quiz | Paired (built-in), 5lovelanguages.com | On par (commodity) | Everyone has this. Not a differentiator. |
@@ -127,17 +127,13 @@ Every Love Desire feature vs. best-in-class competitor for that feature.
 **Effort:** 2-3h (form redesign + interpretation logic + routing).
 **Expected composite bump:** 5.6 → 7.0.
 
-### 3. Versus (5.6) — clever mechanic, killed by cold start
+### 3. Versus — MERGED INTO DAILY (Aug 2026) ✅
 
-**Root cause:** requires N binary answers in partner's Daily history to build a pool. New couples land on empty state within their first days. Cold start kills the "aha" moment.
+**Original problem:** parasitic on Daily's binary answers, cold start, solo mechanic that broke the mutual-reveal DNA, low frequency, score-as-anxiety rather than connection.
 
-**Redesign:**
-- Seed pool with universal binary questions (not from Daily history — from a curated `VERSUS_STARTER_POOL`). First 5 rounds use starter; later rounds mix history + starter.
-- Reveal partner's actual answer with a "why?" prompt — turn the guess into a conversation, not just a score.
-- Streaks/records — track "you got 4 in a row" or "your all-time high knowing-them score".
+**Resolution (fe97f75 + follow-up cleanup):** the guess-partner-answer mechanic now fires inline inside Daily's binary-question reveal flow. Answer a binary Q, get a bottom-sheet ("Wanna guess Ola's pick first?"), guess-or-skip, reveal is gated on your response. Correct/wrong copy on the reveal card with streak pill. Weekly hit-rate surfaces on Home's Daily row ("you knew Ola 2/2 this week"). Standalone `/versus` route + `versusService` + `VERSUS_STARTER_POOL` + `featureUnlockService` all deleted. `guesses` map on `dailyQuestions/{date}` doc, rules-guarded per-uid.
 
-**Effort:** 3-4h (curated starter pool ~50 items + reveal-with-why UI + streak persistence).
-**Expected composite bump:** 5.6 → 7.4.
+**Outcome:** every original weakness resolved in one merge — no more parasitism (it IS Daily), no cold start (real Q + real partner answer from day 1), bilateral (both guess each other same session), mutual-reveal DNA preserved. Discover tab detoxed by one card.
 
 ### 4. Intimacy Log (5.6) — analytics without narrative
 
@@ -258,14 +254,14 @@ Reordered from the reviewer's ROI ranking (below) under "quality + shareability 
 | **1** | **Voice Notes** (D2) | Add voice recording as media type in Love Notes (in addition to text). Reuses ToD audio infra. Plus Home nudge distinction + auto-title + recipient rename. | 4-6h | ✅ **Shipped** (a36c526 / 5512732 / 646fc5a) |
 | 2 | **Emotional Weather** (D1) | Passive cross-partner pattern detection. Weekly Cloud Function analyzes moods + Pulse + Sunday Check-in trends. Home surface. | 8-12h | Deferred — needs historical data to be meaningful, revisit post-launch |
 | **3** | **Async Dares** (D3) MVP | Partner-set text challenges with optional deadline + optional photo proof on completion. Accept / decline / mark-complete / withdraw flow. Discover tab card + Home nudges. Streaks, celebration animation, Together List integration deferred to v2. | 3-4h (MVP of 6-8h scope) | ✅ **Shipped** |
-| **4** | **Versus** fix | Streaks + persistent records + "talk about it" prompt + better empty state. Starter pool deferred to v2. | 2h (of 3-4h scope) | ✅ **Shipped** (e2ff651) — starter pool below |
+| **4** | **Versus** fix | Streaks + persistent records + "talk about it" prompt + better empty state. Starter pool deferred to v2. → **Superseded Aug 2026 by full merge into Daily** (fe97f75 + cleanup). | 2h + 5-6h merge | ✅ **Shipped** — mechanic now inline in Daily's binary-Q reveal, standalone screen deleted. |
 | **5** | **Journal** redesign | Rotating prompts (25) via deterministic per-couple weekly seed + Sunday-only retro card (my/partner count + moods + partner mood-log) + 🔥 streak-lite pill (≥3 days, client-derived). No new writes, no schema changes. | 3-4h | ✅ **Shipped** (see commit hash on land) |
 | **6** | **Pulse** redesign | 10→5 questions, trend comparison ("stronger/softer than 4 weeks ago"), routes to related features per softest dimension. Cadence hint in intro copy. | 2h | ✅ **Shipped** |
 | 7 | **Intimacy Log** narrative | Auto-generated 1st-of-month "story" summary. Ties to Sensate + Daily via one-tap logging prompts. | 4-6h | Pending |
 | **8** | **Love Language** weekly nudge | Standalone `/love-language-nudge` screen linked from Us tab Discover. Sunday 09:00 local notification (weekly). 100 curated actions (20 per language × 5). Deterministic pick (weekAnchor + coupleId) so both partners see same trio. | 2-3h | ✅ **Shipped** (bf46a21 + a29dbd2) |
 | **9** | **Calendar** reposition | Full "Special Days ledger" rewrite (killed month grid, grouped by time bucket) + Countdowns feature merged in (shared same data). | 30 min → 90 min actual | ✅ **Shipped** (fa7c365 + 361ee9a) |
 | **10** | **`/upgrade`** copy reorder | Fantasy Wishes / Sensate / Fire+Desire lead, Blueprint drops to bottom, Activity Cards + Spicy content mid-list. | 30 min | ✅ **Shipped** (801ed02) |
-| 4b | **Versus starter pool** (v2) | ~30-50 curated universal binary questions + in-Versus answering mode so brand-new couples with 0 Daily binary answers can play immediately. | ~2h | Deferred — revisit if cold-start bug surfaces post-launch |
+| ~~4b~~ | ~~**Versus starter pool** (v2)~~ | Obsolete — Versus merged into Daily Aug 2026, no separate pool needed (real partner binary answers drive the mechanic from day 1). | — | ✅ **Cut** — see #4 |
 
 **Total: ~35-50h focused work.** At 1-2 items per week: **~2-3 month roadmap**.
 
@@ -284,7 +280,7 @@ Ordered by best expected lift per hour invested (for POST_LAUNCH.md prioritizati
 
 | Rank | Investment | Effort | Expected impact |
 |---|---|---|---|
-| 1 | Add Versus starter pool + "why?" reveal | 3-4h | Kills cold-start; makes free feature memorable |
+| ~~1~~ | ~~Add Versus starter pool + "why?" reveal~~ | — | Merged Aug 2026 (see #4) |
 | 2 | Journal prompts + weekly retro | 3-4h | Turns dead feature into weekly habit |
 | 3 | Voice Notes (D2 differentiator) | 4-6h | Emotional payoff + shareability |
 | 4 | Reposition Calendar → ledger | 30 min | Removes weakest feature's drag |
@@ -300,7 +296,7 @@ Ordered by best expected lift per hour invested (for POST_LAUNCH.md prioritizati
 ## Coverage inventory
 
 **Explicitly rated (not skipped):**
-- All 8 games in Discover tab: Daily, Versus, Truth or Dare, Would You Rather, Activity Cards, Fantasy Wishes, 30-Day Challenge, Roulette
+- All games in Discover tab: Daily (with inline Versus mechanic on binary Qs), Truth or Dare, Would You Rather, Activity Cards, Fantasy Wishes, 30-Day Challenge, Roulette
 - All 9 rituals in Us tab: Sunday Check-in, Moments, Love Notes, Journal, Intimacy Log, Blueprint, Sensate, Our Story, Love Language quiz
 - All 9 standalones: Together List, Tease, Sparks, Mood, Pulse, Calendar, Countdown, Flirt Reminders, Year in Review
 - Home tab surfacing: strong across the board — nudge system + insight-for-you card + memory-of-the-day + LDR partner clock. Not rated as a single feature since they compose the others.

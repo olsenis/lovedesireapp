@@ -3289,67 +3289,9 @@ export const DAILY_WISH_ITEMS: DailyWishItem[] = [
   dp("Do a body scan together, no phones, just present for 5 minutes"),
 ];
 
-// Versus starter pool — 50 curated binary A/B questions that bootstrap
-// the Versus game before real partner Daily Question binary answers cross
-// VERSUS_UNLOCK_THRESHOLD (5). Both partners see the SAME shuffled 10
-// items with the SAME deterministic partnerAnswer per game, so day-1
-// experience feels real. loadVersusPool in services/versusService.ts
-// transitions from starter → real as soon as real data qualifies.
-// Authored via memory/versus_starter_prompt.md standards.
-export interface VersusStarterItem {
-  text: string;
-  options: [string, string];
-  partnerAnswer: string;
-}
-export const VERSUS_STARTER_POOL: VersusStarterItem[] = [
-  { text: "Coffee or tea in the morning?", options: ["Coffee", "Tea"], partnerAnswer: "Coffee" },
-  { text: "Sweet or savoury breakfast?", options: ["Sweet", "Savoury"], partnerAnswer: "Savoury" },
-  { text: "Cook at home or order in?", options: ["Cook at home", "Order in"], partnerAnswer: "Cook at home" },
-  { text: "Pizza or burger for a quick dinner?", options: ["Pizza", "Burger"], partnerAnswer: "Burger" },
-  { text: "Chocolate or vanilla ice cream?", options: ["Chocolate", "Vanilla"], partnerAnswer: "Chocolate" },
-  { text: "Beer or wine at dinner?", options: ["Beer", "Wine"], partnerAnswer: "Wine" },
-  { text: "Spicy or mild food?", options: ["Spicy", "Mild"], partnerAnswer: "Spicy" },
-  { text: "Fresh fruit or baked dessert?", options: ["Fresh fruit", "Baked dessert"], partnerAnswer: "Baked dessert" },
-  { text: "Movie night or series binge?", options: ["Movie night", "Series binge"], partnerAnswer: "Series binge" },
-  { text: "Comedy or drama?", options: ["Comedy", "Drama"], partnerAnswer: "Comedy" },
-  { text: "Book or podcast?", options: ["Book", "Podcast"], partnerAnswer: "Podcast" },
-  { text: "Cinema or couch?", options: ["Cinema", "Couch"], partnerAnswer: "Couch" },
-  { text: "Live music or comedy show?", options: ["Live music", "Comedy show"], partnerAnswer: "Live music" },
-  { text: "Board game or video game?", options: ["Board game", "Video game"], partnerAnswer: "Board game" },
-  { text: "Action or romance movie?", options: ["Action", "Romance"], partnerAnswer: "Romance" },
-  { text: "Playlist or radio?", options: ["Playlist", "Radio"], partnerAnswer: "Playlist" },
-  { text: "Beach or mountains?", options: ["Beach", "Mountains"], partnerAnswer: "Mountains" },
-  { text: "Plan every day or wing it?", options: ["Plan every day", "Wing it"], partnerAnswer: "Wing it" },
-  { text: "Hotel or Airbnb?", options: ["Hotel", "Airbnb"], partnerAnswer: "Hotel" },
-  { text: "Window seat or aisle?", options: ["Window", "Aisle"], partnerAnswer: "Window" },
-  { text: "Road trip or flight?", options: ["Road trip", "Flight"], partnerAnswer: "Road trip" },
-  { text: "City break or nature escape?", options: ["City break", "Nature escape"], partnerAnswer: "Nature escape" },
-  { text: "Early bird or night owl?", options: ["Early bird", "Night owl"], partnerAnswer: "Night owl" },
-  { text: "Hot shower or cold shower?", options: ["Hot", "Cold"], partnerAnswer: "Hot" },
-  { text: "Morning workout or evening workout?", options: ["Morning", "Evening"], partnerAnswer: "Evening" },
-  { text: "Make the bed or leave it?", options: ["Make it", "Leave it"], partnerAnswer: "Make it" },
-  { text: "Alarm snooze or straight up?", options: ["Snooze", "Straight up"], partnerAnswer: "Snooze" },
-  { text: "Big breakfast or skip it?", options: ["Big breakfast", "Skip it"], partnerAnswer: "Skip it" },
-  { text: "Coffee first or phone first in the morning?", options: ["Coffee first", "Phone first"], partnerAnswer: "Coffee first" },
-  { text: "Read before bed or watch something?", options: ["Read", "Watch"], partnerAnswer: "Watch" },
-  { text: "Save the money or spend it?", options: ["Save", "Spend"], partnerAnswer: "Save" },
-  { text: "Text or call?", options: ["Text", "Call"], partnerAnswer: "Text" },
-  { text: "Big party or small gathering?", options: ["Big party", "Small gathering"], partnerAnswer: "Small gathering" },
-  { text: "Plan ahead or spontaneous?", options: ["Plan ahead", "Spontaneous"], partnerAnswer: "Spontaneous" },
-  { text: "Talk it out or write it down?", options: ["Talk", "Write"], partnerAnswer: "Talk" },
-  { text: "Lead the plan or follow along?", options: ["Lead", "Follow"], partnerAnswer: "Follow" },
-  { text: "Loud laugh or quiet smile?", options: ["Loud laugh", "Quiet smile"], partnerAnswer: "Quiet smile" },
-  { text: "Give a gift or receive one?", options: ["Give", "Receive"], partnerAnswer: "Give" },
-  { text: "Try new thing or stick with a favourite?", options: ["Try new", "Old favourite"], partnerAnswer: "Old favourite" },
-  { text: "Ask for help or figure it out alone?", options: ["Ask for help", "Figure alone"], partnerAnswer: "Figure alone" },
-  { text: "Front seat or back seat in a taxi?", options: ["Front", "Back"], partnerAnswer: "Back" },
-  { text: "Cash or card at the register?", options: ["Cash", "Card"], partnerAnswer: "Card" },
-  { text: "Toothpaste from the bottom or middle?", options: ["Bottom", "Middle"], partnerAnswer: "Bottom" },
-  { text: "Notifications on or off?", options: ["On", "Off"], partnerAnswer: "Off" },
-  { text: "Wallet in front pocket or back?", options: ["Front pocket", "Back pocket"], partnerAnswer: "Front pocket" },
-  { text: "Toilet paper over or under?", options: ["Over", "Under"], partnerAnswer: "Over" },
-  { text: "Sneakers or boots?", options: ["Sneakers", "Boots"], partnerAnswer: "Sneakers" },
-  { text: "Pen or pencil?", options: ["Pen", "Pencil"], partnerAnswer: "Pen" },
-  { text: "Long shower or quick shower?", options: ["Long", "Quick"], partnerAnswer: "Quick" },
-  { text: "Dark mode or light mode?", options: ["Dark", "Light"], partnerAnswer: "Dark" },
-];
+// Versus starter pool was added in d47d2cf then removed when Versus
+// was merged into Daily's binary-question flow. Mechanic now lives at
+// app/daily.tsx (guess bottom-sheet) + services/dailyQuestionsService.ts
+// (submitGuess + getWeeklyGuessStats + getGuessStreak). Guessing partner
+// answers uses real partner data via the actual daily binary answers,
+// so a synthetic starter pool no longer serves any purpose.
