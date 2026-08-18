@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
 import type { MoodEntry, MoodEmoji } from './moodService';
 import { MOOD_LABELS } from './moodService';
@@ -13,7 +13,11 @@ export interface YearSummary {
   momentsCaptured: number;              // days both partners submitted
   notesExchanged: number;               // total LoveNotes opened
   intimacyEntries: number;              // count (if log enabled)
-  pulseLatestScore: number | null;      // from latest hita/pulse if any
+  // pulseLatestScore removed Aug 2026 — the legacy `hita/latest` doc it
+  // read is dead data (no writer in current codebase) and standalone
+  // Pulse was merged into Sunday Check-in. Add a `sundayCheckinAvg`
+  // read from stateUnion entries pulseScores if year-in-review needs
+  // a pulse signal post-launch.
   daysApartCount: number;               // days when isLongDistance was on
 }
 
@@ -112,16 +116,6 @@ export async function aggregateYearSummary(
     } catch {}
   }
 
-  // Latest Pulse score (cross-year, just for context)
-  let pulseLatestScore: number | null = null;
-  try {
-    const pulseSnap = await getDoc(doc(db, 'couples', coupleId, 'hita', 'latest'));
-    if (pulseSnap.exists()) {
-      const d: any = pulseSnap.data();
-      if (typeof d.score === 'number') pulseLatestScore = d.score;
-    }
-  } catch {}
-
   return {
     year,
     daysTogether,
@@ -132,7 +126,6 @@ export async function aggregateYearSummary(
     momentsCaptured,
     notesExchanged,
     intimacyEntries,
-    pulseLatestScore,
     daysApartCount: 0, // future enhancement — would require LDR history
   };
 }

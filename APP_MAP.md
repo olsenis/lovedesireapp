@@ -44,7 +44,7 @@ Living overview of every feature, content pool size, and connection between feat
    │
    ├─ Insights
    │  ├─ quiz               Us > Discover yourselves ("Love Language Quiz")
-   │  ├─ pulse              Profile > Reminders & tools ("Relationship Pulse", route /pulse — renamed from /hita)
+   │  ├─ pulse              Redirect stub → /state-union (Pulse merged into Sunday Check-in Aug 2026)
    │  ├─ state-union        Us > Rituals ("Sunday Check-in")
    │  ├─ our-story          Us > Discover yourselves
    │  └─ year-in-review     Profile shortcut
@@ -102,7 +102,7 @@ Categories:
 | Feature | Type | Tier | Pool | UI | Fun | Notes |
 |---|---|---|---|---|---|---|
 | Love Language Quiz | 10-Q quiz | Free | 10 Q | 3/5 | 3/5 | Classic feature, once-per-user. |
-| Relationship Pulse (Hita) | 10-Q private tracker + trend | Free | 10 Q | 4/5 | 2/5 | Serious tool. Not "fun" but valuable. |
+| Sunday Check-in (with Pulse) | 5-dim pulse pre-step + 5 Gottman questions + mutual reveal | Free | 5 dims + 5 Q | 4/5 | 4/5 | Pulse merged in Aug 2026 — see H24 in POLISH_TODO. Weekly cadence, private-then-reveal, number-vs-number comparison IS the interpretation. |
 | Sunday Check-in (State Union) | 5-Q weekly Gottman ritual | Free | 5 Q per week | 4/5 | 2/5 | Deliberate ritual. Cadence-driven. |
 | Our Story | Timeline of joint milestones | Free | Auto-generated | 3/5 | 3/5 | Passive, once-viewed. |
 | Year-in-Review | Annual highlight reel | Free | Auto-generated | 4/5 | 4/5 | Emotional payoff. Seasonal. |
@@ -190,7 +190,7 @@ Ranked by strength of case.
 
 **Where the July 2026 restructure helped:**
 - ✅ Us tab trimmed from 15 items → 10 (Rituals / Nurture / Discover yourselves)
-- ✅ Utility screens (Calendar, Countdowns, Flirt Reminders, Relationship Pulse) moved to Profile > Reminders & tools
+- ✅ Utility screens (Calendar, Countdowns, Flirt Reminders) moved to Profile > Reminders & tools (Relationship Pulse subsequently merged into Sunday Check-in Aug 2026)
 - ✅ Home Tonight's Picks curated to 3 games + "See all games →" link (was 5 rows duplicating Discover)
 - ✅ Together List surfaced on Home as a dedicated card (was orphan on old Love tab)
 

@@ -62,6 +62,23 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H24 Pulse merged into Sunday Check-in — ✅ Commit A shipped (7a7748b), Commit B shipping now
+**Files:** `services/stateUnionService.ts`, `app/state-union.tsx`, `app/pulse.tsx`, `app/profile.tsx`, `app/(tabs)/love.tsx`, `app/(tabs)/index.tsx`, `services/yearInReviewService.ts`, deleted: `services/pulseService.ts`
+**Change:**
+- 5-dimension pulse (fun / communication / closeness / sex / teamwork, 1-5 each) now runs as a quick pre-step BEFORE the existing 5 Gottman text questions inside Sunday Check-in. Both sets land on the same per-user `entries/{uid}` doc via `submitStateUnionPulse` (batched, one write for all 5 dims).
+- Zero Firestore rules changes — entries subcollection already enforces owner-only writes + gated reads until both completedAt. Same privacy as text answers.
+- Reveal card gets a Quick pulse comparison block prepended above the text stack: per-dimension `You N · Ola M` + ✓ (gap ≤ 1) or ↕ (gap ≥ 2). Number-vs-number IS the interpretation — no copy needed. Only renders when BOTH entries carry pulseScores, so legacy weeks render text-only.
+- `ComposeStep = 'pulse' | number` state machine. Default step='pulse'; `pulseSeededRef` effect jumps returning users straight to text step 0 if all 5 pulseScores already saved this week. Back button on text step 0 navigates to pulse step (scores preserved).
+- Commit B cleanup: `/pulse` route replaced with redirect stub → `/state-union`. `services/pulseService.ts` deleted entirely (was only used by app/pulse.tsx + Home). Home Pulse 28-day nudge removed (Sunday CI has its own weekly cadence). Home closeness-dip nudge migrated to read from stateUnion entry `pulseScores.closeness` + `updatedAt` instead of pulse subcollection. Profile row `🌡️ Relationship Pulse` removed from Reminders & tools. Us tab Sunday CI subtitle updated to `"Quick pulse + 5 questions, private then reveal together"`. `yearInReviewService.pulseLatestScore` field + `hita/latest` read deleted (dead data path — no writer existed). Docs updated in CLAUDE.md, APP_MAP.md, ENTERTAINMENT_REVIEW.md.
+**Why:** Standalone Pulse scored 5.6 in entertainment review. Root causes: on-demand cadence in a cadence-native app, individual not shared (no mutual reveal), raw numbers without interpretation, duplicated Sunday Check-in's emotional territory. Merge solves every weakness — natural weekly cadence, mutual reveal built in, number-vs-number IS the interpretation. Flagship Sunday CI (composite 8.4) lifts to ~9.0 while one weak feature dies. Same mechanic-transplant pattern as H23 Versus → Daily.
+**Deferred:**
+- Trend delta ("was 3 last week, now 4 ↑") in reveal — v2. Requires one extra Firestore read per partner per reveal. Ship after v1 proves the base merge feels right.
+- Legacy `couples/{id}/pulse/{autoId}` docs not migrated. Old trend history not shown in the new UI. Trend continues from first Sunday post-merge (same treatment as H23 Versus retro-guessing).
+- Per-dimension "talk about this?" deep-link on gap rows — post-launch polish once we see which gaps generate conversation.
+- Pulse suggestion-action routing (`fun→/roulette`, `communication→/state-union`, etc.) not preserved — that whole surface is gone.
+- `pulse_submitted` telemetry event replaced by the existing `sunday_checkin_submitted`. Add `sunday_pulse_submitted` if pulse-specific analytics needed later.
+- TEST_CHECKLIST.md / TEST_LAUNCH.md still contain "10-question" pulse test cases — cleanup pass deferred to next test-doc sweep, harmless in the meantime.
+
 ### H23 Versus merged into Daily — ✅ Commit A shipped (fe97f75), Commit B shipping now
 **Files:** `firestore.rules`, `services/dailyQuestionsService.ts`, `app/daily.tsx`, `app/(tabs)/index.tsx`, `app/(tabs)/discover.tsx`, `constants/content.ts`, deleted: `app/versus.tsx` + `services/versusService.ts` + `services/featureUnlockService.ts`
 **Change:**

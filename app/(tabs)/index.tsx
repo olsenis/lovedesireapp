@@ -10,7 +10,6 @@ import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
-import { subscribePulseHistory, PulseResult } from '../../services/pulseService';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
 import { subscribeSensateProgress, SensateProgress } from '../../services/sensateService';
@@ -30,7 +29,9 @@ import { Memory, subscribeMemories } from '../../services/memoryService';
 import { personalise } from '../../services/personalise';
 import {
   StateUnionDoc,
+  StateUnionEntry,
   subscribeStateUnion,
+  subscribeStateUnionEntry,
   getCurrentWeekId,
   answeredCount as suAnsweredCount,
   hasUserCompleted as suHasUserCompleted,
@@ -227,7 +228,11 @@ export default function HomeScreen() {
   // History-backed subscriptions for cross-flow nudges. Pulse 4-week
   // return nudge + intimacy-log prompts triggered by low pulse closeness
   // or 3+ low-mood check-ins in the last 7 days.
-  const [pulseHistory, setPulseHistory] = useState<PulseResult[]>([]);
+  // My current-week Sunday Check-in entry — carries pulseScores after
+  // Pulse merged into Sunday Check-in (Aug 2026). Used by the
+  // closeness-dip cross-flow nudge below. Old pulse subcollection
+  // (`couples/{id}/pulse/{autoId}`) and its subscription are gone.
+  const [mySuEntry, setMySuEntry] = useState<StateUnionEntry | null>(null);
   const [moodHistory, setMoodHistory] = useState<MoodEntry[]>([]);
   // Weekly Versus-in-Daily hit rate (guesses of partner's binary answers).
   // Fetched via getWeeklyGuessStats on mount + tick — one Firestore
@@ -383,10 +388,11 @@ export default function HomeScreen() {
     const u14 = subscribeActivityCards(coupleId, user?.uid ?? '', setBingoSession);
     const u15 = subscribeTodos(coupleId, setTodos);
     const u16 = subscribeSensateProgress(coupleId, setSensateProgress);
-    // History-backed subscriptions for pre-launch cross-flow nudges.
-    // Pulse: 4-week return + low-closeness cross-prompt to intimacy.
-    // Mood history: 3+ low emotional check-ins in 7 days cross-prompt.
-    const u19 = subscribePulseHistory(coupleId, user?.uid ?? '', setPulseHistory);
+    // Cross-flow nudges. My current-week Sunday Check-in entry carries
+    // pulseScores (post-Aug-2026 merge) — reads own entry only, always
+    // allowed by rules. Mood history: 3+ low emotional check-ins in
+    // 7 days cross-prompt into intimacy log.
+    const u19 = subscribeStateUnionEntry(coupleId, getCurrentWeekId(), user?.uid ?? '', setMySuEntry);
     const u20 = subscribeMoodHistory(coupleId, setMoodHistory);
     return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
@@ -732,35 +738,20 @@ export default function HomeScreen() {
     }
   }
 
-  // Pulse: 4-week return nudge — if user has done at least one pulse
-  // AND it's been 28+ days since the most recent one, surface a card.
-  // Reuses the 60s tick + history subscription. Keeps its own dismiss
-  // via natural expiry (any new pulse write makes daysSince < 28).
-  if (pulseHistory.length > 0) {
-    const latestPulse = pulseHistory[0];
-    const daysSincePulse = Math.floor((Date.now() - latestPulse.createdAt) / 86400000);
-    if (daysSincePulse >= 28) {
-      list.push({
-        emoji: '📊',
-        title: 'Pulse check',
-        subtitle: `${daysSincePulse} days since your last check-in, how's the relationship this month?`,
-        route: '/pulse',
-        bg: '#F5F5F5',
-      });
-    }
-  }
+  // Pulse 28-day nudge removed Aug 2026 — Pulse merged into Sunday
+  // Check-in, and Sunday CI has its own weekly nudge stack below that
+  // covers cadence.
 
   // Intimacy Log cross-flow: low pulse closeness score → nudge to log an
-  // intimate moment. Only fires if the intimacy feature is enabled AND
-  // most recent pulse's closeness dimension is 1 or 2 AND the pulse was
-  // done in the last 14 days (older data is stale signal).
-  if (profile?.features?.intimacyLog && pulseHistory.length > 0) {
-    const latestPulse = pulseHistory[0];
-    const closenessScore = latestPulse.scores?.closeness;
-    const pulseAge = Date.now() - latestPulse.createdAt;
+  // intimate moment. Migrated Aug 2026 to read from Sunday Check-in's
+  // pulseScores instead of the deleted pulse subcollection. Same
+  // threshold (≤ 2), same 14-day staleness cap, same target route.
+  if (profile?.features?.intimacyLog && mySuEntry?.pulseScores) {
+    const closenessScore = mySuEntry.pulseScores.closeness;
+    const pulseAt = mySuEntry.updatedAt ?? 0;
+    const pulseAge = Date.now() - pulseAt;
     if (closenessScore !== undefined && closenessScore <= 2 && pulseAge < 14 * 86400000) {
-      // Suppress if user has already logged intimacy since the pulse
-      const loggedSincePulse = intimacyEntries.some(e => e.createdAt > latestPulse.createdAt);
+      const loggedSincePulse = intimacyEntries.some(e => e.createdAt > pulseAt);
       if (!loggedSincePulse) {
         list.push({
           emoji: '💗',
@@ -1010,7 +1001,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name, tick, pulseHistory, moodHistory]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

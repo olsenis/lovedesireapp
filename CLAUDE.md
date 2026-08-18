@@ -127,7 +127,7 @@ app/                         Full-screen sub-screens
   reminders.tsx              Flirt Reminders — local scheduled notifications
   quiz.tsx                   Love Language Quiz — 10-question result
   love-language-nudge.tsx    Speak partner's love language — weekly Sunday nudge (local scheduled notification, Sunday 09:00), 3 concrete actions from partner's language pool (20 per language × 5 languages = 100). Deterministic pick (weekAnchor + coupleId) so both partners see same trio.
-  pulse.tsx                  Relationship Pulse — private 10-question satisfaction tracker
+  pulse.tsx                  Redirect stub → /state-union (Pulse merged into Sunday Check-in Aug 2026 as a 5-dimension pre-step)
   daily-wishes.tsx           Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   (time-capsules.tsx removed July 2026 — abstract long-timeline payoff didn't demo well pre-launch; revisit if users request "seal for later" mechanics)
   versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
@@ -291,7 +291,7 @@ Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate 
 - Would You Rather: Playful + Romantic only
 - Tonight's Date (full)
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease (full)
-- Love Language Quiz, Relationship Pulse (with trend chart, full)
+- Love Language Quiz, Sunday Check-in (5-dimension pulse + 5 Gottman questions with mutual reveal, full — was standalone Pulse pre-Aug 2026)
 - 30-Day Challenge: Reconnect + Spark programs only
 
 ### Paid tier (subscription — `app/upgrade.tsx` shown when locked)

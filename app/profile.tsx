@@ -581,14 +581,9 @@ export default function ProfileScreen() {
             </View>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => router.push('/pulse' as any)} accessibilityRole="button">
-            <View style={styles.rowTextStack}>
-              <Text style={styles.rowLabel}>🌡️ Relationship Pulse</Text>
-              <Text style={styles.rowHint}>Private check-in on how things are going</Text>
-            </View>
-            <Text style={styles.rowChevron}>›</Text>
-          </TouchableOpacity>
+          {/* Relationship Pulse row removed Aug 2026 — Pulse merged into
+              Sunday Check-in as a quick 5-dimension pre-step. Access via
+              Us tab → Sunday Check-in card. See state-union.tsx. */}
         </View>
 
         {/* Year in Review */}

@@ -18,7 +18,7 @@ not UX-broken, not technical-broken. Just not breakthrough-differentiated.
 
 **Top 3 weaknesses:**
 - **Calendar (5.2)** — table stakes; Cupla does this 5× better with native calendar sync.
-- **Pulse (5.6)** — 10-metric self-check finds a clinical niche; no emotional payoff, no repeat play.
+- **~~Pulse (5.6)~~** — merged Aug 2026 into Sunday Check-in as a 5-dimension pre-step. Standalone screen deleted; mechanic now benefits from weekly cadence + mutual reveal.
 - **Journal / Love Language / Blueprint (~6.0)** — all "check the box" features nobody uses regularly past week 2.
 
 **Launch recommendation:** ✅ READY. Enter with strong lead of Moments + Daily
@@ -56,7 +56,7 @@ Sorted composite desc. Free/paid tag from [app/(tabs)/love.tsx:12-38](app/(tabs)
 | Our Story | Free | 3 | 2 | 4 | 2 | 4 | 6.0 |
 | ~~Versus~~ (merged into Daily Aug 2026) | Free | — | — | — | — | — | — |
 | Intimacy Log | Paid | 3 | 4 | 2 | 3 | 2 | 5.6 |
-| Pulse | Free | 3 | 3 | 3 | 2 | 3 | 5.6 |
+| ~~Pulse~~ (merged into Sunday Check-in Aug 2026) | Free | — | — | — | — | — | — |
 | Love Language quiz | Free | 2 | 2 | 3 | 2 | 5 | 5.6 |
 | Calendar | Free | 2 | 2 | 2 | 3 | 4 | 5.2 |
 
@@ -93,7 +93,7 @@ Every Love Desire feature vs. best-in-class competitor for that feature.
 | Our Story | Between Memory Lane | On par | Between has photo timeline. Love Desire's milestone-based timeline is different angle but not more compelling. |
 | ~~Versus~~ (merged) | Loverse, Lovify guess-partner games | Better | Aug 2026: standalone Versus deleted, mechanic folded inline into Daily's binary-question reveal. Bottom-sheet after your answer, gated reveal, weekly hit-rate on Home. No cold-start (real Q + real partner answer from day 1), no separate tile to discover, mutual-reveal DNA preserved. |
 | Intimacy Log | Coral tracking, standalone sex trackers | On par to better | Detailed log with location/type/positions/mood/orgasm stats is comprehensive. But privacy-conscious segment may prefer paper. |
-| Pulse | Lasting relationship health scores | Worse | Lasting has structured relationship-health assessments backed by Gottman research. Love Desire's Pulse is a self-report checkbox thing without benchmark or coaching. |
+| ~~Pulse~~ (merged) | Lasting relationship health scores | Better | Aug 2026: standalone Pulse deleted, 5-dimension pulse folded into Sunday Check-in as a pre-step. Weekly cadence, mutual reveal, number-vs-number comparison IS the interpretation. Sunday CI composite lifts 8.4 → ~9.0. Beats Lasting on cadence + mutual mechanic. |
 | Love Language quiz | Paired (built-in), 5lovelanguages.com | On par (commodity) | Everyone has this. Not a differentiator. |
 | Calendar | Cupla | Much worse | Cupla syncs Google/Outlook/Apple calendars two-way, has date planner, partner priorities. Love Desire's Calendar is standalone with hand-entered dates. Users have real calendars; they won't switch. |
 
@@ -114,18 +114,13 @@ Every Love Desire feature vs. best-in-class competitor for that feature.
 
 **Expected composite bump:** 5.2 → 6.4.
 
-### 2. Pulse (5.6) — clinical feel + zero benchmark
+### 2. Pulse — MERGED INTO SUNDAY CHECK-IN (Aug 2026) ✅
 
-**Root cause:** 10 sliders → average score → mini chart. No "your score means X" interpretation, no comparison to other couples, no coaching action. It's a data-collection form pretending to be a check-in.
+**Original problem:** on-demand cadence in an app where every other reflection surface has natural rhythm, individual not shared (no mutual reveal moment), raw numbers with no interpretation, duplicated Sunday Check-in's emotional territory in numbers.
 
-**Redesign:**
-- Reduce to 5 questions (fun, communication, closeness, sex, teamwork)
-- After submission, show a plain-language interpretation ("Your closeness is stronger than 6 weeks ago, but Communication dropped — want to try Sunday Check-in?")
-- Include one specific action prompt per completion (route to related feature: low fun → Roulette, low closeness → Sensate)
-- Cadence hint: nudge every 4 weeks, not on-demand only
+**Resolution (7a7748b + follow-up cleanup):** the 5-dimension pulse (fun / communication / closeness / sex / teamwork) now runs as a quick pre-step BEFORE the existing 5 Gottman text questions inside Sunday Check-in. Both sets land on the same per-user `entries/{uid}` doc (zero rules changes — existing owner-only write + gated read pattern covers it). Reveal card prepends a per-dimension `You N · Ola M · ✓/↕` comparison block above the text answers. Standalone `/pulse` route redirects. Home Pulse 28-day nudge deleted; closeness-dip nudge migrated to read from stateUnion.
 
-**Effort:** 2-3h (form redesign + interpretation logic + routing).
-**Expected composite bump:** 5.6 → 7.0.
+**Outcome:** every original weakness resolved in one merge — natural weekly cadence, mutual reveal built in, number-vs-number comparison IS the interpretation. Sunday Check-in composite lifts 8.4 → ~9.0 (flagship stronger). One less standalone screen, one less Home nudge, one less Profile row.
 
 ### 3. Versus — MERGED INTO DAILY (Aug 2026) ✅
 
@@ -256,7 +251,7 @@ Reordered from the reviewer's ROI ranking (below) under "quality + shareability 
 | **3** | **Async Dares** (D3) MVP | Partner-set text challenges with optional deadline + optional photo proof on completion. Accept / decline / mark-complete / withdraw flow. Discover tab card + Home nudges. Streaks, celebration animation, Together List integration deferred to v2. | 3-4h (MVP of 6-8h scope) | ✅ **Shipped** |
 | **4** | **Versus** fix | Streaks + persistent records + "talk about it" prompt + better empty state. Starter pool deferred to v2. → **Superseded Aug 2026 by full merge into Daily** (fe97f75 + cleanup). | 2h + 5-6h merge | ✅ **Shipped** — mechanic now inline in Daily's binary-Q reveal, standalone screen deleted. |
 | **5** | **Journal** redesign | Rotating prompts (25) via deterministic per-couple weekly seed + Sunday-only retro card (my/partner count + moods + partner mood-log) + 🔥 streak-lite pill (≥3 days, client-derived). No new writes, no schema changes. | 3-4h | ✅ **Shipped** (see commit hash on land) |
-| **6** | **Pulse** redesign | 10→5 questions, trend comparison ("stronger/softer than 4 weeks ago"), routes to related features per softest dimension. Cadence hint in intro copy. | 2h | ✅ **Shipped** |
+| **6** | **Pulse** redesign | 10→5 questions, trend comparison ("stronger/softer than 4 weeks ago"), routes to related features per softest dimension. Cadence hint in intro copy. → **Superseded Aug 2026 by full merge into Sunday Check-in** (7a7748b + cleanup). | 2h + 5-6h merge | ✅ **Shipped** — mechanic now inline in Sunday CI's compose + reveal, standalone screen deleted. |
 | 7 | **Intimacy Log** narrative | Auto-generated 1st-of-month "story" summary. Ties to Sensate + Daily via one-tap logging prompts. | 4-6h | Pending |
 | **8** | **Love Language** weekly nudge | Standalone `/love-language-nudge` screen linked from Us tab Discover. Sunday 09:00 local notification (weekly). 100 curated actions (20 per language × 5). Deterministic pick (weekAnchor + coupleId) so both partners see same trio. | 2-3h | ✅ **Shipped** (bf46a21 + a29dbd2) |
 | **9** | **Calendar** reposition | Full "Special Days ledger" rewrite (killed month grid, grouped by time bucket) + Countdowns feature merged in (shared same data). | 30 min → 90 min actual | ✅ **Shipped** (fa7c365 + 361ee9a) |
@@ -284,7 +279,7 @@ Ordered by best expected lift per hour invested (for POST_LAUNCH.md prioritizati
 | 2 | Journal prompts + weekly retro | 3-4h | Turns dead feature into weekly habit |
 | 3 | Voice Notes (D2 differentiator) | 4-6h | Emotional payoff + shareability |
 | 4 | Reposition Calendar → ledger | 30 min | Removes weakest feature's drag |
-| 5 | Pulse redesign — interpretation + action | 2-3h | Turns clinical form into relationship coach mini |
+| ~~5~~ | ~~Pulse redesign — interpretation + action~~ | — | Merged Aug 2026 (see #6 above) |
 | 6 | Emotional Weather (D1) | 8-12h | Viral moment + strong differentiator |
 | 7 | Async Dares (D3) | 6-8h | Fills gap in game roster with unique mechanic |
 | 8 | Grow content pools (already tracked in POST_LAUNCH.md) | 20h | Retention-critical but longer horizon |
@@ -298,7 +293,7 @@ Ordered by best expected lift per hour invested (for POST_LAUNCH.md prioritizati
 **Explicitly rated (not skipped):**
 - All games in Discover tab: Daily (with inline Versus mechanic on binary Qs), Truth or Dare, Would You Rather, Activity Cards, Fantasy Wishes, 30-Day Challenge, Roulette
 - All 9 rituals in Us tab: Sunday Check-in, Moments, Love Notes, Journal, Intimacy Log, Blueprint, Sensate, Our Story, Love Language quiz
-- All 9 standalones: Together List, Tease, Sparks, Mood, Pulse, Calendar, Countdown, Flirt Reminders, Year in Review
+- All 8 standalones: Together List, Tease, Sparks, Mood, Calendar, Countdown, Flirt Reminders, Year in Review (Pulse merged into Sunday CI Aug 2026)
 - Home tab surfacing: strong across the board — nudge system + insight-for-you card + memory-of-the-day + LDR partner clock. Not rated as a single feature since they compose the others.
 
 **Explicitly NOT rated (out of entertainment scope):**

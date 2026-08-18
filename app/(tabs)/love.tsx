@@ -12,7 +12,7 @@ import { useTrackScreen } from '../../hooks/useTrackScreen';
 // Rituals — the recurring rhythm of shared attention. Daily/weekly cadence,
 // mutual reveal, mostly free tier. This is the emotional pull of the app.
 const RITUALS = [
-  { emoji: '🌅', title: 'Sunday Check-in',   subtitle: '5-question weekly ritual, answer privately, reveal together', route: '/state-union', bg: '#FFF0F3', paid: false },
+  { emoji: '🌅', title: 'Sunday Check-in',   subtitle: 'Quick pulse + 5 questions, private then reveal together',    route: '/state-union', bg: '#FFF0F3', paid: false },
   { emoji: '📸', title: 'Moments',           subtitle: 'Daily photo ritual · capture today together',                 route: '/moments',   bg: '#FFF9C4', paid: false },
   { emoji: '💌', title: 'Love Notes',        subtitle: 'Timed secret messages that unlock at the right moment',      route: '/notes',     bg: '#FCE4EC', paid: false },
   // Journal removed August 2026 — shared-journaling has notoriously low
