@@ -57,11 +57,16 @@ export default function RootLayout() {
   const pathname = usePathname();
   const [showConsent, setShowConsent] = useState(false);
 
+  // Hide the native splash only once BOTH fonts have loaded AND auth
+  // has resolved. Previously this fired on fonts-only, which briefly
+  // rendered the tab bar (Home route matches `/`) before router.replace
+  // could bounce unauth users to /login — visible as a menu flicker.
+  // Waiting for `!loading` closes that window.
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && !loading) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, loading]);
 
   // Expo Router strips group directories like "(auth)" from usePathname output,
   // so /(auth)/pairing appears as /pairing at runtime. Use suffix matching to
@@ -292,6 +297,19 @@ export default function RootLayout() {
   };
 
   if (!fontsLoaded && !fontError) return null;
+
+  // Auth-loading gate. Native: splash still visible (hideAsync deferred
+  // above), so this View is masked. Web: no native splash mechanism, so
+  // this cream + spinner covers the transient window during which
+  // Firebase auth resolves. Prevents the pre-redirect Home-tab flash
+  // reported during Round 5B verification.
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={Colors.burgundy} size="large" />
+      </View>
+    );
+  }
 
   if (showConsent) {
     return (
