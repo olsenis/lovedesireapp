@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -57,10 +57,17 @@ export default function RootLayout() {
   const pathname = usePathname();
   const [showConsent, setShowConsent] = useState(false);
   // Flips true after the initial routing effect has decided whether to
-  // redirect (or not). Gates Stack render so Home tab bar doesn't flash
-  // for the tick between auth-resolved and router.replace landing. See
-  // menu flicker v2.
+  // redirect (or not). Menu flicker v2: gates the fade-out of the
+  // splash overlay so Home tab bar doesn't flash during the tick
+  // between auth-resolved and router.replace landing.
   const [routingChecked, setRoutingChecked] = useState(false);
+  // Menu flicker v3 — splash overlay renders on top of Stack (mounted
+  // from the start so the real page is ready underneath by the time
+  // we fade). splashFade goes 1→0 over ~500ms once fonts + auth +
+  // routing are all ready. splashMounted flips false after the fade
+  // completes so the overlay unmounts entirely.
+  const splashFade = useRef(new Animated.Value(1)).current;
+  const [splashMounted, setSplashMounted] = useState(true);
 
   // Hide the native splash only once BOTH fonts have loaded AND auth
   // has resolved. Previously this fired on fonts-only, which briefly
@@ -238,6 +245,22 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
+  // Menu flicker v3 — fade the splash overlay when all three gates are
+  // clear: fonts loaded, auth resolved, routing settled. Stack has been
+  // rendering underneath the opaque overlay the whole time, so by the
+  // time the fade starts, the correct page is already mounted. During
+  // the fade the user sees the real page bleed through smoothly.
+  useEffect(() => {
+    const fontsReady = fontsLoaded || fontError;
+    if (fontsReady && !loading && routingChecked && splashMounted) {
+      Animated.timing(splashFade, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => setSplashMounted(false));
+    }
+  }, [fontsLoaded, fontError, loading, routingChecked, splashMounted, splashFade]);
+
   // H22 pairing accept modal state — separate from render so tapping
   // Accept or Decline can show an in-flight indicator on the button
   // and prevent double-taps.
@@ -303,21 +326,6 @@ export default function RootLayout() {
   };
 
   if (!fontsLoaded && !fontError) return null;
-
-  // Auth-loading + routing-settled gate. Native: splash still visible
-  // (hideAsync deferred above), so this View is masked. Web: no native
-  // splash mechanism, so this cream + spinner covers the transient
-  // window during which Firebase auth resolves AND the routing effect
-  // decides whether to redirect. Prevents the pre-redirect Home-tab
-  // flash reported during Round 5B verification. `routingChecked` flips
-  // true only after the routing effect has committed its first pass.
-  if (loading || !routingChecked) {
-    return (
-      <View style={{ flex: 1, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.burgundy} size="large" />
-      </View>
-    );
-  }
 
   if (showConsent) {
     return (
@@ -406,6 +414,32 @@ export default function RootLayout() {
           </View>
         </View>
       </Modal>
+
+      {/* Menu flicker v3 — full-screen splash overlay. Renders on top
+          of Stack + all modals from the very first paint (opacity 1 =
+          opaque cream + wordmark), masking any transient route swap
+          happening underneath. Fades to 0 over 500ms once fonts + auth
+          + routing are all ready; unmounts entirely once faded so it
+          doesn't intercept touches after. */}
+      {splashMounted && (
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: Colors.cream,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: splashFade,
+          }}
+        >
+          <Image
+            source={require('../assets/splash-icon.png')}
+            style={{ width: 220, height: 220 }}
+            resizeMode="contain"
+          />
+        </Animated.View>
+      )}
     </GestureHandlerRootView>
   );
 }
