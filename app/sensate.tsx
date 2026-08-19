@@ -228,42 +228,43 @@ export default function SensateScreen() {
     });
   }, [coupleId]);
 
-  // H26 — re-entry hydration. When user enters (or re-enters) a stage,
-  // check whether that stage was already completed in the current
-  // cycle. If yes, jump straight to the post-completion state (takeaway
-  // + reflection card) so the user's Firestore-persisted reflection is
-  // discoverable and the mutual-reveal flow can resume.
-  // Runs on any `activeStage` change AND on `currentCycleStages` change
-  // so the state stays correct if a cycle completes mid-view (rare but
-  // possible with rapid dual-device use).
+  // H26 — re-entry hydration. Fires ONCE per stage-entry (activeStage.id
+  // change), NOT on every Firestore subscription tick. Reads the current
+  // progress via closure to decide whether this stage is already done
+  // in the current cycle; if yes, jumps to post-completion state so the
+  // user can see + resume the reflection they saved earlier.
+  //
+  // Deps deliberately exclude `progress.currentCycleStages` — that object
+  // gets a new reference on every subscription snapshot, which would
+  // re-fire this effect (and wipe reflectionText mid-typing / disturb
+  // the reflection card render race with partner's write). We only need
+  // to hydrate once when the stage opens.
   useEffect(() => {
     if (!activeStage || !progressLoaded) return;
     const stageKey = `stage${activeStage.id}` as 'stage1' | 'stage2' | 'stage3' | 'stage4';
     const alreadyDoneThisCycle = progress?.currentCycleStages?.[stageKey] === true;
     if (alreadyDoneThisCycle && !isMini) {
       setMarked(true);
-      // Accumulated to totalSeconds so the timer reads 0:00 if the user
-      // peeks — avoids the "hey, my timer is at zero and I haven't
-      // started" moment of confusion.
+      // Timer displays 0:00 if user peeks — avoids the "why is my timer
+      // at zero without me starting" moment.
       setAccumulatedMs((activeStage.durationMinutes ?? 0) * 60 * 1000);
       setRunStartMs(null);
-      setReflectionText('');
-      setReflectionSaved(false);
-      setReflectionSkipped(false);
+      // Also refresh sessionCycleNumber here — startStage's setter races
+      // with this effect's render on some paths (e.g. cycle rollover mid
+      // session between partners). This defensively locks us to the
+      // current cycle before B tries to save under a mismatched key.
+      setSessionCycleNumber((progress?.cyclesCompleted ?? 0) + 1);
       setWasReEntry(true);
+      // Do NOT reset reflectionText / reflectionSaved / reflectionSkipped
+      // here — startStage already reset them on entry. Resetting them
+      // again on every Firestore tick would wipe user's typing.
     } else {
-      // Fresh entry — reset everything so previous stage's session state
-      // doesn't leak across stage switches.
-      setMarked(false);
-      setAccumulatedMs(0);
-      setRunStartMs(null);
-      setReflectionText('');
-      setReflectionSaved(false);
-      setReflectionSkipped(false);
+      // Fresh entry — startStage already reset session state; we only
+      // need to flip the re-entry marker off.
       setWasReEntry(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStage, progressLoaded, progress?.currentCycleStages, isMini]);
+  }, [activeStage?.id, progressLoaded, isMini]);
 
   // H26 — auto-scroll to takeaway when `marked` flips true. Fires on
   // both Mark complete (linear flow) and re-entry hydration (jumping
@@ -279,6 +280,24 @@ export default function SensateScreen() {
     }
     prevMarkedRef.current = marked;
   }, [marked]);
+
+  // H26 delta — auto-scroll to reflection card when user's own save
+  // lands (reflectionSaved flips true). Keeps the "Waiting for partner"
+  // or (once both save) the reveal in view. Same 200ms lay-out delay
+  // and same ref target as the marked→true scroll above; those blocks
+  // sit together in the DOM so scrolling to the takeaway also brings
+  // the reflection card into view.
+  const prevReflectionSavedRef = useRef(false);
+  useEffect(() => {
+    if (reflectionSaved && !prevReflectionSavedRef.current) {
+      setTimeout(() => {
+        if (takeawayYRef.current > 0) {
+          scrollRef.current?.scrollTo({ y: takeawayYRef.current, animated: true });
+        }
+      }, 200);
+    }
+    prevReflectionSavedRef.current = reflectionSaved;
+  }, [reflectionSaved]);
 
   // Deterministic seeded shuffle so both partners see the same prompt order
   // for a given cycle+stage but each new cycle rotates. Merges the baseline
