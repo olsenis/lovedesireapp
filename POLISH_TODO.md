@@ -66,6 +66,19 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H26 Sensate stage re-entry + auto-scroll — ✅ shipping now
+**Files:** `app/sensate.tsx` (single file)
+**Change:**
+- **Re-entry hydration:** on entering a stage, if `progress.currentCycleStages.stage{N}` is true for the current cycle, seed local `marked = true` (skips timer, jumps straight to takeaway + reflection card). `accumulatedMs` set to full stage duration so the timer displays 0:00 instead of a confusing untouched state. Reflection card branches (`bothReflected` / `mine && !theirs` / input) all work unchanged — just needed a `marked === true` entry point.
+- **Auto-scroll on Mark complete:** ScrollView ref + Y-position ref on takeaway banner + effect on `marked → true` that scrolls the view to the takeaway. Fires on BOTH first completion (linear flow) and re-entry hydration (jump-into-completion state). ~200ms delay so layout settles before the scroll fires.
+- **"Do this stage again" button:** subtle text link below reflection card, gated on `wasReEntry === true`. Resets local state to pre-timer so user can practice again in same cycle. Firestore stage completion + reflection stay intact. Not shown on first completion — keeps the linear ritual arc clean.
+- **Zero schema/service/rules changes.** Reads existing `progress.currentCycleStages` (already tracked by `completeStage` transaction). No new writes.
+**Why:** During Round 5A H25 verification, user found two adjacent UX gaps on Presence: (1) after Mark complete only "✓ Session saved" was visible on-screen; the takeaway + reflection card fell below the fold so user's read was "I see Saved, what do I do?" (2) re-entering a completed-this-cycle stage showed only pre-timer state, no hint the stage was done, no way to see the reflection they saved. Both are discoverability failures, not correctness bugs — persisted data was intact, but the post-completion arc wasn't reachable. H26 makes the arc visible on first go (auto-scroll) and resumable on re-entry (hydration).
+**Deferred:**
+- Reflection history view (see reflections from prior cycles) — post-launch if requested. Not building without demand.
+- Auto-scroll on Skip — Skip is a fast dismissal path, no scroll needed.
+- Persistent "you completed X of 4 stages this cycle" header inside the active-stage view — cycle progress already visible on the stage list.
+
 ### H25 Intimacy Log reframe + cross-flow toast prompts (H7 Phase 2) — ✅ shipping now
 **Files:** NEW `components/Toast.tsx`, `app/(tabs)/love.tsx`, `app/profile.tsx`, `app/intimacy-tracker.tsx`, `app/sensate.tsx`, `app/fantasy-wishes.tsx`, `app/daily.tsx`, `app/bingo.tsx`
 **Change:**

@@ -178,6 +178,18 @@ export default function SensateScreen() {
   // (on already-loaded state) keys them under the real cycle number →
   // bothReflected never returns true → mutual reveal never fires.
   const [progressLoaded, setProgressLoaded] = useState(false);
+  // H26 refs — auto-scroll to takeaway after Mark complete + re-entry
+  // hydration so returning to an already-completed stage lands on the
+  // reflection card, not pre-timer. See usage in the marked→true effect
+  // and the stage-entry effect further below.
+  const scrollRef = useRef<ScrollView>(null);
+  const takeawayYRef = useRef<number>(0);
+  const prevMarkedRef = useRef(false);
+  // True when local `marked` was hydrated from Firestore on stage entry
+  // (i.e. user is revisiting an already-completed-this-cycle stage).
+  // Gates the "Do this stage again" affordance so it only shows in the
+  // re-entry state, not on first completion.
+  const [wasReEntry, setWasReEntry] = useState(false);
   // Cycle completion modal state — fires when a completeStage call fills
   // the final missing stage in the current cycle. Local-only state (no
   // need to sync across partners; each partner sees it locally when
@@ -215,6 +227,58 @@ export default function SensateScreen() {
       setProgressLoaded(true);
     });
   }, [coupleId]);
+
+  // H26 — re-entry hydration. When user enters (or re-enters) a stage,
+  // check whether that stage was already completed in the current
+  // cycle. If yes, jump straight to the post-completion state (takeaway
+  // + reflection card) so the user's Firestore-persisted reflection is
+  // discoverable and the mutual-reveal flow can resume.
+  // Runs on any `activeStage` change AND on `currentCycleStages` change
+  // so the state stays correct if a cycle completes mid-view (rare but
+  // possible with rapid dual-device use).
+  useEffect(() => {
+    if (!activeStage || !progressLoaded) return;
+    const stageKey = `stage${activeStage.id}` as 'stage1' | 'stage2' | 'stage3' | 'stage4';
+    const alreadyDoneThisCycle = progress?.currentCycleStages?.[stageKey] === true;
+    if (alreadyDoneThisCycle && !isMini) {
+      setMarked(true);
+      // Accumulated to totalSeconds so the timer reads 0:00 if the user
+      // peeks — avoids the "hey, my timer is at zero and I haven't
+      // started" moment of confusion.
+      setAccumulatedMs((activeStage.durationMinutes ?? 0) * 60 * 1000);
+      setRunStartMs(null);
+      setReflectionText('');
+      setReflectionSaved(false);
+      setReflectionSkipped(false);
+      setWasReEntry(true);
+    } else {
+      // Fresh entry — reset everything so previous stage's session state
+      // doesn't leak across stage switches.
+      setMarked(false);
+      setAccumulatedMs(0);
+      setRunStartMs(null);
+      setReflectionText('');
+      setReflectionSaved(false);
+      setReflectionSkipped(false);
+      setWasReEntry(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStage, progressLoaded, progress?.currentCycleStages, isMini]);
+
+  // H26 — auto-scroll to takeaway when `marked` flips true. Fires on
+  // both Mark complete (linear flow) and re-entry hydration (jumping
+  // straight into the post-completion state). Slight delay lets the
+  // takeaway + reflection blocks lay out before we read Y position.
+  useEffect(() => {
+    if (marked && !prevMarkedRef.current) {
+      setTimeout(() => {
+        if (takeawayYRef.current > 0) {
+          scrollRef.current?.scrollTo({ y: takeawayYRef.current, animated: true });
+        }
+      }, 200);
+    }
+    prevMarkedRef.current = marked;
+  }, [marked]);
 
   // Deterministic seeded shuffle so both partners see the same prompt order
   // for a given cycle+stage but each new cycle rotates. Merges the baseline
@@ -577,7 +641,7 @@ export default function SensateScreen() {
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.sessionContent}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.sessionContent}>
         <Text style={[styles.sessionSub, { color: activeStage.textColor, opacity: 0.7 }]}>{activeStage.subtitle}</Text>
 
         {/* Timer ring */}
@@ -657,9 +721,13 @@ export default function SensateScreen() {
             invitation to talk, shown after Mark complete but before the
             reflection input. Sets the emotional register for the reflection
             that follows. Mini sessions skip this (they're a lightweight
-            on-ramp, no debrief needed). */}
+            on-ramp, no debrief needed). onLayout captures Y so H26
+            auto-scroll can jump here when marked flips true. */}
         {marked && !isMini && activeStage && (
-          <View style={[styles.takeawayBanner, { borderLeftColor: activeStage.textColor }]}>
+          <View
+            style={[styles.takeawayBanner, { borderLeftColor: activeStage.textColor }]}
+            onLayout={(e) => { takeawayYRef.current = e.nativeEvent.layout.y; }}
+          >
             <Text style={styles.takeawayText}>{activeStage.takeaway}</Text>
           </View>
         )}
@@ -744,6 +812,33 @@ export default function SensateScreen() {
             </View>
           );
         })()}
+
+        {/* H26 "Do this stage again" — only in re-entry state (user tapped
+            an already-completed-this-cycle stage). First-completion flow
+            stays linear without this affordance so the ritual reads as
+            one arc; on re-entry we assume the user is deliberately
+            revisiting and might want to practice the stage a second time
+            in the same cycle. Resets local state to pre-timer; Firestore
+            stage completion + reflection remain intact. */}
+        {marked && !isMini && activeStage && wasReEntry && (
+          <TouchableOpacity
+            style={styles.doAgainBtn}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setMarked(false);
+              setAccumulatedMs(0);
+              setRunStartMs(null);
+              setReflectionText('');
+              setReflectionSaved(false);
+              setReflectionSkipped(false);
+              setWasReEntry(false);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Do this stage again"
+          >
+            <Text style={[styles.doAgainText, { color: activeStage.textColor }]}>Do this stage again</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       <HelpModal
@@ -946,4 +1041,19 @@ const styles = StyleSheet.create({
   reflectionRevealWord: { fontFamily: Fonts.heading, fontSize: 22 },
   reflectionRevealWho: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 4, textAlign: 'center' },
   reflectionRevealDot: { fontFamily: Fonts.heading, fontSize: 28 },
+
+  // H26 Do-again — subtle text link below the reflection card. Colored
+  // with stage.textColor so it feels like part of the stage, not a
+  // primary action. Center-aligned with padding for a comfortable tap
+  // target without pulling visual weight.
+  doAgainBtn: {
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  doAgainText: {
+    fontFamily: Fonts.bodyItalic,
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
 });
