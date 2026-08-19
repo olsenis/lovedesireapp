@@ -106,19 +106,13 @@ export default function FantasyWishesScreen() {
         // Clear the match highlight after the animation window so the
         // Matches list card returns to its normal appearance.
         setTimeout(() => setNewMatchId(null), 2200);
-        // H7 Phase 2 cross-flow: if Intimacy Log is enabled for this
-        // user, offer a hand-off to log the moment ~4s after the match
-        // toast fades. Kept as a second toast (not a replacement) so
-        // the celebration reads first, the log ask comes as a soft
-        // secondary prompt only if opted in.
-        if (profile?.features?.intimacyLog) {
-          setTimeout(() => {
-            showToast('Did you try this? Log the moment', {
-              onTap: () => router.push('/intimacy-tracker?prefill=fantasy' as any),
-              duration: 4000,
-            });
-          }, 3600);
-        }
+        // H26 delta 2 (Aug 2026): removed the "Did you try this? Log the
+        // moment" cross-flow toast that fired ~3.6s after the match.
+        // FW matches are aspirational ("someday we'd like to try this"),
+        // not action moments — the log prompt was misreading the moment.
+        // The +Add to Together List button on match cards is the correct
+        // hand-off for planning; if the couple later acts on the wish,
+        // they open Intimacy Log manually.
       }
     }
     prevMatchIdsRef.current = currentMatchIds;
@@ -320,9 +314,11 @@ export default function FantasyWishesScreen() {
       </View>
 
       {/* Shared toast (components/Toast.tsx) — fires on new match
-          (emphasis + onTap→Matches tab), on +Add / partner add (default,
-          passive), and on H7 cross-flow log prompt (default + onTap
-          →/intimacy-tracker?prefill=fantasy). */}
+          (emphasis + onTap→Matches tab) and on +Add / partner add
+          (default, passive). H26 delta 2 (Aug 2026) removed the FW
+          cross-flow log prompt; FW matches are aspirational, not
+          immediate. Together List hand-off via +Add button on match
+          cards remains. */}
       {toast}
 
       <View style={styles.tabRow}>

@@ -76,9 +76,13 @@ const PREFILL_PRESETS: Record<string, PrefillPreset> = {
   'sensate':     { initiatedBy: 'both', types: ['foreplay_only'], mood: 'amazing' },
   // Daily Spicy Picks mutual-yes — playful mood, types left blank because
   // "we both want to try this" is intent, not necessarily what happened.
+  // The picked action text arrives via a separate `note` query param so
+  // the composer opens with the specific pick visible in the Note field.
   'daily-spicy': { initiatedBy: 'both', types: [],                mood: 'good'    },
-  // Fantasy Wishes match — connected mood, types blank for same reason.
-  'fantasy':     { initiatedBy: 'both', types: [],                mood: 'amazing' },
+  // 'fantasy' preset removed Aug 2026 (H26 delta 2) — the FW cross-flow
+  // toast was misreading FW matches (aspirational, not immediate) and
+  // was removed. +Add to Together List button on match cards is the
+  // correct hand-off. No reachable route hits this preset anymore.
 };
 
 function fmtDate(ts: number): string {
@@ -116,14 +120,19 @@ export default function IntimacyTrackerScreen() {
   // Deep-link support:
   //   ?tab=stats           opens straight into the Stats tab (used by Home's
   //                        Monthly Narrative nudge)
-  //   ?prefill=sensate|daily-spicy|fantasy
+  //   ?prefill=sensate|daily-spicy
   //                        auto-opens the composer with context-appropriate
-  //                        defaults. Used by H7 Phase 2 cross-flow toasts
-  //                        (Sensate cycle complete, Daily Spicy match, FW
-  //                        match) so the user reviews & saves in one flow.
+  //                        defaults. Used by H7 Phase 2 cross-flow toasts.
   //                        Unknown prefill values fall through — the tab
   //                        opens normally and no composer fires.
-  const params = useLocalSearchParams<{ tab?: string; prefill?: string }>();
+  //   ?note=<text>         optional companion to prefill — passes an
+  //                        instance-specific note (e.g. the Daily Spicy
+  //                        pick text) into the composer's Note field so
+  //                        the user knows which moment they're logging.
+  //                        Clamped to 200 chars (Note field max). Only
+  //                        applied when prefill is also present.
+  const params = useLocalSearchParams<{ tab?: string; prefill?: string; note?: string }>();
+  const noteParam = typeof params.note === 'string' ? params.note.slice(0, 200) : '';
   const [tab, setTab] = useState<'log' | 'stats'>(params.tab === 'stats' ? 'stats' : 'log');
   const [showSheet, setShowSheet] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<IntimacyEntry | null>(null);
@@ -335,6 +344,7 @@ export default function IntimacyTrackerScreen() {
         onClose={() => setShowSheet(false)}
         partnerName={partnerName}
         prefill={prefillPreset}
+        initialNote={prefillPreset ? noteParam : ''}
         onSave={async (data, when) => {
           if (!coupleId) throw new Error('No coupleId');
           // Clamp to now-or-earlier — future dates would be weird and
@@ -532,7 +542,7 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
 
 // ── Detail sheet ──────────────────────────────────────────────────────────────
 function DetailSheet({
-  visible, onClose, onSave, partnerName, prefill,
+  visible, onClose, onSave, partnerName, prefill, initialNote,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -543,6 +553,11 @@ function DetailSheet({
   // can override any field before Save. `location` is still required
   // manually — too context-dependent to guess.
   prefill?: PrefillPreset | null;
+  // Optional per-instance note text (H26 delta 2). Used by the Daily
+  // Spicy match hand-off to surface the picked action text in the Note
+  // field so user knows which moment they're logging. User can edit or
+  // clear before Save.
+  initialNote?: string;
 }) {
   const [initiatedBy, setInitiatedBy] = useState<'me' | 'partner' | 'both' | null>(null);
   const [location, setLocation] = useState<IntimacyLocation | null>(null);
@@ -569,9 +584,10 @@ function DetailSheet({
       setInitiatedBy(prefill.initiatedBy);
       setTypes(prefill.types);
       setMood(prefill.mood);
+      if (initialNote) setNote(initialNote);
     }
     prevVisibleRef.current = visible;
-  }, [visible, prefill]);
+  }, [visible, prefill, initialNote]);
   const [rating, setRating] = useState<number>(0);
   const [myOrgasm, setMyOrgasm] = useState<'yes' | 'no' | null>(null);
   const [myOrgasmCount, setMyOrgasmCount] = useState(1);

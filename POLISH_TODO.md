@@ -66,6 +66,18 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H26 delta 2 · Remove FW cross-flow toast + prefill Note for Daily Spicy — ✅ shipping now
+**Files:** `app/fantasy-wishes.tsx`, `app/intimacy-tracker.tsx`, `app/daily.tsx`
+**Change:**
+- **Remove FW cross-flow toast:** the second toast ("Did you try this? Log the moment") that fired ~3.6s after a FW mutual match is deleted. Celebratory "It's a Match! ✨" toast unchanged. `fantasy` preset removed from `PREFILL_PRESETS` (dead route after toast removal).
+- **Daily Spicy Note prefill:** the picked action text now passes to the composer via `?prefill=daily-spicy&note={encodedPickText}`. Composer opens with the pick visible in the Note field so user knows which moment they're logging.
+- **DetailSheet extension:** added optional `initialNote` prop, seeded into `note` state on visibility open (same effect pattern as initiatedBy/types/mood seeding).
+- **Screen extension:** `useLocalSearchParams` reads `note` param, clamped to 200 chars (Note field max), threaded into DetailSheet only when `prefill` is present.
+**Why:** During 5C verification user surfaced two adjacent issues. (1) FW matches are aspirational ("someday we'd like to try this"), not action moments — the "Did you try this?" prompt ~4s after a match reads the moment wrong. The +Add to Together List button on match cards is the correct hand-off for planning; manual Intimacy Log entry stays the correct path if user later acts on the wish. (2) The Daily Spicy toast opened the composer with generic defaults — no reference to which pick was matched, so user couldn't remember what they were logging. Passing the pick text as a Note prefill fixes it in-context.
+**Deferred:**
+- Note prefill for Sensate — cycle context is self-explanatory (user just saw the cycle-completion overlay), no per-instance context needed.
+- Retrospective Together List cross-flow from FW matches — the manual +Add button covers this today. Automating would need a "was this the plan we made?" prompt that adds complexity for uncertain benefit.
+
 ### H26 Sensate stage re-entry + auto-scroll — ✅ shipping now
 **Files:** `app/sensate.tsx` (single file)
 **Change:**

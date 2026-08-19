@@ -159,9 +159,16 @@ export default function DailyScreen() {
     const freshGis = [...currentSpicyMatchGis].filter((gi) => !prevSpicyMatchGisRef.current!.has(gi));
     prevSpicyMatchGisRef.current = currentSpicyMatchGis;
     if (freshGis.length > 0 && profile?.features?.intimacyLog) {
+      // Pick text prefills the composer's Note field so user knows
+      // which action they're logging. Uses freshGis[0] deterministically
+      // — if multiple matches land in the same subscription tick, we
+      // surface the lowest gi (matches Firestore's iteration order).
+      const pickText = wishDoc.items[freshGis[0]]?.text ?? '';
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast('You both want this. Log it if you tried it', {
-        onTap: () => router.push('/intimacy-tracker?prefill=daily-spicy' as any),
+        onTap: () => router.push(
+          `/intimacy-tracker?prefill=daily-spicy&note=${encodeURIComponent(pickText)}` as any
+        ),
         duration: 4000,
       });
     }
