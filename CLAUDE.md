@@ -121,7 +121,7 @@ app/                         Full-screen sub-screens
   profile.tsx                Profile & Settings — name, photo, password, notifications, relationship date
   sensate.tsx                Guided Sensate Focus — 3-stage guided sessions with timer, cycle tracking (couples/{coupleId}/sensate/progress adds cyclesCompleted + currentCycleStages Aug 2026), full-cycle completion moment, Home nudge after 14+ days of inactivity if cyclesCompleted ≥ 1
   notes.tsx                  Love Notes — timed secret messages
-  memories.tsx               Memory Wall — shared photo album (Firebase Storage)
+  (memories.tsx removed — renamed / superseded by Moments daily-photo ritual in commit c649e3f; memoryService kept as legacy read for Home "memory of the day" card only)
   calendar.tsx               Special Days ledger — chronological list of anniversaries, birthdays, first times, grouped by Coming up / Next 3 months / Later this year. Rewritten from month-grid Aug 2026 to a pure ledger. Includes auto-inline Valentine's, partner birthday, couple anniversary from startDate. Secret dates render as "A surprise from {partnerName}" until the day arrives.
   (countdown.tsx removed Aug 2026 — merged into Special Days ledger since both used the same importantDateService data; secret-date toggle ported over)
   reminders.tsx              Flirt Reminders — local scheduled notifications

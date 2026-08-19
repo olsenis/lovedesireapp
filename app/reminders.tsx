@@ -8,6 +8,7 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { BrandDatePicker } from '../components/BrandDatePicker';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 
 export default function RemindersScreen() {
@@ -16,9 +17,14 @@ export default function RemindersScreen() {
   const [reminders, setReminders] = useState<FlirtReminder[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [message, setMessage] = useState('');
-  const [time, setTime] = useState('09:00');
+  // Time as a Date whose HH:MM the picker collects (date part ignored on
+  // save). Default 09:00 today.
+  const [time, setTime] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(9, 0, 0, 0);
+    return d;
+  });
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [timeError, setTimeError] = useState('');
   const help = useHelp('reminders');
 
   const coupleId = profile?.coupleId;
@@ -30,12 +36,8 @@ export default function RemindersScreen() {
 
   const handleSave = async () => {
     if (!message.trim() || !coupleId || !user) return;
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
-      setTimeError('Enter a valid time (HH:MM, e.g. 09:00)');
-      return;
-    }
-    setTimeError('');
-    const saved = await addReminder(coupleId, { message: message.trim(), time, days, active: true, createdBy: user.uid });
+    const hhmm = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+    const saved = await addReminder(coupleId, { message: message.trim(), time: hhmm, days, active: true, createdBy: user.uid });
     scheduleReminderNotifications(saved);
     setMessage(''); setShowCreate(false);
   };
@@ -126,14 +128,13 @@ export default function RemindersScreen() {
             />
 
             <Text style={styles.modalLabel}>Time</Text>
-            <TextInput
-              style={[styles.input, { textAlign: 'center', fontFamily: Fonts.heading, fontSize: 24 }]}
+            <BrandDatePicker
+              mode="time"
               value={time}
-              onChangeText={(t) => { setTime(t); setTimeError(''); }}
-              placeholder="09:00"
-              placeholderTextColor={Colors.muted}
+              onChange={setTime}
+              placeholder="Pick a time"
             />
-            {timeError ? <Text style={styles.inputError}>{timeError}</Text> : null}
+
 
             <Text style={styles.modalLabel}>Days</Text>
             <View style={styles.daysRow}>

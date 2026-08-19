@@ -47,11 +47,18 @@ export default function RouletteScreen() {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [filter, setFilter] = useState<'all' | 'home' | 'out' | 'adventure'>('all');
   const [topRatedOnly, setTopRatedOnly] = useState(false);
-  // LDR couples: default to virtual-only filter (in-person dates aren't actionable when apart)
+  // LDR couples: default to virtual-only filter (in-person dates aren't
+  // actionable when apart; toggle lets them peek at in-person dates for
+  // planning next visit). In-person couples: filter OUT virtual dates —
+  // those are camera/video-call flavored and don't make sense when
+  // partners can meet in person.
   const isLDR = !!couple?.isLongDistance;
   const [showInPerson, setShowInPerson] = useState(false);
-  const virtualOnly = isLDR && !showInPerson;
-  const applyVirtualFilter = (list: DateIdea[]) => virtualOnly ? list.filter(d => d.virtual === true) : list;
+  const applyVirtualFilter = (list: DateIdea[]) => {
+    if (isLDR && !showInPerson) return list.filter(d => d.virtual === true);
+    if (!isLDR) return list.filter(d => !d.virtual);
+    return list;
+  };
   const applyRatingFilter = (list: DateIdea[]) => topRatedOnly ? list.filter(d => (ratings[getKey(d.title)] ?? 0) >= 4) : list;
   const help = useHelp('date-night');
 

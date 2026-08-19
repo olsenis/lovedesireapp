@@ -30,6 +30,101 @@ _(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 
 - [ ] **Read every content-pool text by hand** — the automated sweeps caught structural issues (em dashes, `{partner}` tokens, first-position pronouns, POV substitution) but only a human can catch tone / typos / awkward phrasing / anything that "reads off" in context. Scope: DARES (274) · TRUTHS (310) · QUESTIONS (474) · DAILY_WISH_ITEMS (254) · FANTASY_WISHES_PRESETS (294) · BINGO_ACTIVITIES (55). Approach: read a category at a time, flag any that need rewriting, batch-fix. Estimate ~2-3h across several sessions.
 
+## ⏳ Pending — Bug bash Round 5 (tail sweep)
+
+Systematic walkthrough of features that Rounds 1-4 didn't cover — standalone
+screens, home-nudge remainder, profile, and regression checks for the
+Aug 2026 H23 / H24 / H25 shipments (Versus merge, Pulse merge, Intimacy
+Log reframe). Ordered by freshness of shipped code (freshest = smallest
+context switch to verify).
+
+### 5A · H23/H24/H25 regression checks (freshest — do first)
+
+**H23 Versus merged into Daily** (fe97f75 + 36acbfd, shipped Aug 17)
+- [ ] Binary Q in Daily → answer → guess bottom-sheet appears with partner's option preview
+- [ ] Tap guess → reveal shows correct (🎯 + streak pill) or wrong (🌱 + Ask why → routes to Home spark modal)
+- [ ] "Just show me" skip → normal reveal, no guess row
+- [ ] Open-text and scale Qs → no guess bottom-sheet
+- [ ] Home Daily row shows `you knew {partner} X/Y this week` after guessing
+- [ ] Discover tab has NO Versus card
+- [ ] Direct navigate to `/versus` → no error, either 404 or falls through
+
+**H24 Pulse merged into Sunday Check-in** (7a7748b + 71aa34b, shipped Aug 18)
+- [ ] Sunday Check-in opens with pulse step first (5 dims × 1-5 buttons)
+- [ ] All 5 dims required before Save enables
+- [ ] Save advances to text Q1
+- [ ] Back button from text Q1 goes back to pulse (scores preserved)
+- [ ] Complete both → reveal shows Quick pulse comparison block (You N · {partner} M + ✓ or ↕) above text
+- [ ] Legacy weeks in history: text-only reveal, no pulse block (no crash)
+- [ ] `/pulse` redirects to `/state-union`
+- [ ] Profile → Reminders & tools has NO Relationship Pulse row
+- [ ] Home Pulse 28-day nudge gone; Sunday nudges unaffected
+- [ ] Closeness ≤ 2 in Sunday CI pulse + no intimacy since → 💗 "Closeness dipped" nudge fires
+
+**H25 Intimacy Log reframe + cross-flow toasts** (4ecfec3, shipped Aug 18)
+- [ ] Us tab Intimacy Log card subtitle reads "Your shared story of closeness"
+- [ ] Profile toggle hint reads "A private record of what you build together"
+- [ ] Composer's Note field labeled "One thing memorable about this?" with "A word or a sentence." placeholder
+- [ ] Direct navigate to `/intimacy-tracker?prefill=sensate` opens composer with initiatedBy=both + types=foreplay_only + mood=amazing
+- [ ] Sensate cycle complete (all 4 stages) → toast "Log this cycle in Intimacy?" ~1.4s after cycle overlay. Tap → composer opens prefilled
+- [ ] Sensate mini session complete → NO toast
+- [ ] FW fresh mutual-yes match → "It's a Match! ✨" toast fires, then "Did you try this? Log the moment" ~3.6s later. Tap second → composer opens prefilled
+- [ ] Daily Spicy Pick fresh mutual-yes → toast "You both want this. Log it if you tried it". Tap → composer opens prefilled
+- [ ] Daily Sweet OR Deep mutual-yes → NO toast
+- [ ] Toggle `profile.features.intimacyLog = false` in Profile → NO cross-flow toasts fire anywhere (Sensate cycle, FW match, Daily Spicy)
+- [ ] Bingo Save-for-later toast still works after shared Toast migration (tap → routes to /todo)
+- [ ] FW celebratory match toast still tappable (tap → routes to Matches tab)
+
+### 5B · Home nudges remainder verification
+
+- [ ] Fantasy Wishes match dedupe — partner-ahead FW nudge suppressed when matches nudge fires (both routes to `/fantasy-wishes`, both ✨)
+- [ ] Sunday Love-Language nudge — unshifts on Sundays when partner has loveLanguage set
+- [ ] Insight daily-rotating card — hidden on Sundays when LL nudge fires
+- [ ] Personalized greeting — "Good morning, {firstName}" when profile.name set
+- [ ] Presence 14-day inactivity nudge — fires after 14 days since last sensate stage AND cyclesCompleted ≥ 1
+- [ ] Weekly Daily-guess mini stat — "you knew {partner} X/Y this week" only when total > 0
+- [ ] Migrated closeness-dip nudge — verified in 5A above via Sunday CI pulseScores
+
+### 5C · Fantasy Wishes (Aug 2026 refactor)
+
+Deferred earlier. Verify the one-card-at-a-time deck refactor and the Aug session-pacing.
+
+- [ ] Deck: one card at a time from unvoted set (createdAt order), skipped moves to back
+- [ ] Yes/No auto-advances after Firestore round-trip
+- [ ] Skip does NOT count toward SESSION_BATCH (8)
+- [ ] After 8 Yes/No votes → friendly "Load 8 more / Save for later" prompt (not hard cap)
+- [ ] "Save for later" → parked state with "change my mind" link
+- [ ] Progress bar hides denominator (394 items too overwhelming)
+- [ ] Reset clears skip set + returns to full deck
+- [ ] Preset reload from FANTASY_WISHES_PRESETS still works
+- [ ] Match celebration is subtle (toast + inline highlight), not full-screen modal
+
+### 5D · Standalone screens sweep
+
+Screens that didn't get their own round.
+
+- [ ] **Tonight's Date (Roulette)** — spin, LDR virtual filter, save-to-list
+- [ ] **Special Days (Calendar ledger)** — add, edit, delete, secret dates, auto-Valentine/birthday/anniversary rendering
+- [ ] **Flirt Reminders** — add, edit, delete, day-of-week schedule, local notification test (EAS build required for real push)
+- [x] ~~**Memory Wall**~~ — feature removed (renamed to Moments in c649e3f). Only legacy `memoryService.subscribeMemories` read on Home for memory-of-the-day card. No standalone screen. Skip.
+- [ ] **Mood + Mood History** — daily pick, Kinky/Horny paid gate, history view, timezone edges
+- [ ] **Sparks** — pick emoji + message, send flow, incoming spark card
+
+### 5E · Profile screen
+
+- [ ] Name + photo edit
+- [ ] Password change
+- [ ] Notifications toggle
+- [ ] Relationship date change
+- [ ] Explicit-content toggle (adult moods + Spicy category visibility)
+- [ ] Intimacy Log toggle (already flipped in 5A)
+- [ ] LDR toggle (already tested in Round 3)
+- [ ] Sign out
+- [ ] Delete account (destructive path — dry-run only, don't actually delete QA account)
+- [ ] Legal document links (Privacy Policy, Terms of Service) open correctly
+
+---
+
 ## ⏳ Pending — Bug bash Round 3
 
 - [x] **Copy sweep** across all screens — ✅ shipped `b1bb14a`. Round 3 agent audit found 8 lingering issues + 1 defensive opportunity. All fixed: challenge.tsx error message (leaked "Permission denied, check Firebase rules"), profile.tsx pairing error fallback (leaked reason codes), inactive-partner hint on Home, T-or-D sent-truth banner, Us tab "Speak their language" card, state-union wait hint, 2 sensate guided prompts, T-or-D mode picker sub. Also defensive-wrapped `versus.tsx` question text in personalise(). **Zero em dashes** and **zero unwrapped `{partner}` tokens** confirmed clean across app/ and components/.

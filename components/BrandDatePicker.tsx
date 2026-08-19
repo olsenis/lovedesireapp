@@ -15,8 +15,9 @@ type Props = {
   hideYear?: boolean;
   // 'date' (default) shows date only. 'datetime' also collects a time — iOS
   // uses a combined spinner; Android chains a date picker then a time picker;
-  // web uses <input type="datetime-local">.
-  mode?: 'date' | 'datetime';
+  // web uses <input type="datetime-local">. 'time' shows time only — used by
+  // Flirt Reminders where date doesn't matter, just HH:MM.
+  mode?: 'date' | 'datetime' | 'time';
 };
 
 export function BrandDatePicker({
@@ -35,6 +36,9 @@ export function BrandDatePicker({
   const [androidDate, setAndroidDate] = useState<Date | null>(null);
 
   const format = (d: Date) => {
+    if (mode === 'time') {
+      return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
     if (hideYear) return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long' });
     const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     if (mode === 'datetime') {
@@ -46,22 +50,37 @@ export function BrandDatePicker({
 
   // Web fallback uses native HTML5 input; the community picker is mobile-only
   if (Platform.OS === 'web') {
-    const inputType = mode === 'datetime' ? 'datetime-local' : 'date';
-    const slice = mode === 'datetime' ? 16 : 10;
-    const iso = value ? value.toISOString().slice(0, slice) : '';
-    const max = maximumDate ? maximumDate.toISOString().slice(0, slice) : undefined;
-    const min = minimumDate ? minimumDate.toISOString().slice(0, slice) : undefined;
+    const inputType = mode === 'datetime' ? 'datetime-local' : mode === 'time' ? 'time' : 'date';
+    // <input type="time"> takes HH:MM strings; datetime + date use ISO slices.
+    const webValue = mode === 'time' && value
+      ? `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`
+      : value
+        ? value.toISOString().slice(0, mode === 'datetime' ? 16 : 10)
+        : '';
+    const max = mode !== 'time' && maximumDate ? maximumDate.toISOString().slice(0, mode === 'datetime' ? 16 : 10) : undefined;
+    const min = mode !== 'time' && minimumDate ? minimumDate.toISOString().slice(0, mode === 'datetime' ? 16 : 10) : undefined;
     return (
       // <input type="date"> is a web DOM element rendered fine via react-native-web; cast lets us pass DOM-only props.
       // @ts-ignore
       <input
         type={inputType}
-        value={iso}
+        value={webValue}
         max={max}
         min={min}
         onChange={(e: any) => {
           const v = e.target.value;
-          if (v) onChange(new Date(v));
+          if (!v) return;
+          if (mode === 'time') {
+            // <input type="time"> emits HH:MM — merge onto today's date so
+            // the caller receives a full Date object (their choice how to
+            // extract HH:MM).
+            const [hh, mm] = v.split(':').map(Number);
+            const d = new Date();
+            d.setHours(hh, mm, 0, 0);
+            onChange(d);
+          } else {
+            onChange(new Date(v));
+          }
         }}
         style={{
           width: '100%',
@@ -133,7 +152,7 @@ export function BrandDatePicker({
         <Text style={value ? styles.value : styles.placeholder}>
           {value ? format(value) : placeholder}
         </Text>
-        <Text style={styles.icon}>📅</Text>
+        <Text style={styles.icon}>{mode === 'time' ? '🕐' : '📅'}</Text>
       </TouchableOpacity>
 
       {show && Platform.OS === 'ios' && (
