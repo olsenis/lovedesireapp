@@ -56,6 +56,11 @@ export default function RootLayout() {
   const { user, profile, loading } = useAuth();
   const pathname = usePathname();
   const [showConsent, setShowConsent] = useState(false);
+  // Flips true after the initial routing effect has decided whether to
+  // redirect (or not). Gates Stack render so Home tab bar doesn't flash
+  // for the tick between auth-resolved and router.replace landing. See
+  // menu flicker v2.
+  const [routingChecked, setRoutingChecked] = useState(false);
 
   // Hide the native splash only once BOTH fonts have loaded AND auth
   // has resolved. Previously this fired on fonts-only, which briefly
@@ -120,7 +125,7 @@ export default function RootLayout() {
         } else {
           routeAfterConsent(user.uid, profile?.coupleId, profile?.name, pathname);
         }
-      });
+      }).finally(() => setRoutingChecked(true));
     } else {
       // Only bounce to /login if the user is somewhere they shouldn't be while
       // unsigned. Register + terms + privacy have to stay reachable, otherwise
@@ -128,6 +133,7 @@ export default function RootLayout() {
       const publicAuthPaths = ['login', 'register', 'terms-of-service', 'privacy-policy'];
       const onPublicPath = publicAuthPaths.some((s) => isOnPath(pathname, s));
       if (!onPublicPath) router.replace('/(auth)/login');
+      setRoutingChecked(true);
     }
   }, [user, loading, profile?.coupleId, profile?.name, pathname]);
 
@@ -298,12 +304,14 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  // Auth-loading gate. Native: splash still visible (hideAsync deferred
-  // above), so this View is masked. Web: no native splash mechanism, so
-  // this cream + spinner covers the transient window during which
-  // Firebase auth resolves. Prevents the pre-redirect Home-tab flash
-  // reported during Round 5B verification.
-  if (loading) {
+  // Auth-loading + routing-settled gate. Native: splash still visible
+  // (hideAsync deferred above), so this View is masked. Web: no native
+  // splash mechanism, so this cream + spinner covers the transient
+  // window during which Firebase auth resolves AND the routing effect
+  // decides whether to redirect. Prevents the pre-redirect Home-tab
+  // flash reported during Round 5B verification. `routingChecked` flips
+  // true only after the routing effect has committed its first pass.
+  if (loading || !routingChecked) {
     return (
       <View style={{ flex: 1, backgroundColor: Colors.cream, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={Colors.burgundy} size="large" />
