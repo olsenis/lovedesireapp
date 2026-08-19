@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
+import { Platform, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -417,10 +417,13 @@ export default function RootLayout() {
 
       {/* Menu flicker v3 — full-screen splash overlay. Renders on top
           of Stack + all modals from the very first paint (opacity 1 =
-          opaque cream + wordmark), masking any transient route swap
-          happening underneath. Fades to 0 over 500ms once fonts + auth
-          + routing are all ready; unmounts entirely once faded so it
-          doesn't intercept touches after. */}
+          opaque cream + text wordmark), masking any transient route
+          swap happening underneath. Fades to 0 over 500ms once fonts +
+          auth + routing are all ready; unmounts entirely once faded so
+          it doesn't intercept touches after. Uses native <Text> in
+          Cormorant Garamond instead of a PNG so it stays crisp on all
+          DPIs and matches app typography — no pixelation on scaled
+          web renders. */}
       {splashMounted && (
         <Animated.View
           pointerEvents="none"
@@ -433,11 +436,21 @@ export default function RootLayout() {
             opacity: splashFade,
           }}
         >
-          <Image
-            source={require('../assets/splash-icon.png')}
-            style={{ width: 220, height: 220 }}
-            resizeMode="contain"
-          />
+          <Text style={{
+            fontFamily: Fonts.heading,
+            fontSize: 56,
+            color: Colors.burgundy,
+            letterSpacing: 1,
+          }}>
+            Love Desire
+          </Text>
+          <Text style={{
+            fontSize: 20,
+            color: Colors.rose,
+            marginTop: Spacing.sm,
+          }}>
+            ♥
+          </Text>
         </Animated.View>
       )}
     </GestureHandlerRootView>
