@@ -53,7 +53,7 @@ import LegalSection from '../components/LegalSection.astro';
 
         Telemetry
         • Aggregated usage counts across all users each month (how often a feature is opened). No identifying information.
-        • Per-couple usage sessions (which feature, when, for how long — capped at 5 minutes per opening). Retained for 12 months, then replaced by anonymised aggregates. Used only by Love Desire administrators to improve the service and monitor operational health.
+        • Per-couple usage sessions (which feature, when, for how long, capped at 5 minutes per opening). Retained for 12 months, then replaced by anonymised aggregates. Used only by Love Desire administrators to improve the service and monitor operational health.
 
         What we do NOT collect: location, contacts, browsing history, biometrics, or any data beyond what you explicitly provide.
       </LegalSection>
@@ -61,12 +61,12 @@ import LegalSection from '../components/LegalSection.astro';
       <LegalSection title="3. How we use your data">
         We process personal data for the following purposes, each with a specific legal basis under GDPR Articles 6 and 9:
 
-        • Sync content between you and your partner in real time — Contract performance (Art. 6(1)(b))
-        • Send push notifications to your partner (mood, spark, matches) — Contract performance (Art. 6(1)(b))
-        • Display countdowns, history, and personalised nudges — Contract performance (Art. 6(1)(b))
-        • Process special-category data (mood, intimacy log, quiz answers, fantasies) — Explicit consent (Art. 9(2)(a)) obtained when you enable the feature
-        • Aggregated and per-couple telemetry to improve the service — Legitimate interests (Art. 6(1)(f)) balanced against your privacy through 12-month retention limit + no third-party sharing + anonymisation. You may object under Article 21 by emailing privacy@lovedesireapp.com; on objection we cease per-couple session collection for your couple.
-        • Comply with legal obligations (tax records, law-enforcement requests) — Legal obligation (Art. 6(1)(c))
+        • Sync content between you and your partner in real time, Contract performance (Art. 6(1)(b))
+        • Send push notifications to your partner (mood, spark, matches), Contract performance (Art. 6(1)(b))
+        • Display countdowns, history, and personalised nudges, Contract performance (Art. 6(1)(b))
+        • Process special-category data (mood, intimacy log, quiz answers, fantasies), Explicit consent (Art. 9(2)(a)) obtained when you enable the feature
+        • Aggregated and per-couple telemetry to improve the service, Legitimate interests (Art. 6(1)(f)) balanced against your privacy through 12-month retention limit + no third-party sharing + anonymisation. You may object under Article 21 by emailing privacy@lovedesireapp.com; on objection we cease per-couple session collection for your couple.
+        • Comply with legal obligations (tax records, law-enforcement requests), Legal obligation (Art. 6(1)(c))
 
         We do not use your data for advertising, profiling, automated decision-making with legal effects, machine-learning training, or any purpose beyond operating the app.
       </LegalSection>
@@ -86,9 +86,9 @@ import LegalSection from '../components/LegalSection.astro';
       <LegalSection title="5. Third-party services and international transfers">
         Love Desire relies on the following processors (sub-processors) to operate:
 
-        • Google Firebase (Authentication, Firestore database, Cloud Storage), operated by Google LLC — user accounts, data storage, photo uploads. Firebase data is stored in Google's europe-west1 (Belgium) region where available.
-        • Expo Push Notifications, operated by 650 Industries, Inc. — delivering partner notifications. Only your device push token is shared with Expo; your personal content is never transmitted.
-        • Apple App Store and Google Play (as applicable) — process in-app subscription payments and provide us with billing status. We do not receive your payment card details.
+        • Google Firebase (Authentication, Firestore database, Cloud Storage), operated by Google LLC, user accounts, data storage, photo uploads. Firebase data is stored in Google's europe-west1 (Belgium) region where available.
+        • Expo Push Notifications, operated by 650 Industries, Inc., delivering partner notifications. Only your device push token is shared with Expo; your personal content is never transmitted.
+        • Apple App Store and Google Play (as applicable), process in-app subscription payments and provide us with billing status. We do not receive your payment card details.
 
         International data transfers
         Google and Expo are US-headquartered companies. Personal data transferred outside the European Economic Area is protected by the European Commission's Standard Contractual Clauses (Commission Implementing Decision (EU) 2021/914) and, where applicable, by Google's certification under the EU-US Data Privacy Framework. Firebase provides an EU-based storage region where technically feasible.
@@ -101,15 +101,15 @@ import LegalSection from '../components/LegalSection.astro';
       <LegalSection title="6. Data retention">
         We retain personal data only for as long as necessary for the purpose it was collected, subject to legal retention obligations:
 
-        • Account personal data (name, email, profile photo, birthday) — deleted immediately upon account deletion
-        • Shared couple data (memories, todos, notes, moments, matches) — retained until both partners delete their accounts, since ownership is joint
-        • Special-category data (mood entries, intimacy log, quiz results, Sunday Check-in answers) — deleted with the associated feature or account
-        • Per-couple session telemetry — 12 months, then replaced by anonymised aggregates
-        • Aggregated (anonymised) telemetry — retained indefinitely; contains no identifying information
-        • Encrypted backups — up to 35 days rolling for disaster recovery
-        • Subscription and invoice records — 7 years, as required by the Icelandic Bookkeeping Act nr. 145/1994
-        • Authentication logs (sign-in events, security audit) — 30 days
-        • Abuse-report records and moderation actions — 24 months, for accountability and legal defence
+        • Account personal data (name, email, profile photo, birthday), deleted immediately upon account deletion
+        • Shared couple data (memories, todos, notes, moments, matches), retained until both partners delete their accounts, since ownership is joint
+        • Special-category data (mood entries, intimacy log, quiz results, Sunday Check-in answers), deleted with the associated feature or account
+        • Per-couple session telemetry, 12 months, then replaced by anonymised aggregates
+        • Aggregated (anonymised) telemetry, retained indefinitely; contains no identifying information
+        • Encrypted backups, up to 35 days rolling for disaster recovery
+        • Subscription and invoice records, 7 years, as required by the Icelandic Bookkeeping Act nr. 145/1994
+        • Authentication logs (sign-in events, security audit), 30 days
+        • Abuse-report records and moderation actions, 24 months, for accountability and legal defence
 
         You can request deletion of all your data at any time by contacting privacy@lovedesireapp.com. We will comply within 30 days, subject to the legal retention obligations above.
       </LegalSection>
@@ -117,19 +117,19 @@ import LegalSection from '../components/LegalSection.astro';
       <LegalSection title="7. Your rights">
         If you are located in the European Economic Area (which includes Iceland), you have the following rights under GDPR:
 
-        • Article 15 — Right of access: request a copy of your personal data
-        • Article 16 — Right to rectification: correct inaccurate data
-        • Article 17 — Right to erasure ("right to be forgotten"): request deletion of your data
-        • Article 18 — Right to restriction: request that we limit processing while a query is resolved
-        • Article 20 — Right to data portability: receive your data in a machine-readable, portable format
-        • Article 21 — Right to object: object to processing based on legitimate interests (such as our per-couple telemetry)
-        • Article 7(3) — Right to withdraw consent: withdraw explicit consent for special-category processing at any time, without affecting processing already carried out
+        • Article 15, Right of access: request a copy of your personal data
+        • Article 16, Right to rectification: correct inaccurate data
+        • Article 17, Right to erasure ("right to be forgotten"): request deletion of your data
+        • Article 18, Right to restriction: request that we limit processing while a query is resolved
+        • Article 20, Right to data portability: receive your data in a machine-readable, portable format
+        • Article 21, Right to object: object to processing based on legitimate interests (such as our per-couple telemetry)
+        • Article 7(3), Right to withdraw consent: withdraw explicit consent for special-category processing at any time, without affecting processing already carried out
 
         We do not carry out solely automated decision-making with legal or similarly significant effects, so Article 22 (right against automated decisions) is not engaged.
 
         How to exercise your rights: email privacy@lovedesireapp.com. We will respond within 30 days.
 
-        Right to complain — you also have the right to lodge a complaint with the Icelandic Data Protection Authority:
+        Right to complain, you also have the right to lodge a complaint with the Icelandic Data Protection Authority:
 
         Persónuvernd
         Rauðarárstígur 10
@@ -142,7 +142,7 @@ import LegalSection from '../components/LegalSection.astro';
         Security measures we take:
         • All data is transmitted over encrypted HTTPS/TLS connections
         • Firestore data is encrypted at rest by Google's infrastructure
-        • Firestore security rules enforce per-couple isolation — no user can access another couple's data
+        • Firestore security rules enforce per-couple isolation, no user can access another couple's data
         • Passwords are managed by Firebase Authentication and are never stored in plain text
         • Photos are stored in Firebase Storage with per-couple access controls
         • Administrative access is restricted, logged, and subject to confidentiality obligations
