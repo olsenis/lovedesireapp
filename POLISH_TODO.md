@@ -66,6 +66,40 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H29 · Year in Review → Milestone Moment reframe — 📋 POST-LAUNCH QUEUE
+**Source:** Review #8 Part 2 (Aug 20, external reviewer) rec #1. Composite 6.4 → 7.6 (+1.2).
+**Files:** `app/year-in-review.tsx`, `services/yearInReviewService.ts`, `app/(tabs)/index.tsx`, NEW `services/milestoneService.ts`
+**Scope:** turn a once-per-year novelty into a recurring emotional beat. Current Year in Review only fires Dec 28-Jan 7 window — dead 358 days per year. Reframe: fire the same swipe-deck ANY time the couple crosses a milestone.
+**Milestone triggers to wire:**
+- 100 days together (from `couple.startDate`)
+- Anniversaries (365, 730, 1095, …)
+- First Sensate cycle completed
+- First Fantasy Wishes match
+- 10th / 50th / 100th mood log (round-number celebrations)
+- First Sunday Check-in reveal
+**Implementation:**
+- `getYearSummary` parameterised to accept a date-range (currently fixed year)
+- `year-in-review.tsx` accepts `milestoneKey` param that scopes stats to milestone period + swaps the swipe-deck copy accordingly (e.g. "Your first 100 days" instead of "2026")
+- NEW `services/milestoneService.ts` (~50 lines): pure computation over `couple.startDate` + already-subscribed data (sensate progress, fw matches, mood history) to detect eligible crossings
+- New Home nudge branch in `app/(tabs)/index.tsx` that fires the celebration card when a fresh milestone crosses; dismisses per-milestone-per-couple via a `celebratedMilestones` field on couple doc (deduplication)
+**Scope realism:** reviewer estimated 2h; realistic **3-4h** including milestone detection service + swipe-deck copy variants + dedup wiring.
+**Why deferred to post-launch:** quality lift, not a launch blocker. Ship, learn usage, then land this as the first post-launch feature — biggest ROI per hour among reviewer's post-launch queue.
+
+### H30 · Blueprint conversation packs — 📋 POST-LAUNCH QUEUE
+**Source:** Review #8 Part 2 (Aug 20, external reviewer) rec #3. Composite 6.0 → 7.4 (+1.4).
+**Files:** `constants/content.ts`, `app/blueprint.tsx`
+**Scope:** Blueprint's core weakness is "once you take the quiz you're done" (Depth 2, Repeat 2). Fix: after result screen, offer conversation packs specific to your type-pair. Reuses WYR content-pack pattern. Turns Blueprint from once-and-done into ongoing content gateway.
+**Content shape:** 5 types × 5 = 25 pair combinations (symmetric → 15 unique pairs) × 5 prompts each = **75 prompts minimum**. Each prompt is conversation-starter language specific to that dynamic (e.g. Sensual + Sexual pair gets "What kind of touch feels most alive to you right now?" style).
+**Implementation:**
+- `constants/content.ts`: new `BLUEPRINT_CONVERSATION_PACKS: Record<PairKey, string[]>` constant (biggest chunk of work — content authoring ~3-4h dedicated writing)
+- `app/blueprint.tsx`: new "Ask deeper" section on result screen with a swipe-through pack based on `pair(myType, partnerType)`
+- Optional: track discussed-status per prompt so the deck can rotate (like Sunday CI's questions), keeping the pack fresh across sessions
+**Scope realism:** reviewer estimated 4h; realistic **5-8h** (content 3-4h + UI 1-2h + testing 1h).
+**Why deferred to post-launch:** content authoring is the bottleneck; can be authored async between launch and next release. Land after H29.
+
+### Reviewer disagreement — Rec #2 (Intimacy Log monthly narrative Home surface) — ALREADY SHIPPED
+Review #8 flagged Intimacy Log's monthly narrative as "needs Home surface". This is stale — already shipped as H7 Phase 1. Verified at `app/(tabs)/index.tsx:720-738`: fires days 1-7 of new month when previous month has ≥3 entries, deep-links to `/intimacy-tracker?tab=stats` where the NarrativeCard renders. **No action needed.**
+
 ### H28 · Persist Daily guess-skip via Firestore sentinel + safety-net button — ✅ shipping now
 **Files:** `services/dailyQuestionsService.ts`, `app/daily.tsx`
 **Change:**
