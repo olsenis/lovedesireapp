@@ -152,6 +152,33 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 ### H32 · Legal entity kennitala swap when Love Desire ehf registers — 🟢 STRUCTURE LANDED
 _(See earlier entry above — 30-sec find/replace across 4 files when kennitala arrives.)_
 
+### H38 · Google Cloud Vision SafeSearch automated content flagging — 📋 POST-LAUNCH (target: ~1 month after launch)
+**Source:** Layered defense-in-depth on top of H33 report flow. Adds automated first-line filter for uploaded photos/videos.
+**Scope:** ~3-4h dev, single commit.
+**Files to touch:**
+- NEW `functions/src/moderation.ts` — Firebase Storage `onFinalize` trigger. On new upload (Moments/Tease/Memories/Truth-or-Dare audio), call Cloud Vision SafeSearch API, evaluate likelihood scores for `adult` / `violence` / `medical` / `spoof` / `racy`.
+- Flag rules: `violence=LIKELY+` OR `spoof=VERY_LIKELY` OR `medical=LIKELY+` (unusual for intimacy app) → auto-flag for admin review + block user access to that specific asset until reviewed. Adult=LIKELY is expected (this is a spicy-content app for paid users), does NOT flag.
+- Writes a `reports/{autoId}` doc with type='automated_moderation' + Vision API scores + storagePath, surfacing in admin dashboard Reports tab alongside user-submitted reports.
+- `functions/package.json` — add `@google-cloud/vision` dep.
+- Requires enabling Cloud Vision API in Google Cloud console (Firebase project's underlying GCP project) — one-click, no approval process.
+**Cost estimate**: Google Vision SafeSearch = $1.50 per 1000 images. 1000 couples × 10 uploads/mo = 10,000 images/mo = ~$15/mo. Trivial.
+**Why post-launch**: H33 report flow alone is legally sufficient for launch. Automated flagging becomes valuable when upload volume exceeds manual-review capacity (~50 uploads/day is a reasonable trigger threshold). Cheaper + easier than PhotoDNA (see H39) which is the specialised KSAM-hash layer above this.
+
+### H39 · PhotoDNA CSAM hash-match integration — 📋 POST-LAUNCH (target: when monthly uploads ≥ ~500)
+**Source:** Icelandic law review (Aug 20). Best-practice CSAM detection layer on top of general content moderation. Not legally required at launch (report flow suffices) but industry-standard once scale warrants.
+**Scope:** User application to Microsoft (2-4 wk waiting) + ~5-6h dev.
+**Files to touch (when approved):**
+- Extend `functions/src/moderation.ts` (from H38) — same Storage `onFinalize` trigger, add PhotoDNA hash-match call in parallel with Vision SafeSearch. Faster to run both in same function than two triggers.
+- On hash match: immediate atomic delete of storage asset + user account suspension + admin alert + legally required NCMEC report (per Icelandic reporting obligations under §210a for detected illegal content).
+- Storage path retention: keep hash-match log in `moderation_events/{id}` root collection for legal audit trail. Only admin readable.
+- `functions/package.json` — add PhotoDNA client (Microsoft provides SDK after approval).
+**Application prerequisites:**
+- Love Desire ehf registered (H32) — Microsoft requires legal entity
+- Live product URL — Microsoft reviews site for compliance intent
+- Contact person for CSAM report cases (must be able to respond to LE requests)
+**Why post-launch**: two reasons — (1) Microsoft approval takes weeks so can't rush it, (2) low-scale services get away with report flow + Vision moderation. PhotoDNA becomes worth the operational overhead when volume makes hash-based known-CSAM screening a real defense.
+**Interim state (until H39 ships)**: H33 report flow + H38 Vision SafeSearch = defense-in-depth adequate for launch through low-to-medium scale.
+
 ### H29 · Year in Review → Milestone Moment reframe — 📋 POST-LAUNCH QUEUE
 **Source:** Review #8 Part 2 (Aug 20, external reviewer) rec #1. Composite 6.4 → 7.6 (+1.2).
 **Files:** `app/year-in-review.tsx`, `services/yearInReviewService.ts`, `app/(tabs)/index.tsx`, NEW `services/milestoneService.ts`
