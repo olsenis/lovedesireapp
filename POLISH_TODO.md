@@ -66,6 +66,34 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H41 · Move Tease/Flashes to paid tier — 🟡 PRE-LAUNCH
+**Source:** Aug 20 product decision. Reduces highest-risk photo-upload surface without killing free-tier value (Moments stays free as flagship daily-photo ritual).
+**Scope:** ~1-2h dev, single commit.
+**Files to touch:**
+- `hooks/useSubscription.ts` or wherever Tease/Flashes gate is checked — add paywall guard mirroring existing pattern (Fantasy Wishes, Sensate, Activity Cards, Intimacy Log all use the same pattern: `if (!subLoading && !isSubscribed) router.replace('/upgrade')` at screen mount)
+- `app/flashes.tsx` — add screen-level paywall gate at top of component
+- `app/(tabs)/index.tsx` — Home Quick tile for Tease should show 🔒 lock indicator when free tier (mirror existing Us tab paid-card pattern with locked emoji + tap routes to /upgrade)
+- `CLAUDE.md` — update Free/Paid tier split: move Tease from Free to Paid
+- `web/src/pages/pricing.astro` — remove "Tease (24h ephemeral photos, videos, voice)" from free list, add to paid list
+- `web/src/pages/features.astro` — Tease description already says intimate/spicy nature — no change needed, but verify positioning
+- `web/src/pages/faq.astro` — if Tease is mentioned in the free-tier list at q "How much does it cost?", update
+- `app/upgrade.tsx` — if the paid-feature list is enumerated, add Tease
+**Why:** Photo uploads carry §210a KSAM strict-liability risk. Free tier = larger upload volume + weaker identity signal (no credit-card-on-file). Moving highest-risk photo surface (24h ephemeral, higher sexual-content likelihood) to paid narrows the attack surface without touching Moments (BeReal-style daily-photo ritual, entertainment score 8.8, lower risk profile). Real risk mitigation still comes from H33 + H38 + H39 defense-in-depth; H41 just narrows the surface.
+**Product impact:** Free tier loses Tease. Marketing site + docs must accurately reflect. No user impact pre-launch (feature never publicly launched).
+**Testing:** flip QA couple's `isPremium=false` → verify Tease card on Home shows 🔒 + tapping routes to /upgrade → verify direct navigate to `/flashes` also redirects (screen-level gate). Flip back to Premium → verify Tease accessible.
+
+### H42 · Re-attestation modal at first photo upload — 🟢 NICE-TO-HAVE PRE-LAUNCH
+**Source:** Aug 20 audit tightening. Strengthens 18+ audit trail beyond registration-time attestation.
+**Scope:** ~30-45 min dev.
+**How it works:** first time user taps "Take photo" or "Choose from gallery" (Moments, Tease if kept, Profile photo), modal prompts "Please confirm you are 18 or older and have the right to upload this content." Confirm → writes `users/{uid}/private/photoConsent = { confirmedAt, deviceInfo }` in Firestore. Subsequent uploads skip the modal (Firestore + AsyncStorage cache).
+**Files:**
+- NEW `services/photoConsentService.ts` (~30 lines) — `hasPhotoConsent(uid)`, `confirmPhotoConsent(uid)`, cached via AsyncStorage + Firestore
+- NEW `components/PhotoConsentModal.tsx` — brand-styled modal similar to age-attestation
+- `app/moments.tsx`, `app/flashes.tsx`, `app/profile.tsx` (avatar picker) — wrap photo picker calls with consent check
+- `firestore.rules` — allow write to `users/{uid}/private/photoConsent` by owner only (same pattern as existing consent + help docs)
+**Why:** current 18+ attestation is registration-time only. Adding per-upload attestation strengthens legal defense (two-factor consent trail), aligns with UK Online Safety Act + US state trends toward per-upload consent, low UX friction (fires once per user).
+**Optional / not a launch blocker:** current single-attestation is legally sufficient for Icelandic launch. H42 is defense-in-depth polish. Ship if we want strongest possible legal position.
+
 ### H32b · Comprehensive ToS + Privacy Policy legal rewrite — ✅ shipping now
 **Source:** Two-agent deep audit (Aug 20). 16 HIGH + 7 MEDIUM audit findings across both docs. Both mobile + web versions rewritten section-by-section.
 **Files:** `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro` (all 4 legal files).
