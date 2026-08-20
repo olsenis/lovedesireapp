@@ -25,17 +25,17 @@ export default function PrivacyPolicyScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.updated}>Last updated: May 2026</Text>
+        <Text style={styles.updated}>Last updated: August 2026</Text>
         <Text style={styles.intro}>
-          Desire ("we", "us", "our") is a couples intimacy app designed exclusively for use between two consenting adults in a relationship. This Privacy Policy explains how we collect, use, and protect your personal data.
+          Love Desire ("we", "us", "our") is a couples intimacy app designed exclusively for use between two consenting adults in a relationship. This Privacy Policy explains how we collect, use, and protect your personal data.
         </Text>
 
         <Section title="1. Who we are">
-          {`Desire is an independent app. By using Desire, you agree to this Privacy Policy. This app is intended for users aged 18 and older. If you are under 18, please do not use this app.`}
+          {`Love Desire is an independent app. By using Love Desire, you agree to this Privacy Policy. This app is intended for users aged 18 and older. If you are under 18, please do not use this app.`}
         </Section>
 
         <Section title="2. Data we collect">
-          {`When you use Desire, we collect and store the following data:\n\n• Account data: email address, display name, profile photo\n• Couple data: your relationship start date, shared todos, moods, memories, love notes, countdowns, flirt reminders\n• Game and activity data: answers to questions, activity card history, relationship pulse scores, intimacy log entries (if enabled)\n• Communication data: sparks sent to your partner, photos shared in memories\n• Device data: push notification token (for sending notifications to your partner)\n• Birthday (optional, day/month/year)\n• Anonymous aggregate usage counts: how many times each feature is opened or used across all users each month. These counts include no identifying information about individual users or their content, and are used only to understand which features to improve.\n• Per-couple usage sessions: which feature you use, when, and for how long (capped at 5 minutes per opening). We retain identifiable per-couple session data for 12 months, after which it is replaced by anonymous aggregate summaries with no couple identifier attached. Session data is used by Desire administrators to understand which features to improve and which times of day couples use the app, and is never shared with third parties.\n\nWe do not collect location data, contacts, or any data beyond what you explicitly provide.`}
+          {`When you use Love Desire, we collect and store the following data:\n\n• Account data: email address, display name, profile photo\n• Couple data: your relationship start date, shared todos, moods, memories, love notes, countdowns, flirt reminders\n• Game and activity data: answers to questions, activity card history, relationship pulse scores, intimacy log entries (if enabled)\n• Communication data: sparks sent to your partner, photos shared in memories\n• Device data: push notification token (for sending notifications to your partner)\n• Birthday (optional, day/month/year)\n• Anonymous aggregate usage counts: how many times each feature is opened or used across all users each month. These counts include no identifying information about individual users or their content, and are used only to understand which features to improve.\n• Per-couple usage sessions: which feature you use, when, and for how long (capped at 5 minutes per opening). We retain identifiable per-couple session data for 12 months, after which it is replaced by anonymous aggregate summaries with no couple identifier attached. Session data is used by Love Desire administrators to understand which features to improve and which times of day couples use the app, and is never shared with third parties.\n\nWe do not collect location data, contacts, or any data beyond what you explicitly provide.`}
         </Section>
 
         <Section title="3. How we use your data">
@@ -43,11 +43,11 @@ export default function PrivacyPolicyScreen() {
         </Section>
 
         <Section title="4. Who can see your data">
-          {`Your personal content is only accessible to you and your paired partner.\n\nWe do not sell your personal data. We do not share your personal data with third parties for marketing, advertising, or profiling purposes.\n\nDesire staff may have technical access to the database infrastructure for the purpose of operating, maintaining, and securing the service. All such access is restricted to authorised personnel who require it to perform their role, and all personnel are bound by strict confidentiality obligations. We do not read, access, or use your personal content beyond what is necessary to provide the service.\n\nWe may disclose your data if required to do so by law, court order, or governmental authority. We will notify you of such a request where permitted by law.\n\nThe premium tier includes sensitive sexual content. This content is stored with the same security controls as all other data and is never shared outside your couple.`}
+          {`Your personal content is only accessible to you and your paired partner.\n\nWe do not sell your personal data. We do not share your personal data with third parties for marketing, advertising, or profiling purposes.\n\nLove Desire staff may have technical access to the database infrastructure for the purpose of operating, maintaining, and securing the service. All such access is restricted to authorised personnel who require it to perform their role, and all personnel are bound by strict confidentiality obligations. We do not read, access, or use your personal content beyond what is necessary to provide the service.\n\nWe may disclose your data if required to do so by law, court order, or governmental authority. We will notify you of such a request where permitted by law.\n\nThe premium tier includes sensitive sexual content. This content is stored with the same security controls as all other data and is never shared outside your couple.`}
         </Section>
 
         <Section title="5. Third-party services">
-          {`Desire uses the following third-party services to operate:\n\n• Google Firebase (Authentication, Firestore database, Cloud Storage), for user accounts, data storage, and photo uploads. Firebase processes data on our behalf and is bound by data processing agreements. Firebase is GDPR compliant.\n• Expo Push Notifications, for delivering partner notifications. Only your device push token is shared with Expo; your personal content is never transmitted.\n\nThese service providers are not permitted to use your data for their own purposes. We do not use analytics SDKs, advertising networks, or tracking tools.`}
+          {`Love Desire uses the following third-party services to operate:\n\n• Google Firebase (Authentication, Firestore database, Cloud Storage), for user accounts, data storage, and photo uploads. Firebase processes data on our behalf and is bound by data processing agreements. Firebase is GDPR compliant.\n• Expo Push Notifications, for delivering partner notifications. Only your device push token is shared with Expo; your personal content is never transmitted.\n\nThese service providers are not permitted to use your data for their own purposes. We do not use analytics SDKs, advertising networks, or tracking tools.`}
         </Section>
 
         <Section title="6. Data retention">
@@ -63,18 +63,18 @@ export default function PrivacyPolicyScreen() {
         </Section>
 
         <Section title="9. Children's privacy">
-          {`Desire is not intended for users under the age of 18. We do not knowingly collect data from anyone under 18. If you believe a minor has created an account, please contact us and we will delete the account promptly.`}
+          {`Love Desire is not intended for users under the age of 18. We do not knowingly collect data from anyone under 18. If you believe a minor has created an account, please contact us and we will delete the account promptly.`}
         </Section>
 
         <Section title="10. Changes to this policy">
-          {`We may update this Privacy Policy from time to time. We will notify you of significant changes through the app. Continued use of Desire after changes constitutes acceptance of the updated policy.`}
+          {`We may update this Privacy Policy from time to time. We will notify you of significant changes through the app. Continued use of Love Desire after changes constitutes acceptance of the updated policy.`}
         </Section>
 
         <Section title="11. Contact">
           {`If you have questions, concerns, or requests regarding your privacy, please contact us at:\n\nsupport@lovedesireapp.com`}
         </Section>
 
-        <Text style={styles.footer}>© 2026 Desire App. All rights reserved.</Text>
+        <Text style={styles.footer}>© 2026 Love Desire. All rights reserved.</Text>
       </ScrollView>
     </View>
   );
