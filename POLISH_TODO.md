@@ -66,6 +66,31 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H31 · Launch-prep review — marketing + admin + DNS/domain — 🚧 IN PROGRESS
+**Source:** User-driven pre-launch comprehensive review (Aug 20). Three parallel Explores audited marketing site, admin dashboard, DNS/domain config. Shipped as Commits A + B; user actions phase-gated across DNS/Apple/EAS.
+**Commit A (`795c031`) — Marketing site content overhaul** (11 files):
+- Fixed `web/vercel.json` inverted ignoreCommand bug (would skip deploys on every web change)
+- Removed all stale Journal/Versus/Pulse references (features cut or merged Aug 2026)
+- Renamed Sensate Focus → Presence in 5 spots (matches app UI)
+- Fixed "Fantasy Wishes 400+" claim → "hundreds of prompts" (actual 294)
+- Added Our Story to insight section
+- StoreBadge: `APP_STORE_ID` + `IOS_LIVE` constants; iOS button disabled until launch (no dead placeholder link)
+- Fixed FAQ ↔ Pricing contradiction ("pricing will be announced" vs shown $9.99)
+- Added mobile hamburger nav via native `<details>` (was missing entirely on mobile viewports)
+- Fixed `href="#"` disabled anchor + empty support span
+- Hero placeholder → Cormorant "Love Desire" quote card matching mobile splash overlay
+**Commit B (`6427deb`) — Legal sync web + mobile** (4 files):
+- Renamed all "Desire" → "Love Desire" in mobile Privacy Policy + ToS (20+ replacements)
+- Footer copyright → "© 2026 Love Desire"
+- Added missing subscription §5 clause to mobile ToS (was drift with web — "one subscription covers both partners, follows purchaser on disconnect")
+- Fixed "Google Play" → "marketing website for Android" (accurate — no Play distribution)
+- Sensate Focus → Presence in mobile ToS §7 disclaimer
+- Bumped all four legal pages date May → August 2026
+**Blocked on user actions:**
+- Commit C (associatedDomains + PWA polish) blocked on user completing DNS setup for `app.lovedesireapp.com`
+**Deferred to H32:** Add legal entity info (kennitala + registered address + entity name) to ToS §11 + Privacy Policy §1 — GDPR gap (data controller must be identifiable legal entity). Waiting on user's decision (ehf. vs einstaklings-atvinnurekstur vs personal).
+**Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
+
 ### H29 · Year in Review → Milestone Moment reframe — 📋 POST-LAUNCH QUEUE
 **Source:** Review #8 Part 2 (Aug 20, external reviewer) rec #1. Composite 6.4 → 7.6 (+1.2).
 **Files:** `app/year-in-review.tsx`, `services/yearInReviewService.ts`, `app/(tabs)/index.tsx`, NEW `services/milestoneService.ts`
