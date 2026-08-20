@@ -66,6 +66,53 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H32b · Comprehensive ToS + Privacy Policy legal rewrite — ✅ shipping now
+**Source:** Two-agent deep audit (Aug 20). 16 HIGH + 7 MEDIUM audit findings across both docs. Both mobile + web versions rewritten section-by-section.
+**Files:** `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro` (all 4 legal files).
+**HIGH items addressed:**
+- Privacy §1 — full entity block (kennitala, address placeholder, privacy@ contact, DPO Art. 37 note)
+- Privacy §2 — explicit Art. 9 special-category enumeration (mood, Sunday CI pulse, Intimacy Log, The Lovers, FW, ToD Spicy audio) + explicit consent framing
+- Privacy §3 — Art. 6/9 lawful-basis mapping per purpose (contract / consent / legitimate interests / legal obligation) + Art. 21 objection path for telemetry
+- Privacy §5 — sub-processor list (Google Firebase LLC, Expo 650 Industries, Apple/Google Play), Firebase europe-west1 region disclosure, SCC (EU 2021/914) + EU-US DPF reference, dropped bare "Firebase is GDPR compliant" claim, no-crash-SDK statement
+- Privacy §6 — full retention table: account/shared/special-cat/telemetry/aggregates/backups/invoices (7yr Icelandic Bookkeeping Act)/auth logs/abuse reports (24mo)
+- Privacy §7 — added Art. 18 restriction + Art. 20 portability call-out + Art. 21 objection + Art. 7(3) withdraw consent + Art. 22 automated-decision statement (none) + Persónuvernd complaint contact (Rauðarárstígur 10, 105 Reykjavík, postur@personuvernd.is, https://personuvernd.is)
+- Privacy §11 — full contact block with entity address + privacy@ + support@ + abuse@ + supervisory authority pointer
+- ToS §3 — Art. 9(2)(a) explicit consent language + unpair mechanics + content-cannot-be-un-shared note
+- ToS §4 — CSAM/NCII zero-tolerance + AI-generated depictions ban + Ríkislögreglustjórinn/Barnahús/NCMEC reporting cooperation + abuse@ reporting channel + 24h review SLA
+- ToS §5 — full rewrite: VAT-inclusive pricing note, iOS/Android management paths, EU 14-day withdrawal + immediate-performance waiver (Icelandic Act 16/2016 / EU Dir 2011/83/EU), 30-day price-change notice, ODR link (Reg. 524/2013), fixed web drift on Android refund path
+- ToS §7 — statutory-rights preservation (Icelandic Act 118/2021 on digital content)
+- ToS §8 — carve-outs for death/injury/gross negligence/fraud/GDPR Art. 82 + ISK 15,000 minimum-floor cap for free-tier users
+- ToS §11 — consumer-forum preservation (EEA consumers can sue in home jurisdiction), ODR link
+- ToS §12 — full trader identity block (entity name + address + kennitala + VSK-nr placeholders) + privacy@/abuse@/support@ + Persónuvernd + Neytendastofa (Icelandic e-Commerce Act nr. 30/2002 §6 + DSA Art. 30 compliance)
+
+**MEDIUM items addressed:**
+- Privacy §8 — Art. 33/34 breach notification undertaking (72h Persónuvernd, users if high risk) + at-rest encryption sentence
+- Privacy §10 — fresh explicit Art. 9 consent for material changes affecting special-cat data
+- ToS §1 — geographic/lawful-use reservation
+- ToS §6 — backup-retention tail (35 days DR)
+- ToS §9 — proportionality, refund treatment (for-cause vs no-cause), 7-year invoice retention pointer
+- ToS §10 — 30-day notice + opt-out for material adverse changes
+- ToS §2 — non-transferability + notify support of unauthorised access
+
+**LOW deferred (post-launch):**
+- Consolidate mobile + web into single markdown source (different rendering pipelines, tolerable manual sync)
+- Icelandic-language mirror (if scaling Icelandic user base)
+- Version history table
+- Hyperlink Privacy Policy references inside mobile ToS (React Native limits)
+- At-rest encryption sentence Privacy §8 (added)
+- Age-gating mechanism note Privacy §9 (added)
+
+**Cross-doc drift fixed:** ToS §5 web now names Android refund path; adopted web wording throughout; paragraph order harmonised.
+
+**Placeholders still in place** (30-sec find/replace when Love Desire ehf. registered — see H32 workflow):
+- `[PENDING REGISTRATION]` — kennitala (5 occurrences across 4 files)
+- `[REGISTERED OFFICE ADDRESS]` — street/postal (4 occurrences across 4 files)
+- `[VSK-NR PENDING]` — VAT number (2 occurrences, ToS §12 both mobile + web)
+
+**Verification:** both files build clean (`tsc --noEmit` + `astro build`). Grep confirms all HIGH items addressed. No stale Journal/Versus/Pulse/Sensate Focus refs.
+
+**Next steps:** H36 DPIA + H37 breach response plan (both should-have pre-launch, separately drafted). H33 report flow becomes urgent — ToS §4 + §6 now promise `abuse@lovedesireapp.com` reporting + 24h SLA that we need to fulfil.
+
 ### H31 · Launch-prep review — marketing + admin + DNS/domain — 🚧 IN PROGRESS
 **Source:** User-driven pre-launch comprehensive review (Aug 20). Three parallel Explores audited marketing site, admin dashboard, DNS/domain config. Shipped as Commits A + B; user actions phase-gated across DNS/Apple/EAS.
 **Commit A (`795c031`) — Marketing site content overhaul** (11 files):
@@ -90,12 +137,13 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - Commit C (associatedDomains + PWA polish) blocked on user completing DNS setup for `app.lovedesireapp.com`
 **H32 structure LANDED (shipping now):** Entity references added to 4 files (mobile + web × Privacy + Terms). Placeholder `[PENDING REGISTRATION]` marks the two values needing swap once Love Desire ehf. is registered at Skatturinn (target: after user has saved 500k stofnfé).
 
-**Find/replace when kennitala arrives** (should be 1-minute swap):
-- Search: `[PENDING REGISTRATION]`
-- Replace with actual kennitala (e.g. `6XXXXX-XXXX`)
-- Files to check: `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro`
-- Also consider adding a registered street address if you register with a specific business address (currently reads "registered office in Iceland" which is legally sufficient but a specific address is nicer for App Store review).
-- After swap: bump "Last updated" date + rebuild + redeploy both mobile and web.
+**Find/replace when kennitala arrives** (should be 2-minute swap for 3 placeholders after H32b rewrite):
+- Search: `[PENDING REGISTRATION]` → replace with actual kennitala (e.g. `6XXXXX-XXXX`). ~5 occurrences across 4 files.
+- Search: `[REGISTERED OFFICE ADDRESS]` → replace with actual street/postal address (e.g. `Grettisgata 15, 101 Reykjavík, Iceland`). ~4 occurrences across 4 files.
+- Search: `[VSK-NR PENDING]` → replace with VAT number (e.g. `12345`). 2 occurrences (ToS §12 mobile + web).
+- Files: `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro`
+- After swap: bump "Last updated" date to registration month + rebuild + redeploy both mobile and web.
+- Verify: `git grep "\[PENDING\|\[REGISTERED\|\[VSK-NR"` should return zero hits.
 **Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
 
 ### H33 · Report / moderation flow for user-uploaded content — 🔴 LAUNCH BLOCKER
