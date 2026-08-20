@@ -98,6 +98,60 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - After swap: bump "Last updated" date + rebuild + redeploy both mobile and web.
 **Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
 
+### H33 · Report / moderation flow for user-uploaded content — 🔴 LAUNCH BLOCKER
+**Source:** Icelandic law review (Aug 20). §210a barnaklám / KSAM strict liability — operator is directly responsible for illegal user content unless there's a takedown mechanism. Currently ZERO report flow exists.
+**Scope:** ~4-6h dev work, single commit.
+**Files to touch:**
+- NEW `services/reportService.ts` — `submitReport(coupleId, uid, contentType, contentId, reason)` writes to new `reports` root collection; admin dashboard notification.
+- `app/moments.tsx`, `app/flashes.tsx` (Tease), `app/notes.tsx` (Love Notes with photos if any), + FW/dares screens with user-generated text — add report button (three-dot menu → "Report this content") on any photo/video/audio/user-text.
+- `admin-web/src/AdminScreen.tsx` — new "Reports" tab showing incoming reports; one-tap review + delete + user-notification workflow.
+- `firestore.rules` — new `reports/{id}` collection: create allowed by any auth user, read/update only by admin.
+- `functions/src/index.ts` — optional `adminDeleteReportedContent(reportId)` callable that atomically deletes reported content + updates report status + optionally soft-bans the uploader.
+**Why:** Even if 100% of users are consenting adults, one bad-actor upload triggers §210a strict liability. Report flow doesn't eliminate the risk but establishes takedown ability which is the legal standard for "reasonable measures". Post-launch add automated PhotoDNA hash detection when volume warrants.
+
+### H34 · Sign Firebase Data Processing Agreement (DPA) — 🔴 LAUNCH BLOCKER
+**Source:** GDPR Article 28 requires DPA between data controller (Love Desire ehf) and processors (Google Firebase). Without it, Firebase-processed data may be non-compliant.
+**Scope:** ~15 min user action on Firebase Console. No code changes.
+**Steps:**
+1. Firebase Console → Project settings → General → Data processing terms
+2. Accept Google's standard DPA on behalf of Love Desire ehf (blocked on ehf registration for entity signature, but user can sign as personal capacity initially and re-sign as ehf later)
+3. Save the countersigned copy for legal records
+**Why:** Required regardless of ehf status. Persónuvernd audit will ask for it. Ship blocker.
+
+### H35 · Register as data controller with Persónuvernd — 🟡 SHOULD-HAVE PRE-LAUNCH
+**Source:** GDPR + Íslensk persónuverndarlög nr. 90/2018. Not strictly mandatory but strongly recommended for services processing special-category data (sexual orientation, sex life). Establishes good-faith declaration.
+**Scope:** ~30 min user action on `personuvernd.is` online form. No code changes.
+**Steps:**
+1. Register Love Desire ehf as data controller (requires kennitala from H32)
+2. Declare processing purpose (couples intimacy app), data categories (personal + special-category incl. sex life), legal basis (explicit consent + contract performance), retention periods (matches Privacy Policy)
+3. Update declaration when material changes ship
+**Why:** Persónuvernd may audit adult-content services proactively. Being on their register signals compliance intent and simplifies any inquiry. Blocked on H32 kennitala.
+
+### H36 · Draft Data Protection Impact Assessment (DPIA) — 🟡 SHOULD-HAVE PRE-LAUNCH
+**Source:** GDPR Article 35 requires DPIA for "large-scale processing of special category data". Love Desire processes intimate data (mood, fantasies, intimacy log, sexual pref via The Lovers) — qualifies once user count grows.
+**Scope:** ~3-4h drafting. Ships as `/legal/DPIA.md` in the repo (not published publicly; kept for audit availability).
+**Template**: EDPB DPIA template + Persónuvernd guidance. Sections to cover:
+- Systematic description of processing
+- Necessity + proportionality assessment
+- Risks to data subjects (breach, misuse by partner, chargeback disclosure)
+- Mitigations already in place (encryption, rules, per-couple isolation, no analytics, no data sale)
+- Residual risk assessment + monitoring plan
+**Why:** Not strictly mandatory below "large scale" threshold, but Persónuvernd will ask for it in any audit and it forces you to think through risks systematically. Better to have and never need it than the reverse.
+
+### H37 · Data breach response plan — 🟡 SHOULD-HAVE PRE-LAUNCH
+**Source:** GDPR Article 33 — breach notification within 72 hours to Persónuvernd + affected users (if high risk). Need a defined process.
+**Scope:** ~2h drafting. Ships as `/legal/BREACH_RESPONSE.md` in the repo.
+**Sections:**
+- Definition of a breach (unauthorised access, accidental loss, alteration, disclosure)
+- Detection sources (Firebase security-rules alerts, user reports, third-party disclosure)
+- Response timeline (0h detect, ≤24h contain + assess severity, ≤48h notify Persónuvernd if required, ≤72h notify affected users if high risk)
+- Communication templates (Persónuvernd form + user notification email)
+- Post-incident review + documentation retention (5 years)
+**Why:** GDPR mandates you have this. Actually running it under pressure without a plan = worse outcome + higher fines.
+
+### H32 · Legal entity kennitala swap when Love Desire ehf registers — 🟢 STRUCTURE LANDED
+_(See earlier entry above — 30-sec find/replace across 4 files when kennitala arrives.)_
+
 ### H29 · Year in Review → Milestone Moment reframe — 📋 POST-LAUNCH QUEUE
 **Source:** Review #8 Part 2 (Aug 20, external reviewer) rec #1. Composite 6.4 → 7.6 (+1.2).
 **Files:** `app/year-in-review.tsx`, `services/yearInReviewService.ts`, `app/(tabs)/index.tsx`, NEW `services/milestoneService.ts`
