@@ -181,6 +181,27 @@ export async function submitGuess(
   trackEvent('daily_guess_submitted');
 }
 
+// Sentinel written to guesses.{uid}.{gi} when the user taps "Just show
+// me" on the guess modal (or dismisses via Android back). Persists the
+// skip so cold reload keeps reveal unlocked — before H28 this was
+// tracked only in local state and cold reload dead-locked the reveal
+// (Review #8 B1). Distinguished from real option-text guesses by the
+// double-underscore prefix — no question option can collide. Filtered
+// out of stats + streak computations below.
+export const GUESS_SKIPPED = '__skipped__';
+
+export async function skipGuess(
+  coupleId: string,
+  uid: string,
+  globalIndex: number,
+  dateKey: string = todayKey(),
+): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', dateKey), {
+    [`guesses.${uid}.${globalIndex}`]: GUESS_SKIPPED,
+  });
+  trackEvent('daily_guess_skipped');
+}
+
 // Read-computed weekly hit rate. Iterates last-7-days dailyQuestions
 // docs, cross-references caller's guesses against partner's answers.
 // Ignores questions the partner didn't answer (can't score a guess with
@@ -204,6 +225,9 @@ export async function getWeeklyGuessStats(
     const myGuesses = data.guesses?.[myUid] ?? {};
     const partnerAnswers = data.answers?.[partnerUid] ?? {};
     Object.entries(myGuesses).forEach(([gi, guess]) => {
+      // Filter H28 sentinel — a skip is neither a right nor wrong guess,
+      // so it should not inflate the denominator on the Home mini stat.
+      if (guess === GUESS_SKIPPED) return;
       const partnerAns = partnerAnswers[gi];
       if (!partnerAns) return;
       total++;
@@ -216,8 +240,10 @@ export async function getWeeklyGuessStats(
 // Consecutive-days streak of at least one correct guess. Iterates
 // backward from today. Days with zero guesses OR zero correct guesses
 // break the streak. Days with a mix of correct and wrong still count.
-// Skip-only days DO break (need at least one correct signal). Cap at
-// 30 days scan to keep the query bounded.
+// Skip-only days (H28: all guesses are GUESS_SKIPPED sentinel) are
+// treated as "not counted" — same as days with no guesses at all,
+// neither extend nor break the streak. Cap at 30 days scan to keep
+// the query bounded.
 export async function getGuessStreak(
   coupleId: string,
   myUid: string,
@@ -233,6 +259,8 @@ export async function getGuessStreak(
     let hadCorrect = false;
     let hadAnyGuess = false;
     for (const [gi, guess] of Object.entries(myGuesses)) {
+      // Filter H28 sentinel — skip is not a scoreable attempt.
+      if (guess === GUESS_SKIPPED) continue;
       const partnerAns = partnerAnswers[gi];
       if (!partnerAns) continue;
       hadAnyGuess = true;

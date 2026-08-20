@@ -15,7 +15,7 @@ import {
 } from '../services/dailyWishService';
 import {
   DailyQuestionDoc,
-  subscribeDailyQuestions, submitAnswer, submitGuess, bothAnswered,
+  subscribeDailyQuestions, submitAnswer, submitGuess, skipGuess, GUESS_SKIPPED, bothAnswered,
   drawMoreQuestions, MAX_BONUS_DRAWS as MAX_QUESTION_DRAWS,
 } from '../services/dailyQuestionsService';
 import { addTodo } from '../services/todoService';
@@ -289,13 +289,12 @@ export default function DailyScreen() {
   const partnerAnswer = (gi: number) => (partnerId ? qDoc?.answers?.[partnerId]?.[String(gi)] ?? null : null);
   // Guess-partner-answer state (Versus merged into Daily, Aug 2026). For
   // binary questions only: after user submits their own answer, a modal
-  // asks if they want to guess partner's pick before reveal. If they
-  // skip, we track that per-gi in local state so reveal fires without
-  // re-showing the modal on scroll. Modal itself is auto-triggered by
-  // submitValue when the user just answered a binary question they
-  // haven't yet guessed or skipped.
+  // asks if they want to guess partner's pick before reveal. Both real
+  // guesses and skips are persisted via services/dailyQuestionsService
+  // (H28 fix — before this, skips were local-only Set<number> and cold
+  // reload dead-locked the reveal permanently). Skip stored as
+  // GUESS_SKIPPED sentinel string; either value unlocks reveal.
   const [guessModalGi, setGuessModalGi] = useState<number | null>(null);
-  const [skippedGuesses, setSkippedGuesses] = useState<Set<number>>(new Set());
 
   const revealed = (gi: number) => {
     if (!partnerId || !qDoc) return false;
@@ -304,10 +303,10 @@ export default function DailyScreen() {
     // Non-binary questions: reveal as soon as both have answered (no
     // guess step exists for open-text or scale).
     if (item?.format !== 'binary') return true;
-    // Binary: hide partner's answer until user has either guessed or
-    // explicitly tapped "Just show me" (tracked in skippedGuesses).
-    const alreadyGuessed = !!qDoc.guesses?.[uid]?.[String(gi)];
-    return alreadyGuessed || skippedGuesses.has(gi);
+    // Binary: reveal unlocks as soon as the user has EITHER made a real
+    // guess OR skipped (both persisted to qDoc.guesses via services).
+    // Sentinel string and real option text both truthy.
+    return !!qDoc.guesses?.[uid]?.[String(gi)];
   };
 
   const submitValue = async (gi: number, value: string) => {
@@ -324,13 +323,13 @@ export default function DailyScreen() {
       notifyPartner(coupleId, uid, 'Daily 💬', `${profile?.name ?? 'Your partner'} played today, your turn!`);
     }
     // Trigger guess modal on binary Qs the user hasn't yet guessed or
-    // explicitly skipped. Fires whether or not partner has already
-    // answered — either way, guess happens before reveal.
+    // skipped. Fires whether or not partner has already answered —
+    // either way, guess happens before reveal. Guard reads Firestore
+    // only (H28) so cold reload after skip doesn't re-fire the modal.
     const item = qDoc.items[gi];
     if (
       item?.format === 'binary' &&
-      !qDoc.guesses?.[uid]?.[String(gi)] &&
-      !skippedGuesses.has(gi)
+      !qDoc.guesses?.[uid]?.[String(gi)]
     ) {
       setGuessModalGi(gi);
     }
@@ -343,9 +342,13 @@ export default function DailyScreen() {
     setGuessModalGi(null);
   };
 
-  const handleGuessSkip = (gi: number) => {
-    setSkippedGuesses((prev) => { const n = new Set(prev); n.add(gi); return n; });
+  const handleGuessSkip = async (gi: number) => {
+    if (!coupleId) return;
+    // Persist skip to Firestore via sentinel (H28) so cold reload
+    // doesn't dead-lock the reveal. Close modal immediately so UX
+    // feels responsive — write completes in background.
     setGuessModalGi(null);
+    await skipGuess(coupleId, uid, gi);
   };
 
   const handleSubmit = (gi: number) => submitValue(gi, (drafts[gi] ?? '').trim());
@@ -588,6 +591,7 @@ export default function DailyScreen() {
                 both={revealed(currentCard.gi)}
                 myGuess={qDoc?.guesses?.[uid]?.[String(currentCard.gi)]}
                 onAskWhy={() => router.push('/(tabs)?openSpark=1' as any)}
+                onOpenGuess={() => setGuessModalGi(currentCard.gi)}
                 draft={drafts[currentCard.gi] ?? ''}
                 onDraftChange={(t) => setDrafts((d) => ({ ...d, [currentCard.gi]: t }))}
                 onSubmit={() => handleSubmit(currentCard.gi)}
@@ -715,8 +719,15 @@ export default function DailyScreen() {
           Aug 2026). Fires from submitValue when the user has just
           answered a binary question they haven't yet guessed or skipped.
           Reveal gate in revealed() holds partner's answer back until
-          user either taps A/B here or "Just show me". */}
-      <Modal visible={guessModalGi !== null} transparent animationType="slide">
+          user either taps A/B here or "Just show me". onRequestClose
+          (H28) makes Android hardware back = "Just show me" so the
+          user doesn't accidentally dead-lock the reveal. */}
+      <Modal
+        visible={guessModalGi !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => guessModalGi !== null && handleGuessSkip(guessModalGi)}
+      >
         <View style={styles.guessOverlay}>
           <View style={styles.guessSheet}>
             {guessModalGi !== null && qDoc?.items[guessModalGi] && (() => {
@@ -975,7 +986,7 @@ function ActionCard({
 }
 
 function QuestionCard({
-  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
+  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
 }: {
   gi: number;
   q: Question;
@@ -983,19 +994,33 @@ function QuestionCard({
   mine: string | null;
   theirs: string | null;
   both: boolean;
-  // Undefined = user skipped guess for this binary Q. String = the option
-  // text they guessed. Only meaningful for binary questions.
+  // For binary Qs: undefined = user hasn't yet guessed or skipped. String
+  // = the option text they guessed. `GUESS_SKIPPED` sentinel = skipped
+  // (still truthy so guessed=true; correctGuess=false; caller filters
+  // banner render below).
   myGuess?: string;
   onAskWhy?: () => void;
+  // Safety-net (H28): opens the guess modal from the inline
+  // "reveal locked, guess to unlock" state on a binary Q where user
+  // answered + partner answered + no guess/skip is persisted. Only path
+  // out of that state.
+  onOpenGuess?: () => void;
   draft: string;
   onDraftChange: (t: string) => void;
   onSubmit: () => void;
   onQuickSubmit: (value: string) => void;
   cardBg: string;
 }) {
-  // Guess feedback state — only for binary Qs where user guessed (not skipped)
-  const guessed = q.format === 'binary' && !!myGuess;
+  // Guess feedback state — only for binary Qs where user made a REAL
+  // guess (not the H28 GUESS_SKIPPED sentinel).
+  const guessed = q.format === 'binary' && !!myGuess && myGuess !== GUESS_SKIPPED;
   const correctGuess = guessed && myGuess === theirs;
+  // H28 safety net — user answered a binary Q, partner has also answered,
+  // but no guess/skip persisted. Auto-trigger from submitValue normally
+  // covers this; this inline state catches network drops / focus loss
+  // that could otherwise dead-lock the reveal.
+  const revealBlockedByGuess =
+    !!mine && !both && q.format === 'binary' && !!theirs && !myGuess;
   return (
     <View style={[styles.card, styles.questionCard, { backgroundColor: both ? '#F1F8E9' : cardBg }, both && { borderColor: Colors.success }]}>
       <View style={styles.typePill}>
@@ -1031,10 +1056,28 @@ function QuestionCard({
         </TouchableOpacity>
       )}
 
-      {mine && !both && (
+      {mine && !both && !revealBlockedByGuess && (
         <View style={styles.waitBanner}>
           <Text style={styles.waitText}>✓ Sent! Waiting for {partnerName}…</Text>
           <Text style={styles.waitAnswer}>Your answer: {mine}</Text>
+        </View>
+      )}
+
+      {/* H28 safety net — reveal locked because user hasn't yet guessed
+          or skipped. Explicit button opens the modal on demand so any
+          state where the auto-trigger missed still has a path out. */}
+      {revealBlockedByGuess && onOpenGuess && (
+        <View style={styles.waitBanner}>
+          <Text style={styles.waitText}>{partnerName} answered, guess before revealing</Text>
+          <TouchableOpacity
+            style={styles.askWhyBtn}
+            onPress={onOpenGuess}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel={`Guess ${partnerName}'s pick`}
+          >
+            <Text style={styles.askWhyText}>Guess {partnerName}'s pick →</Text>
+          </TouchableOpacity>
         </View>
       )}
 

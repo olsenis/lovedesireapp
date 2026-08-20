@@ -66,6 +66,20 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
+### H28 · Persist Daily guess-skip via Firestore sentinel + safety-net button — ✅ shipping now
+**Files:** `services/dailyQuestionsService.ts`, `app/daily.tsx`
+**Change:**
+- **B1 fix (Review #8, Medium severity):** cold reload after tapping "Just show me" on the guess modal used to dead-lock the reveal. Skip was tracked in local `skippedGuesses: Set<number>` only — on reload, Set is empty, `qDoc.guesses[uid][gi]` is undefined, `revealed()` returns false, nothing re-triggers the modal. User saw a permanent "waiting" state on a Q where both partners had answered.
+- **Fix**: added `GUESS_SKIPPED = '__skipped__'` sentinel + `skipGuess()` service that persists the skip to `guesses.{uid}.{gi}` (same path + rules as real guesses). `revealed()` now checks only Firestore (`!!qDoc.guesses?.[uid]?.[gi]`) — either real guess text or sentinel unlocks reveal. Local `skippedGuesses` state removed entirely.
+- **Android hardware back**: added `onRequestClose` on the guess Modal that calls `handleGuessSkip` — pressing back = same as "Just show me". Safe default, doesn't dead-lock reveal.
+- **Safety-net inline button**: even after the persistence fix, extreme edge cases (network drop mid-modal-open, focus loss) could still leave user in an "answered but no guess/skip" state. QuestionCard now detects that state (binary Q + partner answered + no myGuess in Firestore) and shows an explicit `"Guess {partnerName}'s pick →"` button that opens the modal on demand. Belt-and-suspenders.
+- **Stats + streak filter**: `getWeeklyGuessStats` and `getGuessStreak` filter the sentinel value so skipped Qs neither inflate the denominator (correct/total) nor break the streak.
+**Why:** Review #8 flagged B1 as Medium severity, guaranteed to surface within launch week. Local-state persistence pattern was structurally wrong for a mechanic that needs to survive cold reload. The fix uses the existing `guesses` map + rules guard — zero new writes, zero schema field additions, zero rules changes.
+**Reviewer disagreement noted for record:**
+- Smæri #2 (notifyPartner ordering): kept current behavior. Partner needs push regardless of user's guess decision — guess is user's own reflection, not gating partner. Not a bug.
+- Smæri #3 (Sunday CI pulseSeededRef race): reviewer's own conclusion was "not a bug".
+- Smæri #4 (menu flicker QA) + #5 (Roulette LDR QA): already covered by Round 5 verification cycles.
+
 ### H26 delta 2 · Remove FW cross-flow toast + prefill Note for Daily Spicy — ✅ shipping now
 **Files:** `app/fantasy-wishes.tsx`, `app/intimacy-tracker.tsx`, `app/daily.tsx`
 **Change:**
