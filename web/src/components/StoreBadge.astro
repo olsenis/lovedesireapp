@@ -1,6 +1,14 @@
 ---
-// App Store + Android APK CTA row. Both link to appropriate destinations,
-// App Store link is a placeholder until the app is live in App Store Connect.
+// App Store + Android APK CTA row. Both link to appropriate destinations.
+//
+// APP_STORE_ID is a placeholder until the app is live in App Store Connect.
+// Real ID arrives during submission — replace once, all StoreBadge instances
+// update. Also flip `IOS_LIVE = true` once the App Store listing goes live
+// so the button is fully enabled.
+const APP_STORE_ID = '0000000000';  // TODO: replace after App Store Connect submission
+const IOS_LIVE = false;              // TODO: flip true when App Store listing is public
+const iosHref = IOS_LIVE ? `https://apps.apple.com/app/id${APP_STORE_ID}` : '#';
+
 export interface Props {
   variant?: 'default' | 'compact';
 }
@@ -9,13 +17,25 @@ const scale = variant === 'compact' ? 'gap-3' : 'gap-4';
 ---
 
 <div class={`flex flex-wrap items-center ${scale}`}>
-  <a
-    href="https://apps.apple.com/app/id0000000000"
-    class="inline-flex items-center gap-2 bg-burgundy text-cream px-6 py-3 rounded-full font-body font-bold text-sm shadow-md hover:shadow-lg transition-shadow"
-  >
-    <span></span>
-    <span>Download for iOS</span>
-  </a>
+  {IOS_LIVE ? (
+    <a
+      href={iosHref}
+      class="inline-flex items-center gap-2 bg-burgundy text-cream px-6 py-3 rounded-full font-body font-bold text-sm shadow-md hover:shadow-lg transition-shadow"
+    >
+      <span>🍎</span>
+      <span>Download for iOS</span>
+    </a>
+  ) : (
+    <button
+      type="button"
+      disabled
+      aria-disabled="true"
+      class="inline-flex items-center gap-2 bg-burgundy text-cream px-6 py-3 rounded-full font-body font-bold text-sm shadow-md opacity-50 cursor-not-allowed"
+    >
+      <span>🍎</span>
+      <span>iOS coming with launch</span>
+    </button>
+  )}
 
   <a
     href="/android"

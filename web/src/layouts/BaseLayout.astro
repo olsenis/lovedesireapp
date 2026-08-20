@@ -43,7 +43,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
   </head>
 
   <body class="bg-cream text-burgundy font-body antialiased">
-    <!-- Nav -->
+    <!-- Nav. Desktop: inline links. Mobile: hamburger via native <details>
+         (zero JS, works with viewer's browser default) that toggles a
+         slide-down link list. The <summary> is the tap-target hamburger. -->
     <nav class="border-b border-border">
       <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
         <a href="/" class="font-heading text-2xl text-burgundy">
@@ -55,6 +57,21 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
           <a href="/faq" class="hover:text-burgundy transition">FAQ</a>
           <a href="/about" class="hover:text-burgundy transition">About</a>
         </div>
+        <!-- Mobile hamburger -->
+        <details class="md:hidden group relative">
+          <summary class="list-none cursor-pointer p-2 -m-2 text-burgundy text-2xl leading-none select-none" aria-label="Menu">
+            <span class="group-open:hidden">☰</span>
+            <span class="hidden group-open:inline">✕</span>
+          </summary>
+          <div class="absolute right-0 top-full mt-2 w-56 bg-cream border border-border rounded-2xl shadow-lg py-2 flex flex-col text-base text-burgundy/85 z-50">
+            <a href="/features" class="px-5 py-3 hover:bg-blush transition">Features</a>
+            <a href="/pricing" class="px-5 py-3 hover:bg-blush transition">Pricing</a>
+            <a href="/faq" class="px-5 py-3 hover:bg-blush transition">FAQ</a>
+            <a href="/about" class="px-5 py-3 hover:bg-blush transition">About</a>
+            <a href="/support" class="px-5 py-3 hover:bg-blush transition">Support</a>
+            <a href="/android" class="px-5 py-3 hover:bg-blush transition">Android</a>
+          </div>
+        </details>
       </div>
     </nav>
 

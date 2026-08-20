@@ -22,14 +22,19 @@ import StoreBadge from '../components/StoreBadge.astro';
       <p class="text-xs text-muted italic mt-2">One subscription covers both partners.</p>
     </div>
 
-    <!-- Hero visual, replace with real screenshot when available -->
-    <div class="relative aspect-[9/16] max-w-sm mx-auto md:mx-0 md:ml-auto rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-burgundy via-burgundy to-[#5a0932] shadow-2xl">
-      <div class="absolute inset-0 flex items-center justify-center p-10">
-        <p class="font-heading text-cream text-3xl text-center leading-snug italic">
-          "Screenshots<br />will land here"
+    <!-- Hero visual, hand-crafted quote card until app screenshots ship.
+         Design intent: cream card with the app's Cormorant wordmark +
+         a single quiet reflection line. Matches the mobile splash overlay
+         so social sharers see continuity. Swap for real screenshot mockups
+         before App Store submit. -->
+    <div class="relative aspect-[9/16] max-w-sm mx-auto md:mx-0 md:ml-auto rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-blush via-cream to-blush shadow-2xl border border-rose/30">
+      <div class="absolute inset-0 flex flex-col items-center justify-center p-10 gap-4">
+        <p class="font-heading text-burgundy text-5xl text-center leading-none">Love Desire</p>
+        <p class="text-rose text-xl">♥</p>
+        <p class="font-heading text-burgundy/70 text-xl text-center italic leading-snug mt-4">
+          "Two of you.<br />One private space."
         </p>
       </div>
-      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 w-24 h-1 bg-cream/30 rounded-full"></div>
     </div>
   </section>
 
@@ -56,7 +61,7 @@ import StoreBadge from '../components/StoreBadge.astro';
       <FeatureCard
         emoji="🫂"
         title="Quiet insight"
-        body="The Lovers intimacy quiz, Relationship Pulse, Sensate Focus, Love Language. For the slower conversations."
+        body="The Lovers intimacy quiz, Presence slow-touch practice, Love Language, and Our Story timeline. For the slower conversations."
         accent="burgundy"
       />
     </div>
