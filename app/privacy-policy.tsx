@@ -31,7 +31,7 @@ export default function PrivacyPolicyScreen() {
         </Text>
 
         <Section title="1. Who we are">
-          {`Love Desire is an independent app. By using Love Desire, you agree to this Privacy Policy. This app is intended for users aged 18 and older. If you are under 18, please do not use this app.`}
+          {`Love Desire is operated by Love Desire ehf., a company registered in Iceland (kt. [PENDING REGISTRATION], registered office in Iceland). By using Love Desire, you agree to this Privacy Policy. Love Desire ehf. is the data controller for the personal data processed through the app.\n\nThis app is intended for users aged 18 and older. If you are under 18, please do not use this app.`}
         </Section>
 
         <Section title="2. Data we collect">

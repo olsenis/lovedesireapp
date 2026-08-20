@@ -27,7 +27,7 @@ export default function TermsOfServiceScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.updated}>Last updated: August 2026</Text>
         <Text style={styles.intro}>
-          Please read these Terms of Service carefully before using the Love Desire app. By creating an account or using Love Desire, you agree to be bound by these terms.
+          Please read these Terms of Service carefully before using the Love Desire app. Love Desire is operated by Love Desire ehf., a company registered in Iceland (kt. [PENDING REGISTRATION], registered office in Iceland). By creating an account or using Love Desire, you agree to be bound by these terms.
         </Text>
 
         <Section title="1. Eligibility">
@@ -71,7 +71,7 @@ export default function TermsOfServiceScreen() {
         </Section>
 
         <Section title="11. Governing law">
-          {`These terms are governed by the laws of Iceland. Any disputes arising from these terms shall be subject to the jurisdiction of Icelandic courts.`}
+          {`These terms are governed by the laws of Iceland. Any disputes arising from these terms shall be subject to the exclusive jurisdiction of Icelandic courts. Love Desire ehf. (kt. [PENDING REGISTRATION]) is the legal entity responsible for the Love Desire app and service.`}
         </Section>
 
         <Section title="12. Contact">

@@ -88,7 +88,14 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - Bumped all four legal pages date May → August 2026
 **Blocked on user actions:**
 - Commit C (associatedDomains + PWA polish) blocked on user completing DNS setup for `app.lovedesireapp.com`
-**Deferred to H32:** Add legal entity info (kennitala + registered address + entity name) to ToS §11 + Privacy Policy §1 — GDPR gap (data controller must be identifiable legal entity). Waiting on user's decision (ehf. vs einstaklings-atvinnurekstur vs personal).
+**H32 structure LANDED (shipping now):** Entity references added to 4 files (mobile + web × Privacy + Terms). Placeholder `[PENDING REGISTRATION]` marks the two values needing swap once Love Desire ehf. is registered at Skatturinn (target: after user has saved 500k stofnfé).
+
+**Find/replace when kennitala arrives** (should be 1-minute swap):
+- Search: `[PENDING REGISTRATION]`
+- Replace with actual kennitala (e.g. `6XXXXX-XXXX`)
+- Files to check: `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro`
+- Also consider adding a registered street address if you register with a specific business address (currently reads "registered office in Iceland" which is legally sufficient but a specific address is nicer for App Store review).
+- After swap: bump "Last updated" date + rebuild + redeploy both mobile and web.
 **Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
 
 ### H29 · Year in Review → Milestone Moment reframe — 📋 POST-LAUNCH QUEUE
