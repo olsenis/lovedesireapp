@@ -195,14 +195,14 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - Commit C (associatedDomains + PWA polish) blocked on user completing DNS setup for `app.lovedesireapp.com`
 **H32 structure LANDED (shipping now):** Entity references added to 4 files (mobile + web × Privacy + Terms). Placeholder `[PENDING REGISTRATION]` marks the two values needing swap once Love Desire ehf. is registered at Skatturinn (target: after user has saved 500k stofnfé).
 
-**Find/replace when kennitala arrives** (should be 2-minute swap for 3 placeholders after H32b rewrite; H37 adds a 5th file):
-- Search: `[PENDING REGISTRATION]` → replace with actual kennitala (e.g. `6XXXXX-XXXX`). ~6 occurrences across 5 files.
-- Search: `[REGISTERED OFFICE ADDRESS]` → replace with actual street/postal address (e.g. `Grettisgata 15, 101 Reykjavík, Iceland`). ~5 occurrences across 5 files.
+**Find/replace when kennitala arrives** (should be 2-minute swap for 3 placeholders after H32b rewrite; H37 added the 5th file, H36 makes it 6):
+- Search: `[PENDING REGISTRATION]` → replace with actual kennitala (e.g. `6XXXXX-XXXX`). ~7 occurrences across 6 files.
+- Search: `[REGISTERED OFFICE ADDRESS]` → replace with actual street/postal address (e.g. `Grettisgata 15, 101 Reykjavík, Iceland`). ~6 occurrences across 6 files.
 - Search: `[VSK-NR PENDING]` → replace with VAT number (e.g. `12345`). 2 occurrences (ToS §12 mobile + web).
-- Files: `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro`, `BREACH_RESPONSE_PLAN.md`
+- Files: `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro`, `BREACH_RESPONSE_PLAN.md`, `DPIA.md`
 - After swap: bump "Last updated" date to registration month + rebuild + redeploy both mobile and web.
 - Verify: `git grep "\[PENDING\|\[REGISTERED\|\[VSK-NR"` should return zero hits.
-- Also swap `[EXTERNAL LEGAL COUNSEL — RETAIN POST-EHF-REGISTRATION]` in `BREACH_RESPONSE_PLAN.md` Section 10 once counsel retained.
+- Also swap `[EXTERNAL LEGAL COUNSEL — RETAIN POST-EHF-REGISTRATION]` in `BREACH_RESPONSE_PLAN.md` Section 10 once counsel retained. Also fill DPIA sign-off placeholders (`[SIGNATORY NAME]`, `[DATE]`, `[SIGN-OFF DATE + 12 months]`) as separate one-line commit — does not depend on ehf. registration.
 **Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
 
 ### H33 · Report / moderation flow for user-uploaded content — ✅ shipping now
@@ -257,16 +257,19 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 3. Update declaration when material changes ship
 **Why:** Persónuvernd may audit adult-content services proactively. Being on their register signals compliance intent and simplifies any inquiry. Blocked on H32 kennitala.
 
-### H36 · Draft Data Protection Impact Assessment (DPIA) — 🟡 SHOULD-HAVE PRE-LAUNCH
-**Source:** GDPR Article 35 requires DPIA for "large-scale processing of special category data". Love Desire processes intimate data (mood, fantasies, intimacy log, sexual pref via The Lovers) — qualifies once user count grows.
-**Scope:** ~3-4h drafting. Ships as `/legal/DPIA.md` in the repo (not published publicly; kept for audit availability).
-**Template**: EDPB DPIA template + Persónuvernd guidance. Sections to cover:
-- Systematic description of processing
-- Necessity + proportionality assessment
-- Risks to data subjects (breach, misuse by partner, chargeback disclosure)
-- Mitigations already in place (encryption, rules, per-couple isolation, no analytics, no data sale)
-- Residual risk assessment + monitoring plan
-**Why:** Not strictly mandatory below "large scale" threshold, but Persónuvernd will ask for it in any audit and it forces you to think through risks systematically. Better to have and never need it than the reverse.
+### H36 · Draft Data Protection Impact Assessment (DPIA) — ✅ shipping now
+**Source:** GDPR Article 35(3)(b) — processing including special categories under Art. 9(1) on a large scale requires DPIA. Love Desire is small-scale at launch but Persónuvernd guidance treats systematic sex-life-data processing by consumer apps as high-risk regardless of scale. Better to have and never need than the reverse.
+**Scope shipped:** `DPIA.md` at repo root, 411 lines, 6 sections per EDPB WP248 rev 01 template:
+1. Systematic description of processing — feature-area × data-class × sensitivity × legal-basis table (14 processing operations enumerated), data flows, sub-processors, cross-border transfers, retention (all verbatim-linked to Privacy Policy §2/§5/§6)
+2. Necessity + proportionality — legal basis per purpose (verbatim from Privacy §3), data-minimisation with justification, purpose limitation (verbatim from Privacy §3), consent quality per Art. 7 including per-feature Art. 9(2)(a) surfaces + H42 photo re-attestation
+3. Consultation + stakeholder involvement — DPO position (Art. 37 threshold not met, restated from Privacy §1), external counsel placeholder, Art. 36 prior consultation not triggered (Medium residual risk)
+4. Risks to data subjects — 9 data-class rows × likelihood × severity × combined grade (reuses H37 Section 5 severity matrix), plus 4 couples-only threat models (ex-partner, coercive partner, Expo push-token, age-gate bypass), plus concrete harm scenarios (outing, workplace discrimination, blackmail, etc.)
+5. Measures envisaged — technical (Privacy §8 verbatim + H33 report isolation + rate limiting + H42 photo consent + dual-layer age gate + cascade delete), organisational (ADMIN_UIDS + H37 breach plan + H33 24h SLA + data-subject rights process + retention discipline), consent-driven, user-facing transparency, deferred/planned (H38, H39, H33-followup email, H40, custom claims, Sentry)
+6. Sign-off + review schedule — signatory placeholder, annual fallback review + trigger-based reviews (material change, real incident, audit)
+**Placeholders:** `[PENDING REGISTRATION]`, `[REGISTERED OFFICE ADDRESS]` shared with H32 (workflow now touches 6 files, up from 5). Sign-off placeholders `[SIGNATORY NAME]`, `[DATE]`, `[SIGN-OFF DATE + 12 months]` are separate — one-line follow-up commit after user signs.
+**Residual risk grade:** Medium after mitigation. Justifies no Art. 36 prior consultation with Persónuvernd. Documented for accountability.
+**Cross-referenced verbatim:** Privacy §3 legal-basis table + §5 sub-processors + §6 retention table + §8 security measures are quoted verbatim (via markdown blockquote) so DPIA + Privacy Policy cannot drift silently.
+**Follow-ups:** user signs (one-line commit); H35 (Persónuvernd registration) becomes actionable since DPIA feeds several registration fields.
 
 ### H37 · Data breach response plan — ✅ shipping now
 **Source:** GDPR Article 33 (72h Persónuvernd notification) + Article 34 (user notification for high-risk breaches). Backs the commitments made in Privacy Policy §8 (H32b, shipped `11885cc`) with an executable playbook.
