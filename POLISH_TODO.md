@@ -66,7 +66,7 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - **#2 Emotional Weather** — needs historical data before it can pattern-match. Revisit post-launch.
 - ~~**#4b Versus starter pool**~~ — obsolete Aug 2026, Versus merged into Daily (see H23 below).
 
-### H41 · Move Tease/Flashes to paid tier — 🟡 PRE-LAUNCH
+### H41 · Move Tease/Flashes to paid tier — ✅ shipping now
 **Source:** Aug 20 product decision. Reduces highest-risk photo-upload surface without killing free-tier value (Moments stays free as flagship daily-photo ritual).
 **Scope:** ~1-2h dev, single commit.
 **Files to touch:**
@@ -82,7 +82,7 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 **Product impact:** Free tier loses Tease. Marketing site + docs must accurately reflect. No user impact pre-launch (feature never publicly launched).
 **Testing:** flip QA couple's `isPremium=false` → verify Tease card on Home shows 🔒 + tapping routes to /upgrade → verify direct navigate to `/flashes` also redirects (screen-level gate). Flip back to Premium → verify Tease accessible.
 
-### H42 · Re-attestation modal at first photo upload — 🟢 NICE-TO-HAVE PRE-LAUNCH
+### H42 · Re-attestation modal at first photo upload — ✅ shipping now
 **Source:** Aug 20 audit tightening. Strengthens 18+ audit trail beyond registration-time attestation.
 **Scope:** ~30-45 min dev.
 **How it works:** first time user taps "Take photo" or "Choose from gallery" (Moments, Tease if kept, Profile photo), modal prompts "Please confirm you are 18 or older and have the right to upload this content." Confirm → writes `users/{uid}/private/photoConsent = { confirmedAt, deviceInfo }` in Firestore. Subsequent uploads skip the modal (Firestore + AsyncStorage cache).
@@ -93,6 +93,36 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - `firestore.rules` — allow write to `users/{uid}/private/photoConsent` by owner only (same pattern as existing consent + help docs)
 **Why:** current 18+ attestation is registration-time only. Adding per-upload attestation strengthens legal defense (two-factor consent trail), aligns with UK Online Safety Act + US state trends toward per-upload consent, low UX friction (fires once per user).
 **Optional / not a launch blocker:** current single-attestation is legally sufficient for Icelandic launch. H42 is defense-in-depth polish. Ship if we want strongest possible legal position.
+
+### H43 · Rename app before launch (escape "Desire" keyword collision) — 🟡 PRE-LAUNCH
+**Source:** Aug 21 competitive research reconfirmation. Competitive research (May 2026) already flagged this — the rename was deferred. Now revisited because pre-launch is the last cheap window to change.
+**Problem:** App Store search for `Desire` returns at least three couples-category competitors before us: **Desire — Couples Game** (Desire Technologies, ~3.1M Play downloads, since 2014, dominant), **Couples Games: Desire for Love** (id 6443401871, phonetic collision with our name), **Desire42** (zombie listing). Users searching `love desire` will hit "Couples Games: Desire for Love" first because App Store search is token-based. Every marketing dollar spent on the "Desire" keyword partly benefits established competitors. Structural discoverability problem — not fixable with marketing budget.
+**Legal risk:** LOW ("Desire" is a common English word, unregistrable as an exclusive mark; our compound "Love Desire" is distinct enough). Real cost is SEO/discovery, not litigation.
+**Cost NOW vs POST-LAUNCH:** rename now = ~1 day of grep/replace across app strings + `app.json` + Firebase display name + marketing site + 4 legal files + ehf name (not yet registered). Post-launch = weeks (bundle ID cannot change → new App Store listing → lose ratings/reviews → user-notify migration → domain redirect + email migration).
+**Shortlist delivered (Aug 21) — App Store availability check:**
+- ✅ **Vespera** — Latin "evening star". Zero couples-app conflict. Only other Vespera brand: Vaonis smart telescope (different category). Feminine -a ending, works in Icelandic. Verb-friendly ("your Vespera hour"). Recommended top pick.
+- ✅ **Solene** — French "solemn/dignified". Equally clear, distinctive, feminine, but harder to spell for non-French speakers.
+- ⚠️ **Perle** — French "pearl". Single word, memorable. Not yet verified against App Store or trademark databases.
+- ❌ **Ember** — 238+ apps in "ember couples" topic on AppsHunter; Ember-AI Couples Intimacy + Ember: AI Relationship Coach both live on App Store. Crowded.
+- ❌ **Amara** — 4+ near-collisions in couples category: Amora - Couples App, Amora: For Deeper Relationship, Amara Club (dating), Amorno: Couples & Relationship. Contested naming space.
+- ❌ **Kindra** — brand collision with Kindu (established competitor, users would misspell) + Kindra menopause brand owns .com + trademark.
+**User next actions (before code rename):**
+1. Domain check — `vespera.com` (likely taken by telescope co; check price), `vespera.app`, `vespera.love`, `vespera.co`, `vespera.is`
+2. Trademark check — [ISIPO](https://www.hugverk.is) (Iceland class 9 + 45) + [EUIPO eSearch plus](https://euipo.europa.eu/eSearch/)
+3. Ehf name check — [Fyrirtækjaskrá at rsk.is](https://www.rsk.is): `Vespera ehf.` (or chosen alt)
+**Code rename scope (once name locked):**
+- `app.json` — expo `name`, `slug`, `scheme`, `ios.bundleIdentifier`, `android.package`, `ios.associatedDomains` (H43 blocks C on this)
+- `package.json` — package name field
+- All in-app copy strings referencing "Love Desire" (grep `git grep -i "Love Desire"`)
+- 4 legal files — kt./ehf placeholder + entity name (H32 workflow already docs this)
+- Marketing site — `web/src/**/*.astro`, favicon, OG images, sitemap, robots.txt
+- Firebase project display name (project ID `lovedesireapp-8c7f2` stays — invisible internally, users never see it)
+- Domain redirect old `lovedesire.com` → new (temporary; can also resell)
+- Vercel project rename + custom domain swap
+- `CLAUDE.md` — every "Love Desire" reference
+**Why now, not later:** ehf not yet registered (blocked on 500k stofnfé anyway), App Store bundle ID not yet chosen, App Store listing not yet submitted, no users yet, no marketing spend yet. Zero-friction moment.
+**Blocks:** H32 kennitala swap (needs final ehf name), Launch-prep Commit C (associatedDomains needs final DNS + bundle), User action Phase 3 (Apple Dev enrollment needs final app name), User action Phase 5 (App Store submission needs final everything).
+**Estimated total:** ~1 day dev (once name chosen), $15-30 for new domain, no other cost.
 
 ### H32b · Comprehensive ToS + Privacy Policy legal rewrite — ✅ shipping now
 **Source:** Two-agent deep audit (Aug 20). 16 HIGH + 7 MEDIUM audit findings across both docs. Both mobile + web versions rewritten section-by-section.

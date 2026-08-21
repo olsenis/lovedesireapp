@@ -23,12 +23,16 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { usePhotoConsent } from '../hooks/usePhotoConsent';
+import { PhotoConsentModal } from '../components/PhotoConsentModal';
 
 export default function ProfileScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
   useTrackScreen('profile');
+  const uid = user?.uid ?? '';
+  const { showPhotoConsent, guardPhotoAction, handleConfirm, handleCancel } = usePhotoConsent();
 
   const [editNameModal, setEditNameModal] = useState(false);
   const [editName, setEditName] = useState('');
@@ -320,7 +324,7 @@ export default function ProfileScreen() {
 
         {/* Avatar + name */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity onPress={handlePickPhoto} style={styles.avatarWrap} accessibilityRole="button">
+          <TouchableOpacity onPress={() => guardPhotoAction(uid, handlePickPhoto)} style={styles.avatarWrap} accessibilityRole="button">
             {profile?.photoURL ? (
               <Image source={{ uri: profile.photoURL }} style={styles.avatar} contentFit="cover" />
             ) : (
@@ -874,6 +878,12 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <PhotoConsentModal
+        visible={showPhotoConsent}
+        onConfirm={() => handleConfirm(uid)}
+        onCancel={handleCancel}
+      />
     </View>
   );
 }

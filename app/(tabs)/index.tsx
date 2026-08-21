@@ -1302,10 +1302,10 @@ export default function HomeScreen() {
             <View style={styles.quickDivider} />
             <TouchableOpacity
               style={styles.quickItem}
-              onPress={() => router.push('/flashes?send=1' as any)}
+              onPress={() => router.push((!isSubscribed ? '/upgrade' : '/flashes?send=1') as any)}
               activeOpacity={0.7}
              accessibilityRole="button">
-              <Text style={styles.quickIcon}>📸</Text>
+              <Text style={styles.quickIcon}>{!isSubscribed ? '🔒' : '📸'}</Text>
               <Text style={styles.quickLabel}>Tease</Text>
             </TouchableOpacity>
             <View style={styles.quickDivider} />

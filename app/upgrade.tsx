@@ -14,6 +14,7 @@ const FEATURES = [
   { emoji: '✨', title: 'Fantasy Wishes', desc: '290+ scenarios, revealed only when you both say yes to the same one' },
   { emoji: '🫁', title: 'Sensate Focus', desc: 'Guided 3-stage sessions from sex therapy practice, at your own pace' },
   { emoji: '🎲', title: 'Fire & Desire challenges', desc: '30 days of committed prompts to reignite what habit has softened' },
+  { emoji: '📸', title: 'Tease', desc: '24-hour photos, videos, and voice notes for the two of you. Gone by morning.' },
   { emoji: '🎴', title: 'Activity Cards', desc: '25 cards a month, take turns drawing what you do together next' },
   { emoji: '🌶️', title: 'Spicy content everywhere', desc: 'Explicit truths, dares, daily picks, and Would You Rather unlocked across the app' },
   { emoji: '🧬', title: 'The Lovers quiz', desc: 'Find out how you each experience pleasure, and what to reach for when you drift apart' },

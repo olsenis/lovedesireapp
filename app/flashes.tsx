@@ -62,6 +62,7 @@ function FlashVoice({ uri, large = false }: { uri: string; large?: boolean }) {
 
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useSubscription } from '../hooks/useSubscription';
 import { FlashEntry, subscribeFlashes, sendFlash, markFlashViewed, formatCountdown } from '../services/flashService';
 import { uploadFlashMedia, UploadTooLargeError } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
@@ -69,12 +70,19 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { usePhotoConsent } from '../hooks/usePhotoConsent';
+import { PhotoConsentModal } from '../components/PhotoConsentModal';
 
 export default function FlashesScreen() {
   const { user, profile } = useAuth();
   const { partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
+  const { isSubscribed, isLoading: subLoading } = useSubscription();
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
+
+  useEffect(() => {
+    if (!subLoading && !isSubscribed) router.replace('/upgrade' as any);
+  }, [subLoading, isSubscribed]);
 
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [sending, setSending] = useState(false);
@@ -87,6 +95,7 @@ export default function FlashesScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   useTrackScreen('flashes');
+  const { showPhotoConsent, guardPhotoAction, handleConfirm, handleCancel } = usePhotoConsent();
 
   useEffect(() => {
     if (!coupleId) return;
@@ -217,6 +226,8 @@ export default function FlashesScreen() {
     }
   };
 
+  if (subLoading || !isSubscribed) return null;
+
   return (
     <View style={styles.container}>
       {/* Decorative gradient backdrop */}
@@ -234,7 +245,7 @@ export default function FlashesScreen() {
           <Text style={styles.title}>Teases</Text>
           <Text style={styles.titleSub}>only between you two · 24h</Text>
         </View>
-        <TouchableOpacity onPress={openLibrary} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Choose photo or video from library">
+        <TouchableOpacity onPress={() => guardPhotoAction(uid, openLibrary)} style={styles.headerBtn} accessibilityRole="button" accessibilityLabel="Choose photo or video from library">
           <Text style={styles.librarySymbol}>⊞</Text>
         </TouchableOpacity>
       </View>
@@ -338,10 +349,10 @@ export default function FlashesScreen() {
           <TouchableOpacity style={styles.mediaFab} onPress={startVoiceRecording} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record voice note">
             <Text style={styles.mediaFabIcon}>🎙</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.mediaFab} onPress={openVideoCamera} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record video">
+          <TouchableOpacity style={styles.mediaFab} onPress={() => guardPhotoAction(uid, openVideoCamera)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Record video">
             <Text style={styles.mediaFabIcon}>🎥</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.mediaFab} onPress={() => openCamera()} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Take photo">
+          <TouchableOpacity style={styles.mediaFab} onPress={() => guardPhotoAction(uid, openCamera)} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Take photo">
             <Text style={styles.mediaFabIcon}>📷</Text>
           </TouchableOpacity>
         </View>
@@ -446,6 +457,12 @@ export default function FlashesScreen() {
           </View>
         </View>
       </Modal>
+
+      <PhotoConsentModal
+        visible={showPhotoConsent}
+        onConfirm={() => handleConfirm(uid)}
+        onCancel={handleCancel}
+      />
     </View>
   );
 }

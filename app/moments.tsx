@@ -12,6 +12,8 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { usePhotoConsent } from '../hooks/usePhotoConsent';
+import { PhotoConsentModal } from '../components/PhotoConsentModal';
 
 export default function MomentsScreen() {
   const { user, profile } = useAuth();
@@ -19,6 +21,7 @@ export default function MomentsScreen() {
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
   useTrackScreen('moments');
+  const { showPhotoConsent, guardPhotoAction, handleConfirm, handleCancel } = usePhotoConsent();
   // Derive partner uid from couple doc, not partner.uid — legacy user docs
   // pre-dating the `uid` field write in authService.register have partner.uid
   // as empty string, which would key photos lookups against '' and permanently
@@ -123,7 +126,7 @@ export default function MomentsScreen() {
                 ? `${partner?.name ?? 'Partner'} already captured theirs, take yours to reveal both`
                 : 'Both of you take a photo, reveal together'}
             </Text>
-            <TouchableOpacity style={styles.cameraBtn} onPress={openCamera} disabled={uploading} activeOpacity={0.85} accessibilityRole="button">
+            <TouchableOpacity style={styles.cameraBtn} onPress={() => guardPhotoAction(uid, openCamera)} disabled={uploading} activeOpacity={0.85} accessibilityRole="button">
               {uploading
                 ? <ActivityIndicator color="#fff" />
                 : <Text style={styles.cameraBtnText}>📷  Take photo</Text>}
@@ -253,6 +256,12 @@ export default function MomentsScreen() {
           </View>
         </View>
       </Modal>
+
+      <PhotoConsentModal
+        visible={showPhotoConsent}
+        onConfirm={() => handleConfirm(uid)}
+        onCancel={handleCancel}
+      />
     </View>
   );
 }

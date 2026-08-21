@@ -294,7 +294,7 @@ Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate 
 - Versus mode (data-gated — hidden in Discover until partner has answered 5+ binary questions in Daily, then permanently visible with a NEW badge for the first 7 days. Not paywalled. Empty state deep-link explains the unlock threshold.)
 - Would You Rather: Playful + Romantic only
 - Tonight's Date (full)
-- All connection features: Mood, Notes, Moments, Countdowns, Reminders, Tease (full)
+- All connection features: Mood, Notes, Moments, Countdowns, Reminders (full)
 - Love Language Quiz, Sunday Check-in (5-dimension pulse + 5 Gottman questions with mutual reveal, full — was standalone Pulse pre-Aug 2026)
 - 30-Day Challenge: Reconnect + Spark programs only
 
@@ -307,6 +307,7 @@ Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate 
 - Sensate Focus (entire feature)
 - 30-Day Challenge: Fire + Desire programs
 - Activity Cards (entire feature)
+- Tease (24h ephemeral photos, videos, voice — moved to paid Aug 2026 per H41: narrows highest-risk photo-upload surface. Moments stays free as flagship daily-photo ritual.)
 - Kinky + Horny moods (shown greyed with lock for free users)
 
 ## Age gate + explicit-content consent
