@@ -67,6 +67,34 @@ export interface AdminTimeInsights {
   leaderboard: LeaderboardEntry[];
 }
 
+export type ReportCategory = 'csam' | 'ncii' | 'harassment' | 'other';
+export type ReportContentType =
+  | 'moment' | 'flash' | 'note' | 'todo'
+  | 'truthdare' | 'fantasy-wish' | 'wyr-custom';
+export type ReportStatus = 'pending' | 'dismissed' | 'content_removed' | 'couple_disconnected';
+export type ReportAction = 'dismiss' | 'remove_content' | 'disconnect_couple';
+
+export interface Report {
+  id: string;
+  reporterUid: string;
+  coupleId: string;
+  targetUid: string;
+  contentType: ReportContentType;
+  contentPath: string;
+  contentSnippet: string;
+  contentStorageUrl: string | null;
+  category: ReportCategory;
+  detail: string;
+  disconnected: boolean;
+  status: ReportStatus;
+  createdAt: number;
+  resolvedAt?: number;
+  resolvedBy?: string;
+  resolveNotes?: string;
+  reporterEmail: string | null;
+  targetEmail: string | null;
+}
+
 const _adminGetOverview = httpsCallable<void, AdminOverview>(functions, 'adminGetOverview');
 const _adminGetStats = httpsCallable<{ month: string }, AdminStats>(functions, 'adminGetStats');
 const _adminGrantPremium = httpsCallable<{ coupleId: string }, { ok: true; coupleId: string }>(
@@ -89,6 +117,14 @@ const _adminGetTimeInsights = httpsCallable<{ month: string }, AdminTimeInsights
   functions,
   'adminGetTimeInsights',
 );
+const _adminGetReports = httpsCallable<{ status?: ReportStatus; limit?: number }, { reports: Report[] }>(
+  functions,
+  'adminGetReports',
+);
+const _adminResolveReport = httpsCallable<
+  { reportId: string; action: ReportAction; notes?: string },
+  { ok: true; action: ReportAction; newStatus: ReportStatus }
+>(functions, 'adminResolveReport');
 
 export async function adminGetOverview(): Promise<AdminOverview> {
   const res = await _adminGetOverview();
@@ -121,4 +157,16 @@ export async function adminGetSessionStats(month: string): Promise<AdminSessionS
 export async function adminGetTimeInsights(month: string): Promise<AdminTimeInsights> {
   const res = await _adminGetTimeInsights({ month });
   return res.data;
+}
+
+export async function adminGetReports(status: ReportStatus = 'pending', limit = 50): Promise<Report[]> {
+  const res = await _adminGetReports({ status, limit });
+  return res.data.reports;
+}
+
+export async function adminResolveReport(
+  reportId: string, action: ReportAction, notes?: string,
+): Promise<{ action: ReportAction; newStatus: ReportStatus }> {
+  const res = await _adminResolveReport({ reportId, action, notes });
+  return { action: res.data.action, newStatus: res.data.newStatus };
 }

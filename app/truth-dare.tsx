@@ -27,6 +27,8 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
+import { useReport } from '../hooks/useReport';
+import { ReportModal } from '../components/ReportModal';
 
 const LEVELS: DareLevel[] = ['sweet', 'flirty', 'spicy'];
 
@@ -102,6 +104,7 @@ export default function TruthDareScreen() {
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
+  const { reportContentRef, openReport, closeReport } = useReport();
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
   const partnerName = partner?.name ?? 'Partner';
 
@@ -865,6 +868,23 @@ export default function TruthDareScreen() {
             cfg={cfg}
             onDone={handleDone}
             isMyTurn={isMyTurn}
+            onReport={
+              coupleId && session.card?.type === 'truth'
+                && (session.card?.answer || session.card?.audioURL)
+                && session.card?.answeredBy && session.card.answeredBy !== uid
+                ? () => {
+                    const card = session.card!;
+                    openReport({
+                      contentType: 'truthdare',
+                      contentPath: `couples/${coupleId}/truthDare/current`,
+                      contentSnippet: `Truth answer: ${card.audioURL ? '(voice)' : (card.answer ?? '').slice(0, 180)}`,
+                      contentStorageUrl: card.audioURL ?? undefined,
+                      targetUid: card.answeredBy!,
+                      coupleId,
+                    });
+                  }
+                : undefined
+            }
           />
         )}
 
@@ -875,13 +895,18 @@ export default function TruthDareScreen() {
           </View>
         )}
       </ScrollView>
+
+      <ReportModal
+        contentRef={reportContentRef}
+        onClose={closeReport}
+      />
     </View>
   );
 }
 
 // ── Done card extracted to keep audio lifecycle isolated ──────────────────────
 function DoneCard({
-  session, uid, partnerName, targetName, cfg, onDone, isMyTurn,
+  session, uid, partnerName, targetName, cfg, onDone, isMyTurn, onReport,
 }: {
   session: TruthDareSession;
   uid: string;
@@ -890,6 +915,7 @@ function DoneCard({
   cfg: ReturnType<typeof Object.values>[0] & { emoji: string; label: string; color: string; textColor: string };
   onDone: () => void;
   isMyTurn: boolean;
+  onReport?: () => void;
 }) {
   const card = session.card!;
   const playbackPlayer = useAudioPlayer(card.audioURL ?? undefined);
@@ -953,6 +979,18 @@ function DoneCard({
       <TouchableOpacity style={[styles.actionBtn, styles.dareActionBtn]} onPress={onDone} activeOpacity={0.85} accessibilityRole="button">
         <Text style={styles.actionBtnText}>Done, {isMyTurn ? partnerName + "'s" : 'your'} turn →</Text>
       </TouchableOpacity>
+
+      {onReport && (
+        <TouchableOpacity
+          style={styles.reportLink}
+          onPress={onReport}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={`Report ${partnerName}'s answer`}
+        >
+          <Text style={styles.reportLinkText}>Report {partnerName}'s answer</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -1058,6 +1096,8 @@ const styles = StyleSheet.create({
 
   dareConfirmedBanner: { backgroundColor: '#E8F5E9', borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center' },
   dareConfirmedText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#2E7D32' },
+  reportLink: { alignItems: 'center', paddingVertical: Spacing.sm, marginTop: Spacing.xs },
+  reportLinkText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, textDecorationLine: 'underline' },
 
   scoreRow: { alignItems: 'center', paddingVertical: Spacing.sm },
   scoreText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },

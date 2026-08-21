@@ -18,6 +18,8 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
+import { useReport } from '../hooks/useReport';
+import { ReportModal } from '../components/ReportModal';
 
 type Condition = 'sad' | 'visit' | 'missing' | 'sleepless';
 type Occasion = { label: string; offset: number; condition?: Condition };
@@ -136,6 +138,9 @@ export default function NotesScreen() {
   const isLDR = !!couple?.isLongDistance;
   const occasions: Occasion[] = isLDR ? [...OCCASIONS, ...LDR_OCCASIONS] : OCCASIONS;
   useTrackScreen('notes');
+  const { reportContentRef, openReport, closeReport } = useReport();
+  const uid = user?.uid ?? '';
+  const coupleId = profile?.coupleId ?? '';
   const [notes, setNotes] = useState<LoveNote[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const help = useHelp('love-notes');
@@ -689,11 +694,40 @@ export default function NotesScreen() {
               {openedNote.mediaType !== 'voice' && openedNote.message ? (
                 <Text style={styles.noteViewerMsg}>{openedNote.message}</Text>
               ) : null}
+              {openedNote.fromUid !== uid && (
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    const target = openedNote;
+                    setOpenedNote(null);
+                    openReport({
+                      contentType: 'note',
+                      contentPath: `couples/${coupleId}/notes/${target.id}`,
+                      contentSnippet: target.mediaType === 'voice'
+                        ? `Voice note: ${target.label ?? target.message ?? 'untitled'}`.slice(0, 200)
+                        : (target.message ?? '').slice(0, 200),
+                      contentStorageUrl: target.audioURL,
+                      targetUid: target.fromUid,
+                      coupleId,
+                    });
+                  }}
+                  style={styles.reportLink}
+                  accessibilityRole="button"
+                  accessibilityLabel="Report this note"
+                >
+                  <Text style={styles.reportLinkText}>Report this note</Text>
+                </TouchableOpacity>
+              )}
               <Text style={styles.noteViewerHint}>Tap anywhere to close</Text>
             </View>
           </TouchableOpacity>
         </Modal>
       )}
+
+      <ReportModal
+        contentRef={reportContentRef}
+        onClose={closeReport}
+      />
 
       {/* Rename modal — long-press on a voice note in the list, OR Rename link
           from the opened viewer. Empty save clears any existing label so the
@@ -873,5 +907,7 @@ const styles = StyleSheet.create({
   noteViewerCaption: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
   renameLink: { paddingVertical: 6 },
   renameLinkText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.burgundy },
+  reportLink: { paddingVertical: 6 },
+  reportLinkText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, textDecorationLine: 'underline' },
   noteViewerHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 });

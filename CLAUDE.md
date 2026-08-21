@@ -143,6 +143,8 @@ users/{uid}                          UserProfile — name, photoURL, coupleId, i
 users/{uid}/private/blueprint        BlueprintResult — type, scores, completedAt
 users/{uid}/private/help             HelpState — enabled, seen[]
 users/{uid}/private/features         FeatureUnlockState — versusUnlockedAt? (sticky, per-user data-gate unlocks)
+users/{uid}/private/consent          ConsentState — confirmed, confirmedAt (age + explicit-content attestation)
+users/{uid}/private/photoConsent     PhotoConsentState — confirmed, confirmedAt (H42 first-photo re-attestation)
 
 couples/{coupleId}                   Couple — partner1Uid, partner2Uid, inviteCode, createdAt, startDate?
 couples/{coupleId}/todos/{id}        Todo — text, category, completed, createdBy, createdAt
@@ -163,6 +165,8 @@ couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToLi
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
 couples/{coupleId}/stateUnion/{weekId} StateUnionDoc — weekId, startedAt, completedAt{uid:ts}, answeredCount{uid:n}
 couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers{qi:text}, updatedAt (rules: only readable by owner OR after both completed)
+
+reports/{reportId}                   H33 Report — reporterUid, coupleId, targetUid, contentType, contentPath, contentSnippet, contentStorageUrl?, category, detail?, disconnected, status, createdAt, resolvedAt?, resolvedBy?, resolveNotes? (top-level, admin-SDK-only access via callables; couples wildcard NOT applied)
 ```
 
 ### Services (`/services`)
@@ -191,12 +195,17 @@ couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 | `versusService.ts` | `loadVersusPool`, `getPartnerBinaryAnswerCount`, `VERSUS_UNLOCK_THRESHOLD` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items. Threshold gates whether Versus is shown in Discover at all (see below). |
 | `featureUnlockService.ts` | `getFeatureUnlockState`, `markVersusUnlocked`, `isVersusUnlockRecent` — persists per-user unlocks at `users/{uid}/private/features`. In-memory cached. |
+| `reportService.ts` | `submitReport(input)`, `reportCategoryLabel`, `shouldPrecheckDisconnect`, `offersDisconnect` — H33 moderation. Wraps `submitReport` callable which writes to top-level `/reports/{reportId}` and optionally atomically disconnects the reporter's couple. Rate-limited server-side (20/day/uid). |
+| `photoConsentService.ts` | `hasPhotoConsent(uid)`, `confirmPhotoConsent(uid)` — H42 first-photo re-attestation. AsyncStorage cache short-circuits Firestore read after first grant. |
 
 ### Hooks
 
 - `useAuth()` — returns `{ user, profile, loading }`
 - `useCouple(myUid, coupleId)` — returns `{ couple, partner, loading }`
 - `useHelp(featureKey)` — returns `{ visible, dismiss, dismissAll }` for first-visit help popups
+- `useSubscription()` — returns `{ isSubscribed, isLoading }` from `couples/{id}.isPremium`
+- `usePhotoConsent()` — H42 photo consent guard; `guardPhotoAction(uid, action)` fires modal if unconsented, invokes action after grant
+- `useReport()` — H33 report launcher; `openReport(contentRef)` opens ReportModal with content reference, `reportContentRef` + `closeReport` for modal state
 
 ### Static content (`/constants/content.ts`)
 

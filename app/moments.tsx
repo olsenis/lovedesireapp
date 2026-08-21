@@ -14,6 +14,8 @@ import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { usePhotoConsent } from '../hooks/usePhotoConsent';
 import { PhotoConsentModal } from '../components/PhotoConsentModal';
+import { useReport } from '../hooks/useReport';
+import { ReportModal } from '../components/ReportModal';
 
 export default function MomentsScreen() {
   const { user, profile } = useAuth();
@@ -22,6 +24,7 @@ export default function MomentsScreen() {
   const coupleId = profile?.coupleId ?? '';
   useTrackScreen('moments');
   const { showPhotoConsent, guardPhotoAction, handleConfirm, handleCancel } = usePhotoConsent();
+  const { reportContentRef, openReport, closeReport } = useReport();
   // Derive partner uid from couple doc, not partner.uid — legacy user docs
   // pre-dating the `uid` field write in authService.register have partner.uid
   // as empty string, which would key photos lookups against '' and permanently
@@ -217,6 +220,27 @@ export default function MomentsScreen() {
                 <Text style={styles.viewerLabel}>{partner?.name ?? 'Partner'}</Text>
               </View>
               <Text style={styles.viewerDate}>{formatDate(viewingMoment.date)}</Text>
+              {viewingMoment.photos?.[partnerUid] && partnerUid && (
+                <TouchableOpacity
+                  style={styles.viewerReport}
+                  onPress={() => {
+                    const partnerPhoto = viewingMoment.photos[partnerUid];
+                    openReport({
+                      contentType: 'moment',
+                      contentPath: `couples/${coupleId}/moments/${viewingMoment.date}`,
+                      contentSnippet: `Moments photo from ${formatDate(viewingMoment.date)}`,
+                      contentStorageUrl: partnerPhoto?.photoURL,
+                      targetUid: partnerUid,
+                      coupleId,
+                    });
+                    setViewingMoment(null);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Report ${partner?.name ?? 'partner'}'s photo`}
+                >
+                  <Text style={styles.viewerReportText}>Report {partner?.name ?? "partner"}'s photo</Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -261,6 +285,11 @@ export default function MomentsScreen() {
         visible={showPhotoConsent}
         onConfirm={() => handleConfirm(uid)}
         onCancel={handleCancel}
+      />
+
+      <ReportModal
+        contentRef={reportContentRef}
+        onClose={closeReport}
       />
     </View>
   );
@@ -340,6 +369,8 @@ const styles = StyleSheet.create({
   viewerLabels: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', paddingVertical: Spacing.sm },
   viewerLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: '#fff' },
   viewerDate: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
+  viewerReport: { marginTop: Spacing.lg, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  viewerReportText: { fontFamily: Fonts.body, fontSize: 12, color: 'rgba(255,255,255,0.55)', textDecorationLine: 'underline' },
   // Preview modal for captured photo before upload — user can Retake
   // or Send. Full-screen, matches Moments' dark viewer aesthetic.
   previewContainer: { flex: 1, backgroundColor: '#000' },

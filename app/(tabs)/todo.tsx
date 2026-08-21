@@ -14,6 +14,8 @@ import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
 import { useTrackScreen } from '../../hooks/useTrackScreen';
+import { useReport } from '../../hooks/useReport';
+import { ReportModal } from '../../components/ReportModal';
 
 const CATEGORIES: { key: TodoCategory; label: string; emoji: string; color: string }[] = [
   { key: 'daily',    label: 'Daily Life',  emoji: '🏠', color: '#FFF3E0' },
@@ -82,6 +84,7 @@ export default function TogetherScreen() {
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
+  const { reportContentRef, openReport, closeReport } = useReport();
 
   useEffect(() => {
     if (!coupleId) return;
@@ -336,6 +339,27 @@ export default function TogetherScreen() {
                     <TouchableOpacity style={styles.detailDeleteBtn} onPress={() => handleDelete(selectedTodo.id)} activeOpacity={0.85} accessibilityRole="button" accessibilityHint="Cannot be undone">
                       <Text style={styles.detailDeleteText}>Remove</Text>
                     </TouchableOpacity>
+                    {!addedByMe && coupleId && (
+                      <TouchableOpacity
+                        style={styles.detailReportBtn}
+                        onPress={() => {
+                          const target = selectedTodo;
+                          closeDetail();
+                          openReport({
+                            contentType: 'todo',
+                            contentPath: `couples/${coupleId}/todos/${target.id}`,
+                            contentSnippet: (target.text ?? '').slice(0, 200),
+                            targetUid: target.createdBy,
+                            coupleId,
+                          });
+                        }}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Report this item from ${partner?.name ?? 'partner'}`}
+                      >
+                        <Text style={styles.detailReportText}>Report this item</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity style={styles.detailCloseBtn} onPress={closeDetail} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Close">
                       <Text style={styles.detailCloseText}>Close</Text>
                     </TouchableOpacity>
@@ -369,6 +393,11 @@ export default function TogetherScreen() {
         destructive
         onConfirm={confirmDelete}
         onCancel={() => setDeleteId(null)}
+      />
+
+      <ReportModal
+        contentRef={reportContentRef}
+        onClose={closeReport}
       />
     </View>
   );
@@ -484,6 +513,8 @@ const styles = StyleSheet.create({
   detailBtnTextDone: { color: Colors.muted },
   detailDeleteBtn: { paddingVertical: Spacing.sm, alignItems: 'center' },
   detailDeleteText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.error },
+  detailReportBtn: { paddingVertical: Spacing.sm, alignItems: 'center' },
+  detailReportText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, textDecorationLine: 'underline' },
   detailCloseBtn: { paddingVertical: Spacing.xs, alignItems: 'center' },
   detailCloseText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
   check: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: Colors.rose, alignItems: 'center', justifyContent: 'center' },

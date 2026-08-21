@@ -18,6 +18,8 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
+import { useReport } from '../hooks/useReport';
+import { ReportModal } from '../components/ReportModal';
 
 const LEVELS: WYRLevel[] = ['playful', 'romantic', 'spicy'];
 
@@ -135,6 +137,7 @@ export default function WouldYouRatherScreen() {
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
+  const { reportContentRef, openReport, closeReport } = useReport();
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
 
   useEffect(() => {
@@ -463,6 +466,23 @@ export default function WouldYouRatherScreen() {
                       >
                         <Text style={styles.manageRowBtnText}>🗑</Text>
                       </TouchableOpacity>
+                      {q.createdBy && q.createdBy !== uid && coupleId && (
+                        <TouchableOpacity
+                          onPress={() => openReport({
+                            contentType: 'wyr-custom',
+                            contentPath: `couples/${coupleId}/wyrCustom/${q.id}`,
+                            contentSnippet: `${q.a} vs ${q.b}`.slice(0, 200),
+                            targetUid: q.createdBy,
+                            coupleId,
+                          })}
+                          style={styles.manageRowBtn}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel="Report this question"
+                        >
+                          <Text style={styles.manageRowBtnText}>🛡</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   );
                 })}
@@ -965,7 +985,10 @@ export default function WouldYouRatherScreen() {
         onCancel={() => setShowChangeLevel(false)}
       />
 
-
+      <ReportModal
+        contentRef={reportContentRef}
+        onClose={closeReport}
+      />
     </View>
   );
 }

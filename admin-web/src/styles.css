@@ -531,3 +531,102 @@ input { font-family: inherit; }
   margin-top: 8px;
 }
 .modal-btns button { flex: 1; }
+
+/* ─── H33 Reports tab ─── */
+.reports-tab { display: flex; flex-direction: column; gap: 12px; }
+.reports-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.reports-filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.reports-filter {
+  padding: 6px 12px; font-size: 12px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--cream);
+  color: var(--muted); cursor: pointer;
+}
+.reports-filter.active { border-color: var(--burgundy); background: var(--burgundy); color: var(--cream); }
+.reports-refresh {
+  padding: 6px 12px; font-size: 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--cream); cursor: pointer;
+}
+.reports-empty {
+  padding: 32px 16px; text-align: center; color: var(--muted);
+  font-style: italic; background: var(--cream);
+  border: 1px solid var(--border); border-radius: var(--radius-xl);
+}
+.reports-error {
+  padding: 12px; color: #B71C1C; background: #FFEBEE;
+  border-radius: 8px; font-size: 13px;
+}
+.report-row {
+  padding: 12px 16px; background: var(--cream);
+  border: 1px solid var(--border); border-radius: var(--radius-xl);
+  cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+}
+.report-row:hover { border-color: var(--burgundy); }
+.report-row-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.report-category-pill {
+  padding: 3px 10px; border-radius: 999px; font-size: 11px;
+  color: white; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.report-content-type { font-size: 12px; color: var(--muted); }
+.report-time { font-size: 11px; color: var(--muted); margin-left: auto; }
+.report-snippet {
+  font-size: 14px; color: var(--text); line-height: 1.5;
+  font-style: italic;
+}
+.report-meta {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  font-size: 11px; color: var(--muted);
+}
+.report-disc { color: #E65100; font-weight: 600; }
+.report-detail {
+  font-size: 12px; color: var(--muted);
+  padding: 6px 10px; background: white;
+  border-left: 2px solid var(--rose, #F4A7B9);
+  border-radius: 4px;
+}
+.report-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; z-index: 100; overflow-y: auto;
+}
+.report-modal {
+  background: white; border-radius: var(--radius-xl);
+  padding: 24px; max-width: 560px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.report-modal h3 {
+  font-family: var(--heading); font-size: 22px;
+  color: var(--burgundy); margin: 0;
+}
+.report-modal-info { font-size: 13px; line-height: 1.6; display: flex; flex-direction: column; gap: 3px; }
+.report-modal-info code { font-size: 11px; background: var(--cream); padding: 1px 4px; border-radius: 3px; }
+.report-modal-flag {
+  color: #E65100; font-weight: 600; padding: 8px;
+  background: #FFF3E0; border-radius: 6px; margin-top: 6px;
+}
+.report-notes {
+  padding: 10px; border: 1px solid var(--border); border-radius: 8px;
+  font-family: inherit; font-size: 13px; resize: vertical;
+}
+.report-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.report-action-btn {
+  flex: 1; padding: 10px; border: 0; border-radius: 8px;
+  font-weight: 600; cursor: pointer; min-width: 140px;
+}
+.report-action-btn:disabled { opacity: 0.5; cursor: default; }
+.report-action-dismiss { background: var(--cream); color: var(--muted); border: 1px solid var(--border); }
+.report-action-remove { background: #E65100; color: white; }
+.report-action-disconnect { background: #B71C1C; color: white; }
+.report-resolved-info {
+  padding: 12px; background: var(--cream); border-radius: 8px;
+  font-size: 13px; line-height: 1.6;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.report-modal-close {
+  padding: 8px; background: transparent; color: var(--muted);
+  border: 0; cursor: pointer; font-size: 13px;
+}

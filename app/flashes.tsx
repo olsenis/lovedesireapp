@@ -72,6 +72,8 @@ import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { usePhotoConsent } from '../hooks/usePhotoConsent';
 import { PhotoConsentModal } from '../components/PhotoConsentModal';
+import { useReport } from '../hooks/useReport';
+import { ReportModal } from '../components/ReportModal';
 
 export default function FlashesScreen() {
   const { user, profile } = useAuth();
@@ -96,6 +98,7 @@ export default function FlashesScreen() {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   useTrackScreen('flashes');
   const { showPhotoConsent, guardPhotoAction, handleConfirm, handleCancel } = usePhotoConsent();
+  const { reportContentRef, openReport, closeReport } = useReport();
 
   useEffect(() => {
     if (!coupleId) return;
@@ -454,6 +457,29 @@ export default function FlashesScreen() {
             <Text style={styles.viewerCountdown}>
               ⏱ {viewingFlash ? formatCountdown(viewingFlash.expiresAt) : ''}
             </Text>
+            {viewingFlash && viewingFlash.fromUid !== uid && (
+              <TouchableOpacity
+                style={styles.viewerReport}
+                onPress={() => {
+                  const flash = viewingFlash;
+                  openReport({
+                    contentType: 'flash',
+                    contentPath: `couples/${coupleId}/flashes/${flash.id}`,
+                    contentSnippet: flash.caption
+                      ? `Tease: "${flash.caption}"`
+                      : `Tease (${flash.mediaType})`,
+                    contentStorageUrl: flash.mediaURL,
+                    targetUid: flash.fromUid,
+                    coupleId,
+                  });
+                  setViewingFlash(null);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Report this tease"
+              >
+                <Text style={styles.viewerReportText}>Report this tease</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </Modal>
@@ -462,6 +488,11 @@ export default function FlashesScreen() {
         visible={showPhotoConsent}
         onConfirm={() => handleConfirm(uid)}
         onCancel={handleCancel}
+      />
+
+      <ReportModal
+        contentRef={reportContentRef}
+        onClose={closeReport}
       />
     </View>
   );
@@ -649,4 +680,6 @@ const styles = StyleSheet.create({
   viewerFooter: { position: 'absolute', bottom: 60, left: 0, right: 0, alignItems: 'center', padding: Spacing.md },
   viewerCaption: { fontFamily: Fonts.body, fontSize: 16, color: '#fff', marginBottom: 8, textAlign: 'center' },
   viewerCountdown: { fontFamily: Fonts.body, fontSize: 13, color: 'rgba(255,255,255,0.7)' },
+  viewerReport: { marginTop: Spacing.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
+  viewerReportText: { fontFamily: Fonts.body, fontSize: 12, color: 'rgba(255,255,255,0.55)', textDecorationLine: 'underline' },
 });

@@ -204,16 +204,39 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - Verify: `git grep "\[PENDING\|\[REGISTERED\|\[VSK-NR"` should return zero hits.
 **Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
 
-### H33 · Report / moderation flow for user-uploaded content — 🔴 LAUNCH BLOCKER
-**Source:** Icelandic law review (Aug 20). §210a barnaklám / KSAM strict liability — operator is directly responsible for illegal user content unless there's a takedown mechanism. Currently ZERO report flow exists.
-**Scope:** ~4-6h dev work, single commit.
-**Files to touch:**
-- NEW `services/reportService.ts` — `submitReport(coupleId, uid, contentType, contentId, reason)` writes to new `reports` root collection; admin dashboard notification.
-- `app/moments.tsx`, `app/flashes.tsx` (Tease), `app/notes.tsx` (Love Notes with photos if any), + FW/dares screens with user-generated text — add report button (three-dot menu → "Report this content") on any photo/video/audio/user-text.
-- `admin-web/src/AdminScreen.tsx` — new "Reports" tab showing incoming reports; one-tap review + delete + user-notification workflow.
-- `firestore.rules` — new `reports/{id}` collection: create allowed by any auth user, read/update only by admin.
-- `functions/src/index.ts` — optional `adminDeleteReportedContent(reportId)` callable that atomically deletes reported content + updates report status + optionally soft-bans the uploader.
-**Why:** Even if 100% of users are consenting adults, one bad-actor upload triggers §210a strict liability. Report flow doesn't eliminate the risk but establishes takedown ability which is the legal standard for "reasonable measures". Post-launch add automated PhotoDNA hash detection when volume warrants.
+### H33 · Report / moderation flow for user-uploaded content — ✅ shipping now
+**Source:** Icelandic law review (Aug 20). §210a barnaklám / KSAM strict liability — operator is directly responsible for illegal user content unless there's a takedown mechanism. Apple guideline 1.2 requires reporting mechanism + block mechanism + timely response for any UGC-hosting app. H32b ToS explicitly promises abuse@lovedesireapp.com + 24h SLA.
+**Scope shipped:**
+- **New Firestore data model** — top-level `/reports/{reportId}` collection. Kept top-level (NOT under `/couples/{coupleId}/`) because the wildcard rule at `couples/{coupleId}/{subcollection}/{document=**}` grants couple-member read access on any subcollection; reports must never be readable by the couple. Firestore rules: `allow read, create, update, delete: if false;` — everything via callable (admin SDK bypasses rules).
+- **3 new Cloud Functions in `functions/src/index.ts`:**
+  - `submitReport` — server-authoritative timestamp + rate-limit (20 reports/day/uid) + validation (couple membership, target is other partner, cannot report own content) + optional atomic disconnect via `disconnectCoupleAdmin` helper
+  - `adminGetReports` — `assertAdmin` gate, filters by status, enriches with reporter/target email from admin.auth().getUser
+  - `adminResolveReport` — `assertAdmin` gate, actions: `dismiss` / `remove_content` (deletes Firestore doc at contentPath + Storage blob if contentStorageUrl) / `disconnect_couple` (unpairs the target user)
+- **Client-side:**
+  - `services/reportService.ts` — typed callable wrapper with `ReportCategory` / `ReportContentType` / `reportCategoryLabel` / `shouldPrecheckDisconnect` / `offersDisconnect` helpers
+  - `hooks/useReport.ts` — mirrors `usePhotoConsent` pattern, tracks `reportContentRef` + `openReport(ref)` + `closeReport()`
+  - `components/ReportModal.tsx` — brand-styled modal with 4 categories (Sexualises a minor / Non-consensual intimate content / Harassment or abuse / Other), free-text detail field, category-driven disconnect checkbox (CSAM/NCII pre-checked with strong copy, harassment offered, other hidden), submit + cancel, in-modal error states for rate-limit + invalid-argument
+- **6 of 7 UGC surfaces wired:**
+  - `app/moments.tsx` — fullscreen viewer footer, "Report {partner}'s photo" link, only shows when partner has a photo for that day
+  - `app/flashes.tsx` — viewer footer, "Report this tease" link, only for incoming flashes
+  - `app/notes.tsx` — noteViewer modal, "Report this note" link, only when `openedNote.fromUid !== uid`
+  - `app/(tabs)/todo.tsx` — item detail sheet, "Report this item" link between Remove and Close, only when `selectedTodo.createdBy !== uid`
+  - `app/truth-dare.tsx` — DoneCard, "Report {partner}'s answer" link, only for truth-type cards with an answer authored by the other partner
+  - `app/would-you-rather.tsx` — WYR custom management list, 🛡 shield button next to edit/delete on partner-authored custom questions
+- **Fantasy Wishes deferred to H33-followup** — the `FantasyWishesItem` type has no `createdBy` field so we can't distinguish user-added from preset. Adding `createdBy` requires a schema change + backfill; safer post-launch.
+- **Admin dashboard (`admin-web`):**
+  - `adminService.ts` — new typed wrappers `adminGetReports` + `adminResolveReport` with full `Report` / `ReportAction` / `ReportStatus` types
+  - `components/ReportsTab.tsx` — status filter row (Pending / Dismissed / Content removed / Couple disconnected), refresh button, row list with category pill + content-type label + snippet + reporter/target emails + detail, click-through detail modal with content path + storage blob link + admin notes textarea + 3 resolve action buttons (Dismiss / Remove content / Disconnect couple)
+  - `screens/AdminScreen.tsx` — new "Reports queue" section between "Feature usage" and "Time-of-day heatmap"
+  - `styles.css` — ~90 lines of report-tab styling matching existing burgundy/cream palette
+**Non-goals shipped (deferred to H33-followup):**
+- Real email forwarding to `abuse@lovedesireapp.com` (SendGrid or Firebase Extensions "Trigger Email") — Firestore queue is sufficient audit trail for launch
+- 24h SLA monitoring (alert if unresolved report ages > 20h)
+- Disable-user action (revoke tokens + soft-flag account) — requires user-notification + appeal flow
+- Fantasy Wishes report entry — needs `createdBy` schema addition first
+- Custom-claims admin auth — using existing `ADMIN_UIDS` inline pattern
+**Deploy order for launch:** `npx firebase deploy --only functions --account lovedesireapp@gmail.com --project lovedesireapp-8c7f2` MUST run before mobile client push, or clients get `functions/internal` on first report attempt. Rules also need `npx firebase deploy --only firestore:rules`.
+**Verification:** manual walkthrough of each report entry point on 2 phones; verify Firestore write; check admin dashboard shows queue; test each resolve action end-to-end.
 
 ### H34 · Sign Firebase Data Processing Agreement (DPA) — 🔴 LAUNCH BLOCKER
 **Source:** GDPR Article 28 requires DPA between data controller (Love Desire ehf) and processors (Google Firebase). Without it, Firebase-processed data may be non-compliant.
@@ -257,6 +280,15 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 
 ### H32 · Legal entity kennitala swap when Love Desire ehf registers — 🟢 STRUCTURE LANDED
 _(See earlier entry above — 30-sec find/replace across 4 files when kennitala arrives.)_
+
+### H33-followup · Report/moderation hardening — 📋 POST-LAUNCH
+**Deferred from H33 v1 (shipped Aug 21). H33 v1 covers Apple 1.2 minimum and Icelandic §210a takedown standard.**
+- **Real email forwarding** to `abuse@lovedesireapp.com` — SendGrid or Firebase Extensions "Trigger Email" hooked on `/reports/{reportId}` writes. Gives external audit trail beyond Firestore timestamp. ~1h dev + SendGrid account setup.
+- **24h SLA monitoring** — scheduled function that alerts when a pending report ages > 20h. Emits to admin email/Slack. Prevents ToS-promise breach silently. ~1h dev.
+- **Disable-user action** — admin can revoke Auth tokens + soft-flag account with reason. Requires user-facing appeal flow (page + policy). ~4h.
+- **Fantasy Wishes report entry** — add `createdBy` field to `FantasyWishesItem` in `services/fantasyWishesService.ts` (populated on `addFantasyWishesItem`), then wire report link on FW cards when `item.createdBy !== uid` (skip if unset = preset). ~30 min. Existing FW items without `createdBy` treated as preset → no report link. Non-breaking.
+- **Custom-claims admin auth** — swap the `ADMIN_UIDS` inline allowlist for Firebase Auth custom claims. Enables adding admins from a Cloud Function instead of code deploy. See also existing tracking for admin auth upgrade.
+- **Automated flagging** — H38 (Vision SafeSearch) + H39 (PhotoDNA) already tracked below. Adds automated first-line above H33's human-report layer.
 
 ### H38 · Google Cloud Vision SafeSearch automated content flagging — 📋 POST-LAUNCH (target: ~1 month after launch)
 **Source:** Layered defense-in-depth on top of H33 report flow. Adds automated first-line filter for uploaded photos/videos.

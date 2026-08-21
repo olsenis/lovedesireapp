@@ -149,6 +149,22 @@ Every admin callable begins with `assertAdmin(req)`. Client-side check is only f
 - `adminExportUserData(uid)` — GDPR Article 20 (data portability). Generates JSON dump. Requires safe delivery (signed URL, expires).
 - `adminGrantPremiumDuration(coupleId, days)` — time-limited promo grants that auto-expire. Requires scheduled Cloud Function to check expiry.
 
+### H33 moderation (Aug 21) — 3 callables + Reports queue tab
+
+**New callables** (all `assertAdmin`-gated, all `invoker:'public'` v2):
+- `submitReport({ contentType, contentPath, contentSnippet, contentStorageUrl, category, detail, targetUid, coupleId, disconnect })` — server-authoritative write to `/reports/{reportId}` with rate limit (20/day/uid) + couple-membership validation + can't-report-own-content guard. If `disconnect === true`, atomically unpairs the reporter's couple via `disconnectCoupleAdmin` helper (mirrors client's `disconnectFromCouple` but admin-SDK). Client-facing but exposed to admin dashboard by shape only.
+- `adminGetReports({ status?, limit? })` — returns pending (or filtered) reports enriched with reporter/target email via `admin.auth().getUser`. Default limit 50, max 200.
+- `adminResolveReport({ reportId, action, notes? })` — actions: `dismiss` | `remove_content` (deletes Firestore doc at `contentPath` + Storage blob if `contentStorageUrl`) | `disconnect_couple` (unpairs the target user). Updates report doc with `status` + `resolvedAt` + `resolvedBy` + `resolveNotes`. Refuses non-`pending` reports.
+
+**New Firestore collection** `/reports/{reportId}` — top-level (NOT under `/couples/`) so the couples wildcard rule doesn't grant partners read access. Rule locks it entirely (`allow read, create, update, delete: if false`); every access goes through the callables above. Shape:
+```
+reporterUid, coupleId, targetUid, contentType, contentPath, contentSnippet,
+contentStorageUrl?, category, detail?, disconnected, status,
+createdAt, resolvedAt?, resolvedBy?, resolveNotes?
+```
+
+**Admin UI:** new "Reports queue" section between "Feature usage" and "Time-of-day heatmap" in `AdminScreen.tsx`, rendered via `components/ReportsTab.tsx`. Status-filter row (Pending / Dismissed / Content removed / Couple disconnected), row list with category color-pill + reporter/target emails + content snippet + reporter's optional detail. Row click opens detail modal with content path + Storage blob link (opens in new tab) + admin-notes textarea + 3 resolve action buttons. Non-pending reports show read-only status info instead of action buttons.
+
 ### Tech implementation
 
 **In-app route** (not separate subdomain). Reuses Vercel deploy, familiar auth, single codebase. Admin-only JS still ships in the user bundle, but the code is small (~500 lines) and sensitive operations live in Cloud Functions.

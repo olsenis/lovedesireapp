@@ -8,6 +8,7 @@ import {
   ScreenSessionStats, LeaderboardEntry,
 } from '../adminService';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ReportsTab } from '../components/ReportsTab';
 
 type StatsTab = 'screens' | 'actions' | 'admin';
 
@@ -269,6 +270,10 @@ export function AdminScreen() {
       {activeTab === 'screens' && !statsLoading && rows.length > 0 && (
         <div className="table-legend">count · MoM % · <strong>avg · min · max</strong> time per opening</div>
       )}
+
+      {/* ─── Reports queue (H33) ─── */}
+      <div className="section-label">Reports queue</div>
+      <ReportsTab />
 
       {/* ─── Section 3: Time-of-day heatmap ─── */}
       <div className="section-label">When couples use the app · {currentMonthKey(0)}</div>

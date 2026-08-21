@@ -778,3 +778,231 @@ export const cleanupOldSessions = onSchedule('every 24 hours', async () => {
   }
   console.log(`Session cleanup: ${totalDeleted} monthly buckets deleted`);
 });
+
+// ─── H33: Report / moderation flow ─────────────────────────────────────────
+// User-generated content moderation. Client-side entry points across the 7
+// UGC surfaces (Moments, Tease, Notes, Together List, Truth-or-Dare,
+// Fantasy Wishes user-added, WYR custom) invoke `submitReport` which
+// writes to top-level /reports/{reportId}. The Firestore rules block all
+// client access to /reports; every read + write goes through these
+// callables (admin SDK bypasses rules).
+
+const REPORTS_PER_DAY = 20;
+const REPORT_CATEGORIES = new Set(['csam', 'ncii', 'harassment', 'other']);
+const REPORT_CONTENT_TYPES = new Set([
+  'moment', 'flash', 'note', 'todo', 'truthdare', 'fantasy-wish', 'wyr-custom',
+]);
+const REPORT_ACTIONS = new Set(['dismiss', 'remove_content', 'disconnect_couple']);
+
+// Admin-SDK equivalent of client's disconnectFromCouple. Clears the
+// reporter's slot on the couple doc, rotates the invite code, and clears
+// coupleId on the user profile. Used both by submitReport (when reporter
+// opts to disconnect) and by adminResolveReport (disconnect_couple action).
+async function disconnectCoupleAdmin(coupleId: string, leavingUid: string): Promise<void> {
+  const coupleRef = db.collection('couples').doc(coupleId);
+  const coupleSnap = await coupleRef.get();
+  if (coupleSnap.exists) {
+    const couple = coupleSnap.data() as { partner1Uid?: string; partner2Uid?: string };
+    const newCode = Math.random().toString(36).slice(2, 10).toUpperCase();
+    const update: Record<string, unknown> = {
+      inviteCode: newCode,
+      inviteExpiresAt: Date.now() + 7 * 24 * 3600_000,
+    };
+    if (couple.partner2Uid === leavingUid) {
+      update.partner2Uid = admin.firestore.FieldValue.delete();
+    } else if (couple.partner1Uid === leavingUid) {
+      update.partner1Uid = admin.firestore.FieldValue.delete();
+    } else {
+      update.partner1Uid = admin.firestore.FieldValue.delete();
+      update.partner2Uid = admin.firestore.FieldValue.delete();
+    }
+    await coupleRef.update(update);
+  }
+  await db.collection('users').doc(leavingUid).update({
+    coupleId: admin.firestore.FieldValue.delete(),
+    inviteCode: admin.firestore.FieldValue.delete(),
+  });
+}
+
+export const submitReport = onCall({ invoker: 'public' }, async (req) => {
+  if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in first.');
+  const reporterUid = req.auth.uid;
+  const {
+    contentType,
+    contentPath,
+    contentSnippet,
+    contentStorageUrl,
+    category,
+    detail,
+    targetUid,
+    coupleId,
+    disconnect,
+  } = req.data ?? {};
+
+  if (!REPORT_CATEGORIES.has(String(category))) {
+    throw new HttpsError('invalid-argument', 'Invalid category.');
+  }
+  if (!REPORT_CONTENT_TYPES.has(String(contentType))) {
+    throw new HttpsError('invalid-argument', 'Invalid content type.');
+  }
+  if (typeof contentPath !== 'string' || contentPath.length === 0 || contentPath.length > 500) {
+    throw new HttpsError('invalid-argument', 'Invalid content path.');
+  }
+  if (typeof targetUid !== 'string' || targetUid.length === 0) {
+    throw new HttpsError('invalid-argument', 'Invalid target.');
+  }
+  if (typeof coupleId !== 'string' || !COUPLE_ID_RE.test(coupleId)) {
+    throw new HttpsError('invalid-argument', 'Invalid coupleId.');
+  }
+  if (targetUid === reporterUid) {
+    throw new HttpsError('invalid-argument', 'Cannot report your own content.');
+  }
+
+  // Verify reporter is actually a member of the referenced couple. Prevents
+  // report-spam against couples the reporter has no relationship with.
+  const coupleSnap = await db.collection('couples').doc(coupleId).get();
+  if (!coupleSnap.exists) throw new HttpsError('not-found', 'Couple not found.');
+  const couple = coupleSnap.data() as { partner1Uid?: string; partner2Uid?: string };
+  if (couple.partner1Uid !== reporterUid && couple.partner2Uid !== reporterUid) {
+    throw new HttpsError('permission-denied', 'Not a member of this couple.');
+  }
+  if (couple.partner1Uid !== targetUid && couple.partner2Uid !== targetUid) {
+    throw new HttpsError('invalid-argument', 'Target is not the other partner.');
+  }
+
+  // Rate limit: max 20 reports per 24h per reporter uid.
+  const now = Date.now();
+  const rateRef = db.collection('rateLimits').doc(`report_${reporterUid}`);
+  const rateOk = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(rateRef);
+    const data = snap.exists ? (snap.data() as { attempts: number[] }) : { attempts: [] };
+    const recent = (data.attempts ?? []).filter((t) => now - t < 24 * 3600_000);
+    if (recent.length >= REPORTS_PER_DAY) return false;
+    tx.set(rateRef, { attempts: [...recent, now] }, { merge: true });
+    return true;
+  });
+  if (!rateOk) {
+    throw new HttpsError('resource-exhausted', 'Too many reports today. Try again tomorrow.');
+  }
+
+  const wantDisconnect = disconnect === true;
+
+  const reportRef = await db.collection('reports').add({
+    reporterUid,
+    coupleId,
+    targetUid,
+    contentType: String(contentType),
+    contentPath: String(contentPath),
+    contentSnippet: typeof contentSnippet === 'string' ? contentSnippet.slice(0, 200) : '',
+    contentStorageUrl: typeof contentStorageUrl === 'string' ? contentStorageUrl : null,
+    category: String(category),
+    detail: typeof detail === 'string' ? detail.slice(0, 1000) : '',
+    disconnected: wantDisconnect,
+    status: 'pending',
+    createdAt: now,
+  });
+
+  if (wantDisconnect) {
+    try {
+      await disconnectCoupleAdmin(coupleId, reporterUid);
+    } catch (e) {
+      console.error('Post-report disconnect failed', e);
+      // Report is still landed; client should show a soft error.
+      throw new HttpsError('internal', 'Report saved but disconnect failed. Please disconnect manually from Profile.');
+    }
+  }
+
+  return { reportId: reportRef.id, disconnected: wantDisconnect };
+});
+
+export const adminGetReports = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const status = String(req.data?.status ?? 'pending');
+  const limit = Math.min(Math.max(Number(req.data?.limit ?? 50), 1), 200);
+
+  const snap = await db.collection('reports')
+    .where('status', '==', status)
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .get();
+
+  // Enrich each report with reporter + target email (Auth lookup) so admin
+  // dashboard doesn't have to make N+1 client calls.
+  const reports = await Promise.all(snap.docs.map(async (d) => {
+    const data = d.data();
+    const [reporterEmail, targetEmail] = await Promise.all([
+      admin.auth().getUser(data.reporterUid).then((u) => u.email ?? null).catch(() => null),
+      admin.auth().getUser(data.targetUid).then((u) => u.email ?? null).catch(() => null),
+    ]);
+    return { id: d.id, ...data, reporterEmail, targetEmail };
+  }));
+
+  return { reports };
+});
+
+export const adminResolveReport = onCall({ invoker: 'public' }, async (req) => {
+  const adminUid = assertAdmin(req);
+  const reportId = String(req.data?.reportId ?? '');
+  const action = String(req.data?.action ?? '');
+  const notes = typeof req.data?.notes === 'string' ? req.data.notes.slice(0, 1000) : '';
+
+  if (!reportId) throw new HttpsError('invalid-argument', 'Missing reportId.');
+  if (!REPORT_ACTIONS.has(action)) throw new HttpsError('invalid-argument', 'Invalid action.');
+
+  const reportRef = db.collection('reports').doc(reportId);
+  const reportSnap = await reportRef.get();
+  if (!reportSnap.exists) throw new HttpsError('not-found', 'Report not found.');
+  const report = reportSnap.data() as {
+    contentPath: string;
+    contentStorageUrl: string | null;
+    coupleId: string;
+    targetUid: string;
+    status: string;
+  };
+
+  if (report.status !== 'pending') {
+    throw new HttpsError('failed-precondition', `Report already resolved (${report.status}).`);
+  }
+
+  let newStatus: 'dismissed' | 'content_removed' | 'couple_disconnected';
+
+  if (action === 'dismiss') {
+    newStatus = 'dismissed';
+  } else if (action === 'remove_content') {
+    // Delete the Firestore document at contentPath. Path shape:
+    // "couples/{coupleId}/moments/{id}" or similar. Guard against paths
+    // that don't start with "couples/" to prevent an admin-error blowing
+    // up an unrelated collection.
+    if (!report.contentPath.startsWith('couples/')) {
+      throw new HttpsError('failed-precondition', 'Unexpected content path.');
+    }
+    try {
+      await db.doc(report.contentPath).delete();
+    } catch (e) {
+      console.error('Content-doc delete failed', e);
+    }
+    // Delete Storage blob if the report had one (photo / video / voice).
+    if (report.contentStorageUrl) {
+      const path = extractStoragePath(report.contentStorageUrl);
+      if (path) {
+        try { await storage.file(path).delete(); }
+        catch (e) { console.error('Content-storage delete failed', e); }
+      }
+    }
+    newStatus = 'content_removed';
+  } else {
+    // disconnect_couple — unpair the TARGET user (the one whose content
+    // was reported), which mirrors the "block abusive user" semantic.
+    await disconnectCoupleAdmin(report.coupleId, report.targetUid);
+    newStatus = 'couple_disconnected';
+  }
+
+  await reportRef.update({
+    status: newStatus,
+    resolvedAt: Date.now(),
+    resolvedBy: adminUid,
+    resolveNotes: notes,
+  });
+
+  return { ok: true, action, newStatus };
+});

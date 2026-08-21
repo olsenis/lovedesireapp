@@ -22,6 +22,16 @@ service cloud.firestore {
         );
     }
 
+    // ── Reports (H33 moderation) ─────────────────────────────────────────────
+    // Top-level (NOT nested under /couples) so the couples wildcard rule
+    // cannot grant partners read access to reports about them. Every read
+    // and write goes through the `submitReport` / `adminGetReports` /
+    // `adminResolveReport` callables in functions/src/index.ts, which use
+    // the admin SDK (bypasses rules). Clients are blocked entirely.
+    match /reports/{reportId} {
+      allow read, create, update, delete: if false;
+    }
+
     // ── Users ────────────────────────────────────────────────────────────────
     match /users/{uid} {
       // Only the user themselves OR their current partner can read the profile.
