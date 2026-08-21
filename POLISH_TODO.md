@@ -195,13 +195,14 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - Commit C (associatedDomains + PWA polish) blocked on user completing DNS setup for `app.lovedesireapp.com`
 **H32 structure LANDED (shipping now):** Entity references added to 4 files (mobile + web × Privacy + Terms). Placeholder `[PENDING REGISTRATION]` marks the two values needing swap once Love Desire ehf. is registered at Skatturinn (target: after user has saved 500k stofnfé).
 
-**Find/replace when kennitala arrives** (should be 2-minute swap for 3 placeholders after H32b rewrite):
-- Search: `[PENDING REGISTRATION]` → replace with actual kennitala (e.g. `6XXXXX-XXXX`). ~5 occurrences across 4 files.
-- Search: `[REGISTERED OFFICE ADDRESS]` → replace with actual street/postal address (e.g. `Grettisgata 15, 101 Reykjavík, Iceland`). ~4 occurrences across 4 files.
+**Find/replace when kennitala arrives** (should be 2-minute swap for 3 placeholders after H32b rewrite; H37 adds a 5th file):
+- Search: `[PENDING REGISTRATION]` → replace with actual kennitala (e.g. `6XXXXX-XXXX`). ~6 occurrences across 5 files.
+- Search: `[REGISTERED OFFICE ADDRESS]` → replace with actual street/postal address (e.g. `Grettisgata 15, 101 Reykjavík, Iceland`). ~5 occurrences across 5 files.
 - Search: `[VSK-NR PENDING]` → replace with VAT number (e.g. `12345`). 2 occurrences (ToS §12 mobile + web).
-- Files: `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro`
+- Files: `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro`, `BREACH_RESPONSE_PLAN.md`
 - After swap: bump "Last updated" date to registration month + rebuild + redeploy both mobile and web.
 - Verify: `git grep "\[PENDING\|\[REGISTERED\|\[VSK-NR"` should return zero hits.
+- Also swap `[EXTERNAL LEGAL COUNSEL — RETAIN POST-EHF-REGISTRATION]` in `BREACH_RESPONSE_PLAN.md` Section 10 once counsel retained.
 **Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
 
 ### H33 · Report / moderation flow for user-uploaded content — ✅ shipping now
@@ -267,16 +268,22 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - Residual risk assessment + monitoring plan
 **Why:** Not strictly mandatory below "large scale" threshold, but Persónuvernd will ask for it in any audit and it forces you to think through risks systematically. Better to have and never need it than the reverse.
 
-### H37 · Data breach response plan — 🟡 SHOULD-HAVE PRE-LAUNCH
-**Source:** GDPR Article 33 — breach notification within 72 hours to Persónuvernd + affected users (if high risk). Need a defined process.
-**Scope:** ~2h drafting. Ships as `/legal/BREACH_RESPONSE.md` in the repo.
-**Sections:**
-- Definition of a breach (unauthorised access, accidental loss, alteration, disclosure)
-- Detection sources (Firebase security-rules alerts, user reports, third-party disclosure)
-- Response timeline (0h detect, ≤24h contain + assess severity, ≤48h notify Persónuvernd if required, ≤72h notify affected users if high risk)
-- Communication templates (Persónuvernd form + user notification email)
-- Post-incident review + documentation retention (5 years)
-**Why:** GDPR mandates you have this. Actually running it under pressure without a plan = worse outcome + higher fines.
+### H37 · Data breach response plan — ✅ shipping now
+**Source:** GDPR Article 33 (72h Persónuvernd notification) + Article 34 (user notification for high-risk breaches). Backs the commitments made in Privacy Policy §8 (H32b, shipped `11885cc`) with an executable playbook.
+**Scope shipped:** `BREACH_RESPONSE_PLAN.md` at repo root, 594 lines, 10 sections:
+1. Purpose & scope — who owns it, when to invoke, reference to Privacy §8
+2. Detection sources — external signals (user reports, researchers, sub-processors), Firebase console alerts, Google Cloud Security Command Center, internal signals
+3. Response team & escalation — realistic solo-team acknowledgement, roles table with "currently collapsed onto" mapping, trigger to add second responder
+4. The 72-hour clock — hour-by-hour decision tree (T+0 detection → T+2h containment → T+24h investigation → T+48h classification → T+72h Persónuvernd notification → T+14d post-mortem)
+5. Severity classification matrix — 9 data classes × modifiers → Art. 33 / Art. 34 notification decision. Special-category (Art. 9) rows almost always trigger Art. 34.
+6. Data-class-specific playbooks — Storage blob exposure, Firestore exfiltration, Auth credential compromise, admin uid abuse, sub-processor breach, ransomware
+7. Persónuvernd notification form template — fillable, matches personuvernd.is "Tilkynningar um öryggisbrot" fields
+8. User notification templates — Art. 34 mandatory (high-risk) + precautionary courtesy variants, email + in-app copy
+9. Post-incident review — 14-day post-mortem template + action-item routing
+10. Appendix — full contact list (Persónuvernd, sub-processor DPO contacts, internal addresses, external counsel placeholder)
+**Placeholders:** shares H32's placeholder set (`[PENDING REGISTRATION]`, `[REGISTERED OFFICE ADDRESS]`, `[VSK-NR PENDING]`) — H32 workflow now touches 5 files not 4. Plus `[EXTERNAL LEGAL COUNSEL — RETAIN POST-EHF-REGISTRATION]` fills in when counsel retained.
+**Cross-referenced verbatim:** the Art. 33 + Art. 34 commitment sentence from Privacy §8 is quoted verbatim in Section 1 of the plan so the two docs cannot drift silently.
+**Follow-ups:** H36 (DPIA) reuses this plan's data-class inventory + severity matrix as inputs; recommended addition of `/.well-known/security.txt` on marketing site pointing to `security@lovedesireapp.com` (separate mini-commit).
 
 ### H32 · Legal entity kennitala swap when Love Desire ehf registers — 🟢 STRUCTURE LANDED
 _(See earlier entry above — 30-sec find/replace across 4 files when kennitala arrives.)_
@@ -289,6 +296,13 @@ _(See earlier entry above — 30-sec find/replace across 4 files when kennitala 
 - **Fantasy Wishes report entry** — add `createdBy` field to `FantasyWishesItem` in `services/fantasyWishesService.ts` (populated on `addFantasyWishesItem`), then wire report link on FW cards when `item.createdBy !== uid` (skip if unset = preset). ~30 min. Existing FW items without `createdBy` treated as preset → no report link. Non-breaking.
 - **Custom-claims admin auth** — swap the `ADMIN_UIDS` inline allowlist for Firebase Auth custom claims. Enables adding admins from a Cloud Function instead of code deploy. See also existing tracking for admin auth upgrade.
 - **Automated flagging** — H38 (Vision SafeSearch) + H39 (PhotoDNA) already tracked below. Adds automated first-line above H33's human-report layer.
+
+### Cloud Functions maintenance — 📋 POST-LAUNCH (target: before 2026-10-30 hard deadline)
+**Surfaced during H33 deploy (Aug 21).** Firebase console emits two warnings on every deploy now:
+1. **Node.js 20 runtime deprecated on 2026-04-30, decommissioned 2026-10-30.** After Oct 30, deploys will be rejected. Fix: bump `functions/package.json` `"engines": { "node": "20" }` → `"22"`, verify all TypeScript compiles, redeploy. Node 22 is drop-in for our usage (no APIs we depend on have breaking changes).
+2. **`firebase-functions` package outdated.** Current: `^6.1.0`. Bumping to latest `^7.x` has breaking changes per warning message. Fix: read the migration guide before bumping, expect changes to v1 `functions.auth.user()` API (used by `deleteUserCascade`).
+**Scope:** ~1-2h combined. Do together in one commit to minimise deploy noise.
+**Order matters:** upgrade node runtime FIRST (lower-risk), then firebase-functions (needs code migration).
 
 ### H38 · Google Cloud Vision SafeSearch automated content flagging — 📋 POST-LAUNCH (target: ~1 month after launch)
 **Source:** Layered defense-in-depth on top of H33 report flow. Adds automated first-line filter for uploaded photos/videos.

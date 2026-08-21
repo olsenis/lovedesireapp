@@ -38,6 +38,7 @@ The Desire repo root (`G:\forrit\Desire\`) is opened as an Obsidian vault — `.
 | [`POST_LAUNCH.md`](POST_LAUNCH.md) | Roadmap for after v1 ships. Deferred features, wish-list items, analytics-gated decisions. | When deferring work "to post-launch"; when a v1 launch decision needs to be re-visited later. |
 | [`APP_STORE_SUBMISSION.md`](APP_STORE_SUBMISSION.md) | App Store metadata + submission checklist (screenshots, description, age rating, privacy questionnaire). | When preparing an App Review submission. |
 | [`ADMIN_DASHBOARD.md`](ADMIN_DASHBOARD.md) | Admin dashboard architecture + stats/telemetry spec + admin-web deployment. | When adding new stats, callables, or admin-web features. |
+| [`BREACH_RESPONSE_PLAN.md`](BREACH_RESPONSE_PLAN.md) | Operational playbook for the 72h GDPR breach-notification clock. Backs Privacy §8 legal commitments. Includes severity matrix, per-data-class playbooks, Persónuvernd + user notification templates. | After any real incident (add post-mortem link, tighten process). Otherwise rarely — living document that evolves with real experience. |
 | [`ENTERTAINMENT_REVIEW.md`](ENTERTAINMENT_REVIEW.md) | Feature-by-feature entertainment score audit (source of the H-series polish roadmap in POLISH_TODO). | Rarely — this is a snapshot review. Update when re-running the audit. |
 | [`BRAND_RESEARCH.md`](BRAND_RESEARCH.md) | Competitive research, naming, brand positioning. | When re-doing competitive analysis. |
 | [`README.md`](README.md) | Public-facing repo README. | Rarely — for external readers, not devs. |
