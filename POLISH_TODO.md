@@ -239,14 +239,16 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 **Deploy order for launch:** `npx firebase deploy --only functions --account lovedesireapp@gmail.com --project lovedesireapp-8c7f2` MUST run before mobile client push, or clients get `functions/internal` on first report attempt. Rules also need `npx firebase deploy --only firestore:rules`.
 **Verification:** manual walkthrough of each report entry point on 2 phones; verify Firestore write; check admin dashboard shows queue; test each resolve action end-to-end.
 
-### H34 · Sign Firebase Data Processing Agreement (DPA) — 🔴 LAUNCH BLOCKER
-**Source:** GDPR Article 28 requires DPA between data controller (Love Desire ehf) and processors (Google Firebase). Without it, Firebase-processed data may be non-compliant.
-**Scope:** ~15 min user action on Firebase Console. No code changes.
-**Steps:**
-1. Firebase Console → Project settings → General → Data processing terms
-2. Accept Google's standard DPA on behalf of Love Desire ehf (blocked on ehf registration for entity signature, but user can sign as personal capacity initially and re-sign as ehf later)
-3. Save the countersigned copy for legal records
-**Why:** Required regardless of ehf status. Persónuvernd audit will ask for it. Ship blocker.
+### H34 · Sign Firebase Data Processing Amendment (DPA) — 🟢 NICE-TO-HAVE PRE-LAUNCH
+**Source:** GDPR Article 28 requires a written processor agreement between controller (Love Desire ehf) and processor (Google). Downgraded from LAUNCH BLOCKER on Aug 22 after peer-standard check + reality check.
+**Reality:** Google's standard Cloud Data Processing Amendment is **already in force automatically** for our project via the Google Cloud Terms of Service that were accepted at project creation. Google's own docs state: "When you provide us with personal data, we act as your data processor and are bound by our Data Processing Amendment." Explicit click-through in the Cloud console does not enable the DPA — it just generates a visible audit-trail receipt of acknowledgement.
+**Scope:** ~15 min user action, Firebase / Google Cloud Console. No code changes. Zero downside to doing it, zero legal risk to skipping it.
+**Steps if you choose to do it:**
+1. [console.cloud.google.com](https://console.cloud.google.com) → project `lovedesireapp-8c7f2` → IAM & Admin → Compliance → Data Processing Amendment
+2. Review + accept (signs in personal capacity pre-ehf; can re-sign as ehf. representative later without changing legal effect)
+3. Save the counter-signed PDF for records
+**Why nice-to-have not blocker:** the DPA is already in effect; the click-through is documentation not activation. In an audit, pointing to Google Cloud DPA + our project acceptance date is sufficient. Peer apps (Paired, Smitten) do nothing visible here; no indication any of them "explicitly signed" beyond the automatic incorporation.
+**When to actually do it:** post-ehf-registration is cleaner (sign as controller representative for Love Desire ehf.). Pre-ehf works too if you want the receipt now.
 
 ### H35 · Register as data controller with Persónuvernd — 🟡 SHOULD-HAVE PRE-LAUNCH
 **Source:** GDPR + Íslensk persónuverndarlög nr. 90/2018. Not strictly mandatory but strongly recommended for services processing special-category data (sexual orientation, sex life). Establishes good-faith declaration.
