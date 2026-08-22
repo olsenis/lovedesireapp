@@ -94,6 +94,12 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 **Why:** current 18+ attestation is registration-time only. Adding per-upload attestation strengthens legal defense (two-factor consent trail), aligns with UK Online Safety Act + US state trends toward per-upload consent, low UX friction (fires once per user).
 **Optional / not a launch blocker:** current single-attestation is legally sufficient for Icelandic launch. H42 is defense-in-depth polish. Ship if we want strongest possible legal position.
 
+### Review #9 low findings — ✅ shipping now
+**Source:** External agent review of Aug 20 → Aug 22 delta (Review #9). Two Low-severity findings against trust/safety infrastructure. Reviewer verdict: "Ship it" — these were flagged as polish, not blockers. User chose to fix pre-launch to avoid known-issues-at-ship.
+- **ReportModal.tsx** — `handleSubmit` reset was error-branch only; success relied on parent `visible → false` transition. Fragile against future refactors. Fix: shared `finally { setSubmitting(false); }` block. Standard React cleanup pattern.
+- **usePhotoConsent.ts** — race condition: user tap → background during 500ms `hasPhotoConsent` await → different action → stale action fires modal. Fix: monotonic `requestIdRef` counter, checked after await; `handleCancel` bumps counter to invalidate any in-flight guard. `handleConfirm` intentionally does NOT bump (its whole job is executing the pending action).
+- ~15 min combined. Client-side only, no Firebase deploy.
+
 ### H43 · Rename app before launch (escape "Desire" keyword collision) — 🟡 PRE-LAUNCH
 **Source:** Aug 21 competitive research reconfirmation. Competitive research (May 2026) already flagged this — the rename was deferred. Now revisited because pre-launch is the last cheap window to change.
 **Problem:** App Store search for `Desire` returns at least three couples-category competitors before us: **Desire — Couples Game** (Desire Technologies, ~3.1M Play downloads, since 2014, dominant), **Couples Games: Desire for Love** (id 6443401871, phonetic collision with our name), **Desire42** (zombie listing). Users searching `love desire` will hit "Couples Games: Desire for Love" first because App Store search is token-based. Every marketing dollar spent on the "Desire" keyword partly benefits established competitors. Structural discoverability problem — not fixable with marketing budget.

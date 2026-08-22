@@ -72,6 +72,7 @@ export function ReportModal({ contentRef, onClose, onSubmitted }: Props) {
       } else {
         setError("Couldn't submit the report. Please try again in a moment.");
       }
+    } finally {
       setSubmitting(false);
     }
   };
