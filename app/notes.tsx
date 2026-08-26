@@ -477,8 +477,15 @@ export default function NotesScreen() {
 
       {/* Create / Edit modal */}
       <Modal visible={showCreate} transparent animationType="slide">
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            style={styles.modalScroll}
+            contentContainerStyle={styles.modal}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={styles.modalTitle}>{editingNoteId ? 'Edit Love Note' : 'Write a Love Note'}</Text>
 
             {/* Mode toggle — only offered on new notes. Editing keeps the
@@ -641,8 +648,8 @@ export default function NotesScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete confirm modal */}
@@ -833,6 +840,7 @@ const styles = StyleSheet.create({
   emptyBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  modalScroll: { flexGrow: 0, maxHeight: '90%' },
   modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
   // Mode toggle (Text | Voice) — segmented control at top of composer for
