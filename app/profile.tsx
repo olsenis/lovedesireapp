@@ -311,7 +311,10 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
@@ -884,7 +887,7 @@ export default function ProfileScreen() {
         onConfirm={() => handleConfirm(uid)}
         onCancel={handleCancel}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
