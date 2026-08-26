@@ -10,6 +10,17 @@ module.exports = function (api) {
   api.cache(true);
   return {
     presets: ['babel-preset-expo'],
+    plugins: [
+      // Firebase v12 ships ES2022 class-field syntax (both public
+      // `field = value` and private `#field`) that Hermes (the JS
+      // engine in Expo Go) can't parse. These three plugins transform
+      // all class-field variants into WeakMap-based equivalents so
+      // bundles run cleanly on Hermes. See the runtime SyntaxError
+      // "private properties are not supported" if any are removed.
+      '@babel/plugin-transform-class-properties',
+      '@babel/plugin-transform-private-methods',
+      '@babel/plugin-transform-private-property-in-object',
+    ],
     env: {
       production: {
         plugins: [

@@ -186,7 +186,13 @@ service cloud.firestore {
         allow create: if request.auth != null
           && isMemberOfCouple(coupleId)
           && (!('fromUid'   in request.resource.data) || request.resource.data.fromUid   == request.auth.uid)
-          && (!('createdBy' in request.resource.data) || request.resource.data.createdBy == request.auth.uid)
+          // createdBy = auth.uid for user-authored docs. Auto-milestones in
+          // Our Story write createdBy: "system" — allowed only when paired
+          // with an autoKey (which distinguishes system-generated from
+          // user-authored). See ensureAutoMilestone in services/milestoneService.ts.
+          && (!('createdBy' in request.resource.data)
+              || request.resource.data.createdBy == request.auth.uid
+              || (request.resource.data.createdBy == 'system' && 'autoKey' in request.resource.data))
           && (!('loggedBy'  in request.resource.data) || request.resource.data.loggedBy  == request.auth.uid)
           && (!('sealedBy'  in request.resource.data) || request.resource.data.sealedBy  == request.auth.uid)
           && (!('uid'       in request.resource.data) || request.resource.data.uid       == request.auth.uid);

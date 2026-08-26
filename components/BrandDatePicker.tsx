@@ -13,6 +13,11 @@ type Props = {
   minimumDate?: Date;
   // Show day + month only (used for birthday where year is irrelevant)
   hideYear?: boolean;
+  // Starting position for the native picker wheels when `value` is null.
+  // Parent state stays null (so caller can distinguish "skipped" from
+  // "picked"); the picker just opens on this date instead of Unix epoch.
+  // Falls back to today.
+  initialValue?: Date;
   // 'date' (default) shows date only. 'datetime' also collects a time — iOS
   // uses a combined spinner; Android chains a date picker then a time picker;
   // web uses <input type="datetime-local">. 'time' shows time only — used by
@@ -27,6 +32,7 @@ export function BrandDatePicker({
   maximumDate,
   minimumDate,
   hideYear = false,
+  initialValue,
   mode = 'date',
 }: Props) {
   const [show, setShow] = useState(false);
@@ -160,7 +166,7 @@ export function BrandDatePicker({
           <View style={styles.modalOverlay}>
             <View style={styles.modalSheet}>
               <DateTimePicker
-                value={value ?? new Date()}
+                value={value ?? initialValue ?? new Date()}
                 mode={mode}
                 display="spinner"
                 onChange={handleIOSChange}
@@ -183,7 +189,7 @@ export function BrandDatePicker({
 
       {show && Platform.OS === 'android' && (
         <DateTimePicker
-          value={androidDate ?? value ?? new Date()}
+          value={androidDate ?? value ?? initialValue ?? new Date()}
           mode={mode === 'datetime' && androidStep === 'time' ? 'time' : 'date'}
           display="default"
           onChange={handleAndroidChange}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, Easing, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Animated, Easing, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {
@@ -568,14 +568,18 @@ export default function TruthDareScreen() {
 
   // ── Active game ───────────────────────────────────────────────────────────────
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Truth or Dare</Text>
         <TouchableOpacity onPress={handleReset} style={styles.resetBtn} accessibilityRole="button" accessibilityLabel="Reset game"><Text style={styles.resetBtnText}>↺ New</Text></TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Level tab strip. Paywall gate mid-session: the lobby's level card
             picker gates Spicy on entry, but this tab strip lives INSIDE an
             active round so users who started on Sweet or Flirty and later
@@ -900,7 +904,7 @@ export default function TruthDareScreen() {
         contentRef={reportContentRef}
         onClose={closeReport}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

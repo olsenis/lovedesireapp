@@ -724,7 +724,7 @@ export default function WouldYouRatherScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         {/* Level badge doubles as the escape hatch: tap to change level
             mid-session (also acts as the quit-and-start-over path since
             picking a level resets the session). Without this, once
@@ -894,7 +894,7 @@ export default function WouldYouRatherScreen() {
             )}
           </View>
         )}
-      </View>
+      </ScrollView>
 
       {/* Milestone toast — burgundy fill, cream text, celebratory. Fires
           on 5/10/25/50/100/200 match crossings via the effect above. */}
@@ -1095,7 +1095,7 @@ const styles = StyleSheet.create({
   levelCount: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, marginTop: 2 },
   levelArrow: { fontFamily: Fonts.heading, fontSize: 28 },
 
-  content: { flex: 1, paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, gap: Spacing.md },
+  content: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: Spacing.xxl * 2, gap: Spacing.md },
   levelBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 14, borderRadius: Radius.full },
   levelBadgeEmoji: { fontSize: 16 },
   levelBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 13 },

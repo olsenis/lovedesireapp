@@ -130,6 +130,71 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 **Blocks:** H32 kennitala swap (needs final ehf name), Launch-prep Commit C (associatedDomains needs final DNS + bundle), User action Phase 3 (Apple Dev enrollment needs final app name), User action Phase 5 (App Store submission needs final everything).
 **Estimated total:** ~1 day dev (once name chosen), $15-30 for new domain, no other cost.
 
+### H44 · Subscription lifecycle: RevenueCat integration + follows-purchaser-on-disconnect — 🟡 PRE-LAUNCH (blocked on Apple Dev + RevenueCat account setup)
+**Source:** Aug 26 discussion. ToS §5 explicitly promises "One subscription covers both partners. If you disconnect from your partner, the subscription follows the account that purchased it; the non-purchasing partner reverts to the free tier." Current implementation does not deliver this. Anything the ToS or website says must work is a launch-blocker per project principle ("ef við segjum eitthvað á síðunni að eigi að virka þá á það að virka við launch ekki eftir launch").
+
+**Current state:**
+- `couples/{coupleId}.isPremium` is the only source of truth — shared boolean, no ownership tracking
+- No `premiumBoughtBy: uid` field to identify who purchased
+- On disconnect (`disconnectFromCouple` in `services/authService.ts:83`) — coupleId is cleared on the user profile, so both users lose access instantly, even the purchaser
+- Purchaser has no way to re-attach their subscription to a new couple after re-pairing
+- Legacy `users/{uid}.isPremium` was deprecated Aug 2026 and is ignored by `useSubscription` hook
+- `/upgrade` screen shows "Coming soon" — no purchase flow live yet, so bug is theoretical until RevenueCat ships
+
+**Why launch-blocker:**
+- ToS §5 legal commitment ("subscription follows purchaser on disconnect") is not upheld by code
+- Charging a user via Apple IAP while denying access = App Store 1-star reviews + refund complaints + potential Apple compliance issue (Guideline 3.1.1)
+- User could be paying $9.99/month for months and get zero access after unpair — reputationally toxic and legally exposed under EU Consumer Rights Directive
+
+**Data model changes:**
+- **NEW field on `couples/{coupleId}`:** `premiumBoughtBy?: uid` — identifies which partner made the purchase. Written server-side by RevenueCat webhook + Cloud Function.
+- **NEW field on `users/{uid}`:** `activeSubscription?: boolean` (or `subscriptionState?: 'active' | 'grace' | 'expired'` for future refinement) — persists purchaser identity across couple boundary. Set when webhook receives active subscription, cleared on expire/cancel.
+- **Reactivated legacy field:** `users/{uid}.isPremium` — no longer ignored, becomes fallback for unpaired-but-subscribed users. `useSubscription` hook returns `isSubscribed` if EITHER `couple.isPremium === true` OR (`!couple && user.isPremium === true`) — un-paired purchaser stays premium until they re-pair.
+
+**Client changes:**
+- `hooks/useSubscription.ts` — extend to check user's own `activeSubscription` when no couple present. Currently the hook returns `false` when unpaired; change to fall back to user doc field.
+- `services/authService.ts:disconnectFromCouple` — on disconnect, if reporter was `premiumBoughtBy`, migrate `isPremium` flag onto their own user doc via server-authoritative write (Cloud Function callable). Non-purchasing partner just loses access as they do today.
+- **Pairing flow (Cloud Function `rateLimitedJoin` + `acceptPairing` in `services/coupleService.ts`):** when a new couple is formed, if either partner has `users/{uid}.activeSubscription === true`, automatically write `couples/{newCoupleId}.isPremium = true` and `premiumBoughtBy = <that uid>`. Both partners get access immediately — no need for the purchaser to re-buy.
+- `app/upgrade.tsx` — swap "Coming soon" placeholder for real purchase button wired to RevenueCat SDK.
+
+**Server changes:**
+- **Install RevenueCat SDK on client** (`react-native-purchases` or `@revenuecat/react-native-purchases`). Both Android + iOS support.
+- **RevenueCat account setup** — new account at revenuecat.com (free tier covers < 10k MTR), connect to Apple + Google Play, set up products (monthly $9.99, annual $59.99 per ToS §5).
+- **RevenueCat webhook → Firebase Cloud Function:** listens for subscription lifecycle events (`INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`, `EXPIRATION`, `PRODUCT_CHANGE`). For each event, resolves the purchaser's uid → their current coupleId → writes to `couples/{coupleId}.isPremium` + `premiumBoughtBy` + `premiumSince`. On cancel/expire, clears both flags. Also mirrors state onto `users/{uid}.activeSubscription`.
+- **Firestore rules** update: `couples/{coupleId}.isPremium`, `premiumBoughtBy`, `premiumSince` and `users/{uid}.activeSubscription` remain client-write-blocked (already are for `isPremium`) — server-only writes via admin SDK.
+
+**Testing (per RevenueCat sandbox + Apple Sandbox Tester accounts):**
+- Purchaser buys via App Store Sandbox → webhook fires → couple doc updates → both partners see paid access
+- Purchaser unpairs → their user doc gets `activeSubscription: true` + `isPremium: true` (via callable in disconnect flow); couple doc loses `isPremium`; ex-partner sees free tier immediately
+- Purchaser re-pairs with new partner → new couple doc auto-set to `isPremium: true` on pair completion → both new partners get paid access
+- Purchaser cancels subscription via App Store → RevenueCat webhook fires → couple doc + user doc both clear
+- Purchaser subscribes again later → repeats cleanly
+
+**Blocks:**
+- Apple Developer Program enrollment ($99/yr, blocked on ehf. registration for org account) — required for real IAP + TestFlight testing
+- RevenueCat account setup (blocked on Apple Dev)
+- Data model migration for existing test couples (write-once script — trivial)
+
+**Estimated scope:**
+- Data model + Firestore rules: ~1h
+- `useSubscription` hook + `disconnectFromCouple` migration: ~2h
+- Pairing-flow auto-restore on server (`rateLimitedJoin` extension): ~2h
+- RevenueCat SDK integration + purchase button: ~3-4h
+- Webhook + Cloud Function: ~3-4h
+- Sandbox testing on 2 phones with 2 Apple test accounts: ~half a day
+- **Total: ~2-3 days dev + user's RevenueCat + Apple Dev setup**
+
+**Why it's tolerable to be pre-launch scope (not scary):**
+- Reuses existing patterns: same admin-SDK write pattern as H33 report resolution, same `assertAdmin` gate, same Firestore rule structure
+- RevenueCat SDK is production-mature and abstracts away most of the Apple/Google IAP mess
+- The subscription-follows-user architecture is a small delta on top of RevenueCat's standard integration
+
+**Follow-up (post-launch):**
+- Grace period handling (subscription expires but give X days before revoking access)
+- Refund handling (Apple grants refund → we need to revoke immediately)
+- Family Sharing consideration (whether family-shared subscription counts as active for shared access)
+- Sub-user account transfer if user changes their Apple ID mid-subscription
+
 ### H32b · Comprehensive ToS + Privacy Policy legal rewrite — ✅ shipping now
 **Source:** Two-agent deep audit (Aug 20). 16 HIGH + 7 MEDIUM audit findings across both docs. Both mobile + web versions rewritten section-by-section.
 **Files:** `app/privacy-policy.tsx`, `app/terms-of-service.tsx`, `web/src/pages/privacy-policy.astro`, `web/src/pages/terms-of-service.astro` (all 4 legal files).
@@ -209,7 +274,7 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - After swap: bump "Last updated" date to registration month + rebuild + redeploy both mobile and web.
 - Verify: `git grep "\[PENDING\|\[REGISTERED\|\[VSK-NR"` should return zero hits.
 - Also swap `[EXTERNAL LEGAL COUNSEL — RETAIN POST-EHF-REGISTRATION]` in `BREACH_RESPONSE_PLAN.md` Section 10 once counsel retained. Also fill DPIA sign-off placeholders (`[SIGNATORY NAME]`, `[DATE]`, `[SIGN-OFF DATE + 12 months]`) as separate one-line commit — does not depend on ehf. registration.
-**Deferred to POST-LAUNCH:** RevenueCat webhook, Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access.
+**Deferred to POST-LAUNCH:** Sentry crash telemetry, admin App Check + custom domain, second admin UID if Ola needs access. (RevenueCat moved to PRE-LAUNCH per H44 — required to fulfil ToS §5 promises around subscription lifecycle.)
 
 ### H33 · Report / moderation flow for user-uploaded content — ✅ shipping now
 **Source:** Icelandic law review (Aug 20). §210a barnaklám / KSAM strict liability — operator is directly responsible for illegal user content unless there's a takedown mechanism. Apple guideline 1.2 requires reporting mechanism + block mechanism + timely response for any UGC-hosting app. H32b ToS explicitly promises abuse@lovedesireapp.com + 24h SLA.

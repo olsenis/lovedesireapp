@@ -27,7 +27,7 @@ export default function OnboardingTourScreen() {
   const { isSubscribed } = useSubscription();
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
-  const partnerName = partner?.name ?? 'them';
+  const partnerName = partner?.name ?? 'your partner';
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -240,13 +240,14 @@ export default function OnboardingTourScreen() {
             <Text style={styles.heroEmoji}>🎂</Text>
             <Text style={styles.title}>When's {partnerName}'s birthday?</Text>
             <Text style={styles.body}>
-              Adds an annual countdown so you never forget. Day and month only.
+              Adds an annual countdown so you never forget. Only day and month are saved, the year is ignored.
             </Text>
             <BrandDatePicker
               value={birthday}
               onChange={setBirthday}
               placeholder="Pick the day and month"
               hideYear
+              initialValue={new Date()}
             />
             <TouchableOpacity
               style={[styles.primaryBtn, saving && styles.btnDisabled]}
@@ -264,7 +265,7 @@ export default function OnboardingTourScreen() {
             <Text style={styles.heroEmoji}>💭</Text>
             <Text style={styles.title}>How are you feeling right now?</Text>
             <Text style={styles.body}>
-              {partnerName} will see this on their home. You can change it any time from the home screen.
+              {partner?.name ?? 'Your partner'} will see this on their home. You can change it any time from the home screen.
             </Text>
             <View style={styles.moodGrid}>
               {visibleMoods.map((m) => {
