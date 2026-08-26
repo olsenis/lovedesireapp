@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import { useAudioPlayer } from 'expo-audio';
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -38,6 +38,12 @@ export function VoicePlayer({ uri, size = 'compact', idleLabel }: Props) {
       setIsPlaying(false);
       return;
     }
+    // iOS defaults playsInSilentMode:false, so voice notes are silent
+    // when the physical silent switch is engaged. Set it right before
+    // playback (not at app startup — that triggers a "NONE" enum-freeze
+    // crash in expo-audio 55). Fire-and-forget; no need to await
+    // before firing play().
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
     player.seekTo(0);
     player.play();
     setIsPlaying(true);

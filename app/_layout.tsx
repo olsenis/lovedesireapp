@@ -5,7 +5,6 @@ import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
-import { setAudioModeAsync } from 'expo-audio';
 import {
   useFonts,
   CormorantGaramond_400Regular,
@@ -41,15 +40,6 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
-
-// Configure audio mode once at app startup so voice-note playback (Love
-// Notes, Truth or Dare truth answers, Tease voice messages) plays through
-// the speaker even when the iPhone's silent switch is engaged. Without
-// this, iOS defaults `playsInSilentMode` to false and users hear nothing
-// on any playback when their ringer is muted — Android is unaffected.
-// Fire-and-forget: no need to await, mode applies before any user tap
-// reaches a play button.
-setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
 
 SplashScreen.preventAutoHideAsync();
 

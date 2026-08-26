@@ -939,6 +939,10 @@ function DoneCard({
       setIsPlaying(false);
       return;
     }
+    // iOS silent-switch override: set right before playback, not at
+    // app startup (that path triggers a "NONE" enum-freeze crash in
+    // expo-audio 55).
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
     playbackPlayer.seekTo(0);
     playbackPlayer.play();
     setIsPlaying(true);

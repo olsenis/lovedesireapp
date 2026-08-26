@@ -40,6 +40,10 @@ function FlashVoice({ uri, large = false }: { uri: string; large?: boolean }) {
   }, [player]);
   const toggle = () => {
     if (isPlaying) { player.pause(); setIsPlaying(false); return; }
+    // iOS silent-switch override: set right before playback, not at
+    // app startup (that path triggers a "NONE" enum-freeze crash in
+    // expo-audio 55).
+    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
     player.seekTo(0);
     player.play();
     setIsPlaying(true);
