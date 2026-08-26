@@ -452,6 +452,9 @@ export default function DailyScreen() {
   const allMatches = (wishDoc?.items ?? [])
     .map((item, gi) => ({ item, gi }))
     .filter(({ gi }) => matched(gi));
+  const answeredQuestions = (qDoc?.items ?? [])
+    .map((item, gi) => ({ item, gi }))
+    .filter(({ gi }) => revealed(gi));
   const totalMatchCount = allMatches.length;
 
   const loading = !wishDoc || !qDoc;
@@ -472,7 +475,7 @@ export default function DailyScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
@@ -521,12 +524,12 @@ export default function DailyScreen() {
               <Text style={styles.progressNum}>{doneCount}/{totalCount}</Text>
               <Text style={styles.progressLabel}>Done today</Text>
             </View>
-            {totalMatchCount > 0 && (
+            {(totalMatchCount > 0 || answeredQuestions.length > 0) && (
               <>
                 <View style={styles.progressDivider} />
-                <TouchableOpacity style={styles.progressItem} onPress={() => setShowMatches(true)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`${totalMatchCount} total matches, tap to view`}>
-                  <Text style={[styles.progressNum, { color: Colors.burgundy }]}>{totalMatchCount}</Text>
-                  <Text style={[styles.progressLabel, styles.progressLabelTap]}>Matches ›</Text>
+                <TouchableOpacity style={styles.progressItem} onPress={() => setShowMatches(true)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={`View matches and answered questions`}>
+                  <Text style={[styles.progressNum, { color: Colors.burgundy }]}>{totalMatchCount + answeredQuestions.length}</Text>
+                  <Text style={[styles.progressLabel, styles.progressLabelTap]}>Reveals ›</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -662,48 +665,74 @@ export default function DailyScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>All Matches 🌹</Text>
+              <Text style={styles.modalTitle}>Today's Reveals</Text>
               <TouchableOpacity onPress={() => setShowMatches(false)} accessibilityRole="button" accessibilityLabel="Close matches">
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing.xl }}>
-              {allMatches.length === 0 ? (
-                <Text style={styles.emptyText}>No matches yet today.</Text>
-              ) : (
-                allMatches.map(({ item, gi }) => {
-                  const iAdded = myAddedToList(gi);
-                  const theyAdded = partnerAddedToList(gi);
-                  const both = alreadyAdded(gi);
-                  const dpCfg = DAILY_WISH_CATEGORY_CONFIG[item.category];
-                  return (
-                    <View key={gi} style={styles.matchModalCard}>
-                      <View style={[styles.catBadgeSm, { backgroundColor: dpCfg.color }]}>
-                        <Text style={[styles.catBadgeSmText, { color: dpCfg.textColor }]}>{dpCfg.emoji} {dpCfg.label}</Text>
-                      </View>
-                      <Text style={styles.matchModalText}>{personalise(item.text, partnerName)}</Text>
-                      {both ? (
-                        <TouchableOpacity
-                          onPress={() => { setShowMatches(false); router.push('/todo' as any); }}
-                          activeOpacity={0.85}
-                          accessibilityRole="button"
-                          accessibilityLabel="Added to Together List. Tap to view."
-                        >
-                          <Text style={styles.addedText}>✓ Added to Together List · View ›</Text>
-                        </TouchableOpacity>
-                      ) : iAdded ? (
-                        <Text style={styles.waitingText}>Waiting for {partnerName} ✓</Text>
-                      ) : (
-                        <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToList(gi)} activeOpacity={0.8} accessibilityRole="button">
-                          <Text style={styles.addBtnText}>
-                            {theyAdded ? `${partnerName} wants to add, tap to confirm` : '+ Add to Together List'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  );
-                })
+              {allMatches.length === 0 && answeredQuestions.length === 0 && (
+                <Text style={styles.emptyText}>No matches or reveals yet today.</Text>
               )}
+
+              {allMatches.length > 0 && (
+                <Text style={styles.matchSectionHeader}>🌹 Wish matches</Text>
+              )}
+              {allMatches.map(({ item, gi }) => {
+                const iAdded = myAddedToList(gi);
+                const theyAdded = partnerAddedToList(gi);
+                const both = alreadyAdded(gi);
+                const dpCfg = DAILY_WISH_CATEGORY_CONFIG[item.category];
+                return (
+                  <View key={`w${gi}`} style={styles.matchModalCard}>
+                    <View style={[styles.catBadgeSm, { backgroundColor: dpCfg.color }]}>
+                      <Text style={[styles.catBadgeSmText, { color: dpCfg.textColor }]}>{dpCfg.emoji} {dpCfg.label}</Text>
+                    </View>
+                    <Text style={styles.matchModalText}>{personalise(item.text, partnerName)}</Text>
+                    {both ? (
+                      <TouchableOpacity
+                        onPress={() => { setShowMatches(false); router.push('/todo' as any); }}
+                        activeOpacity={0.85}
+                        accessibilityRole="button"
+                        accessibilityLabel="Added to Together List. Tap to view."
+                      >
+                        <Text style={styles.addedText}>✓ Added to Together List · View ›</Text>
+                      </TouchableOpacity>
+                    ) : iAdded ? (
+                      <Text style={styles.waitingText}>Waiting for {partnerName} ✓</Text>
+                    ) : (
+                      <TouchableOpacity style={styles.addBtn} onPress={() => handleAddToList(gi)} activeOpacity={0.8} accessibilityRole="button">
+                        <Text style={styles.addBtnText}>
+                          {theyAdded ? `${partnerName} wants to add, tap to confirm` : '+ Add to Together List'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
+
+              {answeredQuestions.length > 0 && (
+                <Text style={styles.matchSectionHeader}>💬 Answered questions</Text>
+              )}
+              {answeredQuestions.map(({ item, gi }) => {
+                const mine = myAnswer(gi);
+                const theirs = partnerAnswer(gi);
+                return (
+                  <View key={`q${gi}`} style={styles.matchModalCard}>
+                    <Text style={styles.matchModalText}>{personalise(item.text, partnerName)}</Text>
+                    <View style={styles.matchAnswerRow}>
+                      <View style={styles.matchAnswerCol}>
+                        <Text style={styles.matchAnswerLabel}>You</Text>
+                        <Text style={styles.matchAnswerText}>{mine === GUESS_SKIPPED ? '—' : mine ?? '—'}</Text>
+                      </View>
+                      <View style={styles.matchAnswerCol}>
+                        <Text style={styles.matchAnswerLabel}>{partnerName}</Text>
+                        <Text style={styles.matchAnswerText}>{theirs === GUESS_SKIPPED ? '—' : theirs ?? '—'}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
             </ScrollView>
           </View>
         </View>
@@ -1312,6 +1341,11 @@ const styles = StyleSheet.create({
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
   modalClose: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.muted, padding: Spacing.xs },
   matchModalCard: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
+  matchSectionHeader: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: Spacing.md, marginBottom: Spacing.xs },
+  matchAnswerRow: { flexDirection: 'row', gap: Spacing.md },
+  matchAnswerCol: { flex: 1, backgroundColor: Colors.cream, padding: Spacing.sm, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border },
+  matchAnswerLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  matchAnswerText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 20 },
   catBadgeSm: { alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 10, borderRadius: Radius.full },
   catBadgeSmText: { fontFamily: Fonts.bodyBold, fontSize: 11 },
   matchModalText: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 22 },
