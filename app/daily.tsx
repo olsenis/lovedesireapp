@@ -303,10 +303,16 @@ export default function DailyScreen() {
     // Non-binary questions: reveal as soon as both have answered (no
     // guess step exists for open-text or scale).
     if (item?.format !== 'binary') return true;
-    // Binary: reveal unlocks as soon as the user has EITHER made a real
-    // guess OR skipped (both persisted to qDoc.guesses via services).
-    // Sentinel string and real option text both truthy.
-    return !!qDoc.guesses?.[uid]?.[String(gi)];
+    // Binary: reveal unlocks when EITHER partner has recorded a guess
+    // or skip. The guess step is only shown to the second answerer
+    // (the one who answers when partner's answer already exists), so
+    // the first answerer never guesses themselves — but the second
+    // answerer's guess/skip acts as the reveal trigger for both.
+    // Sentinel string GUESS_SKIPPED and real option text are both
+    // truthy under `!!`. Prior version checked only `[uid]`, which
+    // dead-locked the first answerer's reveal permanently.
+    return !!qDoc.guesses?.[uid]?.[String(gi)]
+        || !!qDoc.guesses?.[partnerId]?.[String(gi)];
   };
 
   const submitValue = async (gi: number, value: string) => {
