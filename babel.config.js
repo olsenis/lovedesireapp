@@ -10,25 +10,20 @@ module.exports = function (api) {
   api.cache(true);
   return {
     presets: ['babel-preset-expo'],
-    plugins: [
-      // Firebase v12 ships ES2022 class-field syntax (both public
-      // `field = value` and private `#field`) that Hermes (the JS
-      // engine in Expo Go) can't parse. These three plugins transform
-      // all class-field variants into simple-assignment equivalents
-      // so bundles run cleanly on Hermes. See the runtime SyntaxError
-      // "private properties are not supported" if any are removed.
-      //
-      // `loose: true` is CRITICAL. Without it, Babel emits
-      // Object.defineProperty calls that conflict with React Native's
-      // VirtualizedList / FlatList internals which mark certain
-      // properties non-configurable — triggers "property is not
-      // configurable" render error on any FlatList surface (Fantasy
-      // Wishes matches, etc.). `loose: true` emits simple assignment
-      // instead, avoiding the collision.
-      ['@babel/plugin-transform-class-properties', { loose: true }],
-      ['@babel/plugin-transform-private-methods', { loose: true }],
-      ['@babel/plugin-transform-private-property-in-object', { loose: true }],
-    ],
+    // Aug 26: the three @babel/plugin-transform-{class-properties,
+    // private-methods,private-property-in-object} plugins were added
+    // as defensive fix for a Firebase v12 Hermes "private properties
+    // are not supported" runtime error, then removed once `npx expo
+    // install --fix` aligned babel-preset-expo from ^57.0.6 to the
+    // correct ~54.0.10 for our SDK 54 project. The correct preset
+    // handles Firebase v12's class-field syntax natively, so the
+    // extra plugins were redundant. Worse: strict mode emitted
+    // defineProperty calls that broke FlatList/VirtualizedList
+    // ("property is not configurable"), and loose mode emitted
+    // simple-assignments that broke frozen enums ("Cannot assign to
+    // read-only property 'NONE'" in Event/emit stack). Both failed
+    // on the same underlying Object.freeze'd properties, just
+    // differently. Removing the plugins entirely resolves both.
     env: {
       production: {
         plugins: [
