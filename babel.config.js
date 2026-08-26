@@ -14,12 +14,20 @@ module.exports = function (api) {
       // Firebase v12 ships ES2022 class-field syntax (both public
       // `field = value` and private `#field`) that Hermes (the JS
       // engine in Expo Go) can't parse. These three plugins transform
-      // all class-field variants into WeakMap-based equivalents so
-      // bundles run cleanly on Hermes. See the runtime SyntaxError
+      // all class-field variants into simple-assignment equivalents
+      // so bundles run cleanly on Hermes. See the runtime SyntaxError
       // "private properties are not supported" if any are removed.
-      '@babel/plugin-transform-class-properties',
-      '@babel/plugin-transform-private-methods',
-      '@babel/plugin-transform-private-property-in-object',
+      //
+      // `loose: true` is CRITICAL. Without it, Babel emits
+      // Object.defineProperty calls that conflict with React Native's
+      // VirtualizedList / FlatList internals which mark certain
+      // properties non-configurable — triggers "property is not
+      // configurable" render error on any FlatList surface (Fantasy
+      // Wishes matches, etc.). `loose: true` emits simple assignment
+      // instead, avoiding the collision.
+      ['@babel/plugin-transform-class-properties', { loose: true }],
+      ['@babel/plugin-transform-private-methods', { loose: true }],
+      ['@babel/plugin-transform-private-property-in-object', { loose: true }],
     ],
     env: {
       production: {
