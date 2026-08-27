@@ -5,15 +5,18 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 
-// Ordered lead-first: the three load-bearing paid features (Fantasy Wishes,
-// Sensate Focus, Fire+Desire challenges) go up top per Aug 2026 review —
-// they're the ones that earn a subscription on their own. Spicy content
-// unlocks and Activity Cards ride mid-list as good add-ons. Blueprint is
-// filler (one-time use) so it goes last.
-const FEATURES = [
+// Two-tier framing (Aug 2026 review): three deep features earn a
+// subscription on their own — surfaced up top with prominent styling.
+// The rest come along in an "and everything else" section so the
+// paywall reads as "buying 3 flagship depth features + 4 more" instead
+// of "buying 7 equivalent items". Same 7 items, cleaner mental model.
+const FLAGSHIP_FEATURES = [
   { emoji: '✨', title: 'Fantasy Wishes', desc: '290+ scenarios, revealed only when you both say yes to the same one' },
   { emoji: '🫁', title: 'Sensate Focus', desc: 'Guided 3-stage sessions from sex therapy practice, at your own pace' },
   { emoji: '🎲', title: 'Fire & Desire challenges', desc: '30 days of committed prompts to reignite what habit has softened' },
+];
+
+const ACCESSORY_FEATURES = [
   { emoji: '📸', title: 'Tease', desc: '24-hour photos, videos, and voice notes for the two of you. Gone by morning.' },
   { emoji: '🎴', title: 'Activity Cards', desc: '25 cards a month, take turns drawing what you do together next' },
   { emoji: '🌶️', title: 'Spicy content everywhere', desc: 'Explicit truths, dares, daily picks, and Would You Rather unlocked across the app' },
@@ -37,15 +40,34 @@ export default function UpgradeScreen() {
           <Text style={styles.heroSub}>Everything that keeps intimacy from going on autopilot</Text>
         </View>
 
+        <View style={styles.sectionHeaderWrap}>
+          <Text style={styles.sectionHeader}>The three deep features</Text>
+        </View>
         <View style={styles.featureList}>
-          {FEATURES.map((f, i) => (
-            <View key={i} style={styles.featureRow}>
+          {FLAGSHIP_FEATURES.map((f, i) => (
+            <View key={`fl${i}`} style={[styles.featureRow, styles.featureRowFlagship]}>
               <Text style={styles.featureEmoji}>{f.emoji}</Text>
               <View style={styles.featureText}>
                 <Text style={styles.featureTitle}>{f.title}</Text>
                 <Text style={styles.featureSub}>{f.desc}</Text>
               </View>
               <Text style={styles.check}>✓</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.sectionHeaderWrap}>
+          <Text style={styles.sectionHeaderMuted}>And everything else that comes with it</Text>
+        </View>
+        <View style={styles.featureList}>
+          {ACCESSORY_FEATURES.map((f, i) => (
+            <View key={`ac${i}`} style={[styles.featureRow, styles.featureRowAccessory]}>
+              <Text style={styles.featureEmoji}>{f.emoji}</Text>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitleMuted}>{f.title}</Text>
+                <Text style={styles.featureSub}>{f.desc}</Text>
+              </View>
+              <Text style={styles.checkMuted}>✓</Text>
             </View>
           ))}
         </View>
@@ -80,17 +102,25 @@ const styles = StyleSheet.create({
   heroTitle: { fontFamily: Fonts.heading, fontSize: 36, color: Colors.burgundy },
   heroSub: { fontFamily: Fonts.bodyItalic, fontSize: 15, color: Colors.muted, textAlign: 'center' },
 
+  sectionHeaderWrap: { paddingTop: Spacing.sm, paddingBottom: 2 },
+  sectionHeader: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, textTransform: 'uppercase', letterSpacing: 0.8 },
+  sectionHeaderMuted: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+
   featureList: { gap: Spacing.sm },
   featureRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
     backgroundColor: Colors.white, borderRadius: Radius.lg,
     padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm,
   },
+  featureRowFlagship: { backgroundColor: Colors.white, borderColor: Colors.rose, borderWidth: 1.5 },
+  featureRowAccessory: { backgroundColor: Colors.blush, borderColor: Colors.border },
   featureEmoji: { fontSize: 28, width: 36, textAlign: 'center' },
   featureText: { flex: 1 },
   featureTitle: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text },
+  featureTitleMuted: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.text },
   featureSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
   check: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.burgundy },
+  checkMuted: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
 
   pricingCard: {
     backgroundColor: Colors.blush, borderRadius: Radius.xl,

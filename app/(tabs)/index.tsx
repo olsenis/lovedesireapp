@@ -43,6 +43,7 @@ import { Spacing, Radius, Shadow } from '../../constants/spacing';
 import { PartnerAvatar } from '../../components/PartnerAvatar';
 import { useTrackScreen } from '../../hooks/useTrackScreen';
 import { trackEvent } from '../../services/statsService';
+import { getHelpState, markFeatureSeen } from '../../services/helpService';
 
 // Personalised greeting when the user has a name on their profile —
 // warmer first impression than a generic salutation. Falls back to the
@@ -212,6 +213,9 @@ interface NudgeItem {
   subtitle: string;
   route: string;
   bg: string;
+  // Optional side-effect fired on tap before navigation. Used by one-shot
+  // nudges (like Moments archive peek) to mark themselves seen.
+  onTap?: () => void;
 }
 
 
@@ -341,6 +345,10 @@ export default function HomeScreen() {
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
+  // Moments archive-peek: one-shot nudge that surfaces the archive
+  // compounder at week 2 instead of month 4. Undefined during load so
+  // the nudge doesn't flash on mount; boolean once resolved.
+  const [momentsArchivePeekSeen, setMomentsArchivePeekSeen] = useState<boolean | undefined>(undefined);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -396,6 +404,16 @@ export default function HomeScreen() {
     const u20 = subscribeMoodHistory(coupleId, setMoodHistory);
     return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
+
+  // One-shot Moments archive peek — resolves whether the nudge has
+  // already been dismissed. Cache-backed inside helpService so this
+  // is at most one Firestore read per session.
+  useEffect(() => {
+    if (!user?.uid) return;
+    getHelpState(user.uid).then((s) => {
+      setMomentsArchivePeekSeen(s.seen.includes('moments-archive-peek'));
+    }).catch(() => setMomentsArchivePeekSeen(true));
+  }, [user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
     if (!coupleId || !partnerId) return;
@@ -833,6 +851,24 @@ export default function HomeScreen() {
         : 'Both of you take a photo, reveal together',
       route: '/moments',
       bg: Colors.blush,
+    });
+  }
+
+  // One-shot Moments archive peek — surfaces the compounder value at
+  // week 2 instead of month 4. Fires once the couple has 8+ moments
+  // captured. Tap or navigation marks it seen; never reappears.
+  if (momentsArchivePeekSeen === false && moments.length >= 8 && user?.uid) {
+    const localUid = user.uid;
+    list.push({
+      emoji: '📸',
+      title: `${moments.length} Moments together already`,
+      subtitle: 'See how the story is growing',
+      route: '/moments',
+      bg: '#FFF0EC',
+      onTap: () => {
+        setMomentsArchivePeekSeen(true);
+        markFeatureSeen(localUid, 'moments-archive-peek').catch(() => {});
+      },
     });
   }
 
@@ -1416,7 +1452,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={i}
               style={[styles.nudgeCard, { backgroundColor: n.bg }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(n.route as any); }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); n.onTap?.(); router.push(n.route as any); }}
               activeOpacity={0.85}
              accessibilityRole="button">
               <Text style={styles.nudgeEmoji}>{n.emoji}</Text>
