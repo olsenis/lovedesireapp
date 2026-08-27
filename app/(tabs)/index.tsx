@@ -36,7 +36,7 @@ import {
   answeredCount as suAnsweredCount,
   hasUserCompleted as suHasUserCompleted,
 } from '../../services/stateUnionService';
-import { CHALLENGE_PROGRAM_CONFIG, LOVE_LANGUAGE_LABELS, LoveLanguage } from '../../constants/content';
+import { CHALLENGE_PROGRAM_CONFIG, LOVE_LANGUAGE_LABELS, LoveLanguage, getActiveSeasonalPack } from '../../constants/content';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
@@ -349,6 +349,11 @@ export default function HomeScreen() {
   // compounder at week 2 instead of month 4. Undefined during load so
   // the nudge doesn't flash on mount; boolean once resolved.
   const [momentsArchivePeekSeen, setMomentsArchivePeekSeen] = useState<boolean | undefined>(undefined);
+  // Which one-shot nudge keys the user has dismissed. Loaded once from
+  // helpService.seen[] on mount. Used by seasonal-drops nudge (key
+  // shape `seasonal-pack-${pack.id}`) and any future one-shot nudges
+  // that live outside the boolean-per-flag pattern.
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -405,14 +410,18 @@ export default function HomeScreen() {
     return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
-  // One-shot Moments archive peek — resolves whether the nudge has
-  // already been dismissed. Cache-backed inside helpService so this
-  // is at most one Firestore read per session.
+  // One-shot Moments archive peek + seasonal-pack dismissals — resolves
+  // which nudges the user has already dismissed. Cache-backed inside
+  // helpService so this is at most one Firestore read per session.
   useEffect(() => {
     if (!user?.uid) return;
     getHelpState(user.uid).then((s) => {
       setMomentsArchivePeekSeen(s.seen.includes('moments-archive-peek'));
-    }).catch(() => setMomentsArchivePeekSeen(true));
+      setDismissedKeys(new Set(s.seen));
+    }).catch(() => {
+      setMomentsArchivePeekSeen(true);
+      setDismissedKeys(new Set());
+    });
   }, [user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
@@ -887,6 +896,32 @@ export default function HomeScreen() {
         route: '/year-in-review',
         bg: '#FFF4E8',
       });
+    }
+  }
+
+  // Seasonal drops — surfaces the current season's WYR pack for its
+  // first weeks each season. Framework only at Aug 2026 launch: zero
+  // seasonal packs shipped, so getActiveSeasonalPack returns null and
+  // this block is a no-op. When quarterly content lands the nudge
+  // fires automatically. One-shot per user per pack via helpService.
+  {
+    const seasonalPack = getActiveSeasonalPack();
+    if (seasonalPack && user?.uid) {
+      const dismissKey = `seasonal-pack-${seasonalPack.id}`;
+      const localUid = user.uid;
+      if (!dismissedKeys.has(dismissKey)) {
+        list.push({
+          emoji: seasonalPack.emoji,
+          title: `New this season: ${seasonalPack.name}`,
+          subtitle: seasonalPack.description,
+          route: '/would-you-rather',
+          bg: '#FFF4E8',
+          onTap: () => {
+            setDismissedKeys(prev => new Set(prev).add(dismissKey));
+            markFeatureSeen(localUid, dismissKey).catch(() => {});
+          },
+        });
+      }
     }
   }
 

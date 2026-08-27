@@ -2224,6 +2224,8 @@ export const WYR_LEVEL_CONFIG: Record<WYRLevel, { label: string; emoji: string; 
 // POST_LAUNCH.md for the queued pack ideas: Friday night, First fight
 // aftermath, Fantasy night, Getting to know you (this), Weekend planning,
 // Values check, Long-distance edition.
+export type SeasonKey = 'winter' | 'spring' | 'summer' | 'fall';
+
 export interface WYRPack {
   id: string;
   name: string;
@@ -2231,6 +2233,12 @@ export interface WYRPack {
   description: string;
   paid: boolean;
   questions: WYRQuestion[]; // inline for now — refactor to id refs if pack count grows
+  // Aug 2026 seasonal-drops framework. Packs authored quarterly can tag
+  // themselves with a season key + year to surface as a Home nudge for
+  // the first weeks of that season. Undefined = always-on, no seasonal
+  // treatment (the default for the two launch packs).
+  seasonKey?: SeasonKey;
+  seasonYear?: number;
 }
 
 export const WYR_PACKS: WYRPack[] = [
@@ -2273,6 +2281,27 @@ export const WYR_PACKS: WYRPack[] = [
     ],
   },
 ];
+
+// Northern-hemisphere calendar seasons. Simple month-based mapping —
+// astronomical solstice/equinox dates would drift the boundaries by a
+// few days but nobody would notice, and this keeps the picker pure.
+export function getCurrentSeason(now: Date = new Date()): SeasonKey {
+  const m = now.getMonth();
+  if (m === 11 || m <= 1) return 'winter';   // Dec-Feb
+  if (m <= 4) return 'spring';               // Mar-May
+  if (m <= 7) return 'summer';               // Jun-Aug
+  return 'fall';                             // Sep-Nov
+}
+
+// Return the first pack whose seasonKey + seasonYear match today. Used
+// by the Home nudge to surface newly-authored seasonal content in the
+// first weeks of its season. Returns null when no pack matches — which
+// is the state at ship time; the two launch packs are always-on.
+export function getActiveSeasonalPack(now: Date = new Date()): WYRPack | null {
+  const season = getCurrentSeason(now);
+  const year = now.getFullYear();
+  return WYR_PACKS.find(p => p.seasonKey === season && p.seasonYear === year) ?? null;
+}
 
 export const WYR_QUESTIONS: WYRQuestion[] = [
   // Playful
