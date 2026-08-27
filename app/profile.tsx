@@ -616,7 +616,7 @@ export default function ProfileScreen() {
               Us tab → Sunday Check-in card. See state-union.tsx. */}
         </View>
 
-        {/* Year in Review */}
+        {/* Your Year Together */}
         {couple?.partner2Uid && (
           <TouchableOpacity
             style={[styles.row, { marginTop: Spacing.lg, backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border }]}
@@ -625,7 +625,7 @@ export default function ProfileScreen() {
             accessibilityRole="button"
           >
             <View style={styles.rowTextStack}>
-              <Text style={styles.rowLabel}>✨ Year in Review</Text>
+              <Text style={styles.rowLabel}>✨ Your Year Together</Text>
               <Text style={styles.rowHint}>See your story so far, swipeable cards</Text>
             </View>
             <Text style={{ fontFamily: Fonts.body, fontSize: 18, color: Colors.burgundy }}>›</Text>

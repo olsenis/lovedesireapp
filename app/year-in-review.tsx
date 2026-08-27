@@ -12,7 +12,7 @@ import { useTrackScreen } from '../hooks/useTrackScreen';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-type CardKind = 'cover' | 'days' | 'moods' | 'rituals' | 'intimacy' | 'outro';
+type CardKind = 'cover' | 'days' | 'moods' | 'rituals' | 'sundays' | 'presence' | 'matches' | 'sparks' | 'tease' | 'intimacy' | 'outro';
 
 // Any counter above zero means the year's review will have real content
 // beyond just the days-together number (which comes from couple.startDate,
@@ -23,7 +23,12 @@ function hasAnyActivity(s: YearSummary): boolean {
     || s.questionsAnswered > 0
     || s.momentsCaptured > 0
     || s.notesExchanged > 0
-    || s.intimacyEntries > 0;
+    || s.intimacyEntries > 0
+    || s.presenceCycles > 0
+    || s.fantasyMatches > 0
+    || s.sundayCheckins > 0
+    || s.sparksSent > 0
+    || s.teaseCount > 0;
 }
 
 export default function YearInReviewScreen() {
@@ -77,8 +82,18 @@ export default function YearInReviewScreen() {
     return () => { cancelled = true; };
   }, [profile?.coupleId, uid, partnerId, couple?.startDate, profile?.features?.intimacyLog]);
 
-  // Decide which cards to show — skip intimacy if no entries OR log disabled
-  const cards: CardKind[] = ['cover', 'days', 'moods', 'rituals'];
+  // Decide which cards to show — every non-cover/outro card is
+  // data-gated, so a paid tier they never used or a free-tier feature
+  // they skipped doesn't render an empty slide. Order flows from time
+  // → feelings → daily rituals → weekly ritual → paid depth features
+  // → intimacy log → outro. Skip any card whose count is zero.
+  const cards: CardKind[] = ['cover', 'days', 'moods'];
+  if (summary && (summary.questionsAnswered > 0 || summary.momentsCaptured > 0 || summary.notesExchanged > 0)) cards.push('rituals');
+  if ((summary?.sundayCheckins ?? 0) > 0) cards.push('sundays');
+  if ((summary?.presenceCycles ?? 0) > 0) cards.push('presence');
+  if ((summary?.fantasyMatches ?? 0) > 0) cards.push('matches');
+  if ((summary?.sparksSent ?? 0) > 0) cards.push('sparks');
+  if ((summary?.teaseCount ?? 0) > 0) cards.push('tease');
   if ((summary?.intimacyEntries ?? 0) > 0) cards.push('intimacy');
   cards.push('outro');
 
@@ -157,7 +172,7 @@ function CardView({
         colors={['#7a0b46', '#880E4F', '#6a0a3e']}
         style={[wrap, styles.cardWrap]}
       >
-        <Text style={styles.coverEyebrow}>YEAR IN REVIEW</Text>
+        <Text style={styles.coverEyebrow}>YOUR YEAR TOGETHER</Text>
         <Text style={styles.coverYear}>{year}</Text>
         <Text style={styles.coverNames}>{myName}  &  {partnerName}</Text>
         <Text style={styles.coverHint}>Swipe to begin →</Text>
@@ -235,6 +250,73 @@ function CardView({
           <RitualRow emoji="📸" count={summary.momentsCaptured} label="moments captured together" />
           <RitualRow emoji="💌" count={summary.notesExchanged} label="love notes opened" />
         </View>
+      </LinearGradient>
+    );
+  }
+
+  if (kind === 'sundays') {
+    return (
+      <LinearGradient
+        colors={['#FFF8F0', '#FCE4EC', '#F4A7B9']}
+        style={[wrap, styles.cardWrap]}
+      >
+        <Text style={styles.statEyebrow}>SUNDAY CHECK-INS</Text>
+        <Text style={styles.bigNumber}>{summary.sundayCheckins}</Text>
+        <Text style={styles.statLabel}>weeks you paused to look at us</Text>
+      </LinearGradient>
+    );
+  }
+
+  if (kind === 'presence') {
+    return (
+      <LinearGradient
+        colors={['#6a0a3e', '#880E4F', '#A4366A']}
+        style={[wrap, styles.cardWrap]}
+      >
+        <Text style={[styles.statEyebrow, { color: 'rgba(255,248,240,0.7)' }]}>PRESENCE</Text>
+        <Text style={[styles.bigNumber, { color: Colors.cream }]}>{summary.presenceCycles}</Text>
+        <Text style={[styles.statLabel, { color: Colors.cream }]}>
+          {summary.presenceCycles === 1 ? 'full cycle together' : 'full cycles together'}
+        </Text>
+      </LinearGradient>
+    );
+  }
+
+  if (kind === 'matches') {
+    return (
+      <LinearGradient
+        colors={['#F4A7B9', '#EC7A9B', '#A4366A']}
+        style={[wrap, styles.cardWrap]}
+      >
+        <Text style={[styles.statEyebrow, { color: 'rgba(255,248,240,0.85)' }]}>FANTASY MATCHES</Text>
+        <Text style={[styles.bigNumber, { color: Colors.cream }]}>{summary.fantasyMatches}</Text>
+        <Text style={[styles.statLabel, { color: Colors.cream }]}>times you both said yes to the same thing</Text>
+      </LinearGradient>
+    );
+  }
+
+  if (kind === 'sparks') {
+    return (
+      <LinearGradient
+        colors={['#FFF4E8', '#F8DDC5', '#F4A7B9']}
+        style={[wrap, styles.cardWrap]}
+      >
+        <Text style={styles.statEyebrow}>SPARKS SENT</Text>
+        <Text style={styles.bigNumber}>{summary.sparksSent}</Text>
+        <Text style={styles.statLabel}>times you reached for {partnerName}</Text>
+      </LinearGradient>
+    );
+  }
+
+  if (kind === 'tease') {
+    return (
+      <LinearGradient
+        colors={['#3D1A24', '#6a0a3e', '#880E4F']}
+        style={[wrap, styles.cardWrap]}
+      >
+        <Text style={[styles.statEyebrow, { color: 'rgba(255,248,240,0.7)' }]}>TEASE</Text>
+        <Text style={[styles.bigNumber, { color: Colors.cream }]}>{summary.teaseCount}</Text>
+        <Text style={[styles.statLabel, { color: Colors.cream }]}>ephemeral moments, gone by morning</Text>
       </LinearGradient>
     );
   }

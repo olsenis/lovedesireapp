@@ -891,7 +891,7 @@ export default function HomeScreen() {
       const yearTitle = m === 11 ? today.getFullYear() : today.getFullYear() - 1;
       list.unshift({
         emoji: '🎊',
-        title: `Your ${yearTitle} Year in Review`,
+        title: `Your Year Together, ${yearTitle}`,
         subtitle: 'Swipeable cards · screenshot to share',
         route: '/year-in-review',
         bg: '#FFF4E8',
