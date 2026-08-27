@@ -2301,6 +2301,69 @@ export const WYR_PACKS: WYRPack[] = [
       { level: 'romantic', a: "Fall asleep listening to rain on the window", b: "Fall asleep under the softest blanket we own", discussion: "Which one is the version of home you love most?" },
     ],
   },
+  {
+    id: 'winter-reflections-2026',
+    name: 'Winter Reflections',
+    emoji: '❄️',
+    description: '10 questions for hibernation and holding close. Playful and Romantic mix.',
+    paid: false,
+    seasonKey: 'winter',
+    seasonYear: 2026,
+    questions: [
+      { level: 'playful',  a: "Stay in bed until noon on a cold weekend", b: "Get out early and come home to a warm kitchen", discussion: "What is your ideal winter weekend?" },
+      { level: 'romantic', a: "Keep our holiday traditions unchanged this year", b: "Start one new tradition together this year", discussion: "What tradition means more to you than you have said?" },
+      { level: 'playful',  a: "One perfect cup of coffee every morning", b: "Try a different hot drink every day", discussion: "What is your winter drink of choice?" },
+      { level: 'romantic', a: "Spend a whole day inside together without leaving", b: "Bundle up and go out for one thing, then come back home", discussion: "Which one lands as your version of a slow winter day?" },
+      { level: 'playful',  a: "Wake up in complete darkness", b: "Have a soft lamp on before your alarm", discussion: "What is your first move on a dark morning?" },
+      { level: 'romantic', a: "Look at photos from this past year together", b: "Write down what you want the next year to feel like", discussion: "Which one do you want to do together this month?" },
+      { level: 'playful',  a: "Pile every blanket in the house on one couch", b: "Have the heat on high all season", discussion: "How do you like to stay warm?" },
+      { level: 'romantic', a: "Sit in silence together with a candle lit", b: "Read out loud to each other for an hour", discussion: "Which one feels like real winter quiet to you?" },
+      { level: 'playful',  a: "Have a proper snow day with no responsibilities", b: "Get out in the cold and come back for cocoa", discussion: "What do you love most about the coldest days?" },
+      { level: 'romantic', a: "Fall asleep watching snow fall through the window", b: "Fall asleep with a fire crackling in the room", discussion: "Which one is the softest winter dream?" },
+    ],
+  },
+  {
+    id: 'spring-awakening-2027',
+    name: 'Spring Awakening',
+    emoji: '🌱',
+    description: '10 questions for coming back to life. Playful and Romantic mix.',
+    paid: false,
+    seasonKey: 'spring',
+    seasonYear: 2027,
+    questions: [
+      { level: 'playful',  a: "Sit outside the first day you can without a jacket", b: "Stay in and open every window in the house", discussion: "How do you welcome the first warm day?" },
+      { level: 'romantic', a: "Plan the whole year of us together this month", b: "Take spring one week at a time and see what unfolds", discussion: "Which one feels more like this season for us?" },
+      { level: 'playful',  a: "Walk somewhere new every weekend", b: "Find one favorite outdoor spot and return to it", discussion: "What is the spot outside that feels like yours right now?" },
+      { level: 'romantic', a: "Grow something together on the balcony or in the garden", b: "Start a shared project neither of us has finished before", discussion: "What has been quietly wanting your attention?" },
+      { level: 'playful',  a: "Do a full spring clean of the whole home in one weekend", b: "Get rid of five things you have not touched in a year", discussion: "What in our home is ready to go?" },
+      { level: 'romantic', a: "Have breakfast on the balcony as soon as the sun is warm", b: "Have a long slow lunch outside on a Saturday", discussion: "What is your favorite way to eat outside?" },
+      { level: 'playful',  a: "Take up one new hobby together this spring", b: "Go deeper into one you already love", discussion: "What are you drawn to right now?" },
+      { level: 'romantic', a: "Keep picnic gear ready by the door all season", b: "Keep it simple and pack fresh each time", discussion: "Which one is more you?" },
+      { level: 'playful',  a: "Get caught in a warm spring rain and enjoy it", b: "Watch the same rain from a dry window", discussion: "Which one calls you louder?" },
+      { level: 'romantic', a: "Sit on the same bench and talk about what the year could look like", b: "Walk somewhere together and let the plan come as you go", discussion: "Which one feels like the version of us you love most?" },
+    ],
+  },
+  {
+    id: 'summer-nights-2027',
+    name: 'Summer Nights',
+    emoji: '☀️',
+    description: '10 questions for long evenings and open windows. Playful and Romantic mix.',
+    paid: false,
+    seasonKey: 'summer',
+    seasonYear: 2027,
+    questions: [
+      { level: 'playful',  a: "Take one big trip together this summer", b: "Take three short trips instead", discussion: "Which shape of summer calls you louder?" },
+      { level: 'romantic', a: "Stay out until it starts getting dark every Friday", b: "Have one long evening at home with everything you love", discussion: "What is the summer evening you would want on repeat?" },
+      { level: 'playful',  a: "Live in one favorite pair of shorts all summer", b: "Dress up for a hot night out at least once", discussion: "What is your summer uniform?" },
+      { level: 'romantic', a: "Swim somewhere new together this season", b: "Return to a body of water you have loved before", discussion: "What water feels like home to you?" },
+      { level: 'playful',  a: "Say yes to every last-minute plan this summer", b: "Guard weekends together fiercely", discussion: "Which side of you wants more room this year?" },
+      { level: 'romantic', a: "Cook everything on the grill or the stove outside", b: "Eat out every night we can this month", discussion: "Which one is a summer we would remember?" },
+      { level: 'playful',  a: "Wake up when the light comes in with no alarm", b: "Sleep late through the brightest hours", discussion: "What is your ideal summer morning?" },
+      { level: 'romantic', a: "Watch the stars from somewhere far from city lights", b: "Sit on our balcony or porch and count what you can see", discussion: "Which one grounds you more?" },
+      { level: 'playful',  a: "Ice cream every day it is warm enough", b: "Cold showers as our daily reset", discussion: "What is your favorite way to cool down?" },
+      { level: 'romantic', a: "Fall asleep with the window open and the breeze coming in", b: "Sleep in the coolest room in the house together", discussion: "Which one is the summer version of home?" },
+    ],
+  },
 ];
 
 // Northern-hemisphere calendar seasons. Simple month-based mapping —
@@ -2314,15 +2377,26 @@ export function getCurrentSeason(now: Date = new Date()): SeasonKey {
   return 'fall';                             // Sep-Nov
 }
 
+// Winter spans two calendar years (Dec 2026 → Feb 2027 is one winter).
+// The seasonYear convention is "the year the season started", so a
+// Winter 2026 pack is authored for Dec 2026 through Feb 2027. This
+// helper normalises the lookup so Jan-Feb reads the pack tagged with
+// the PREVIOUS calendar year. Spring/summer/fall are entirely within
+// one calendar year so no adjustment is needed there.
+function getSeasonYear(now: Date): number {
+  const m = now.getMonth();
+  return m <= 1 ? now.getFullYear() - 1 : now.getFullYear();
+}
+
 // Return the first pack whose seasonKey + seasonYear match today. Used
 // by the Home nudge to surface newly-authored seasonal content in the
 // first weeks of its season. Returns null when no pack matches (out of
 // season, or a season with no dedicated pack yet). The two always-on
 // launch packs stay out of this lookup because neither carries a
-// seasonKey. Currently one seasonal pack shipped: Fall Reflections 2026.
+// seasonKey.
 export function getActiveSeasonalPack(now: Date = new Date()): WYRPack | null {
   const season = getCurrentSeason(now);
-  const year = now.getFullYear();
+  const year = getSeasonYear(now);
   return WYR_PACKS.find(p => p.seasonKey === season && p.seasonYear === year) ?? null;
 }
 
