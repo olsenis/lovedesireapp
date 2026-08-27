@@ -2280,6 +2280,27 @@ export const WYR_PACKS: WYRPack[] = [
       { level: 'romantic', a: "Fall asleep talking", b: "Fall asleep holding each other in silence", discussion: "Which one is the softer landing for you?" },
     ],
   },
+  {
+    id: 'fall-reflections-2026',
+    name: 'Fall Reflections',
+    emoji: '🍂',
+    description: '10 questions for slow days and cozy nights. Playful and Romantic mix.',
+    paid: false,
+    seasonKey: 'fall',
+    seasonYear: 2026,
+    questions: [
+      { level: 'playful',  a: "Curl up under a blanket with a book together", b: "Bundle up and go for a long walk outside", discussion: "Which is your version of a perfect fall afternoon?" },
+      { level: 'romantic', a: "Make our home the coziest place we can this season", b: "Fill our schedule with autumn outings and events", discussion: "Which side of fall do you want more of this year?" },
+      { level: 'playful',  a: "Cook something slow together on a cold day", b: "Try every warm drink at a new spot in your city", discussion: "What is your comfort-food dream for the next month?" },
+      { level: 'romantic', a: "Watch the sun set from the same spot every week this fall", b: "Try somewhere new each Sunday evening", discussion: "Which one feels more like us?" },
+      { level: 'playful',  a: "Rewatch every scary movie you have already seen", b: "Try new ones you have been avoiding", discussion: "What is your relationship to being spooked?" },
+      { level: 'romantic', a: "Look back on this year and name what you are grateful for", b: "Look ahead to next year and name what you are hoping for", discussion: "Which one do you want to sit with this weekend?" },
+      { level: 'playful',  a: "Live in one favorite hoodie for the whole season", b: "Have a different sweater for every day of the week", discussion: "What is your cold-weather uniform?" },
+      { level: 'romantic', a: "Have a slow Sunday morning in bed together", b: "Get up early and catch the fall light outside", discussion: "Which one calls you louder this month?" },
+      { level: 'playful',  a: "Walk through fallen leaves that crunch under your feet", b: "Watch a bonfire until the last coal fades", discussion: "What is the smell of fall to you?" },
+      { level: 'romantic', a: "Fall asleep listening to rain on the window", b: "Fall asleep under the softest blanket we own", discussion: "Which one is the version of home you love most?" },
+    ],
+  },
 ];
 
 // Northern-hemisphere calendar seasons. Simple month-based mapping —
@@ -2295,8 +2316,10 @@ export function getCurrentSeason(now: Date = new Date()): SeasonKey {
 
 // Return the first pack whose seasonKey + seasonYear match today. Used
 // by the Home nudge to surface newly-authored seasonal content in the
-// first weeks of its season. Returns null when no pack matches — which
-// is the state at ship time; the two launch packs are always-on.
+// first weeks of its season. Returns null when no pack matches (out of
+// season, or a season with no dedicated pack yet). The two always-on
+// launch packs stay out of this lookup because neither carries a
+// seasonKey. Currently one seasonal pack shipped: Fall Reflections 2026.
 export function getActiveSeasonalPack(now: Date = new Date()): WYRPack | null {
   const season = getCurrentSeason(now);
   const year = now.getFullYear();
