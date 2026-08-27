@@ -63,6 +63,166 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
     'What is a way we can be tender with each other next week?',
     'What is one thing you love about being in this with me?',
   ],
+  // Set 5 — rest & pace
+  [
+    'How did the pace of this week feel to you?',
+    'When did you feel most depleted this week?',
+    'Was there a moment I helped you slow down?',
+    'What would help you feel more rested next week?',
+    'What small comfort feels like real rest to you?',
+  ],
+  // Set 6 — sharing life admin
+  [
+    'What kept us running smoothly this week without anyone thanking it?',
+    'What piece of life admin have you been quietly holding?',
+    'What is one thing I take off your plate that helps most?',
+    'What is one small task we could hand off differently next week?',
+    'What is a boring shared chore you secretly enjoy?',
+  ],
+  // Set 7 — money together
+  [
+    'What did we spend money on this week that felt worth it?',
+    'What is a money worry you have been carrying quietly?',
+    'When have I made you feel safer about money lately?',
+    'What is one thing we could save toward that would excite you?',
+    'What is a small money treat that would feel like love right now?',
+  ],
+  // Set 8 — friendship outside the couple
+  [
+    'Who outside our couple did you feel connected to this week?',
+    'What friendship of yours have you been missing lately?',
+    'What is one friendship of mine you have noticed matters to me?',
+    'Who would you love to make more time for next month?',
+    'What friend of ours makes you laugh every time?',
+  ],
+  // Set 9 — family, chosen or given
+  [
+    'How has your family felt on your mind this week?',
+    'What is one family pattern you have been noticing in yourself lately?',
+    'What is one thing you love about how I am with my family?',
+    'What would you love us to do differently around family soon?',
+    'What small tradition from your family do you love bringing into ours?',
+  ],
+  // Set 10 — big changes on the horizon
+  [
+    'What big change have you been thinking about this week?',
+    'What feels most uncertain to you right now?',
+    'What is something I have said that made a coming change feel doable?',
+    'What is one thing you would love to nail down before it arrives?',
+    'What are you most looking forward to on the other side of it?',
+  ],
+  // Set 11 — what has changed since we met
+  [
+    'What did we do this week that reminded you of our early days?',
+    'What version of yourself from years ago do you miss?',
+    'What have I grown into that you did not see coming?',
+    'What is a version of us you would love to grow toward?',
+    'What is one thing about us that has never changed?',
+  ],
+  // Set 12 — being alone vs being together
+  [
+    'When did you feel most alone this week, even if we were near?',
+    'What is a kind of alone time you have been quietly needing?',
+    'When has my presence felt most restorative to you lately?',
+    'How could we balance alone and together better this week?',
+    'What is your favorite way to be quiet in the same room?',
+  ],
+  // Set 13 — what we say vs what we mean
+  [
+    'When this week did I not quite hear what you were really saying?',
+    'What is something you almost said this week but held back?',
+    'When have I picked up on what you meant without you spelling it out?',
+    'What would help you say something hard next week?',
+    'What phrase between us has become a shorthand only we understand?',
+  ],
+  // Set 14 — fear and reassurance
+  [
+    'What was one small thing this week that made you anxious?',
+    'What fear have you been carrying that you have not put into words?',
+    'What is one way I could reassure you that would actually land?',
+    'What is one worry you would love to hand off next week?',
+    'When do you feel safest with me?',
+  ],
+  // Set 15 — hope for us
+  [
+    'What happened this week that made the future feel closer?',
+    'What is a hope for us you have not said out loud yet?',
+    'What is something I do that makes the future feel possible to you?',
+    'What is one thing you would love us to try in the next few months?',
+    'What are you hopeful about between us right now?',
+  ],
+  // Set 16 — play and silliness
+  [
+    'What made you laugh with me hardest this week?',
+    'When did you feel most playful with yourself this week?',
+    'What is something silly I do that you love?',
+    'What is one silly thing we could do together this weekend?',
+    'What is our best inside joke right now?',
+  ],
+  // Set 17 — body and health
+  [
+    'How has your body felt this week?',
+    'What is one thing you have been ignoring physically that you should not?',
+    'What is one way I take care of you that your body notices?',
+    'What is one small thing you could do next week to feel better in your body?',
+    'What is a physical comfort we share that you love?',
+  ],
+  // Set 18 — ambition and drive
+  [
+    'What are you proud of pushing forward this week?',
+    'What ambition have you been quiet about lately?',
+    'What are you rooting for me on right now?',
+    'What is one goal you would love my support with next?',
+    'What is one dream of yours that lights you up when you think about it?',
+  ],
+  // Set 19 — rituals we have built
+  [
+    'What ritual of ours felt especially good this week?',
+    'What is a habit of your own that has been slipping lately?',
+    'What is one small thing I do daily that you would miss most?',
+    'What is a new ritual you would love us to try?',
+    'What is your favorite tiny thing we always do together?',
+  ],
+  // Set 20 — the little things
+  [
+    'What small thing this week made you feel loved?',
+    'What is a tiny thing you did for yourself this week that helped?',
+    'What is one small gesture from me that always lands?',
+    'What small kindness could I offer you next week?',
+    'What is a tiny detail about us right now that you love?',
+  ],
+  // Set 21 — being seen
+  [
+    'When this week did you feel most seen by me?',
+    'Where have you been feeling invisible lately, even outside of us?',
+    'What is one thing you wish I noticed more?',
+    'What would help you feel more seen next week?',
+    'What is one part of you I get right that others miss?',
+  ],
+  // Set 22 — compromise
+  [
+    'Where did one of us bend for the other this week?',
+    'What is one compromise you have been quietly holding?',
+    'When has my flexibility felt like love to you?',
+    'What is one thing you would love to compromise less on soon?',
+    'What is one thing we agree on so easily it feels lucky?',
+  ],
+  // Set 23 — what home means
+  [
+    'What made our home feel like home this week?',
+    'Where else besides here do you feel most at home?',
+    'What is one thing about me that feels like coming home?',
+    'What is one small change to our home that would feel good?',
+    'What is your favorite corner of our space right now?',
+  ],
+  // Set 24 — repair
+  [
+    'What small moment from this week could use a soft word between us?',
+    'What have you been holding onto that you would love to put down?',
+    'What is one thing I could say that would help something land right?',
+    'What is one thing you would love us to leave behind next week?',
+    'What is one small way we already repair things well?',
+  ],
 ];
 
 // Back-compat: legacy call sites still import STATE_UNION_QUESTIONS
