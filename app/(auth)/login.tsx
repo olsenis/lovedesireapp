@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { login, resetPassword } from '../../services/authService';
@@ -82,7 +83,12 @@ export default function LoginScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Love Desire</Text>
         <Text style={styles.subtitle}>Your couple's space</Text>
 
@@ -129,7 +135,7 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
         </Link>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -140,10 +146,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cream,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
     width: '100%',
   },
   title: {

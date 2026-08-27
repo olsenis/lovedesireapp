@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -79,7 +80,12 @@ export default function OnboardingScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Welcome!</Text>
         <Text style={styles.subtitle}>Tell us a little about yourself</Text>
 
@@ -115,7 +121,7 @@ export default function OnboardingScreen() {
             style={styles.button}
           />
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -126,10 +132,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cream,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
   },
   title: {
     fontFamily: Fonts.heading,

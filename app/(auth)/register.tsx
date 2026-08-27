@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { register } from '../../services/authService';
@@ -68,7 +69,12 @@ export default function RegisterScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>Start your journey together</Text>
 
@@ -135,7 +141,7 @@ export default function RegisterScreen() {
             Already have an account? <Text style={styles.linkBold}>Sign in</Text>
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -146,10 +152,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cream,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
     width: '100%',
   },
   title: {
