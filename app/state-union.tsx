@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import {
-  STATE_UNION_QUESTIONS,
+  getWeekQuestions,
   StateUnionDoc,
   StateUnionEntry,
   PulseDimensionKey,
@@ -93,6 +93,11 @@ export default function StateUnionScreen() {
   const iCompleted = hasUserCompleted(suDoc, uid);
   const both = !!partnerId && bothCompleted(suDoc, uid, partnerId);
 
+  // Questions for THIS week — resolved from the doc's questionSetId
+  // (persisted on creation via ensureStateUnionDoc). Legacy pre-migration
+  // docs without the field fall back to set 0, the original 5.
+  const weekQuestions = useMemo(() => getWeekQuestions(suDoc), [suDoc]);
+
   // Only subscribe to partner's entry once both have completed — firestore rules
   // deny the read otherwise. Without this gate, the listener throws permission-denied.
   useEffect(() => {
@@ -150,7 +155,7 @@ export default function StateUnionScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await submitStateUnionAnswer(coupleId, weekId, uid, textStep, draftAnswer.trim());
-      if (textStep < STATE_UNION_QUESTIONS.length - 1) {
+      if (textStep < weekQuestions.length - 1) {
         setStep(textStep + 1);
       }
     } finally {
@@ -252,7 +257,7 @@ export default function StateUnionScreen() {
         {!iCompleted && step !== 'pulse' && (
           <View style={styles.card}>
             <View style={styles.progressRow}>
-              {STATE_UNION_QUESTIONS.map((_, i) => (
+              {weekQuestions.map((_, i) => (
                 <View
                   key={i}
                   style={[
@@ -263,8 +268,8 @@ export default function StateUnionScreen() {
                 />
               ))}
             </View>
-            <Text style={styles.questionLabel}>Question {(step as number) + 1} of {STATE_UNION_QUESTIONS.length}</Text>
-            <Text style={styles.questionText}>{STATE_UNION_QUESTIONS[step as number]}</Text>
+            <Text style={styles.questionLabel}>Question {(step as number) + 1} of {weekQuestions.length}</Text>
+            <Text style={styles.questionText}>{weekQuestions[step as number]}</Text>
 
             <TextInput
               style={styles.input}
@@ -288,7 +293,7 @@ export default function StateUnionScreen() {
                 <Text style={styles.secondaryBtnText}>← Back</Text>
               </TouchableOpacity>
 
-              {(step as number) < STATE_UNION_QUESTIONS.length - 1 ? (
+              {(step as number) < weekQuestions.length - 1 ? (
                 <TouchableOpacity
                   style={[styles.primaryBtn, (!draftAnswer.trim() || submitting) && styles.btnDisabled]}
                   onPress={handleSaveAndNext}
@@ -319,7 +324,7 @@ export default function StateUnionScreen() {
             <Text style={styles.waitText}>
               {partnerAnswered === 0
                 ? `${partnerName} hasn't started yet`
-                : `${partnerName} has answered ${partnerAnswered} of ${STATE_UNION_QUESTIONS.length}`}
+                : `${partnerName} has answered ${partnerAnswered} of ${weekQuestions.length}`}
             </Text>
             <Text style={styles.waitHint}>You'll see both answers side by side once {partnerName} is done.</Text>
           </View>
@@ -363,7 +368,7 @@ export default function StateUnionScreen() {
             {(myEntry?.pulseScores || partnerEntry?.pulseScores) && (
               <Text style={styles.revealSectionHeader}>Answers</Text>
             )}
-            {STATE_UNION_QUESTIONS.map((q, i) => (
+            {weekQuestions.map((q, i) => (
               <View key={i} style={styles.revealBlock}>
                 <Text style={styles.revealQ}>{i + 1}. {q}</Text>
                 <View style={styles.revealAnswerRow}>
@@ -413,7 +418,7 @@ export default function StateUnionScreen() {
                     </TouchableOpacity>
                     {expanded && isBoth && partnerId && (
                       <View style={styles.historyAnswers}>
-                        {STATE_UNION_QUESTIONS.map((q, i) => {
+                        {getWeekQuestions(h).map((q, i) => {
                           const cached = historyEntries[h.weekId];
                           const mine = cached?.mine?.answers?.[String(i)] ?? '...';
                           const theirs = cached?.theirs?.answers?.[String(i)] ?? '...';

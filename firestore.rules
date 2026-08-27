@@ -141,7 +141,11 @@ service cloud.firestore {
       match /stateUnion/{weekId} {
         allow read: if isMemberOfCouple(coupleId);
         // Create is unrestricted for members — initial ensureStateUnionDoc()
-        // writes {weekId, startedAt, completedAt: {}, answeredCount: {}}.
+        // writes {weekId, startedAt, completedAt: {}, answeredCount: {},
+        // questionSetId?}. Question-set rotation added Aug 2026: setId
+        // is fixed at create time via pickWeeklyQuestionSet() and never
+        // mutated (the update rule below rejects any field other than
+        // completedAt / answeredCount).
         allow create: if isMemberOfCouple(coupleId);
         // Update: prevent spoofing partner's completedAt / answeredCount to
         // unlock the /entries/{userId} read gate below. Only the requesting

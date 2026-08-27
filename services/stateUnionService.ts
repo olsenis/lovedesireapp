@@ -12,14 +12,84 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 
-// 5 Gottman-inspired questions for the weekly check-in
-export const STATE_UNION_QUESTIONS: string[] = [
-  'What went well between us this week?',
-  'What was hard for you this week?',
-  "What's one thing I appreciate about you?",
-  "What's one thing I'd love more of from you?",
-  'What are we looking forward to together?',
+// Sunday Check-in question pool. Each set is 5 questions, one week per
+// set. A deterministic per-couple picker (see pickWeeklyQuestionSet) means
+// both partners see the same set each week, and the choice is stable
+// across sessions. Aug 2026: expanded from a single hardcoded set of 5
+// so the ritual doesn't stagnate at week 3-4 with repetition.
+//
+// Set 0 is the original 5. Legacy docs without a `questionSetId` field
+// fall back to set 0, so pre-migration weeks render exactly as before.
+// New sets append at the tail — never reorder existing sets, or a
+// historical doc's questionSetId would map to different questions.
+export const STATE_UNION_QUESTION_SETS: string[][] = [
+  // Set 0 — the original Gottman-inspired baseline (do not reorder)
+  [
+    'What went well between us this week?',
+    'What was hard for you this week?',
+    "What's one thing I appreciate about you?",
+    "What's one thing I'd love more of from you?",
+    'What are we looking forward to together?',
+  ],
+  // Set 1 — care & needs
+  [
+    'What was one thing I did this week that felt like love to you?',
+    "What is something you needed but didn't ask for?",
+    'When did you feel most seen by me this week?',
+    'What would make next week feel gentler for you?',
+    'What is one small thing I can do for you tomorrow?',
+  ],
+  // Set 2 — growth & carrying
+  [
+    'What have you been carrying quietly this week?',
+    'Where did we handle something well as a team?',
+    "What is something you're proud of yourself for?",
+    'What is one thing you want us to try differently next week?',
+    'What are you looking forward to about the version of us a year from now?',
+  ],
+  // Set 3 — attention & rhythm
+  [
+    'When did we laugh together this week?',
+    "What has felt off between us that we haven't named yet?",
+    "What is one moment from this week you'd want to remember?",
+    'What would you love more attention from me on?',
+    'What is something you want to celebrate about us right now?',
+  ],
+  // Set 4 — repair & tenderness
+  [
+    'What is a moment this week where you needed reassurance?',
+    'What is something I did that stayed with you, good or hard?',
+    "What would feel like repair for something that's lingered?",
+    'What is a way we can be tender with each other next week?',
+    'What is one thing you love about being in this with me?',
+  ],
 ];
+
+// Back-compat: legacy call sites still import STATE_UNION_QUESTIONS
+// and expect the original 5. Keep the export as a shortcut to set 0
+// so anything that hasn't migrated to getWeekQuestions() keeps working.
+export const STATE_UNION_QUESTIONS: string[] = STATE_UNION_QUESTION_SETS[0];
+
+// Deterministic per-couple-per-week set picker. Same shuffle-hash pattern
+// used by daily-questions (services/dailyQuestionsService.ts): both
+// partners see the same set on a given week, and the choice never drifts.
+// Returns an index into STATE_UNION_QUESTION_SETS.
+export function pickWeeklyQuestionSet(weekId: string, coupleId: string): number {
+  const seed = `${weekId}::${coupleId}`;
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  const idx = Math.abs(h) % STATE_UNION_QUESTION_SETS.length;
+  return idx;
+}
+
+// Resolve the 5 questions for a specific week's doc. Uses the doc's
+// stored questionSetId when present (any week written after the Aug 2026
+// rotation ship). Legacy docs without the field fall back to set 0 —
+// the same 5 they were originally answered against.
+export function getWeekQuestions(suDoc: StateUnionDoc | null): string[] {
+  const idx = suDoc?.questionSetId ?? 0;
+  return STATE_UNION_QUESTION_SETS[idx] ?? STATE_UNION_QUESTION_SETS[0];
+}
 
 // Parent doc — both partners can always read this. Tracks completion only.
 export interface StateUnionDoc {
@@ -31,6 +101,11 @@ export interface StateUnionDoc {
   // Optional progress counter so the partner can see "they're answering"
   // without seeing the answers themselves.
   answeredCount?: Record<string, number>;
+  // Which question set was drawn for this week. Assigned on doc creation
+  // via pickWeeklyQuestionSet (deterministic per weekId + coupleId).
+  // Legacy docs without this field render set 0 (the original 5) so
+  // historical answers stay aligned with their questions.
+  questionSetId?: number;
 }
 
 // Per-user entries subdoc — readable by owner always, by partner only after both completed.
@@ -113,7 +188,8 @@ export async function ensureStateUnionDoc(coupleId: string, weekId: string): Pro
   const ref = doc(db, 'couples', coupleId, 'stateUnion', weekId);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    await setDoc(ref, { weekId, startedAt: Date.now(), completedAt: {}, answeredCount: {} });
+    const questionSetId = pickWeeklyQuestionSet(weekId, coupleId);
+    await setDoc(ref, { weekId, startedAt: Date.now(), completedAt: {}, answeredCount: {}, questionSetId });
   }
 }
 
