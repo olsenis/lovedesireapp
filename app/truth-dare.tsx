@@ -16,7 +16,7 @@ import { HelpModal } from '../components/HelpModal';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
 import { personalise } from '../services/personalise';
 import {
-  TruthDareSession, subscribeTruthDare, startTruthDare,
+  TruthDareSession, subscribeTruthDare, startTruthDare, setTruthDareLevel,
   playCard, nextTurn, resetTruthDare, submitTruthAnswer,
   confirmDare, skipCard,
 } from '../services/truthDareService';
@@ -597,7 +597,17 @@ export default function TruthDareScreen() {
                 style={[styles.levelTab, active && { backgroundColor: c.color }, locked && { opacity: 0.55 }]}
                 onPress={async () => {
                   if (locked) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
-                  if (coupleId) { setDrawnCard(null); await startTruthDare(coupleId, uid, level); }
+                  if (!coupleId) return;
+                  setDrawnCard(null);
+                  // Never nuke an in-flight card (phase !== 'picking' means
+                  // either a card was sent to the challenged partner, or the
+                  // round just finished). Just swap the level pool. Only do
+                  // the full reset when there's no session at all.
+                  if (session) {
+                    await setTruthDareLevel(coupleId, level);
+                  } else {
+                    await startTruthDare(coupleId, uid, level);
+                  }
                 }}
                 activeOpacity={0.8}
                 accessibilityRole="button"

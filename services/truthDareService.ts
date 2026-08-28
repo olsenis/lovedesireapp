@@ -42,6 +42,14 @@ export async function startTruthDare(coupleId: string, starterUid: string, level
   });
 }
 
+// Swap the level pool without touching scores, round, phase, or any
+// pending card. Used by the level-tab onPress so tapping a different
+// level in the middle of a round does NOT nuke a card the picker has
+// already sent to the challenged partner (regression fix Aug 27).
+export async function setTruthDareLevel(coupleId: string, level: DareLevel): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), { level });
+}
+
 export async function playCard(coupleId: string, card: TruthDareCard): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId, 'truthDare', 'active'), {
     card: { ...card, dareConfirmed: [] },

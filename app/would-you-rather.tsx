@@ -289,11 +289,20 @@ export default function WouldYouRatherScreen() {
   };
 
   const handleAnswer = async (answer: WYRAnswer) => {
-    if (!coupleId || !session || myAnswer) return;
+    // Allow re-taps to change the pick as long as partner has not
+    // answered yet (i.e. the reveal has not been triggered). Once
+    // bothAnswered is true the answer is committed and further taps
+    // would visually flip a pick the partner already read.
+    if (!coupleId || !session || bothAnswered) return;
+    // No-op if picking the same option they already have — avoids
+    // firing an extra push notification to the partner on every tap.
+    if (myAnswer === answer) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await answerWYR(coupleId, uid, answer, session);
     const partnerHasAnswered = partnerId && !!session.answers[partnerId];
-    if (!partnerHasAnswered) {
+    // Only fire the "your turn!" push on the FIRST pick, not on every
+    // change of mind — otherwise a picky user would spam the partner.
+    if (!partnerHasAnswered && !myAnswer) {
       notifyPartner(coupleId, uid, 'Would You Rather 🤔', `${profile?.name ?? 'Your partner'} answered, your turn!`);
     }
   };
@@ -797,7 +806,14 @@ export default function WouldYouRatherScreen() {
           <Text style={styles.waitingHint}>Pick your answer, it's hidden until {partnerName} answers too</Text>
         )}
         {myAnswer && !bothAnswered && (
-          <Text style={styles.waitingHint}>Waiting for {partner?.name ?? 'partner'} to answer…</Text>
+          <>
+            <Text style={styles.waitingHint}>
+              Locked in. {partner?.name ?? 'Your partner'} sees this question the next time the app is open. Both picks reveal at the same time.
+            </Text>
+            <Text style={styles.waitingHint}>
+              Tap {myAnswer === 'a' ? 'B' : 'A'} to change your pick before {partner?.name ?? 'your partner'} answers.
+            </Text>
+          </>
         )}
 
         {/* Reveal */}

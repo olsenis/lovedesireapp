@@ -262,8 +262,8 @@ const styles = StyleSheet.create({
   moodEmoji: { fontSize: 28 },
   moodLabel: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, marginTop: 2, textAlign: 'center' },
 
-  statsRow: { flexDirection: 'row', gap: Spacing.md },
-  statCard: { flex: 1, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
+  statsRow: { flexDirection: 'row', gap: Spacing.md, alignSelf: 'stretch' },
+  statCard: { flex: 1, minWidth: 0, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
   statEmoji: { fontSize: 32 },
   statNum: { fontFamily: Fonts.heading, fontSize: 36, color: Colors.burgundy },
   statLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
