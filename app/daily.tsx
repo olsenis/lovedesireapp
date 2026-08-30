@@ -108,20 +108,33 @@ export default function DailyScreen() {
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [showMatches, setShowMatches] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // When the keyboard opens for the question-card TextInput, scroll the
-  // ScrollView to end so the input + Send button clear the keyboard on
-  // Android. Timeout-based approaches (200-400ms after onFocus) were
-  // unreliable across devices — the previous fix scrolled before the
-  // ScrollView's viewport had actually shrunk on some phones. Listening
-  // for keyboardDidShow fires AFTER the resize completes so scrollToEnd
-  // targets the correct dimensions every time. Only the question card
-  // opens a keyboard on this screen, so there's no wrong-context risk.
+  // Keyboard-aware auto-scroll: track keyboard height so the ScrollView
+  // gets enough bottom padding to actually have room to scroll the
+  // focused input above the keyboard. Without this the ScrollView
+  // content is shorter than the viewport even when keyboard is up, so
+  // scrollToEnd is a no-op and the input stays hidden.
+  // On keyboardDidShow: capture height + trigger a scroll to end (fires
+  // AFTER the resize completes so scrollToEnd targets the new viewport).
+  // On keyboardDidHide: clear the extra padding so the layout returns
+  // to normal.
   useEffect(() => {
-    const sub = Keyboard.addListener('keyboardDidShow', () => {
-      scrollRef.current?.scrollToEnd({ animated: true });
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      // Two-tick delay so the padding update reaches the ScrollView
+      // before scrollToEnd computes its target. Layout pass + one for
+      // safety on slower devices.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+        });
+      });
     });
-    return () => sub.remove();
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
   // Deck-per-screen navigation. User sees one card at a time; skip pushes
@@ -530,7 +543,12 @@ export default function DailyScreen() {
         })}
       </View>
 
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, keyboardHeight > 0 && { paddingBottom: keyboardHeight + 40 }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Progress card. One combined done/total counter + a Matches tap
             column when the couple has any mutual-yes matches to view. */}
         <View style={[styles.progressCard, { borderLeftColor: cfg.color }]}>
