@@ -134,9 +134,12 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    // See login.tsx container comment — flex-start prevents Continue
+    // from falling behind the keyboard on Android.
+    justifyContent: 'flex-start',
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xl,
+    paddingTop: Spacing.xxl * 2,
+    paddingBottom: Spacing.xl,
   },
   title: {
     fontFamily: Fonts.heading,

@@ -148,9 +148,16 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    // Was justifyContent: 'center'. When Android keyboard opens with
+    // KAV behavior:undefined + adjustResize, centered content stays
+    // centered in the reduced viewport and Sign In falls below the
+    // keyboard with no reachable scroll. flex-start anchors the form
+    // near the top so Sign In stays visible above the keyboard, and
+    // the ScrollView can scroll normally if space runs out.
+    justifyContent: 'flex-start',
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xl,
+    paddingTop: Spacing.xxl * 2,
+    paddingBottom: Spacing.xl,
     width: '100%',
   },
   title: {
