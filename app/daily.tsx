@@ -609,6 +609,14 @@ export default function DailyScreen() {
                 onSubmit={() => handleSubmit(currentCard.gi)}
                 onQuickSubmit={(value) => submitValue(currentCard.gi, value)}
                 cardBg={cfg.color}
+                onInputFocus={() => {
+                  // Android adjustResize shrinks the viewport but does
+                  // not auto-scroll the ScrollView to a focused input
+                  // buried deep in a card. Delay the scroll until after
+                  // the keyboard animation so scrollToEnd targets the
+                  // reduced viewport, not the pre-keyboard one.
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
+                }}
               />
             )}
 
@@ -1024,7 +1032,7 @@ function ActionCard({
 }
 
 function QuestionCard({
-  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
+  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg, onInputFocus,
 }: {
   gi: number;
   q: Question;
@@ -1048,6 +1056,10 @@ function QuestionCard({
   onSubmit: () => void;
   onQuickSubmit: (value: string) => void;
   cardBg: string;
+  // Fires on TextInput focus so parent can scroll the ScrollView to
+  // reveal the input above the keyboard on Android (native adjustResize
+  // shrinks the viewport but does not auto-scroll to focused inputs).
+  onInputFocus?: () => void;
 }) {
   // Guess feedback state — only for binary Qs where user made a REAL
   // guess (not the H28 GUESS_SKIPPED sentinel).
@@ -1153,6 +1165,7 @@ function QuestionCard({
                 placeholderTextColor={Colors.muted}
                 value={draft}
                 onChangeText={onDraftChange}
+                onFocus={onInputFocus}
                 multiline
               />
               <TouchableOpacity
