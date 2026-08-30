@@ -215,6 +215,19 @@ Regression checks for the bugs that landed during device-test rounds.
 
 **Fail if:** hint line missing, or copy says something else.
 
+### 7g. Daily TextInput auto-scroll above keyboard (`2993270`)
+
+- [ ] Open Daily (any category)
+- [ ] Advance to a question card past the first (e.g. card 4 or later)
+- [ ] Tap the "Type your answer…" input
+
+**Expected:**
+- Keyboard opens
+- ScrollView auto-scrolls (~250ms after keyboard opens)
+- **Text input and Send button are visible above the keyboard**
+
+**Fail if:** the input stays behind the keyboard and the user has to manually scroll.
+
 ---
 
 ## When testing is complete
@@ -240,3 +253,4 @@ Bug fixes (during device-test rounds):
 - `9ff3c67` — Expo Go push notification warning silenced
 - `4c9b40b` — Auth screens Sign In / Continue behind keyboard
 - `0204534` — Sunday CI reveal "See you next Monday" hint
+- `2993270` — Daily TextInput auto-scroll above Android keyboard
