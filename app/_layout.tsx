@@ -5,6 +5,7 @@ import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import {
   useFonts,
   CormorantGaramond_400Regular,
@@ -172,6 +173,14 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading || !user) return;
     if (Platform.OS === 'web') return;
+    // Expo Go dropped remote-push support in SDK 53. Calling
+    // getExpoPushTokenAsync there prints a LogBox error on every login
+    // even though the try/catch swallows the throw. Skip cleanly instead
+    // so QA on Expo Go stays quiet. The check uses both appOwnership
+    // and executionEnvironment defensively across SDK versions.
+    const isExpoGo = Constants.appOwnership === 'expo'
+      || Constants.executionEnvironment === 'storeClient';
+    if (isExpoGo) return;
     (async () => {
       try {
         const { status: existing } = await Notifications.getPermissionsAsync();
