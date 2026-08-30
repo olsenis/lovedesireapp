@@ -452,6 +452,25 @@ export async function getCompletedSundayCount(
   return count;
 }
 
+// Lifetime list of every completed Sunday Check-in week. Same one-shot
+// scan as the count helper but returns the parent docs so the Our
+// Story archive modal can render a browsable history and tap into
+// individual weeks' reveals (per-user entries fetched on demand via
+// getStateUnionEntry). Sorted newest first via startedAt.
+export async function getAllCompletedSundayWeeks(
+  coupleId: string,
+  uid1: string,
+  uid2: string,
+): Promise<StateUnionDoc[]> {
+  const snap = await getDocs(collection(db, 'couples', coupleId, 'stateUnion'));
+  const rows: StateUnionDoc[] = [];
+  for (const d of snap.docs) {
+    const data = d.data() as StateUnionDoc;
+    if (data.completedAt?.[uid1] && data.completedAt?.[uid2]) rows.push(data);
+  }
+  return rows.sort((a, b) => (b.startedAt ?? 0) - (a.startedAt ?? 0));
+}
+
 export function subscribeStateUnionHistory(
   coupleId: string,
   onChange: (history: StateUnionDoc[]) => void,

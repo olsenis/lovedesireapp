@@ -19,7 +19,14 @@ import { subscribeMoments, MomentEntry } from '../services/momentService';
 import { subscribeChallenge, ChallengeState } from '../services/challengeService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../services/fantasyWishesService';
 import { getAllDailyMatches } from '../services/dailyWishService';
-import { getCompletedSundayCount } from '../services/stateUnionService';
+import {
+  getCompletedSundayCount,
+  getAllCompletedSundayWeeks,
+  getStateUnionEntry,
+  getWeekQuestions,
+  StateUnionDoc,
+  StateUnionEntry,
+} from '../services/stateUnionService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -51,6 +58,12 @@ export default function OurStoryScreen() {
   // '—' instead of '0' before data arrives.
   const [dailyMatches, setDailyMatches] = useState<Array<{ text: string; date: string; category: string }> | undefined>(undefined);
   const [sundayCount, setSundayCount] = useState<number | undefined>(undefined);
+  const [sundayWeeks, setSundayWeeks] = useState<StateUnionDoc[] | undefined>(undefined);
+  // Per-week entries cache — populated when the user taps a row in the
+  // Sunday archive modal to expand it. Keyed by weekId so re-expanding
+  // the same week hits cache instead of re-fetching.
+  const [sundayEntries, setSundayEntries] = useState<Record<string, { mine: StateUnionEntry | null; theirs: StateUnionEntry | null } | undefined>>({});
+  const [expandedSundayWeek, setExpandedSundayWeek] = useState<string | null>(null);
   // Which archive sub-card is expanded in the modal detail view.
   const [archiveDetail, setArchiveDetail] = useState<null | 'fantasy' | 'daily' | 'sundays'>(null);
 
@@ -93,22 +106,58 @@ export default function OurStoryScreen() {
     let cancelled = false;
     (async () => {
       try {
-        const [matches, sundays] = await Promise.all([
+        const [matches, weeks] = await Promise.all([
           getAllDailyMatches(coupleId, p1, p2),
-          getCompletedSundayCount(coupleId, p1, p2),
+          getAllCompletedSundayWeeks(coupleId, p1, p2),
         ]);
         if (cancelled) return;
         setDailyMatches(matches);
-        setSundayCount(sundays);
+        setSundayWeeks(weeks);
+        setSundayCount(weeks.length);
       } catch {
         if (!cancelled) {
           setDailyMatches([]);
+          setSundayWeeks([]);
           setSundayCount(0);
         }
       }
     })();
     return () => { cancelled = true; };
   }, [coupleId, couple?.partner1Uid, couple?.partner2Uid]);
+
+  // Lazy-load a week's entries when the row is tapped in the Sunday
+  // archive modal. Cached per weekId so re-expanding is instant.
+  const handleExpandSundayWeek = async (weekId: string) => {
+    if (expandedSundayWeek === weekId) {
+      setExpandedSundayWeek(null);
+      return;
+    }
+    setExpandedSundayWeek(weekId);
+    if (sundayEntries[weekId] || !coupleId || !couple?.partner1Uid || !couple?.partner2Uid) return;
+    const partnerUid = couple.partner1Uid === uid ? couple.partner2Uid : couple.partner1Uid;
+    const [mine, theirs] = await Promise.all([
+      getStateUnionEntry(coupleId, weekId, uid),
+      getStateUnionEntry(coupleId, weekId, partnerUid),
+    ]);
+    setSundayEntries((prev) => ({ ...prev, [weekId]: { mine, theirs } }));
+  };
+
+  // Nicer label for the week — "Week 35 · 2026" is technical; try to
+  // resolve to the Sunday of that ISO week so the row reads like a
+  // real date the couple remembers.
+  const weekIdToDateLabel = (weekId: string): string => {
+    const [year, week] = weekId.split('-');
+    if (!year || !week) return weekId;
+    // ISO 8601 week Sunday. Compute via Jan 4th which is always in
+    // ISO week 1, then step forward.
+    const jan4 = new Date(Date.UTC(parseInt(year, 10), 0, 4));
+    const jan4Day = jan4.getUTCDay() || 7;
+    const isoWeek1Monday = new Date(jan4);
+    isoWeek1Monday.setUTCDate(jan4.getUTCDate() - jan4Day + 1);
+    const sunday = new Date(isoWeek1Monday);
+    sunday.setUTCDate(isoWeek1Monday.getUTCDate() + (parseInt(week, 10) - 1) * 7 + 6);
+    return sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
   // Fantasy matches derived from the FW subscription that already runs
   // for the auto-milestone scan. Filter and keep just the matched ones.
@@ -415,13 +464,56 @@ export default function OurStoryScreen() {
                 </View>
               ))}
               {archiveDetail === 'sundays' && (
-                <View style={styles.archiveSundayHero}>
-                  <Text style={styles.archiveSundayNum}>{sundayCount ?? 0}</Text>
-                  <Text style={styles.archiveSundayLabel}>weeks you paused to look at us together</Text>
-                  <Text style={styles.archiveSundayHint}>
-                    Individual answers stay private, only the count travels here.
-                  </Text>
-                </View>
+                <>
+                  <View style={styles.archiveSundayCountRow}>
+                    <Text style={styles.archiveSundayCountNum}>{sundayCount ?? 0}</Text>
+                    <Text style={styles.archiveSundayCountLabel}>weeks together</Text>
+                  </View>
+                  {(sundayWeeks ?? []).length === 0 && (
+                    <Text style={styles.archiveEmptyText}>No completed check-ins yet.</Text>
+                  )}
+                  {(sundayWeeks ?? []).map((week) => {
+                    const isExpanded = expandedSundayWeek === week.weekId;
+                    const entries = sundayEntries[week.weekId];
+                    const partnerUid = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
+                    const questions = getWeekQuestions(week);
+                    return (
+                      <View key={week.weekId} style={styles.archiveWeekBlock}>
+                        <TouchableOpacity
+                          style={styles.archiveWeekHeader}
+                          onPress={() => handleExpandSundayWeek(week.weekId)}
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.archiveWeekLabel}>{weekIdToDateLabel(week.weekId)}</Text>
+                          <Text style={styles.archiveWeekChevron}>{isExpanded ? '▾' : '▸'}</Text>
+                        </TouchableOpacity>
+                        {isExpanded && !entries && (
+                          <Text style={styles.archiveWeekLoading}>Loading…</Text>
+                        )}
+                        {isExpanded && entries && questions.map((q, i) => {
+                          const mine = entries.mine?.answers?.[String(i)] ?? '—';
+                          const theirs = entries.theirs?.answers?.[String(i)] ?? '—';
+                          return (
+                            <View key={i} style={styles.archiveWeekQBlock}>
+                              <Text style={styles.archiveWeekQ}>{i + 1}. {q}</Text>
+                              <View style={styles.archiveWeekAnswerRow}>
+                                <View style={styles.archiveWeekAnswerCol}>
+                                  <Text style={styles.archiveWeekAnswerLabel}>You</Text>
+                                  <Text style={styles.archiveWeekAnswerText}>{mine}</Text>
+                                </View>
+                                <View style={styles.archiveWeekAnswerCol}>
+                                  <Text style={styles.archiveWeekAnswerLabel}>{partner?.name ?? 'Partner'}</Text>
+                                  <Text style={styles.archiveWeekAnswerText}>{theirs}</Text>
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    );
+                  })}
+                </>
               )}
             </ScrollView>
           </View>
@@ -604,8 +696,19 @@ const styles = StyleSheet.create({
   archiveRow: { backgroundColor: Colors.cream, borderRadius: Radius.md, padding: Spacing.sm, borderWidth: 1, borderColor: Colors.border, gap: 2 },
   archiveRowText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 20 },
   archiveRowDate: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
-  archiveSundayHero: { alignItems: 'center', padding: Spacing.xl, gap: Spacing.sm },
-  archiveSundayNum: { fontFamily: Fonts.heading, fontSize: 72, color: Colors.burgundy, lineHeight: 76 },
-  archiveSundayLabel: { fontFamily: Fonts.headingItalic, fontSize: 18, color: Colors.burgundy, textAlign: 'center' },
-  archiveSundayHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
+  archiveSundayCountRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.sm, marginBottom: Spacing.md, paddingHorizontal: Spacing.sm },
+  archiveSundayCountNum: { fontFamily: Fonts.heading, fontSize: 32, color: Colors.burgundy },
+  archiveSundayCountLabel: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted },
+  archiveEmptyText: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', paddingVertical: Spacing.lg },
+  archiveWeekBlock: { backgroundColor: Colors.cream, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.sm, overflow: 'hidden' },
+  archiveWeekHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2 },
+  archiveWeekLabel: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  archiveWeekChevron: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted },
+  archiveWeekLoading: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', paddingVertical: Spacing.md },
+  archiveWeekQBlock: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Colors.border, gap: Spacing.xs },
+  archiveWeekQ: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  archiveWeekAnswerRow: { flexDirection: 'row', gap: Spacing.sm },
+  archiveWeekAnswerCol: { flex: 1, backgroundColor: Colors.white, padding: Spacing.sm, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border },
+  archiveWeekAnswerLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  archiveWeekAnswerText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 18 },
 });
