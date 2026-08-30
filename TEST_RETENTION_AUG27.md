@@ -228,6 +228,45 @@ Regression checks for the bugs that landed during device-test rounds.
 
 **Fail if:** the input stays behind the keyboard and the user has to manually scroll.
 
+### 7h. Our Story matches archive (`aad3a76`)
+
+- [ ] Us tab → Our Story
+
+**Expected between the stats grid and the timeline:**
+- Section header (uppercase muted): **YOUR ARCHIVE**
+- Three sub-cards in a row:
+  - ✨ Fantasy matches — count + "View →" if > 0
+  - 🌹 Daily matches — count + "View →" if > 0
+  - 🕯️ Sunday check-ins — count + "View count" if > 0
+
+**Card states:**
+- During load: cards show `—` instead of `0`
+- Zero data: cards show `0` and are not tappable (no "View →")
+- Data present: cards show number and are tappable
+
+- [ ] Tap Fantasy matches (if > 0)
+
+**Expected modal:**
+- Title: ✨ Fantasy matches
+- Scrollable list of item text + matched date
+- Close via ✕ in top right
+
+- [ ] Tap Daily matches (if > 0)
+
+**Expected modal:**
+- Title: 🌹 Daily matches
+- Scrollable list of item text + date (YYYY-MM-DD)
+- Newest first
+
+- [ ] Tap Sunday check-ins (if > 0)
+
+**Expected modal:**
+- Title: 🕯️ Sunday check-ins
+- Hero: big number + "weeks you paused to look at us together"
+- Hint at bottom: "Individual answers stay private, only the count travels here."
+
+**Fail if:** section missing, tap does not open modal when count > 0, or counts are wrong.
+
 ---
 
 ## When testing is complete
@@ -254,3 +293,4 @@ Bug fixes (during device-test rounds):
 - `4c9b40b` — Auth screens Sign In / Continue behind keyboard
 - `0204534` — Sunday CI reveal "See you next Monday" hint
 - `2993270` — Daily TextInput auto-scroll above Android keyboard
+- `aad3a76` — Our Story matches archive (Fantasy + Daily + Sunday check-ins)
