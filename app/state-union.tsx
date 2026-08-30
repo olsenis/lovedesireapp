@@ -334,6 +334,7 @@ export default function StateUnionScreen() {
         {both && partnerId && (
           <View style={styles.revealCard}>
             <Text style={styles.revealTitle}>You both checked in 💗</Text>
+            <Text style={styles.revealNextHint}>See you next Monday</Text>
 
             {/* Pulse comparison — only renders when BOTH sides carry pulseScores.
                 Legacy weeks (pre-merge) skip this block gracefully. */}
@@ -526,7 +527,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm, marginBottom: 2,
   },
   revealCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md, borderWidth: 1, borderColor: Colors.rose, ...Shadow.sm },
-  revealTitle: { fontFamily: Fonts.headingItalic, fontSize: 24, color: Colors.burgundy, textAlign: 'center', marginBottom: Spacing.sm },
+  revealTitle: { fontFamily: Fonts.headingItalic, fontSize: 24, color: Colors.burgundy, textAlign: 'center', marginBottom: Spacing.xs },
+  revealNextHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginBottom: Spacing.sm },
   revealBlock: { gap: 6, marginBottom: Spacing.sm },
   revealQ: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, marginBottom: 4 },
   revealAnswerRow: { backgroundColor: Colors.cream, borderRadius: Radius.md, padding: Spacing.sm, gap: 2 },
