@@ -262,10 +262,17 @@ Regression checks for the bugs that landed during device-test rounds.
 
 **Expected modal:**
 - Title: 🕯️ Sunday check-ins
-- Hero: big number + "weeks you paused to look at us together"
-- Hint at bottom: "Individual answers stay private, only the count travels here."
+- Small count row at top: "N weeks together"
+- Scrollable list of every completed week: date (e.g. "30 Aug 2026") + chevron `▸`
 
-**Fail if:** section missing, tap does not open modal when count > 0, or counts are wrong.
+- [ ] Tap a week row
+
+**Expected:**
+- Row expands (chevron flips to `▾`)
+- "Loading…" briefly, then the 5 questions render with You + partner answers side by side
+- Re-tapping same row collapses, tapping a different row expands that one
+
+**Fail if:** section missing, tap does not open modal when count > 0, week rows missing, or expand does not reveal past answers.
 
 ---
 
@@ -294,3 +301,4 @@ Bug fixes (during device-test rounds):
 - `0204534` — Sunday CI reveal "See you next Monday" hint
 - `2993270` — Daily TextInput auto-scroll above Android keyboard
 - `aad3a76` — Our Story matches archive (Fantasy + Daily + Sunday check-ins)
+- `751aa78` — Our Story: browsable Sunday check-in history (list + expand + reveal)
