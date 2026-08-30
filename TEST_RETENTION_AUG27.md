@@ -274,6 +274,35 @@ Regression checks for the bugs that landed during device-test rounds.
 
 **Fail if:** section missing, tap does not open modal when count > 0, week rows missing, or expand does not reveal past answers.
 
+### 7i. Love Language Monday alignment + Our Story archive (`3147045`)
+
+- [ ] Open /love-language-nudge
+- [ ] Read the footer hint
+
+**Expected:** "A new set of three lands here every Monday…"
+
+**Fail if:** copy still says Sunday.
+
+- [ ] Us tab → Our Story
+- [ ] Look at archive grid (now 2×2)
+
+**Expected 4 sub-cards:**
+- ✨ Fantasy matches
+- 🌹 Daily matches
+- 🕯️ Sunday check-ins
+- 💬 Love language weeks
+
+- [ ] Tap 💬 Love language weeks (if partner has taken quiz)
+
+**Expected modal:**
+- Hint line: "{partner}'s language: {label}. Three fresh actions land every Monday…"
+- Scrollable list of past weeks: "Week of {Monday date}" + chevron
+- Tap a row → expands showing 3 numbered actions inline
+
+**Fail if:** card missing, tap does not open modal, actions do not render.
+
+- [ ] Wait / test on a Monday: verify the Home nudge fires on Monday (not Sunday) and the weekly notification lands Monday morning at 09:00 local (this is a behavior-change to verify in the field).
+
 ---
 
 ## When testing is complete
@@ -302,3 +331,5 @@ Bug fixes (during device-test rounds):
 - `2993270` — Daily TextInput auto-scroll above Android keyboard
 - `aad3a76` — Our Story matches archive (Fantasy + Daily + Sunday check-ins)
 - `751aa78` — Our Story: browsable Sunday check-in history (list + expand + reveal)
+- `df912f1` — Fantasy Wishes "See you tomorrow" button rendered without text
+- `3147045` — Love Language: align to Monday + Our Story archive card
