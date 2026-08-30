@@ -573,10 +573,10 @@ function SessionPromptCard({ votedInSession, matchesCount, onKeepGoing, onSaveFo
         Coming back fresh tomorrow keeps each Yes meaningful. Or keep exploring if you're in the flow.
       </Text>
       <View style={styles.pauseBtnRow}>
-        <TouchableOpacity style={styles.pauseSecondaryBtn} onPress={onSaveForLater} activeOpacity={0.7} accessibilityRole="button">
+        <TouchableOpacity style={[styles.pauseSecondaryBtn, { flex: 1 }]} onPress={onSaveForLater} activeOpacity={0.7} accessibilityRole="button">
           <Text style={styles.pauseSecondaryText}>Save for later</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.pausePrimaryBtn} onPress={onKeepGoing} activeOpacity={0.85} accessibilityRole="button">
+        <TouchableOpacity style={[styles.pausePrimaryBtn, { flex: 1 }]} onPress={onKeepGoing} activeOpacity={0.85} accessibilityRole="button">
           <Text style={styles.pausePrimaryText}>Load 8 more ›</Text>
         </TouchableOpacity>
       </View>
@@ -788,9 +788,9 @@ const styles = StyleSheet.create({
   },
   pauseSecondaryText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   pausePrimaryBtn: {
-    flex: 1, paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
     borderRadius: Radius.full, backgroundColor: Colors.burgundy,
-    alignItems: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   pausePrimaryText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream, letterSpacing: 0.3 },
   pauseChangeMind: { marginTop: Spacing.md, paddingVertical: Spacing.sm },
