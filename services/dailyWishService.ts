@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, getDocs, collection, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DAILY_WISH_ITEMS, DailyWishItem, DailyWishCategory } from '../constants/content';
 import { trackEvent } from './statsService';
@@ -194,6 +194,32 @@ export async function markAddToListAtomic(
 
 export function isMatch(doc: DailyWishDoc, index: number, uid1: string, uid2: string): boolean {
   return doc.votes[uid1]?.[index] === 'yes' && doc.votes[uid2]?.[index] === 'yes';
+}
+
+// Lifetime aggregate of every Daily wish where both partners voted yes.
+// One-shot query over the whole dailyWishes collection — used by the
+// Our Story matches archive so the couple can look back at what they
+// have agreed on over time (matches otherwise vanish after each day's
+// doc rolls over). Returned rows carry text + date + category so the
+// detail view can render them chronologically.
+export async function getAllDailyMatches(
+  coupleId: string,
+  uid1: string,
+  uid2: string,
+): Promise<Array<{ text: string; date: string; category: string }>> {
+  const snap = await getDocs(collection(db, 'couples', coupleId, 'dailyWishes'));
+  const rows: Array<{ text: string; date: string; category: string }> = [];
+  for (const d of snap.docs) {
+    const data = d.data() as DailyWishDoc;
+    const items = data.items ?? [];
+    for (let gi = 0; gi < items.length; gi++) {
+      if (isMatch(data, gi, uid1, uid2)) {
+        rows.push({ text: items[gi].text, date: data.date, category: items[gi].category });
+      }
+    }
+  }
+  // Newest first — matches most-recent-look-back pattern used elsewhere.
+  return rows.sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export function bothWantToAdd(doc: DailyWishDoc, index: number, uid1: string, uid2: string): boolean {

@@ -18,6 +18,8 @@ import { subscribeSensateProgress, SensateProgress } from '../services/sensateSe
 import { subscribeMoments, MomentEntry } from '../services/momentService';
 import { subscribeChallenge, ChallengeState } from '../services/challengeService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../services/fantasyWishesService';
+import { getAllDailyMatches } from '../services/dailyWishService';
+import { getCompletedSundayCount } from '../services/stateUnionService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -44,6 +46,13 @@ export default function OurStoryScreen() {
   const [moments, setMoments] = useState<MomentEntry[]>([]);
   const [challengeState, setChallengeState] = useState<ChallengeState | null>(null);
   const [fwItems, setFwItems] = useState<FantasyWishesItem[]>([]);
+  // Lifetime match archives — one-shot fetch on mount, refetch when
+  // dependencies change. Undefined during load so counts render as
+  // '—' instead of '0' before data arrives.
+  const [dailyMatches, setDailyMatches] = useState<Array<{ text: string; date: string; category: string }> | undefined>(undefined);
+  const [sundayCount, setSundayCount] = useState<number | undefined>(undefined);
+  // Which archive sub-card is expanded in the modal detail view.
+  const [archiveDetail, setArchiveDetail] = useState<null | 'fantasy' | 'daily' | 'sundays'>(null);
 
   // Form state
   const [kind, setKind] = useState<MilestoneKind>('met');
@@ -70,6 +79,45 @@ export default function OurStoryScreen() {
     const u4 = subscribeFantasyWishes(coupleId, setFwItems);
     return () => { u1(); u2(); u3(); u4(); };
   }, [coupleId]);
+
+  // Match archives — one-shot fetch on mount. These aggregate lifetime
+  // data (all daily-wish matches ever, all completed Sunday Check-ins
+  // ever) so the couple can look back at what they have agreed on and
+  // reflected on together over the whole life of the relationship. The
+  // fetch is skipped on unpaired accounts and refetched when the couple
+  // pair identity changes.
+  useEffect(() => {
+    if (!coupleId || !couple?.partner1Uid || !couple?.partner2Uid) return;
+    const p1 = couple.partner1Uid;
+    const p2 = couple.partner2Uid;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [matches, sundays] = await Promise.all([
+          getAllDailyMatches(coupleId, p1, p2),
+          getCompletedSundayCount(coupleId, p1, p2),
+        ]);
+        if (cancelled) return;
+        setDailyMatches(matches);
+        setSundayCount(sundays);
+      } catch {
+        if (!cancelled) {
+          setDailyMatches([]);
+          setSundayCount(0);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [coupleId, couple?.partner1Uid, couple?.partner2Uid]);
+
+  // Fantasy matches derived from the FW subscription that already runs
+  // for the auto-milestone scan. Filter and keep just the matched ones.
+  const fantasyMatches = useMemo(() => {
+    const p1 = couple?.partner1Uid;
+    const p2 = couple?.partner2Uid;
+    if (!p1 || !p2) return [] as FantasyWishesItem[];
+    return fwItems.filter(item => isFWMatch(item, p1, p2));
+  }, [fwItems, couple?.partner1Uid, couple?.partner2Uid]);
 
   // Auto-milestone scan — writes system-generated milestones when the
   // couple's data indicates a threshold was hit. Each ensureAutoMilestone
@@ -237,6 +285,48 @@ export default function OurStoryScreen() {
           </View>
         </View>
 
+        {/* Matches archive — lifetime aggregates of the mutual-yes
+            moments that would otherwise vanish (daily wishes only
+            live in one day's doc) or scatter across their own screens
+            (fantasy matches, sunday check-ins). Gives Our Story more
+            depth without spamming the timeline with N events per match. */}
+        <Text style={styles.archiveTitle}>Your archive</Text>
+        <View style={styles.archiveGrid}>
+          <TouchableOpacity
+            style={styles.archiveCard}
+            onPress={() => fantasyMatches.length > 0 && setArchiveDetail('fantasy')}
+            activeOpacity={fantasyMatches.length > 0 ? 0.85 : 1}
+            accessibilityRole="button"
+          >
+            <Text style={styles.archiveEmoji}>✨</Text>
+            <Text style={styles.archiveNum}>{fantasyMatches.length}</Text>
+            <Text style={styles.archiveLabel}>Fantasy matches</Text>
+            {fantasyMatches.length > 0 && <Text style={styles.archiveTap}>View →</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.archiveCard}
+            onPress={() => (dailyMatches?.length ?? 0) > 0 && setArchiveDetail('daily')}
+            activeOpacity={(dailyMatches?.length ?? 0) > 0 ? 0.85 : 1}
+            accessibilityRole="button"
+          >
+            <Text style={styles.archiveEmoji}>🌹</Text>
+            <Text style={styles.archiveNum}>{dailyMatches?.length ?? '—'}</Text>
+            <Text style={styles.archiveLabel}>Daily matches</Text>
+            {(dailyMatches?.length ?? 0) > 0 && <Text style={styles.archiveTap}>View →</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.archiveCard}
+            onPress={() => (sundayCount ?? 0) > 0 && setArchiveDetail('sundays')}
+            activeOpacity={(sundayCount ?? 0) > 0 ? 0.85 : 1}
+            accessibilityRole="button"
+          >
+            <Text style={styles.archiveEmoji}>🕯️</Text>
+            <Text style={styles.archiveNum}>{sundayCount ?? '—'}</Text>
+            <Text style={styles.archiveLabel}>Sunday check-ins</Text>
+            {(sundayCount ?? 0) > 0 && <Text style={styles.archiveTap}>View count</Text>}
+          </TouchableOpacity>
+        </View>
+
         {milestones.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>📖</Text>
@@ -291,6 +381,52 @@ export default function OurStoryScreen() {
           );
         })}
       </ScrollView>
+
+      {/* Archive detail modal — renders the list for whichever
+          archive sub-card was tapped. Fantasy + Daily show the item
+          text with date; Sundays shows a count-hero because there
+          is no per-week content to browse (answers are private). */}
+      <Modal visible={archiveDetail !== null} transparent animationType="slide" onRequestClose={() => setArchiveDetail(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.archiveHeader}>
+              <Text style={styles.modalTitle}>
+                {archiveDetail === 'fantasy' && '✨ Fantasy matches'}
+                {archiveDetail === 'daily' && '🌹 Daily matches'}
+                {archiveDetail === 'sundays' && '🕯️ Sunday check-ins'}
+              </Text>
+              <TouchableOpacity onPress={() => setArchiveDetail(null)} accessibilityRole="button" accessibilityLabel="Close">
+                <Text style={styles.archiveClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ gap: Spacing.sm, paddingBottom: Spacing.xl }}>
+              {archiveDetail === 'fantasy' && fantasyMatches.map((item) => (
+                <View key={item.id} style={styles.archiveRow}>
+                  <Text style={styles.archiveRowText}>{item.text}</Text>
+                  {item.matchedAt && (
+                    <Text style={styles.archiveRowDate}>{formatLongDate(item.matchedAt)}</Text>
+                  )}
+                </View>
+              ))}
+              {archiveDetail === 'daily' && (dailyMatches ?? []).map((m, i) => (
+                <View key={`${m.date}-${i}`} style={styles.archiveRow}>
+                  <Text style={styles.archiveRowText}>{m.text}</Text>
+                  <Text style={styles.archiveRowDate}>{m.date}</Text>
+                </View>
+              ))}
+              {archiveDetail === 'sundays' && (
+                <View style={styles.archiveSundayHero}>
+                  <Text style={styles.archiveSundayNum}>{sundayCount ?? 0}</Text>
+                  <Text style={styles.archiveSundayLabel}>weeks you paused to look at us together</Text>
+                  <Text style={styles.archiveSundayHint}>
+                    Individual answers stay private, only the count travels here.
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Add / Edit modal */}
       <Modal visible={showAdd} transparent animationType="slide">
@@ -454,4 +590,22 @@ const styles = StyleSheet.create({
   },
   statNum: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
   statLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2, textAlign: 'center' },
+
+  archiveTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.md, marginBottom: Spacing.sm },
+  archiveGrid: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
+  archiveCard: { flex: 1, minWidth: 0, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm, alignItems: 'center', gap: 2 },
+  archiveEmoji: { fontSize: 24, marginBottom: 2 },
+  archiveNum: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
+  archiveLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.muted, textAlign: 'center' },
+  archiveTap: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.burgundy, marginTop: 2 },
+
+  archiveHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm },
+  archiveClose: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.muted, padding: Spacing.xs },
+  archiveRow: { backgroundColor: Colors.cream, borderRadius: Radius.md, padding: Spacing.sm, borderWidth: 1, borderColor: Colors.border, gap: 2 },
+  archiveRowText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 20 },
+  archiveRowDate: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
+  archiveSundayHero: { alignItems: 'center', padding: Spacing.xl, gap: Spacing.sm },
+  archiveSundayNum: { fontFamily: Fonts.heading, fontSize: 72, color: Colors.burgundy, lineHeight: 76 },
+  archiveSundayLabel: { fontFamily: Fonts.headingItalic, fontSize: 18, color: Colors.burgundy, textAlign: 'center' },
+  archiveSundayHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
 });

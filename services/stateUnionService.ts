@@ -3,6 +3,7 @@ import {
   setDoc,
   updateDoc,
   getDoc,
+  getDocs,
   onSnapshot,
   collection,
   query,
@@ -430,6 +431,25 @@ export function hasUserCompleted(suDoc: StateUnionDoc | null, uid: string): bool
 
 export function bothCompleted(suDoc: StateUnionDoc | null, uid1: string, uid2: string): boolean {
   return hasUserCompleted(suDoc, uid1) && hasUserCompleted(suDoc, uid2);
+}
+
+// Lifetime count of weeks where both partners have a completedAt
+// timestamp on the parent stateUnion doc. Used by the Our Story
+// matches archive so the couple can see how many Sunday reflections
+// they have stacked up together over the whole life of the relationship
+// (subscribeStateUnionHistory only surfaces the most recent 12).
+export async function getCompletedSundayCount(
+  coupleId: string,
+  uid1: string,
+  uid2: string,
+): Promise<number> {
+  const snap = await getDocs(collection(db, 'couples', coupleId, 'stateUnion'));
+  let count = 0;
+  for (const d of snap.docs) {
+    const data = d.data() as StateUnionDoc;
+    if (data.completedAt?.[uid1] && data.completedAt?.[uid2]) count++;
+  }
+  return count;
 }
 
 export function subscribeStateUnionHistory(
