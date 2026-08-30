@@ -83,7 +83,7 @@ export default function LoveLanguageNudgeScreen() {
             </View>
 
             <Text style={styles.footerHint}>
-              A new set of three lands here every Sunday. Both of you see the same suggestions, compare notes over the week.
+              A new set of three lands here every Monday. Both of you see the same suggestions, compare notes over the week.
             </Text>
           </>
         )}

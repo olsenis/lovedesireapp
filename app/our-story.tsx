@@ -27,6 +27,8 @@ import {
   StateUnionDoc,
   StateUnionEntry,
 } from '../services/stateUnionService';
+import { pickWeeklyActions, weekAnchor } from '../services/loveLanguageNudgeService';
+import { LoveLanguage, LOVE_LANGUAGE_LABELS } from '../constants/content';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -65,7 +67,8 @@ export default function OurStoryScreen() {
   const [sundayEntries, setSundayEntries] = useState<Record<string, { mine: StateUnionEntry | null; theirs: StateUnionEntry | null } | undefined>>({});
   const [expandedSundayWeek, setExpandedSundayWeek] = useState<string | null>(null);
   // Which archive sub-card is expanded in the modal detail view.
-  const [archiveDetail, setArchiveDetail] = useState<null | 'fantasy' | 'daily' | 'sundays'>(null);
+  const [archiveDetail, setArchiveDetail] = useState<null | 'fantasy' | 'daily' | 'sundays' | 'loveLang'>(null);
+  const [expandedLoveLangWeek, setExpandedLoveLangWeek] = useState<string | null>(null);
 
   // Form state
   const [kind, setKind] = useState<MilestoneKind>('met');
@@ -167,6 +170,38 @@ export default function OurStoryScreen() {
     if (!p1 || !p2) return [] as FantasyWishesItem[];
     return fwItems.filter(item => isFWMatch(item, p1, p2));
   }, [fwItems, couple?.partner1Uid, couple?.partner2Uid]);
+
+  // Love-language archive — deterministic pickWeeklyActions per past
+  // week (Monday-anchored) means we can regenerate every past week's
+  // 3 actions with zero storage cost. Bounded by weeks since the
+  // couple started so we don't render weeks before the relationship
+  // began. Cap at 52 for practical scroll length; older weeks fall
+  // off the tail. Skipped entirely when the partner has no love
+  // language set yet.
+  const loveLangWeeks = useMemo(() => {
+    const partnerLang = (partner as any)?.loveLanguage as LoveLanguage | undefined;
+    if (!partnerLang || !coupleId) return [] as Array<{ key: string; monday: Date; actions: string[] }>;
+    const startAnchor = couple?.startDate ?? couple?.createdAt;
+    if (!startAnchor) return [];
+    const weeksSinceStart = Math.floor((Date.now() - startAnchor) / (7 * 86400000)) + 1;
+    const weekCount = Math.max(1, Math.min(52, weeksSinceStart));
+    const rows: Array<{ key: string; monday: Date; actions: string[] }> = [];
+    for (let i = 0; i < weekCount; i++) {
+      const when = new Date(Date.now() - i * 7 * 86400000);
+      const monday = weekAnchor(when);
+      const y = monday.getFullYear();
+      const m = String(monday.getMonth() + 1).padStart(2, '0');
+      const day = String(monday.getDate()).padStart(2, '0');
+      const key = `${y}-${m}-${day}`;
+      rows.push({ key, monday, actions: pickWeeklyActions(partnerLang, coupleId, monday) });
+    }
+    return rows;
+  }, [partner, coupleId, couple?.startDate, couple?.createdAt]);
+
+  const partnerLangLabel = useMemo(() => {
+    const l = (partner as any)?.loveLanguage as LoveLanguage | undefined;
+    return l ? (LOVE_LANGUAGE_LABELS[l]?.label ?? 'their language') : null;
+  }, [partner]);
 
   // Auto-milestone scan — writes system-generated milestones when the
   // couple's data indicates a threshold was hit. Each ensureAutoMilestone
@@ -337,8 +372,10 @@ export default function OurStoryScreen() {
         {/* Matches archive — lifetime aggregates of the mutual-yes
             moments that would otherwise vanish (daily wishes only
             live in one day's doc) or scatter across their own screens
-            (fantasy matches, sunday check-ins). Gives Our Story more
-            depth without spamming the timeline with N events per match. */}
+            (fantasy matches, sunday check-ins, love-language weeks).
+            Gives Our Story more depth without spamming the timeline
+            with N events per match. 2×2 grid so all four archives get
+            equal visual weight. */}
         <Text style={styles.archiveTitle}>Your archive</Text>
         <View style={styles.archiveGrid}>
           <TouchableOpacity
@@ -372,7 +409,18 @@ export default function OurStoryScreen() {
             <Text style={styles.archiveEmoji}>🕯️</Text>
             <Text style={styles.archiveNum}>{sundayCount ?? '—'}</Text>
             <Text style={styles.archiveLabel}>Sunday check-ins</Text>
-            {(sundayCount ?? 0) > 0 && <Text style={styles.archiveTap}>View count</Text>}
+            {(sundayCount ?? 0) > 0 && <Text style={styles.archiveTap}>View →</Text>}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.archiveCard}
+            onPress={() => loveLangWeeks.length > 0 && setArchiveDetail('loveLang')}
+            activeOpacity={loveLangWeeks.length > 0 ? 0.85 : 1}
+            accessibilityRole="button"
+          >
+            <Text style={styles.archiveEmoji}>💬</Text>
+            <Text style={styles.archiveNum}>{loveLangWeeks.length}</Text>
+            <Text style={styles.archiveLabel}>Love language weeks</Text>
+            {loveLangWeeks.length > 0 && <Text style={styles.archiveTap}>View →</Text>}
           </TouchableOpacity>
         </View>
 
@@ -443,6 +491,7 @@ export default function OurStoryScreen() {
                 {archiveDetail === 'fantasy' && '✨ Fantasy matches'}
                 {archiveDetail === 'daily' && '🌹 Daily matches'}
                 {archiveDetail === 'sundays' && '🕯️ Sunday check-ins'}
+                {archiveDetail === 'loveLang' && '💬 Love language weeks'}
               </Text>
               <TouchableOpacity onPress={() => setArchiveDetail(null)} accessibilityRole="button" accessibilityLabel="Close">
                 <Text style={styles.archiveClose}>✕</Text>
@@ -463,6 +512,43 @@ export default function OurStoryScreen() {
                   <Text style={styles.archiveRowDate}>{m.date}</Text>
                 </View>
               ))}
+              {archiveDetail === 'loveLang' && (
+                <>
+                  {partnerLangLabel && (
+                    <Text style={styles.archiveHintText}>
+                      {partner?.name ?? 'Partner'}'s language: {partnerLangLabel}. Three fresh actions land every Monday, both of you see the same trio.
+                    </Text>
+                  )}
+                  {loveLangWeeks.length === 0 && (
+                    <Text style={styles.archiveEmptyText}>
+                      No Love Language weeks yet. Once {partner?.name ?? 'your partner'} takes the quiz, weekly sets start landing here.
+                    </Text>
+                  )}
+                  {loveLangWeeks.map((wk) => {
+                    const isExpanded = expandedLoveLangWeek === wk.key;
+                    const label = wk.monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                    return (
+                      <View key={wk.key} style={styles.archiveWeekBlock}>
+                        <TouchableOpacity
+                          style={styles.archiveWeekHeader}
+                          onPress={() => setExpandedLoveLangWeek(isExpanded ? null : wk.key)}
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.archiveWeekLabel}>Week of {label}</Text>
+                          <Text style={styles.archiveWeekChevron}>{isExpanded ? '▾' : '▸'}</Text>
+                        </TouchableOpacity>
+                        {isExpanded && wk.actions.map((a, i) => (
+                          <View key={i} style={styles.archiveWeekActionRow}>
+                            <Text style={styles.archiveWeekActionNum}>{i + 1}</Text>
+                            <Text style={styles.archiveWeekActionText}>{a}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  })}
+                </>
+              )}
               {archiveDetail === 'sundays' && (
                 <>
                   <View style={styles.archiveSundayCountRow}>
@@ -684,8 +770,8 @@ const styles = StyleSheet.create({
   statLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2, textAlign: 'center' },
 
   archiveTitle: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.md, marginBottom: Spacing.sm },
-  archiveGrid: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
-  archiveCard: { flex: 1, minWidth: 0, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm, alignItems: 'center', gap: 2 },
+  archiveGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
+  archiveCard: { flexBasis: '48%', flexGrow: 1, minWidth: 0, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm, alignItems: 'center', gap: 2 },
   archiveEmoji: { fontSize: 24, marginBottom: 2 },
   archiveNum: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
   archiveLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.muted, textAlign: 'center' },
@@ -711,4 +797,9 @@ const styles = StyleSheet.create({
   archiveWeekAnswerCol: { flex: 1, backgroundColor: Colors.white, padding: Spacing.sm, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border },
   archiveWeekAnswerLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   archiveWeekAnswerText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 18 },
+
+  archiveHintText: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginBottom: Spacing.sm, paddingHorizontal: Spacing.sm, lineHeight: 17 },
+  archiveWeekActionRow: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, borderTopWidth: 1, borderTopColor: Colors.border, alignItems: 'flex-start' },
+  archiveWeekActionNum: { fontFamily: Fonts.heading, fontSize: 18, color: Colors.burgundy, minWidth: 20 },
+  archiveWeekActionText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 18 },
 });

@@ -3,13 +3,17 @@ import * as Notifications from 'expo-notifications';
 import { LoveLanguage, LOVE_LANGUAGE_LABELS } from '../constants/content';
 import { LOVE_LANGUAGE_ACTIONS } from '../constants/loveLanguageActions';
 
-// Weekly Sunday-morning nudge: 3 concrete actions matching the partner's
+// Weekly Monday-morning nudge: 3 concrete actions matching the partner's
 // love language. Local scheduled notification via expo-notifications (same
 // pattern as reminderService), so no server infrastructure needed.
 //
 // Scheduling model:
 // - One notification identifier per user (LOVE_NUDGE_ID).
-// - Fires every Sunday at 09:00 local time (Notifications.WEEKLY trigger).
+// - Fires every Monday at 09:00 local time (Notifications.WEEKLY trigger).
+//   Monday matches the ISO 8601 week boundary that Sunday Check-in also
+//   uses, so both weekly rituals reset on the same day. Aligned Aug 27
+//   after user pointed out Sunday CI reset Monday while Love Language
+//   still ran on Sunday, which was confusing.
 // - On app open we cancel any old schedule and set a new one with the
 //   current partner name in the body — cheap, keeps content fresh.
 // - Skipped entirely on web (no notifications there) and when the
@@ -17,10 +21,9 @@ import { LOVE_LANGUAGE_ACTIONS } from '../constants/loveLanguageActions';
 
 const LOVE_NUDGE_ID = 'love-language-weekly';
 
-// Sunday 09:00 local — chosen for the "coffee-in-hand" moment when
-// scheduling something small for the week ahead feels natural. Weekday
-// mornings are too rushed; evenings compete with everything else.
-const NUDGE_DAY_WEEKDAY = 1; // Sun=1 in expo-notifications WEEKLY
+// Monday 09:00 local — start of the new ISO week, natural moment to
+// plan three small things to try over the next seven days.
+const NUDGE_DAY_WEEKDAY = 2; // Mon=2 in expo-notifications WEEKLY (Sun=1)
 const NUDGE_HOUR = 9;
 const NUDGE_MINUTE = 0;
 
@@ -84,18 +87,22 @@ export function pickWeeklyActions(
 
 // ─── helpers ─────────────────────────────────────────────────────────
 
-// Sunday of the current week — used as the anchor so both partners land
-// on the same seed regardless of which weekday they open the nudge.
-function weekAnchor(now: Date = new Date()): Date {
+// Monday of the current ISO week — used as the anchor so both partners
+// land on the same seed regardless of which weekday they open the
+// nudge. Monday-anchored (Aug 27) to match Sunday Check-in's ISO week
+// boundary so both weekly rituals roll over on the same day.
+export function weekAnchor(now: Date = new Date()): Date {
   const d = new Date(now);
   const dow = d.getDay(); // 0=Sun ... 6=Sat
-  d.setDate(d.getDate() - dow);
+  // Distance back to Monday: 0 for Mon, 1 for Tue, ..., 6 for Sun.
+  const back = dow === 0 ? 6 : dow - 1;
+  d.setDate(d.getDate() - back);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
 function weekKey(d: Date): string {
-  // yyyy-mm-dd of the Sunday anchor — collides only for dates within
+  // yyyy-mm-dd of the Monday anchor — collides only for dates within
   // the same week, which is exactly what we want.
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');

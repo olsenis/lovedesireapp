@@ -866,7 +866,9 @@ export default function HomeScreen() {
   // One-shot Moments archive peek — surfaces the compounder value at
   // week 2 instead of month 4. Fires once the couple has 8+ moments
   // captured. Tap or navigation marks it seen; never reappears.
-  if (momentsArchivePeekSeen === false && moments.length >= 8 && user?.uid) {
+  // QA MODE Aug 27: threshold lowered from 8 to 1 so the nudge is
+  // reachable during local device testing. REVERT to >= 8 before ship.
+  if (momentsArchivePeekSeen === false && moments.length >= 1 && user?.uid) {
     const localUid = user.uid;
     list.push({
       emoji: '📸',
@@ -1054,14 +1056,16 @@ export default function HomeScreen() {
     });
   }
 
-  // Sunday Love-Language ritual — closes the loop for the push notification
-  // that fires at Sun 09:00. Any other way of opening the app on Sunday
+  // Monday Love-Language ritual — closes the loop for the push notification
+  // that fires at Mon 09:00. Any other way of opening the app on Monday
   // (tab tap, task-switcher return, background push after dismissal) shows
   // nothing without this card. Unshifted so it leads the stack — same tier
   // as the weekly LDR pre/post-visit ritual cards. Partner must have a
-  // loveLanguage set; without one there's nothing to speak to.
+  // loveLanguage set; without one there's nothing to speak to. Aligned to
+  // Monday (Aug 27) with the notification day change and the Monday-anchored
+  // pickWeeklyActions seed.
   const partnerLang = (partner as any)?.loveLanguage as string | undefined;
-  if (partnerId && partnerLang && new Date().getDay() === 0) {
+  if (partnerId && partnerLang && new Date().getDay() === 1) {
     list.unshift({
       emoji: '💕',
       title: `Speak ${partner?.name ?? 'your partner'}'s language today`,
