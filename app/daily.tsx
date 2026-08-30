@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Keyboard, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -108,6 +108,21 @@ export default function DailyScreen() {
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [showMatches, setShowMatches] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // When the keyboard opens for the question-card TextInput, scroll the
+  // ScrollView to end so the input + Send button clear the keyboard on
+  // Android. Timeout-based approaches (200-400ms after onFocus) were
+  // unreliable across devices — the previous fix scrolled before the
+  // ScrollView's viewport had actually shrunk on some phones. Listening
+  // for keyboardDidShow fires AFTER the resize completes so scrollToEnd
+  // targets the correct dimensions every time. Only the question card
+  // opens a keyboard on this screen, so there's no wrong-context risk.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidShow', () => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => sub.remove();
+  }, []);
 
   // Deck-per-screen navigation. User sees one card at a time; skip pushes
   // the card to the back of the deck so it comes around again after the
@@ -609,14 +624,6 @@ export default function DailyScreen() {
                 onSubmit={() => handleSubmit(currentCard.gi)}
                 onQuickSubmit={(value) => submitValue(currentCard.gi, value)}
                 cardBg={cfg.color}
-                onInputFocus={() => {
-                  // Android adjustResize shrinks the viewport but does
-                  // not auto-scroll the ScrollView to a focused input
-                  // buried deep in a card. Delay the scroll until after
-                  // the keyboard animation so scrollToEnd targets the
-                  // reduced viewport, not the pre-keyboard one.
-                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 250);
-                }}
               />
             )}
 
@@ -1032,7 +1039,7 @@ function ActionCard({
 }
 
 function QuestionCard({
-  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg, onInputFocus,
+  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
 }: {
   gi: number;
   q: Question;
@@ -1056,10 +1063,6 @@ function QuestionCard({
   onSubmit: () => void;
   onQuickSubmit: (value: string) => void;
   cardBg: string;
-  // Fires on TextInput focus so parent can scroll the ScrollView to
-  // reveal the input above the keyboard on Android (native adjustResize
-  // shrinks the viewport but does not auto-scroll to focused inputs).
-  onInputFocus?: () => void;
 }) {
   // Guess feedback state — only for binary Qs where user made a REAL
   // guess (not the H28 GUESS_SKIPPED sentinel).
@@ -1165,7 +1168,6 @@ function QuestionCard({
                 placeholderTextColor={Colors.muted}
                 value={draft}
                 onChangeText={onDraftChange}
-                onFocus={onInputFocus}
                 multiline
               />
               <TouchableOpacity
