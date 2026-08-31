@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Keyboard, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -107,55 +108,10 @@ export default function DailyScreen() {
   const prevSpicyMatchGisRef = useRef<Set<number> | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [showMatches, setShowMatches] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
-  const questionInputRef = useRef<TextInput>(null);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  // Keyboard-aware auto-scroll: track keyboard height so the ScrollView
-  // gets enough bottom padding to have room to scroll the focused input
-  // above the keyboard. Without this the ScrollView content is often
-  // shorter than the viewport even when keyboard is up.
-  //
-  // On keyboardDidShow: capture height + measure the focused TextInput's
-  // Y position within the ScrollView, then scroll to `inputY - 120` so
-  // the input clears the keyboard AND ~120px of question text stays
-  // visible above it. scrollToEnd overshot (previous fix) and pushed
-  // the question entirely off screen — user could not re-read the
-  // question they were answering.
-  //
-  // Two rAF ticks between padding update and scroll so the layout pass
-  // completes first (measureLayout returns the OLD y otherwise on
-  // slower devices). Fallback to scrollToEnd if measureLayout fails
-  // (unpaired scroll view, ref cleared during transition, etc.).
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardHeight(e.endCoordinates.height);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const scroll = scrollRef.current;
-          const input = questionInputRef.current;
-          if (!scroll) return;
-          if (input && (input as any).measureLayout) {
-            (input as any).measureLayout(
-              (scroll as any).getInnerViewNode?.() ?? (scroll as any),
-              (_x: number, y: number) => {
-                scroll.scrollTo({ y: Math.max(0, y - 120), animated: true });
-              },
-              () => {
-                scroll.scrollToEnd({ animated: true });
-              },
-            );
-          } else {
-            scroll.scrollToEnd({ animated: true });
-          }
-        });
-      });
-    });
-    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardHeight(0);
-    });
-    return () => { showSub.remove(); hideSub.remove(); };
-  }, []);
+  // Ref typed to any so both ScrollView methods (scrollTo, still used by
+  // category-switch reset) AND KeyboardAwareScrollView work through the
+  // same ref. KAS's underlying node exposes the same scrollTo API.
+  const scrollRef = useRef<any>(null);
 
   // Deck-per-screen navigation. User sees one card at a time; skip pushes
   // the card to the back of the deck so it comes around again after the
@@ -563,11 +519,14 @@ export default function DailyScreen() {
         })}
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollRef}
-        contentContainerStyle={[styles.content, keyboardHeight > 0 && { paddingBottom: keyboardHeight + 40 }]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        enableOnAndroid
+        extraScrollHeight={110}
+        keyboardOpeningTime={0}
       >
         {/* Progress card. One combined done/total counter + a Matches tap
             column when the couple has any mutual-yes matches to view. */}
@@ -662,7 +621,6 @@ export default function DailyScreen() {
                 onSubmit={() => handleSubmit(currentCard.gi)}
                 onQuickSubmit={(value) => submitValue(currentCard.gi, value)}
                 cardBg={cfg.color}
-                inputRef={questionInputRef}
               />
             )}
 
@@ -712,7 +670,7 @@ export default function DailyScreen() {
             </View>
           </>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* All-matches modal (unchanged from Daily Picks) */}
       <Modal visible={showMatches} transparent animationType="slide">
@@ -1078,7 +1036,7 @@ function ActionCard({
 }
 
 function QuestionCard({
-  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg, inputRef,
+  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
 }: {
   gi: number;
   q: Question;
@@ -1102,11 +1060,6 @@ function QuestionCard({
   onSubmit: () => void;
   onQuickSubmit: (value: string) => void;
   cardBg: string;
-  // Parent-owned ref forwarded onto the free-text TextInput so the
-  // keyboard-aware scroll in HomeScreen can measureLayout it and scroll
-  // to inputY - 120px on keyboardDidShow (keeps the question text
-  // visible above the input while typing).
-  inputRef?: React.RefObject<TextInput | null>;
 }) {
   // Guess feedback state — only for binary Qs where user made a REAL
   // guess (not the H28 GUESS_SKIPPED sentinel).
@@ -1207,7 +1160,6 @@ function QuestionCard({
           ) : (
             <>
               <TextInput
-                ref={inputRef}
                 style={styles.input}
                 placeholder="Type your answer..."
                 placeholderTextColor={Colors.muted}
