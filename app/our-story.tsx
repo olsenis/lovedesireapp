@@ -181,10 +181,15 @@ export default function OurStoryScreen() {
   const loveLangWeeks = useMemo(() => {
     const partnerLang = (partner as any)?.loveLanguage as LoveLanguage | undefined;
     if (!partnerLang || !coupleId) return [] as Array<{ key: string; monday: Date; actions: string[] }>;
-    const startAnchor = couple?.startDate ?? couple?.createdAt;
+    // Use couple.createdAt (when the pair joined the app), NOT startDate
+    // (relationship anniversary — can be years old). The Love Language
+    // feature only fires after the couple exists in the app, so showing
+    // "actions from 2 years ago" would be fake history for couples who
+    // have been dating longer than they have used the app.
+    const startAnchor = couple?.createdAt;
     if (!startAnchor) return [];
-    const weeksSinceStart = Math.floor((Date.now() - startAnchor) / (7 * 86400000)) + 1;
-    const weekCount = Math.max(1, Math.min(52, weeksSinceStart));
+    const weeksSinceJoined = Math.floor((Date.now() - startAnchor) / (7 * 86400000)) + 1;
+    const weekCount = Math.max(1, Math.min(52, weeksSinceJoined));
     const rows: Array<{ key: string; monday: Date; actions: string[] }> = [];
     for (let i = 0; i < weekCount; i++) {
       const when = new Date(Date.now() - i * 7 * 86400000);
@@ -196,7 +201,7 @@ export default function OurStoryScreen() {
       rows.push({ key, monday, actions: pickWeeklyActions(partnerLang, coupleId, monday) });
     }
     return rows;
-  }, [partner, coupleId, couple?.startDate, couple?.createdAt]);
+  }, [partner, coupleId, couple?.createdAt]);
 
   const partnerLangLabel = useMemo(() => {
     const l = (partner as any)?.loveLanguage as LoveLanguage | undefined;
@@ -727,7 +732,12 @@ const styles = StyleSheet.create({
   emptyBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
+  // maxHeight caps the bottom-sheet at 85% of screen so long lists
+  // (52-week love-language archive, matches with dozens of items)
+  // don't push the header off the top of the viewport. Without this
+  // the modal grew to fit its content and slid the whole card
+  // (including the close ✕ and title) off screen.
+  modal: { maxHeight: '85%', backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
   modalLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
 
