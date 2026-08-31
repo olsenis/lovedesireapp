@@ -594,27 +594,33 @@ export default function TruthDareScreen() {
             const c = DARE_LEVEL_CONFIG[level];
             const active = session.level === level;
             const locked = level === 'spicy' && !isSubscribed;
+            // Disable tab swap while a card is in flight or a round just
+            // finished — the sent card can't be re-drawn from a different
+            // pool, so switching tabs mid-round would only change the badge
+            // color without any real benefit. Tabs unlock again in picking
+            // phase (Aug 31 fix — earlier version let tabs be tapped in
+            // every phase, which made the badge on the answering partner's
+            // screen visibly lie about the sent card's level).
+            const tabLocked = locked || session.phase !== 'picking';
             return (
               <TouchableOpacity
                 key={level}
-                style={[styles.levelTab, active && { backgroundColor: c.color }, locked && { opacity: 0.55 }]}
+                style={[styles.levelTab, active && { backgroundColor: c.color }, tabLocked && { opacity: 0.45 }]}
                 onPress={async () => {
                   if (locked) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
+                  if (session.phase !== 'picking') return;
                   if (!coupleId) return;
                   setDrawnCard(null);
-                  // Never nuke an in-flight card (phase !== 'picking' means
-                  // either a card was sent to the challenged partner, or the
-                  // round just finished). Just swap the level pool. Only do
-                  // the full reset when there's no session at all.
                   if (session) {
                     await setTruthDareLevel(coupleId, level);
                   } else {
                     await startTruthDare(coupleId, uid, level);
                   }
                 }}
-                activeOpacity={0.8}
+                activeOpacity={session.phase === 'picking' ? 0.8 : 1}
                 accessibilityRole="button"
-                accessibilityLabel={`${c.label}${locked ? ', premium' : ''}`}>
+                accessibilityState={{ disabled: session.phase !== 'picking' }}
+                accessibilityLabel={`${c.label}${locked ? ', premium' : ''}${session.phase !== 'picking' ? ', locked while round in progress' : ''}`}>
                 <Text style={styles.levelTabEmoji}>{c.emoji}</Text>
                 <Text style={[styles.levelTabLabel, active && { color: c.textColor }]}>{locked ? '🔒 ' : ''}{c.label}</Text>
               </TouchableOpacity>
