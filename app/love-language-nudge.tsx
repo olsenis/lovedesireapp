@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { LoveLanguage, LOVE_LANGUAGE_LABELS } from '../constants/content';
 import { pickWeeklyActions } from '../services/loveLanguageNudgeService';
+import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -77,7 +78,7 @@ export default function LoveLanguageNudgeScreen() {
               {actions.map((a, i) => (
                 <View key={i} style={styles.actionCard}>
                   <Text style={styles.actionNum}>{i + 1}</Text>
-                  <Text style={styles.actionText}>{a}</Text>
+                  <Text style={styles.actionText}>{personalise(a, partnerName)}</Text>
                 </View>
               ))}
             </View>
