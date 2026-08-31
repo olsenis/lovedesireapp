@@ -504,7 +504,14 @@ export default function DailyScreen() {
                 if (locked) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
                 setAutoSelected(true); // Any manual tap disables auto-pick
                 setSelectedCat(cat);
-                scrollRef.current?.scrollTo({ y: 0, animated: false });
+                // KeyboardAwareScrollView exposes scrollToPosition(x, y, animated)
+                // instead of ScrollView's scrollTo({y, animated}). Guard for either
+                // shape so this keeps working if the underlying component swaps.
+                if (typeof scrollRef.current?.scrollToPosition === 'function') {
+                  scrollRef.current.scrollToPosition(0, 0, false);
+                } else if (typeof scrollRef.current?.scrollTo === 'function') {
+                  scrollRef.current.scrollTo({ y: 0, animated: false });
+                }
               }}
               activeOpacity={0.8}
               accessibilityRole="button"
