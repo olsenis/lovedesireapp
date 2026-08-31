@@ -8,6 +8,15 @@ export type TDPhase = 'picking' | 'answering' | 'done';
 export interface TruthDareCard {
   type: 'truth' | 'dare';
   text: string;
+  // Level the card was sent at. Locked in at playCard time so the
+  // badge on the pending card doesn't shift when the picker switches
+  // level tabs mid-round (Aug 31 display fix — earlier setTruthDareLevel
+  // change let the picker browse other levels while a card was in
+  // flight, but the badge on the answering partner's screen followed
+  // the current tab instead of the card's real level).
+  // Optional so legacy in-flight cards from before the fix still render
+  // (they fall back to session.level, matching old behavior).
+  level?: DareLevel;
   answer?: string;
   audioURL?: string;        // Firebase Storage URL for voice answer
   answeredBy?: string;

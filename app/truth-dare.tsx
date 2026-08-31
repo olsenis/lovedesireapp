@@ -174,9 +174,11 @@ export default function TruthDareScreen() {
 
   // Commit drawn card to Firestore
   const handleSendCard = async () => {
-    if (!coupleId || !drawnCard) return;
+    if (!coupleId || !drawnCard || !session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await playCard(coupleId, { type: drawnCard.type, text: drawnCard.text });
+    // Lock the card's level at send time so the badge on the answering
+    // partner's screen stays true even if picker later swaps tabs.
+    await playCard(coupleId, { type: drawnCard.type, text: drawnCard.text, level: session.level });
     setDrawnCard(null);
   };
 
@@ -191,9 +193,10 @@ export default function TruthDareScreen() {
     setManualText('');
   };
   const handleSendManual = async () => {
-    if (!coupleId || !manualType || !manualText.trim()) return;
+    if (!coupleId || !manualType || !manualText.trim() || !session) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await playCard(coupleId, { type: manualType, text: manualText.trim() });
+    // Lock the level (see handleSendCard note).
+    await playCard(coupleId, { type: manualType, text: manualText.trim(), level: session.level });
     setManualType(null);
     setManualText('');
   };
@@ -739,12 +742,17 @@ export default function TruthDareScreen() {
         {/* ═══════════════════════════════════════════════════════════
             PHASE: ANSWERING
         ═══════════════════════════════════════════════════════════ */}
-        {session.phase === 'answering' && session.card && (
-          <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+        {session.phase === 'answering' && session.card && (() => {
+          // Use the card's own frozen level for the badge — session.level
+          // can drift when the picker swaps tabs mid-round. Legacy cards
+          // (pre Aug 31 fix) have no level field, fall back to session.
+          const cardCfg = DARE_LEVEL_CONFIG[session.card.level ?? session.level];
+          return (
+          <View style={[styles.cardView, { borderLeftColor: session.card.type === 'dare' ? cardCfg.textColor : '#1565C0' }]}>
             <View style={styles.cardTypeRow}>
-              <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
-              <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
-                {session.card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+              <Text style={styles.cardTypeEmoji}>{session.card.type === 'truth' ? '🤔' : cardCfg.emoji}</Text>
+              <Text style={[styles.cardTypeBadge, { color: session.card.type === 'dare' ? cardCfg.textColor : '#1565C0' }]}>
+                {session.card.type === 'truth' ? 'Truth' : `${cardCfg.label} Dare`}
               </Text>
             </View>
             <Text style={styles.cardText}>{personalise(session.card.text, targetName)}</Text>
@@ -868,7 +876,8 @@ export default function TruthDareScreen() {
               </>
             )}
           </View>
-        )}
+          );
+        })()}
 
         {/* ═══════════════════════════════════════════════════════════
             PHASE: DONE
@@ -932,6 +941,8 @@ function DoneCard({
   onReport?: () => void;
 }) {
   const card = session.card!;
+  // Card-level lock — same reason as the answering-phase render above.
+  const cardCfg = DARE_LEVEL_CONFIG[card.level ?? session.level];
   const playbackPlayer = useAudioPlayer(card.audioURL ?? undefined);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -959,11 +970,11 @@ function DoneCard({
   };
 
   return (
-    <View style={[styles.cardView, { borderLeftColor: card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
+    <View style={[styles.cardView, { borderLeftColor: card.type === 'dare' ? cardCfg.textColor : '#1565C0' }]}>
       <View style={styles.cardTypeRow}>
-        <Text style={styles.cardTypeEmoji}>{card.type === 'truth' ? '🤔' : cfg.emoji}</Text>
-        <Text style={[styles.cardTypeBadge, { color: card.type === 'dare' ? cfg.textColor : '#1565C0' }]}>
-          {card.type === 'truth' ? 'Truth' : `${cfg.label} Dare`}
+        <Text style={styles.cardTypeEmoji}>{card.type === 'truth' ? '🤔' : cardCfg.emoji}</Text>
+        <Text style={[styles.cardTypeBadge, { color: card.type === 'dare' ? cardCfg.textColor : '#1565C0' }]}>
+          {card.type === 'truth' ? 'Truth' : `${cardCfg.label} Dare`}
         </Text>
       </View>
       <Text style={styles.cardText}>{personalise(card.text, targetName)}</Text>
