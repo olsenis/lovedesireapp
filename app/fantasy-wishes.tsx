@@ -574,10 +574,10 @@ function SessionPromptCard({ votedInSession, matchesCount, onKeepGoing, onSaveFo
       </Text>
       <View style={styles.pauseBtnRow}>
         <TouchableOpacity style={[styles.pauseSecondaryBtn, { flex: 1 }]} onPress={onSaveForLater} activeOpacity={0.7} accessibilityRole="button">
-          <Text style={styles.pauseSecondaryText}>Save for later</Text>
+          <Text style={styles.pauseSecondaryText} numberOfLines={1}>Save for later</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.pausePrimaryBtn, { flex: 1 }]} onPress={onKeepGoing} activeOpacity={0.85} accessibilityRole="button">
-          <Text style={styles.pausePrimaryText}>Load 8 more ›</Text>
+          <Text style={styles.pausePrimaryText} numberOfLines={1}>Load 8 more ›</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -782,17 +782,17 @@ const styles = StyleSheet.create({
   },
   pauseBtnRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md, alignSelf: 'stretch' },
   pauseSecondaryBtn: {
-    paddingVertical: Spacing.md, paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
     borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', minWidth: 120,
+    alignItems: 'center', justifyContent: 'center',
   },
   pauseSecondaryText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   pausePrimaryBtn: {
-    paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm,
     borderRadius: Radius.full, backgroundColor: Colors.burgundy,
     alignItems: 'center', justifyContent: 'center',
   },
-  pausePrimaryText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.cream, letterSpacing: 0.3 },
+  pausePrimaryText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.cream, letterSpacing: 0.3 },
   pauseChangeMind: { marginTop: Spacing.md, paddingVertical: Spacing.sm },
   pauseChangeMindText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
 });
