@@ -48,7 +48,11 @@ export async function saveLoveLanguageResult(
   // Mirror primary to profile for the existing Sunday nudge + Insight
   // card + Home LL surface reads — must come first so if the couple
   // subcoll write fails, the app still functions at the profile level.
-  await createUserProfile(uid, { loveLanguage: primary } as any);
+  // loveLanguageSetAt lets Our Story's archive cap the weekly-actions
+  // history to weeks the partner actually had a language set (rather
+  // than fake retroactive weeks from the deterministic seed for the
+  // whole life of the couple).
+  await createUserProfile(uid, { loveLanguage: primary, loveLanguageSetAt: Date.now() } as any);
   if (coupleId) {
     await setDoc(doc(db, 'couples', coupleId, 'loveLanguages', uid), result, { merge: true });
   } else {

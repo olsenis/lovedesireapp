@@ -180,16 +180,18 @@ export default function OurStoryScreen() {
   // language set yet.
   const loveLangWeeks = useMemo(() => {
     const partnerLang = (partner as any)?.loveLanguage as LoveLanguage | undefined;
+    const langSetAt = (partner as any)?.loveLanguageSetAt as number | undefined;
     if (!partnerLang || !coupleId) return [] as Array<{ key: string; monday: Date; actions: string[] }>;
-    // Use couple.createdAt (when the pair joined the app), NOT startDate
-    // (relationship anniversary — can be years old). The Love Language
-    // feature only fires after the couple exists in the app, so showing
-    // "actions from 2 years ago" would be fake history for couples who
-    // have been dating longer than they have used the app.
-    const startAnchor = couple?.createdAt;
+    // Cap the archive to weeks the partner actually had a language set.
+    // Prefer loveLanguageSetAt when present. For legacy partners who took
+    // the quiz before Aug 31 (no timestamp stored) fall back to couple
+    // createdAt — better than showing fake retroactive weeks from years
+    // before the app existed. Never anchor on couple.startDate (that's
+    // the relationship anniversary, can be years older than the app).
+    const startAnchor = langSetAt ?? couple?.createdAt;
     if (!startAnchor) return [];
-    const weeksSinceJoined = Math.floor((Date.now() - startAnchor) / (7 * 86400000)) + 1;
-    const weekCount = Math.max(1, Math.min(52, weeksSinceJoined));
+    const weeksSinceAnchor = Math.floor((Date.now() - startAnchor) / (7 * 86400000)) + 1;
+    const weekCount = Math.max(1, Math.min(52, weeksSinceAnchor));
     const rows: Array<{ key: string; monday: Date; actions: string[] }> = [];
     for (let i = 0; i < weekCount; i++) {
       const when = new Date(Date.now() - i * 7 * 86400000);

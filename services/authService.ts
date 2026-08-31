@@ -32,6 +32,7 @@ export interface UserProfile {
   birthday?: string; // DD.MM format, no year
   timezone?: string; // IANA tz like "Europe/Reykjavik" — used for LDR partner clock
   loveLanguage?: 'words' | 'acts' | 'gifts' | 'time' | 'touch'; // top result from Love Language quiz
+  loveLanguageSetAt?: number; // ms epoch when loveLanguage was last written — used by Our Story archive to cap the weekly-actions history to weeks the partner actually had a language set
   // NOTE: premium status was moved to couples/{coupleId}/isPremium in Aug 2026
   // (one subscription covers both partners). Any leftover user.isPremium in
   // existing docs is ignored by useSubscription. RevenueCat webhook writes
