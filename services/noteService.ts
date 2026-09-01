@@ -111,17 +111,26 @@ export async function unlockMoodNotes(coupleId: string, uid: string, emoji: Mood
     where('opened', '==', false)
   );
   const snap = await getDocs(q);
-  const toUnlock = snap.docs.filter((d) => {
-    const data = d.data();
-    if (data.fromUid === uid) return false;
-    const noteEmoji: MoodEmoji = (data.triggerEmoji as MoodEmoji) ?? '😢';
-    return noteEmoji === emoji;
-  });
-  // Individual updates can throw "no such document" if the sender deletes a
-  // note between our getDocs read and the update. That's benign — the note
-  // is gone, no unlock needed. Swallow per-item errors so one missing note
-  // doesn't take down the whole unlock batch and break the mood-pick flow.
-  await Promise.all(toUnlock.map((d) => updateDoc(d.ref, { openAt: Date.now() }).catch(() => {})));
+  // Sort by createdAt ASC so the OLDEST unopened matching note unlocks
+  // first. 1-at-a-time pacing (Sep 1 change): if the writer stacked
+  // multiple notes for the same mood, each mood-log unlocks the next
+  // one in order rather than dumping all of them on the reader at
+  // once. The note-bank keeps giving over time — right-note-for-right-
+  // moment instead of overwhelming "shower of love" when they may
+  // actually be feeling low.
+  const matching = snap.docs
+    .filter((d) => {
+      const data = d.data();
+      if (data.fromUid === uid) return false;
+      const noteEmoji: MoodEmoji = (data.triggerEmoji as MoodEmoji) ?? '😢';
+      return noteEmoji === emoji;
+    })
+    .sort((a, b) => ((a.data() as any).createdAt ?? 0) - ((b.data() as any).createdAt ?? 0));
+  const oldest = matching[0];
+  if (!oldest) return;
+  // Swallow "no such document" if the sender deletes it between our
+  // read and the update — benign, next mood-log picks the next one.
+  await updateDoc(oldest.ref, { openAt: Date.now() }).catch(() => {});
 }
 
 // Called when the next visit date has arrived — unlocks any pending visit-condition notes from partner
