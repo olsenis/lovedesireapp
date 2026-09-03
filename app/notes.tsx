@@ -415,10 +415,43 @@ export default function NotesScreen() {
           </>
         )}
 
-        {myNotes.length > 0 && (
+        {myNotes.length > 0 && (() => {
+          // Group user-authored notes by trigger so the list reads as
+          // "3 for Happy" / "1 for Sad" rather than a flat pile that
+          // hides the writer's own pattern. Order: scheduled/time-based
+          // first (most imminent), then moods in ALL_MOODS order (which
+          // groups positive → neutral → negative), then the other
+          // condition triggers (visit/missing/sleepless) at the tail.
+          type Bucket = { key: string; label: string; emoji: string; notes: typeof myNotes };
+          const buckets: Bucket[] = [];
+          const scheduled = myNotes.filter(n => !n.openCondition && n.openAt < AUTO_UNLOCK_SENTINEL);
+          if (scheduled.length > 0) {
+            buckets.push({ key: 'scheduled', label: 'Scheduled', emoji: '⏳', notes: scheduled });
+          }
+          for (const m of ALL_MOODS) {
+            const forMood = myNotes.filter(n => n.openCondition === 'sad' && (n.triggerEmoji ?? '😢') === m);
+            if (forMood.length > 0) {
+              buckets.push({ key: `mood-${m}`, label: MOOD_LABELS[m] ?? 'That mood', emoji: m, notes: forMood });
+            }
+          }
+          const visit = myNotes.filter(n => n.openCondition === 'visit');
+          if (visit.length > 0) buckets.push({ key: 'visit', label: 'Next visit', emoji: '✈️', notes: visit });
+          const missing = myNotes.filter(n => n.openCondition === 'missing');
+          if (missing.length > 0) buckets.push({ key: 'missing', label: 'Missing you', emoji: '💭', notes: missing });
+          const sleepless = myNotes.filter(n => n.openCondition === 'sleepless');
+          if (sleepless.length > 0) buckets.push({ key: 'sleepless', label: 'Sleepless nights', emoji: '🌙', notes: sleepless });
+
+          return (
           <>
             <Text style={styles.groupLabel}>Notes you wrote ✍️</Text>
-            {myNotes.map((note) => (
+            {buckets.map((bucket) => (
+              <View key={bucket.key} style={styles.bucketWrap}>
+                <View style={styles.bucketHeader}>
+                  <Text style={styles.bucketEmoji}>{bucket.emoji}</Text>
+                  <Text style={styles.bucketLabel}>{bucket.label}</Text>
+                  <Text style={styles.bucketCount}>{bucket.notes.length}</Text>
+                </View>
+            {bucket.notes.map((note) => (
               <TouchableOpacity
                 key={note.id}
                 style={[styles.noteCard, styles.mySent]}
@@ -460,8 +493,11 @@ export default function NotesScreen() {
                 )}
               </TouchableOpacity>
             ))}
+              </View>
+            ))}
           </>
-        )}
+          );
+        })()}
 
         {notes.length === 0 && (
           <View style={styles.empty}>
@@ -808,6 +844,11 @@ const styles = StyleSheet.create({
 
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, gap: Spacing.md, paddingTop: Spacing.md },
   groupLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8 },
+  bucketWrap: { gap: Spacing.xs, marginTop: Spacing.sm },
+  bucketHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, paddingHorizontal: Spacing.xs, marginBottom: 2 },
+  bucketEmoji: { fontSize: 16 },
+  bucketLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, textTransform: 'uppercase', letterSpacing: 0.6, flex: 1 },
+  bucketCount: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, backgroundColor: Colors.blush, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: 'hidden' },
 
   noteCard: { flexDirection: 'row', borderRadius: Radius.lg, padding: Spacing.md, gap: Spacing.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
   noteReady: { backgroundColor: Colors.blush, borderColor: Colors.rose },
