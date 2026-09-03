@@ -1267,8 +1267,8 @@ export const BLUEPRINT_QUESTIONS: BlueprintQuestion[] = [
   { a: { text: "Something completely new you've never tried before", type: 'shapeshifter' }, b: { text: "The slow charge, flirting all day that leads to one moment", type: 'energetic' } },
   { a: { text: "Pure physical connection with nothing held back", type: 'sexual' }, b: { text: "A role you play that lets you be someone different", type: 'kinky' } },
   { a: { text: "Being completely present to every sensation on your skin", type: 'sensual' }, b: { text: "Total unpredictability, variety every time", type: 'shapeshifter' } },
-  { a: { text: "The moment they look at you and you just know", type: 'energetic' }, b: { text: "Physical confidence, they know what they want and take it gently", type: 'sexual' } },
-  { a: { text: "Power play, dominance and submission, clearly defined", type: 'kinky' }, b: { text: "Total presence, their hands, the warmth, every detail of touch", type: 'sensual' } },
+  { a: { text: "The moment {partner} looks at you and you just know", type: 'energetic' }, b: { text: "Physical confidence, {partner} knows what they want and takes it gently", type: 'sexual' } },
+  { a: { text: "Power play, dominance and submission, clearly defined", type: 'kinky' }, b: { text: "Total presence, {partner}'s hands, the warmth, every detail of touch", type: 'sensual' } },
   { a: { text: "Cycling through different moods, tender then bold then playful", type: 'shapeshifter' }, b: { text: "The anticipation that makes you ache before anything happens", type: 'energetic' } },
   { a: { text: "Direct physical intimacy, no games, just raw connection", type: 'sexual' }, b: { text: "A scenario, a script, a role to inhabit fully", type: 'kinky' } },
   { a: { text: "Warmth, slow touch, every sense fully engaged", type: 'sensual' }, b: { text: "A surprise, you have no idea what comes next", type: 'shapeshifter' } },
@@ -2369,12 +2369,16 @@ export const WYR_PACKS: WYRPack[] = [
 // Northern-hemisphere calendar seasons. Simple month-based mapping —
 // astronomical solstice/equinox dates would drift the boundaries by a
 // few days but nobody would notice, and this keeps the picker pure.
-export function getCurrentSeason(now: Date = new Date()): SeasonKey {
-  const m = now.getMonth();
-  if (m === 11 || m <= 1) return 'winter';   // Dec-Feb
-  if (m <= 4) return 'spring';               // Mar-May
-  if (m <= 7) return 'summer';               // Jun-Aug
-  return 'fall';                             // Sep-Nov
+// QA MODE Aug 27: forces 'fall' regardless of month so Fall Reflections
+// 2026 pack surfaces on device today (real Fall starts Sept 1).
+// REVERT to the real month-mapping block below before ship.
+export function getCurrentSeason(_now: Date = new Date()): SeasonKey {
+  return 'fall';
+  // const m = _now.getMonth();
+  // if (m === 11 || m <= 1) return 'winter';   // Dec-Feb
+  // if (m <= 4) return 'spring';               // Mar-May
+  // if (m <= 7) return 'summer';               // Jun-Aug
+  // return 'fall';                             // Sep-Nov
 }
 
 // Winter spans two calendar years (Dec 2026 → Feb 2027 is one winter).
