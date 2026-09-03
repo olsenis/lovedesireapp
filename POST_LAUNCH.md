@@ -1404,3 +1404,13 @@ Non-blocking correctness / cost items surfaced during review. Ship without, revi
 
 **Effort**: 2-3h — lazy-load flow listeners keyed to which home cards are actually mounted / visible.
 
+### The Lovers → Fantasy Wishes / Daily Spicy cross-flow
+
+**What**: Shape which items surface first in Fantasy Wishes and Daily Spicy based on partner's Lovers type (e.g. a Kinky-typed partner sees BDSM Fantasy Wishes prioritized; a Feeling-typed partner sees Sensual items first). Would give the paid Lovers result a downstream effect beyond the single result screen.
+
+**Why deferred**: Invasive change to two other services' picking logic (dailyWishService + fantasyWishesService both use deterministic per-couple shuffle; slotting a type-weighted bias in adds complexity to a bit that currently just works). Uncertain user value pre-analytics — a Kinky-type-partner user might explicitly want Sensual content to stretch, and biasing away from that dulls the discovery mechanic. Better to see real cohort behavior first (are couples actually filtering by type? do they want personalized surfacing or serendipity?).
+
+**Revisit criteria**: Post-launch cohort data on Fantasy Wishes vote patterns per Lovers type; user feedback asking for "why don't I see more X" content.
+
+**Effort**: ~4h. Would need a small type-weighting layer in each picking service that reads the caller's partner-type from blueprintService, then re-orders the top of the deck (not the whole pool — random surface probability preserved for discovery).
+
