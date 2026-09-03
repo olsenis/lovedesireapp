@@ -1,17 +1,34 @@
-import { doc, setDoc, collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { BlueprintType } from '../constants/content';
 import { trackEvent } from './statsService';
 
-export interface BlueprintResult {
+export interface BlueprintHistoryEntry {
   type: BlueprintType;
   scores: Record<BlueprintType, number>;
   completedAt: number;
 }
 
+export interface BlueprintResult {
+  type: BlueprintType;
+  scores: Record<BlueprintType, number>;
+  completedAt: number;
+  // Sep 3: retake history so the Lovers screen can render an
+  // evolution tag ("Feb 2026 → Feeling · Aug 2026 → Kinky") when
+  // the user has taken the quiz more than once. Older entries live
+  // here; the top-level type/scores/completedAt always reflects the
+  // latest take. Capped at HISTORY_LIMIT to keep the doc bounded.
+  history?: BlueprintHistoryEntry[];
+}
+
 export interface CoupleBlueprints {
   [uid: string]: BlueprintResult;
 }
+
+// Cap on retake history entries per user. 10 covers many years of
+// quiz retakes at any realistic cadence and stays well under
+// Firestore's 1MB doc size ceiling.
+const HISTORY_LIMIT = 10;
 
 // Subscribe to both partners' results in the couple
 export function subscribeCoupleBlueprints(
@@ -32,13 +49,46 @@ export async function saveBlueprintResult(
 ): Promise<void> {
   const sorted = (Object.entries(scores) as [BlueprintType, number][]).sort((a, b) => b[1] - a[1]);
   const primaryType = sorted[0][0];
-  const data = { type: primaryType, scores, completedAt: Date.now() };
+  const newEntry: BlueprintHistoryEntry = { type: primaryType, scores, completedAt: Date.now() };
 
-  if (coupleId) {
-    await setDoc(doc(db, 'couples', coupleId, 'blueprints', uid), data, { merge: true });
-  } else {
-    // Fallback if coupleId not yet available
-    await setDoc(doc(db, 'users', uid, 'private', 'blueprint'), data, { merge: true });
+  const ref = coupleId
+    ? doc(db, 'couples', coupleId, 'blueprints', uid)
+    : doc(db, 'users', uid, 'private', 'blueprint');
+
+  // Read existing history (if any) and append the new entry. History
+  // is bounded at HISTORY_LIMIT to keep the doc small. Skip appending
+  // if the very last entry is < 60s old (accidental double-fire from
+  // fast taps on the final quiz option).
+  let history: BlueprintHistoryEntry[] = [];
+  try {
+    const existing = await getDoc(ref);
+    if (existing.exists()) {
+      const data = existing.data() as BlueprintResult;
+      history = Array.isArray(data.history) ? data.history : [];
+      // If never had history before but had a previous result on the
+      // doc, seed history with that first-ever result so the evolution
+      // tag has a starting point on the second take.
+      if (history.length === 0 && data.completedAt && data.type && data.scores) {
+        history.push({ type: data.type, scores: data.scores, completedAt: data.completedAt });
+      }
+    }
+  } catch {
+    // read-denied or offline — proceed with empty history, this take
+    // becomes the first tracked entry
   }
+  const last = history[history.length - 1];
+  const isDuplicate = last && Date.now() - last.completedAt < 60_000;
+  if (!isDuplicate) {
+    history.push(newEntry);
+    if (history.length > HISTORY_LIMIT) history = history.slice(history.length - HISTORY_LIMIT);
+  }
+
+  const data: BlueprintResult = {
+    type: primaryType,
+    scores,
+    completedAt: newEntry.completedAt,
+    history,
+  };
+  await setDoc(ref, data, { merge: true });
   trackEvent('blueprint_completed');
 }

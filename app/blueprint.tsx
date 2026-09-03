@@ -143,6 +143,25 @@ export default function BlueprintScreen() {
             <Text style={styles.heroDesc}>{myPrimary.description}</Text>
           </LinearGradient>
 
+          {/* Evolution tag — only when the user has retaken the quiz.
+              Reads the history array on the result doc and renders a
+              tiny "Feb 2026 · Feeling → Aug 2026 · Kinky" line so the
+              couple can see how the answer has shifted over time. */}
+          {(myResult?.history?.length ?? 0) > 1 && (
+            <View style={styles.evolutionBox}>
+              <Text style={styles.evolutionLabel}>YOUR LOVERS JOURNEY</Text>
+              <Text style={styles.evolutionText}>
+                {myResult!.history!
+                  .map((h) => {
+                    const cfg = BLUEPRINT_TYPE_CONFIG[h.type];
+                    const date = new Date(h.completedAt).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+                    return `${date} · ${cfg.emoji} ${cfg.label}`;
+                  })
+                  .join('  →  ')}
+              </Text>
+            </View>
+          )}
+
           {/* Turn ons / offs */}
           <View style={styles.traitRow}>
             <View style={[styles.traitCard, styles.traitOn]}>
@@ -329,4 +348,8 @@ const styles = StyleSheet.create({
 
   retakeBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border, alignSelf: 'center' },
   retakeText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
+
+  evolutionBox: { backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, gap: 6 },
+  evolutionLabel: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 1 },
+  evolutionText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20 },
 });
