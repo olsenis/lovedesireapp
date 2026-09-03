@@ -1274,6 +1274,25 @@ export const BLUEPRINT_QUESTIONS: BlueprintQuestion[] = [
   { a: { text: "Warmth, slow touch, every sense fully engaged", type: 'sensual' }, b: { text: "A surprise, you have no idea what comes next", type: 'shapeshifter' } },
   { a: { text: "The charge of 'not yet', being made to wait for it", type: 'energetic' }, b: { text: "Body-forward, direct, unapologetically physical", type: 'sexual' } },
   { a: { text: "Boundaries and rules that create a specific kind of freedom", type: 'kinky' }, b: { text: "Every experience feels like discovering a new side of {partner}", type: 'shapeshifter' } },
+  // Sep 3 expansion: 15 additional pairs (30 total) so the quiz produces
+  // a more stable result. Balance preserved — each of the 5 types
+  // appears in exactly 6 of the 30 slots. Append-at-tail so users
+  // mid-quiz between deploys don't see re-shuffled options.
+  { a: { text: "Skin against skin with the lights low and music playing softly", type: 'sensual' }, b: { text: "Skin against skin with the lights on and nothing to hide", type: 'sexual' } },
+  { a: { text: "Being made to wait, and knowing exactly what's coming", type: 'energetic' }, b: { text: "Being told exactly what to do, and doing it", type: 'kinky' } },
+  { a: { text: "A completely different mood every time you two are together", type: 'shapeshifter' }, b: { text: "The same slow ritual that never gets old", type: 'sensual' } },
+  { a: { text: "Getting exactly what you want, quickly and confidently", type: 'sexual' }, b: { text: "The slow escalation that makes you ache before anything happens", type: 'energetic' } },
+  { a: { text: "A scenario where the rules are agreed on and you both follow them", type: 'kinky' }, b: { text: "Whatever the mood is tonight, no rules, no plan", type: 'shapeshifter' } },
+  { a: { text: "Warm bath, soft light, {partner} beside you, no words needed", type: 'sensual' }, b: { text: "Charged glances across the room all evening, no touch yet", type: 'energetic' } },
+  { a: { text: "Bold, confident, present, exactly what you both want", type: 'sexual' }, b: { text: "Something you've never tried, no idea how it will land", type: 'shapeshifter' } },
+  { a: { text: "Handing over control, or taking it, completely and clearly", type: 'kinky' }, b: { text: "Soft touch, warmth, presence, nothing more needed", type: 'sensual' } },
+  { a: { text: "A surprise element you two have not tried before", type: 'shapeshifter' }, b: { text: "The moment of not-yet stretched out longer than usual", type: 'energetic' } },
+  { a: { text: "Direct, physical, uninhibited, from the first minute", type: 'sexual' }, b: { text: "A slow reveal of a role you're both playing tonight", type: 'kinky' } },
+  { a: { text: "One place, one mood, held for as long as it takes", type: 'sensual' }, b: { text: "Different places, different moods, all in one night", type: 'shapeshifter' } },
+  { a: { text: "A whispered 'later' that stretches out for hours", type: 'energetic' }, b: { text: "The first touch after a long day, slow and deliberate", type: 'sensual' } },
+  { a: { text: "Being surprised by what {partner} initiates", type: 'shapeshifter' }, b: { text: "Initiating exactly what you want, the way you want it", type: 'sexual' } },
+  { a: { text: "Rules and boundaries that let you both feel completely free", type: 'kinky' }, b: { text: "Anticipation held so long the release becomes everything", type: 'energetic' } },
+  { a: { text: "Nothing between you and {partner}, no clothes, no barriers", type: 'sexual' }, b: { text: "A ritual you have both agreed to, played out completely", type: 'kinky' } },
 ];
 
 // Structured compatibility guidance for all 25 type pairs
