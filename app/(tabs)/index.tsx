@@ -44,6 +44,7 @@ import { PartnerAvatar } from '../../components/PartnerAvatar';
 import { useTrackScreen } from '../../hooks/useTrackScreen';
 import { trackEvent } from '../../services/statsService';
 import { getHelpState, markFeatureSeen } from '../../services/helpService';
+import { getMyBlueprintOneshot } from '../../services/blueprintService';
 
 // Personalised greeting when the user has a name on their profile —
 // warmer first impression than a generic salutation. Falls back to the
@@ -349,6 +350,9 @@ export default function HomeScreen() {
   // compounder at week 2 instead of month 4. Undefined during load so
   // the nudge doesn't flash on mount; boolean once resolved.
   const [momentsArchivePeekSeen, setMomentsArchivePeekSeen] = useState<boolean | undefined>(undefined);
+  // The Lovers latest completedAt — used to fire an annual "has the
+  // answer shifted?" nudge on the anniversary of the most recent take.
+  const [loversCompletedAt, setLoversCompletedAt] = useState<number | null>(null);
   // Which one-shot nudge keys the user has dismissed. Loaded once from
   // helpService.seen[] on mount. Used by seasonal-drops nudge (key
   // shape `seasonal-pack-${pack.id}`) and any future one-shot nudges
@@ -423,6 +427,16 @@ export default function HomeScreen() {
       setDismissedKeys(new Set());
     });
   }, [user?.uid]);
+
+  // The Lovers latest take — fetched one-shot so the anniversary
+  // nudge below can compute how long since the couple last read.
+  // Null when never taken; treated as "no nudge" case.
+  useEffect(() => {
+    if (!user?.uid) return;
+    getMyBlueprintOneshot(coupleId, user.uid).then((r) => {
+      setLoversCompletedAt(r?.completedAt ?? null);
+    }).catch(() => setLoversCompletedAt(null));
+  }, [coupleId, user?.uid]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
     if (!coupleId || !partnerId) return;
@@ -924,6 +938,34 @@ export default function HomeScreen() {
           },
         });
       }
+    }
+  }
+
+  // The Lovers anniversary — fires once a year on the anniversary of
+  // the couple's most recent quiz take. Uses a 7-day window starting
+  // on the anniversary date so the user is likely to catch it. One
+  // dismissal per year via helpService.seen[] with key that carries
+  // the current year, so next year fires anew.
+  if (loversCompletedAt && user?.uid) {
+    const takenDate = new Date(loversCompletedAt);
+    const now = new Date();
+    const thisYearAnniversary = new Date(now.getFullYear(), takenDate.getMonth(), takenDate.getDate());
+    const daysSinceAnniversary = Math.floor((now.getTime() - thisYearAnniversary.getTime()) / 86400000);
+    const yearsSince = now.getFullYear() - takenDate.getFullYear();
+    const dismissKey = `lovers-anniversary-${now.getFullYear()}`;
+    if (yearsSince >= 1 && daysSinceAnniversary >= 0 && daysSinceAnniversary <= 7 && !dismissedKeys.has(dismissKey)) {
+      const localUid = user.uid;
+      list.push({
+        emoji: '🧬',
+        title: 'One year since your last Lovers read',
+        subtitle: 'Has the answer shifted? Take it again together.',
+        route: '/blueprint',
+        bg: '#F3E5F5',
+        onTap: () => {
+          setDismissedKeys(prev => new Set(prev).add(dismissKey));
+          markFeatureSeen(localUid, dismissKey).catch(() => {});
+        },
+      });
     }
   }
 

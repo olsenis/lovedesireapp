@@ -30,6 +30,25 @@ export interface CoupleBlueprints {
 // Firestore's 1MB doc size ceiling.
 const HISTORY_LIMIT = 10;
 
+// One-shot fetch of a single user's latest blueprint result. Used by
+// Home to check the anniversary of the most recent quiz take without
+// spinning up a listener. Returns null when the doc doesn't exist or
+// the read fails.
+export async function getMyBlueprintOneshot(
+  coupleId: string | undefined,
+  uid: string,
+): Promise<BlueprintResult | null> {
+  try {
+    const ref = coupleId
+      ? doc(db, 'couples', coupleId, 'blueprints', uid)
+      : doc(db, 'users', uid, 'private', 'blueprint');
+    const snap = await getDoc(ref);
+    return snap.exists() ? (snap.data() as BlueprintResult) : null;
+  } catch {
+    return null;
+  }
+}
+
 // Subscribe to both partners' results in the couple
 export function subscribeCoupleBlueprints(
   coupleId: string,
