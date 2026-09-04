@@ -21,6 +21,14 @@ function currentMonthKey(): string {
   return new Date().toISOString().slice(0, 7); // "2026-08"
 }
 
+function currentDayKey(): string {
+  // UTC day. Sep 3 2026 retention analytics addition — day-bucket lets
+  // us compute DAU, cohort retention curves (D1/D7/D30 per signup cohort)
+  // and time-since-last-active distributions without introducing any
+  // per-user timeline. Same coupleId granularity as the monthly bucket.
+  return new Date().toISOString().slice(0, 10); // "2026-09-03"
+}
+
 // Increment a named counter in the current month's stats doc. Default
 // increment is 1 (event counter); pass `by` to add a larger value (used
 // by session time aggregates in telemetryService). Fire-and-forget —
@@ -48,8 +56,18 @@ export async function trackScreen(name: string): Promise<void> {
 export async function markCoupleActive(coupleId: string): Promise<void> {
   if (!coupleId) return;
   try {
-    const ref = doc(db, 'activeCouples', currentMonthKey(), 'couples', coupleId);
-    await setDoc(ref, { active: true }, { merge: true });
+    // Monthly bucket — unchanged. Powers MAU counts.
+    const monthRef = doc(db, 'activeCouples', currentMonthKey(), 'couples', coupleId);
+    // Day bucket — new Sep 3 addition. Powers DAU counts, cohort
+    // retention curves (D1/D7/D30 per signup cohort), and days-since-
+    // last-active distributions. Same coupleId granularity as the
+    // monthly bucket — no new privacy commitment. Docs auto-cleaned
+    // after 12mo by cleanupOldDailyBuckets in Cloud Functions.
+    const dayRef = doc(db, 'activeCouples', currentDayKey(), 'couples', coupleId);
+    await Promise.all([
+      setDoc(monthRef, { active: true }, { merge: true }),
+      setDoc(dayRef, { active: true, activeAt: Date.now() }, { merge: true }),
+    ]);
   } catch {
     // Silent — telemetry must never affect app behaviour.
   }
