@@ -630,3 +630,66 @@ input { font-family: inherit; }
   padding: 8px; background: transparent; color: var(--muted);
   border: 0; cursor: pointer; font-size: 13px;
 }
+
+/* ─── Retention analytics (Sep 3 2026) ─────────────────────────────── */
+.retention-tab { display: flex; flex-direction: column; gap: 20px; }
+.retention-controls {
+  display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+  padding: 12px; background: var(--cream); border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.retention-controls label { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.retention-controls input {
+  padding: 6px 10px; font-size: 13px; border: 1px solid var(--border);
+  border-radius: 6px; width: 120px;
+}
+.retention-controls button {
+  padding: 8px 16px; background: var(--burgundy); color: white;
+  border: 0; border-radius: 6px; font-weight: 600; cursor: pointer;
+}
+.retention-controls button:disabled { opacity: 0.5; cursor: default; }
+.error-row { padding: 10px; background: #ffebee; color: #c62828; border-radius: 6px; font-size: 13px; }
+
+/* Cohort */
+.cohort-card {
+  background: white; border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.cohort-header { font-size: 13px; color: var(--muted); }
+.cohort-bars { display: flex; flex-direction: column; gap: 4px; }
+.cohort-bar-row { display: grid; grid-template-columns: 40px 1fr 50px 40px; gap: 8px; align-items: center; font-size: 12px; }
+.cohort-day { color: var(--muted); font-weight: 600; }
+.cohort-bar-track { height: 14px; background: var(--cream); border-radius: 3px; overflow: hidden; }
+.cohort-bar-fill { height: 100%; background: var(--burgundy); border-radius: 3px; }
+.cohort-pct { color: var(--burgundy); font-weight: 600; text-align: right; }
+.cohort-count { color: var(--muted); text-align: right; }
+
+/* DAU/MAU */
+.daumau-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.daumau-header { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; }
+.daumau-rows { display: flex; flex-direction: column; gap: 2px; max-height: 400px; overflow-y: auto; }
+.daumau-row { display: grid; grid-template-columns: 90px 90px 90px 60px; gap: 8px; padding: 6px 10px; font-size: 12px; align-items: center; }
+.daumau-row:nth-child(even) { background: var(--cream); }
+.daumau-date { color: var(--muted); }
+.daumau-num { font-weight: 600; }
+.daumau-num.muted { color: var(--muted); font-weight: 400; }
+
+/* Funnel */
+.funnel-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.funnel-row { display: grid; grid-template-columns: 1fr 80px 90px; gap: 8px; padding: 8px 10px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--border); }
+.funnel-row:last-child { border-bottom: 0; }
+.funnel-step { text-transform: capitalize; }
+.funnel-count { font-weight: 600; text-align: right; }
+.funnel-dropoff { color: var(--muted); text-align: right; font-size: 12px; }
+.funnel-dropoff.warn { color: #E65100; font-weight: 600; }
+
+/* Feature frequency */
+.freq-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.freq-header { font-size: 13px; color: var(--muted); }
+.freq-rows { display: flex; flex-direction: column; gap: 2px; }
+.freq-row { display: grid; grid-template-columns: 1fr 100px 120px; gap: 8px; padding: 6px 10px; font-size: 13px; align-items: center; }
+.freq-row:nth-child(even) { background: var(--cream); }
+.freq-screen { font-weight: 600; }
+.freq-opens { text-align: right; font-size: 12px; }
+.freq-opens.muted { color: var(--muted); }
+.freq-per { text-align: right; color: var(--burgundy); }

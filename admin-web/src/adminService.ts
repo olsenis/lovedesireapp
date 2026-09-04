@@ -170,3 +170,58 @@ export async function adminResolveReport(
   const res = await _adminResolveReport({ reportId, action, notes });
   return { action: res.data.action, newStatus: res.data.newStatus };
 }
+
+// ─── Retention analytics (Sep 3 2026) ─────────────────────────────────
+
+export interface CohortRetention {
+  cohortMonth: string;
+  cohortSize: number;
+  days: { day: number; activeCount: number }[];
+}
+
+export interface DauMauSeries {
+  startDate: string;
+  endDate: string;
+  days: { date: string; dau: number; mau: number; ratio: number }[];
+}
+
+export interface FunnelStats {
+  month: string;
+  steps: { name: string; count: number; dropoffPct: number | null }[];
+}
+
+export interface FeatureFrequency {
+  month: string;
+  activeCount: number;
+  rows: { screen: string; opens: number; perCouple: number }[];
+}
+
+const _adminGetCohortRetention = httpsCallable<{ cohortMonth: string }, CohortRetention>(
+  functions, 'adminGetCohortRetention',
+);
+const _adminGetDauMau = httpsCallable<{ startDate: string; endDate: string }, DauMauSeries>(
+  functions, 'adminGetDauMau',
+);
+const _adminGetFunnelStats = httpsCallable<{ month: string }, FunnelStats>(
+  functions, 'adminGetFunnelStats',
+);
+const _adminGetFeatureFrequency = httpsCallable<{ month: string }, FeatureFrequency>(
+  functions, 'adminGetFeatureFrequency',
+);
+
+export async function adminGetCohortRetention(cohortMonth: string): Promise<CohortRetention> {
+  const res = await _adminGetCohortRetention({ cohortMonth });
+  return res.data;
+}
+export async function adminGetDauMau(startDate: string, endDate: string): Promise<DauMauSeries> {
+  const res = await _adminGetDauMau({ startDate, endDate });
+  return res.data;
+}
+export async function adminGetFunnelStats(month: string): Promise<FunnelStats> {
+  const res = await _adminGetFunnelStats({ month });
+  return res.data;
+}
+export async function adminGetFeatureFrequency(month: string): Promise<FeatureFrequency> {
+  const res = await _adminGetFeatureFrequency({ month });
+  return res.data;
+}

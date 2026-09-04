@@ -9,6 +9,7 @@ import {
 } from '../adminService';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ReportsTab } from '../components/ReportsTab';
+import { RetentionTab } from '../components/RetentionTab';
 
 type StatsTab = 'screens' | 'actions' | 'admin';
 
@@ -274,6 +275,10 @@ export function AdminScreen() {
       {/* ─── Reports queue (H33) ─── */}
       <div className="section-label">Reports queue</div>
       <ReportsTab />
+
+      {/* ─── Retention analytics (Sep 3 2026) ─── */}
+      <div className="section-label">Retention · cohort curves, DAU/MAU, funnel</div>
+      <RetentionTab />
 
       {/* ─── Section 3: Time-of-day heatmap ─── */}
       <div className="section-label">When couples use the app · {currentMonthKey(0)}</div>
