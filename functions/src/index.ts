@@ -779,6 +779,220 @@ export const cleanupOldSessions = onSchedule('every 24 hours', async () => {
   console.log(`Session cleanup: ${totalDeleted} monthly buckets deleted`);
 });
 
+// ─── Scheduled cleanup: activeCouples day buckets older than 12 months ─────
+// Same pattern as cleanupOldSessions but sweeps activeCouples/{yyyy-mm-dd}
+// day buckets (added Sep 3 2026 for retention analytics). Monthly buckets
+// activeCouples/{yyyy-mm} are kept indefinitely (single doc per month,
+// bounded cost). Only day buckets need TTL because they multiply 30x.
+export const cleanupOldDailyBuckets = onSchedule('every 24 hours', async () => {
+  let totalDeleted = 0;
+  const cutoffDays = SESSION_RETENTION_MONTHS * 30 + 30;
+  // Scan the 60-day window just past the retention cliff — anything older
+  // than that should have been cleaned in prior runs; anything newer is
+  // still in-retention.
+  for (let i = SESSION_RETENTION_MONTHS * 30 + 1; i <= cutoffDays + 60; i++) {
+    const d = new Date();
+    d.setUTCHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() - i);
+    const day = d.toISOString().slice(0, 10);
+    // Skip anything that's actually a month key (matches YYYY-MM shape,
+    // not YYYY-MM-DD). Day buckets always have YYYY-MM-DD.
+    if (day.length !== 10 || day[7] !== '-') continue;
+    try {
+      const dayRef = db.collection('activeCouples').doc(day);
+      const couples = await dayRef.collection('couples').limit(1).get();
+      if (couples.empty) continue;
+      await db.recursiveDelete(dayRef);
+      totalDeleted++;
+      console.log(`Cleaned up activeCouples/${day}`);
+    } catch (e) {
+      console.error(`Failed to cleanup activeCouples/${day}:`, e);
+    }
+  }
+  console.log(`Day-bucket cleanup: ${totalDeleted} daily buckets deleted`);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Retention analytics callables (Sep 3 2026)
+// All computed at coupleId granularity, never per-user. Same aggregate-
+// only design as the older admin callables.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Cohort retention: for a signup month, for each day 0-30 after signup,
+// how many couples from that cohort were active on `signupDate + N days`?
+// Result shape: [{ day: 0, activeCount: 42 }, { day: 1, activeCount: 31 }, ...]
+// day 0 = the signup day itself.
+export const adminGetCohortRetention = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const cohortMonth = String(req.data?.cohortMonth ?? '').trim();
+  if (!MONTH_RE.test(cohortMonth)) {
+    throw new HttpsError('invalid-argument', 'cohortMonth must be yyyy-mm.');
+  }
+  const startOfMonth = new Date(cohortMonth + '-01T00:00:00Z').getTime();
+  const nextMonth = new Date(cohortMonth + '-01T00:00:00Z');
+  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
+  const endOfMonth = nextMonth.getTime();
+
+  // Fetch cohort: all couples created in that month.
+  const cohortSnap = await db.collection('couples')
+    .where('createdAt', '>=', startOfMonth)
+    .where('createdAt', '<', endOfMonth)
+    .select('createdAt')
+    .get();
+  const cohort = cohortSnap.docs.map((d) => ({
+    id: d.id,
+    signupDay: new Date((d.data().createdAt as number) || startOfMonth).toISOString().slice(0, 10),
+  }));
+
+  const cohortSize = cohort.length;
+  if (cohortSize === 0) return { cohortMonth, cohortSize: 0, days: [] };
+
+  // For each day 0..30, count how many cohort couples were active on
+  // signupDay + N. Uses per-couple day-bucket lookup — cheap for small
+  // cohorts, gets pricier as cohort grows. For an MVP cohort of a few
+  // hundred couples this is fine.
+  const days: { day: number; activeCount: number }[] = [];
+  for (let n = 0; n <= 30; n++) {
+    let activeCount = 0;
+    await Promise.all(cohort.map(async ({ id, signupDay }) => {
+      const targetDate = new Date(signupDay + 'T00:00:00Z');
+      targetDate.setUTCDate(targetDate.getUTCDate() + n);
+      const targetKey = targetDate.toISOString().slice(0, 10);
+      try {
+        const dayRef = db.collection('activeCouples').doc(targetKey)
+          .collection('couples').doc(id);
+        const snap = await dayRef.get();
+        if (snap.exists) activeCount++;
+      } catch {
+        // Missing day-bucket = not active, skip
+      }
+    }));
+    days.push({ day: n, activeCount });
+  }
+
+  return { cohortMonth, cohortSize, days };
+});
+
+// DAU / MAU time series. For each day in [startDate, endDate], returns:
+//   - dau: count of active couples that day
+//   - mau: 28-day rolling count ending on that day
+//   - ratio: dau/mau as a stickiness proxy (higher = users come back
+//     more often within their 28d window)
+export const adminGetDauMau = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const startDate = String(req.data?.startDate ?? '').trim();
+  const endDate = String(req.data?.endDate ?? '').trim();
+  if (!DAY_RE.test(startDate) || !DAY_RE.test(endDate)) {
+    throw new HttpsError('invalid-argument', 'startDate and endDate must be yyyy-mm-dd.');
+  }
+  const start = new Date(startDate + 'T00:00:00Z');
+  const end = new Date(endDate + 'T00:00:00Z');
+  if (end < start) {
+    throw new HttpsError('invalid-argument', 'endDate must be >= startDate.');
+  }
+  const days: { date: string; dau: number; mau: number; ratio: number }[] = [];
+
+  // Iterate day by day. For each: DAU is a .count() on the day bucket;
+  // MAU is 28 .count()s summed as a set-union (roughly — a couple counted
+  // twice in the 28d window shows twice here, so this is an approximation
+  // that overcounts. Good enough for trend visualisation; if we need exact
+  // set-union we'd need to enumerate ids, which is expensive at scale).
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const dayKey = cursor.toISOString().slice(0, 10);
+    const dau = await safeCount(
+      db.collection('activeCouples').doc(dayKey).collection('couples'),
+      `dau_${dayKey}`,
+    );
+    // 28-day rolling — set union via id-scan to avoid overcounting.
+    const ids = new Set<string>();
+    for (let n = 0; n < 28; n++) {
+      const back = new Date(cursor);
+      back.setUTCDate(back.getUTCDate() - n);
+      const backKey = back.toISOString().slice(0, 10);
+      try {
+        const snap = await db.collection('activeCouples').doc(backKey)
+          .collection('couples').select().get();
+        snap.docs.forEach((d) => ids.add(d.id));
+      } catch {
+        // Missing day is a zero-contributor, skip
+      }
+    }
+    const mau = ids.size;
+    const ratio = mau > 0 ? Math.round((dau / mau) * 100) / 100 : 0;
+    days.push({ date: dayKey, dau, mau, ratio });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return { startDate, endDate, days };
+});
+
+// Onboarding + subscription funnel. Reads named counters from stats/{month}
+// and returns absolute counts + drop-off percentages between each step.
+export const adminGetFunnelStats = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const month = String(req.data?.month ?? '').trim();
+  if (!MONTH_RE.test(month)) {
+    throw new HttpsError('invalid-argument', 'month must be yyyy-mm.');
+  }
+  const snap = await db.collection('stats').doc(month).get();
+  const stats = snap.exists ? (snap.data() ?? {}) : {};
+  const stepNames = [
+    'user_registered',
+    'onboarding_started',
+    'onboarding_photo_added',
+    'onboarding_name_added',
+    'pairing_screen_viewed',
+    'couple_paired',
+    'first_ritual_completed',
+    'upgrade_cta_tapped',
+    'purchase_completed',
+  ];
+  const steps = stepNames.map((name) => ({
+    name,
+    count: Number(stats[name] ?? 0),
+  }));
+  // Compute drop-off % vs previous step (first step has null).
+  const withDropoff = steps.map((step, i) => {
+    if (i === 0) return { ...step, dropoffPct: null };
+    const prev = steps[i - 1].count;
+    const dropoffPct = prev === 0 ? null : Math.round(((prev - step.count) / prev) * 1000) / 10;
+    return { ...step, dropoffPct };
+  });
+  return { month, steps: withDropoff };
+});
+
+// Feature frequency: opens per active couple per month. For each screen_*
+// counter in stats/{month}, divide by the month's active couple count.
+// Higher = surface users return to more often per active couple.
+export const adminGetFeatureFrequency = onCall({ invoker: 'public' }, async (req) => {
+  assertAdmin(req);
+  const month = String(req.data?.month ?? '').trim();
+  if (!MONTH_RE.test(month)) {
+    throw new HttpsError('invalid-argument', 'month must be yyyy-mm.');
+  }
+  const [statsSnap, activeCount] = await Promise.all([
+    db.collection('stats').doc(month).get(),
+    safeCount(
+      db.collection('activeCouples').doc(month).collection('couples'),
+      `activeMonth_${month}`,
+    ),
+  ]);
+  const stats = statsSnap.exists ? (statsSnap.data() ?? {}) : {};
+  const rows = Object.entries(stats)
+    .filter(([k]) => k.startsWith('screen_'))
+    .map(([k, v]) => {
+      const screen = k.replace(/^screen_/, '');
+      const opens = Number(v ?? 0);
+      const perCouple = activeCount > 0 ? Math.round((opens / activeCount) * 100) / 100 : 0;
+      return { screen, opens, perCouple };
+    })
+    .sort((a, b) => b.perCouple - a.perCouple);
+  return { month, activeCount, rows };
+});
+
 // ─── H33: Report / moderation flow ─────────────────────────────────────────
 // User-generated content moderation. Client-side entry points across the 7
 // UGC surfaces (Moments, Tease, Notes, Together List, Truth-or-Dare,
