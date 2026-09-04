@@ -61,6 +61,7 @@ export async function startWYR(coupleId: string, level: WYRLevel, packId?: strin
     score: { match: 0, total: 0 },
     ...(packId ? { packId } : {}),
   });
+  trackEvent('wyr_session_started');
 }
 
 export async function answerWYR(coupleId: string, uid: string, answer: WYRAnswer, _session?: WYRSession): Promise<void> {

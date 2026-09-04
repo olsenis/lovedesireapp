@@ -49,6 +49,7 @@ export async function startTruthDare(coupleId: string, starterUid: string, level
     round: 1,
     skipsUsed: {},
   });
+  trackEvent('truth_dare_session_started');
 }
 
 // Swap the level pool without touching scores, round, phase, or any

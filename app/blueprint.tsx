@@ -58,6 +58,9 @@ export default function BlueprintScreen() {
 
   const pick = async (type: BlueprintType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // First-pick fires blueprint_started for the funnel — pairs with
+    // existing blueprint_completed for start/completion rate.
+    if (step === 0) trackEvent('blueprint_started');
     const next = { ...scores, [type]: scores[type] + 1 };
     setScores(next);
     if (step + 1 >= BLUEPRINT_QUESTIONS.length) {

@@ -20,6 +20,7 @@ import { db } from '../../services/firebase';
 import { createCouple, joinCouple, cancelPairingRequest, Couple } from '../../services/coupleService';
 import { createUserProfile } from '../../services/authService';
 import { getOnboardingState } from '../../services/onboardingService';
+import { trackEvent } from '../../services/statsService';
 import { QRScannerModal, buildQRPayload } from '../../components/QRScannerModal';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
@@ -73,6 +74,12 @@ export default function PairingScreen() {
   // Kept around so the Retry button knows which couple to write to
   // after the snapshot listener has cleared its snapshot data.
   const [pendingFinalize, setPendingFinalize] = useState<{ coupleId: string; inviteCode: string } | null>(null);
+
+  // Retention funnel — record that the pairing screen was viewed. Fires
+  // once per mount, before the couple/profile logic below runs.
+  useEffect(() => {
+    trackEvent('pairing_screen_viewed');
+  }, []);
 
   useEffect(() => {
     if (!user || authLoading) return;

@@ -151,6 +151,30 @@ export async function getCouple(coupleId: string): Promise<Couple | null> {
   return snap.exists() ? (snap.data() as Couple) : null;
 }
 
+// Retention funnel — fires first_ritual_completed exactly once per couple
+// the first time either partner completes any ritual (Sunday CI, Daily,
+// or Moment). Uses a transaction to set couple.firstRitualCompletedAt
+// atomically so two simultaneous first-take submits from both partners
+// still count as one funnel step. Silent-catch on error — telemetry
+// never blocks the caller.
+export async function markFirstRitualIfUnset(coupleId: string): Promise<void> {
+  if (!coupleId) return;
+  try {
+    const ref = doc(db, 'couples', coupleId);
+    const didSet = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) return false;
+      const data = snap.data() as Couple & { firstRitualCompletedAt?: number };
+      if (data.firstRitualCompletedAt) return false;
+      tx.update(ref, { firstRitualCompletedAt: Date.now() });
+      return true;
+    });
+    if (didSet) trackEvent('first_ritual_completed');
+  } catch {
+    // Silent — telemetry must never affect app behaviour.
+  }
+}
+
 // ─── Pairing accept/decline flow (Aug 2026, H22) ─────────────────────────────
 // rateLimitedJoin now writes pendingPartner2Uid + pendingPartner2Name +
 // pendingPartner2At rather than partner2Uid. These three transitions turn

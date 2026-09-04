@@ -2,6 +2,7 @@ import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, runTransaction, Unsubsc
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 import { trackEvent } from './statsService';
+import { markFirstRitualIfUnset } from './coupleService';
 
 export interface DailyQuestionDoc {
   date: string;
@@ -153,6 +154,7 @@ export async function submitAnswer(
     [`answers.${uid}.${globalIndex}`]: answer,
   });
   trackEvent('daily_question_answered');
+  markFirstRitualIfUnset(coupleId);
 }
 
 export function bothAnswered(

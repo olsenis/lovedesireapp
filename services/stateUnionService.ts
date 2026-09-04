@@ -12,6 +12,8 @@ import {
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import { trackEvent } from './statsService';
+import { markFirstRitualIfUnset } from './coupleService';
 
 // Sunday Check-in question pool. Each set is 5 questions, one week per
 // set. A deterministic per-couple picker (see pickWeeklyQuestionSet) means
@@ -351,6 +353,11 @@ export async function ensureStateUnionDoc(coupleId: string, weekId: string): Pro
   if (!snap.exists()) {
     const questionSetId = pickWeeklyQuestionSet(weekId, coupleId);
     await setDoc(ref, { weekId, startedAt: Date.now(), completedAt: {}, answeredCount: {}, questionSetId });
+    // Retention analytics — fires when a week's stateUnion doc is
+    // newly created (i.e. the couple has started the check-in for
+    // this week). Paired with sunday_checkin_submitted so completion
+    // rate = submitted / started.
+    trackEvent('sunday_checkin_started');
   }
 }
 
@@ -386,6 +393,10 @@ export async function submitStateUnionAnswer(
         .filter((s) => s && s.trim().length > 0).length
     : 0;
   await updateDoc(parentRef, { [`answeredCount.${uid}`]: count });
+  // Retention funnel — first_ritual_completed fires exactly once per
+  // couple, first time any ritual is done. Idempotent (transaction
+  // inside markFirstRitualIfUnset).
+  markFirstRitualIfUnset(coupleId);
 }
 
 // One-shot write of the 5 pulse dimensions to the caller's own entries doc.

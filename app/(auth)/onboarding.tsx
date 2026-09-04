@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { useAuth } from '../../hooks/useAuth';
 import { createUserProfile } from '../../services/authService';
 import { uploadProfilePhoto } from '../../services/storageService';
+import { trackEvent } from '../../services/statsService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius } from '../../constants/spacing';
@@ -27,6 +28,14 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Retention analytics — fires once when the onboarding screen first
+  // mounts for a user. Paired with onboarding_photo_added +
+  // onboarding_name_added below so drop-off through the funnel is
+  // measurable (see plans/retention-analytics).
+  useEffect(() => {
+    trackEvent('onboarding_started');
+  }, []);
+
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -36,6 +45,7 @@ export default function OnboardingScreen() {
     });
     if (!result.canceled) {
       setPhotoURI(result.assets[0].uri);
+      trackEvent('onboarding_photo_added');
     }
   };
 
@@ -67,6 +77,7 @@ export default function OnboardingScreen() {
         name: name.trim(),
         photoURL,
       });
+      trackEvent('onboarding_name_added');
       router.replace('/(auth)/pairing');
     } catch {
       setError('Something went wrong. Please try again.');

@@ -24,7 +24,7 @@ import { createUserProfile } from '../services/authService';
 import { acceptPairing, declinePairing } from '../services/coupleService';
 import { getConsent, confirmConsent } from '../services/consentService';
 import { getOnboardingState } from '../services/onboardingService';
-import { markCoupleActive } from '../services/statsService';
+import { markCoupleActive, trackEvent } from '../services/statsService';
 import { scheduleLoveLanguageNudge, cancelLoveLanguageNudge } from '../services/loveLanguageNudgeService';
 import { LoveLanguage } from '../constants/content';
 import { Colors } from '../constants/colors';
@@ -184,9 +184,15 @@ export default function RootLayout() {
     (async () => {
       try {
         const { status: existing } = await Notifications.getPermissionsAsync();
-        const { status } = existing === 'granted'
-          ? { status: existing }
-          : await Notifications.requestPermissionsAsync();
+        // If we haven't asked yet, prompt now and record which way it
+        // went so we have a real opt-in rate (retention analytics —
+        // paired with notification_opened for push→open conversion).
+        let status = existing;
+        if (existing !== 'granted' && existing !== 'denied') {
+          const req = await Notifications.requestPermissionsAsync();
+          status = req.status;
+          trackEvent(status === 'granted' ? 'notifications_opt_in' : 'notifications_opt_out');
+        }
         if (status !== 'granted') return;
         const token = (await Notifications.getExpoPushTokenAsync()).data;
         if (token && token !== profile?.pushToken) {
