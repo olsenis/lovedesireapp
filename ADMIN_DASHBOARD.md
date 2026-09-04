@@ -258,13 +258,50 @@ After phase 3:
 
 ---
 
+## Retention analytics (Sep 3 2026)
+
+Extension of the aggregate telemetry model that keeps `coupleId`-only granularity but adds finer time buckets so we can measure retention properly. Motivation: user's gut-read that median lifecycle is ~1 month, and we needed data before shipping more retention-focused features.
+
+### Data model (added)
+
+- `activeCouples/{yyyy-mm-dd}/couples/{coupleId}` — day-bucket presence. Written on every `markCoupleActive` call alongside the existing monthly marker. Powers DAU, cohort retention curves, days-since-last-active distributions. Rules-covered by the existing `activeCouples/{month}/couples/{coupleId}` wildcard.
+- `couples/{coupleId}.firstRitualCompletedAt` — timestamp set atomically by `markFirstRitualIfUnset` in `services/coupleService.ts`. Fires `first_ritual_completed` event exactly once per couple. Used by the funnel.
+
+### Events added
+
+- Onboarding funnel: `onboarding_started`, `onboarding_photo_added`, `onboarding_name_added`, `pairing_screen_viewed`, `first_ritual_completed`
+- Flow starts (paired with existing `*_completed`): `sunday_checkin_started`, `wyr_session_started`, `truth_dare_session_started`, `blueprint_started`
+- Push: `notifications_opt_in`, `notifications_opt_out` (fires only on first prompt)
+- Reserved for post-H44: `purchase_started`, `purchase_completed`, `subscription_cancelled`, `notification_opened`
+
+### Callables added (functions/src/index.ts)
+
+- `adminGetCohortRetention(cohortMonth)` — D0-D30 activity curve per signup month.
+- `adminGetDauMau(startDate, endDate)` — daily DAU + 28-day rolling MAU + stickiness ratio.
+- `adminGetFunnelStats(month)` — the 9-step funnel with drop-off percentages.
+- `adminGetFeatureFrequency(month)` — screen_* opens per active couple, sorted desc.
+- `cleanupOldDailyBuckets` — scheduled daily, purges day-buckets >12mo old.
+
+### Admin web (admin-web/src/components/RetentionTab.tsx)
+
+New Retention tab rendered at the bottom of AdminScreen with 4 cards: cohort curve, DAU/MAU trend, funnel, feature frequency. Month + date-range controls at top, Reload button, all data loads on first mount.
+
+### Verification
+
+- Use the app for 3 days on a QA couple → confirm `activeCouples/2026-09-{03,04,05}/couples/{qa-couple-id}` docs appear.
+- Trigger each new event manually (onboarding flow, quiz starts, push opt-in) → confirm counters increment in `stats/2026-09`.
+- Run `adminGetDauMau(2026-09-01, 2026-09-30)` in the admin-web SPA → data appears.
+- Confirm no `uid` field on any new document.
+
+---
+
 ## Non-goals
 
 - **Not client-side analytics dashboard** — no in-app charts/graphs for MVP. Firebase Console + admin table is enough.
 - **Not third-party analytics** (Amplitude, Mixpanel) — everything server-side under our own Firestore. Cheaper, simpler, no data sharing.
 - **Not Firebase Analytics** — its auto-collection ships lots of telemetry that adds GDPR complexity we don't need.
 - **Not real-time dashboards** — stats update on next admin refresh, not live-stream. Cost-cheap.
-- **Not per-user analytics** — deliberately. The whole design is aggregate-only. No user cohort analysis, no funnel tracking per uid, no retention curves per couple. All queries operate on totals.
+- **Not per-user analytics** — deliberately. Nothing at the individual UID level. Retention analytics landed Sep 3 2026 but stayed at coupleId granularity: day-bucket presence at `activeCouples/{yyyy-mm-dd}/couples/{coupleId}` powers DAU + cohort curves + funnel + feature-frequency without adding per-user timelines. `users/{uid}.lastActiveAt` and per-user activity logs are still explicitly out.
 - **Not deleting users from admin dashboard in MVP** — high-risk destructive action, deserves careful design (type-to-confirm, cooldown, cascading effects preview). Deferred to v1.1.
 
 ---
@@ -275,7 +312,7 @@ Track separately in [POST_LAUNCH.md](POST_LAUNCH.md) once MVP is live:
 
 - Custom claim–based admin instead of hardcoded uids
 - Real-time dashboard subscriptions
-- Per-feature retention curves (would require breaking the aggregate-only rule — deliberate trade-off, opt-in)
+- ~~Per-feature retention curves~~ — shipped Sep 3 2026 via day-bucket at `activeCouples/{yyyy-mm-dd}/couples/{coupleId}` + four new admin callables (adminGetCohortRetention, adminGetDauMau, adminGetFunnelStats, adminGetFeatureFrequency). Rule was RELAXED from "monthly bucket only" to "day bucket at coupleId granularity" — still no per-user timeline.
 - CSV export of stats for spreadsheet analysis
 - Alert rules (email/Slack when a feature drops below threshold, when signups spike, when refund rate rises)
 - Admin action audit log — dedicated `adminActions/{ts}` collection with what/who/why, viewable in dashboard
