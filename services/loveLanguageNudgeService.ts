@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import { Notifications } from './notificationsGuard';
 import { LoveLanguage, LOVE_LANGUAGE_LABELS } from '../constants/content';
 import { LOVE_LANGUAGE_ACTIONS } from '../constants/loveLanguageActions';
 
@@ -32,6 +32,7 @@ export async function scheduleLoveLanguageNudge(
   partnerLoveLanguage: LoveLanguage,
 ): Promise<void> {
   if (Platform.OS === 'web') return;
+  if (!Notifications) return;
   try {
     // Always cancel first so a stale nudge (old partner name, old
     // language) doesn't survive after a rename or a re-quiz.
@@ -62,6 +63,7 @@ export async function scheduleLoveLanguageNudge(
 
 export async function cancelLoveLanguageNudge(): Promise<void> {
   if (Platform.OS === 'web') return;
+  if (!Notifications) return;
   try {
     await Notifications.cancelScheduledNotificationAsync(LOVE_NUDGE_ID);
   } catch {

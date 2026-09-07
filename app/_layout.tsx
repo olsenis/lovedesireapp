@@ -4,8 +4,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { Notifications } from '../services/notificationsGuard';
 import {
   useFonts,
   CormorantGaramond_400Regular,
@@ -31,16 +31,20 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
 
-// Show notifications even when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Show notifications even when app is in foreground. Guarded by the
+// notificationsGuard — in Expo Go Android the module is null, skip
+// silently. Real push testing happens on dev-client anyway.
+if (Notifications) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -181,6 +185,7 @@ export default function RootLayout() {
     const isExpoGo = Constants.appOwnership === 'expo'
       || Constants.executionEnvironment === 'storeClient';
     if (isExpoGo) return;
+    if (!Notifications) return;
     (async () => {
       try {
         const { status: existing } = await Notifications.getPermissionsAsync();
@@ -251,6 +256,7 @@ export default function RootLayout() {
   // tapped. Used today by the love-language weekly nudge — future
   // scheduled notifications should follow the same convention.
   useEffect(() => {
+    if (!Notifications) return;
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const route = response.notification.request.content.data?.route;
       if (typeof route === 'string' && route.startsWith('/')) {

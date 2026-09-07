@@ -1,5 +1,5 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
-import * as Notifications from 'expo-notifications';
+import { Notifications } from './notificationsGuard';
 import { Platform } from 'react-native';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
@@ -61,6 +61,7 @@ function notifIdForDay(reminderId: string, day: number): string {
 
 export async function scheduleReminderNotifications(reminder: FlirtReminder): Promise<void> {
   if (Platform.OS === 'web') return;
+  if (!Notifications) return;
   await cancelReminderNotifications(reminder.id);
   if (!reminder.active) return;
   const [hour, minute] = reminder.time.split(':').map(Number);
@@ -79,6 +80,7 @@ export async function scheduleReminderNotifications(reminder: FlirtReminder): Pr
 
 export async function cancelReminderNotifications(reminderId: string): Promise<void> {
   if (Platform.OS === 'web') return;
+  if (!Notifications) return;
   for (let day = 0; day < 7; day++) {
     try {
       await Notifications.cancelScheduledNotificationAsync(notifIdForDay(reminderId, day));

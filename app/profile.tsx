@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import * as Notifications from 'expo-notifications';
+import { Notifications } from '../services/notificationsGuard';
 import QRCode from 'react-native-qrcode-svg';
 import { QRScannerModal, buildQRPayload } from '../components/QRScannerModal';
 import { Image } from 'expo-image';
@@ -78,6 +78,7 @@ export default function ProfileScreen() {
   const [osNotifGranted, setOsNotifGranted] = useState<boolean | null>(null);
   useEffect(() => {
     if (Platform.OS === 'web') return;
+    if (!Notifications) { setOsNotifGranted(false); return; }
     Notifications.getPermissionsAsync()
       .then((p) => setOsNotifGranted(p.status === 'granted'))
       .catch(() => setOsNotifGranted(false));

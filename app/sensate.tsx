@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, AppState, Platform, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import * as Notifications from 'expo-notifications';
+import { Notifications } from '../services/notificationsGuard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
@@ -394,6 +394,7 @@ export default function SensateScreen() {
   // countdown still works and Haptics fires when the app is foregrounded.
   async function scheduleCompletionNotif(stage: Stage, secondsUntil: number) {
     if (Platform.OS === 'web' || secondsUntil <= 0) return;
+    if (!Notifications) return;
     try {
       const id = await Notifications.scheduleNotificationAsync({
         content: {
@@ -414,6 +415,7 @@ export default function SensateScreen() {
     const id = scheduledNotifIdRef.current;
     scheduledNotifIdRef.current = null;
     if (!id || Platform.OS === 'web') return;
+    if (!Notifications) return;
     try { await Notifications.cancelScheduledNotificationAsync(id); } catch { /* already fired */ }
   }
 
