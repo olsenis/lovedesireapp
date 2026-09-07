@@ -4,7 +4,7 @@ import { getAuth, initializeAuth, Auth } from 'firebase/auth';
 // getReactNativePersistence is a runtime export but not in TS types yet — import via require
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { getReactNativePersistence } = require('firebase/auth') as { getReactNativePersistence: (storage: any) => any };
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, Firestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -35,6 +35,20 @@ if (Platform.OS === 'web') {
 }
 
 export const auth = _auth;
-export const db = getFirestore(app);
+
+// Firestore WebChannel transport works over browsers but flakes badly
+// through React Native + tunnel / cellular network switches, spamming
+// "RPC 'Listen' stream transport errored" warnings. Auto-detect long-
+// polling as a fallback: the SDK still tries WebChannel first, then
+// gracefully drops to long-polling when the transport misbehaves.
+// Safe on all platforms; on web it stays on WebChannel unless needed.
+let _db: Firestore;
+try {
+  _db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+} catch {
+  // Already initialized (fast refresh) — reuse existing instance
+  _db = getFirestore(app);
+}
+export const db = _db;
 export const storage = getStorage(app);
 export default app;
