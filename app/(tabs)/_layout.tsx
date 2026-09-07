@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
-import { Platform, Text } from 'react-native';
+import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 
@@ -8,6 +9,11 @@ function TabIcon({ symbol, focused }: { symbol: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
+  // Android SDK 57 defaults edge-to-edge ON, so content extends behind the
+  // system nav bar. Pull the bottom inset dynamically for both platforms
+  // so labels + icons stay above the gesture pill / 3-button nav / iOS
+  // home indicator regardless of device.
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -19,7 +25,8 @@ export default function TabsLayout() {
           borderTopColor: Colors.border,
           borderTopWidth: 1,
           paddingTop: 8,
-          ...(Platform.OS === 'ios' ? { height: 88, paddingBottom: 28 } : {}),
+          paddingBottom: insets.bottom + 8,
+          height: 60 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontFamily: Fonts.bodyBold,
