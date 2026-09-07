@@ -381,7 +381,7 @@ export default function RootLayout() {
     // 30-Day Challenge setup-phase DraggableFlatList) receive gesture
     // events. Without this wrap, long-press-drag silently no-ops.
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="dark" backgroundColor={Colors.cream} />
+      <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }} />
       {/* H22 pairing accept modal — root-level so it appears on any
           screen the moment `couple.pendingPartner2Uid` fires via the

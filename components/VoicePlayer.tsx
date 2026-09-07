@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
-import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -23,14 +23,12 @@ interface Props {
  */
 export function VoicePlayer({ uri, size = 'compact', idleLabel }: Props) {
   const player = useAudioPlayer(uri);
+  const status = useAudioPlayerStatus(player);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    const sub = player.addListener('playbackStatusUpdate', (status) => {
-      if (status.didJustFinish) setIsPlaying(false);
-    });
-    return () => sub.remove();
-  }, [player]);
+    if (status.didJustFinish) setIsPlaying(false);
+  }, [status.didJustFinish]);
 
   const toggle = () => {
     if (isPlaying) {

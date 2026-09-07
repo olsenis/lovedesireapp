@@ -7,12 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFF8F0"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.desire.app",
@@ -30,7 +24,6 @@
         "backgroundColor": "#FFF8F0"
       },
       "package": "com.desire.app",
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
@@ -50,6 +43,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFF8F0"
+        }
+      ],
       [
         "expo-notifications",
         {

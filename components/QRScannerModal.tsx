@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.cream },
 
   body: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  camera: { ...StyleSheet.absoluteFillObject },
+  camera: { ...StyleSheet.absoluteFill },
   reticle: {
     width: 240, height: 240,
     borderColor: Colors.rose, borderWidth: 3, borderRadius: Radius.lg,

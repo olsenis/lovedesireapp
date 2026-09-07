@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import {
   useAudioRecorder,
   useAudioPlayer,
+  useAudioPlayerStatus,
   RecordingPresets,
   AudioModule,
   setAudioModeAsync,
@@ -113,13 +114,11 @@ export default function TruthDareScreen() {
     return subscribeTruthDare(coupleId, (s) => { setSession(s); setLoading(false); });
   }, [coupleId]);
 
-  // Track playback finished — expo-audio player exposes playbackStatus events
+  // Track playback finished — expo-audio 57 uses useAudioPlayerStatus hook
+  const playerStatus = useAudioPlayerStatus(player);
   useEffect(() => {
-    const sub = player.addListener('playbackStatusUpdate', (status) => {
-      if (status.didJustFinish) setIsPlaying(false);
-    });
-    return () => sub.remove();
-  }, [player]);
+    if (playerStatus.didJustFinish) setIsPlaying(false);
+  }, [playerStatus.didJustFinish]);
 
   const isMyTurn = session?.turnUid === uid;
   const cfg = DARE_LEVEL_CONFIG[session?.level ?? 'flirty'];
@@ -950,14 +949,12 @@ function DoneCard({
   // Card-level lock — same reason as the answering-phase render above.
   const cardCfg = DARE_LEVEL_CONFIG[card.level ?? session.level];
   const playbackPlayer = useAudioPlayer(card.audioURL ?? undefined);
+  const playbackStatus = useAudioPlayerStatus(playbackPlayer);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-    const sub = playbackPlayer.addListener('playbackStatusUpdate', (status) => {
-      if (status.didJustFinish) setIsPlaying(false);
-    });
-    return () => sub.remove();
-  }, [playbackPlayer]);
+    if (playbackStatus.didJustFinish) setIsPlaying(false);
+  }, [playbackStatus.didJustFinish]);
 
   const handlePlay = () => {
     if (!card.audioURL) return;

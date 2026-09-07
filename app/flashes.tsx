@@ -7,6 +7,7 @@ import { useVideoPlayer, VideoView, VideoSource } from 'expo-video';
 import {
   useAudioRecorder,
   useAudioPlayer,
+  useAudioPlayerStatus,
   RecordingPresets,
   AudioModule,
   setAudioModeAsync,
@@ -31,13 +32,11 @@ function FlashVideo({ uri, style, muted = false, controls = false }: {
 // Voice playback widget — its own useAudioPlayer instance so the hook stays at top-level.
 function FlashVoice({ uri, large = false }: { uri: string; large?: boolean }) {
   const player = useAudioPlayer(uri);
+  const status = useAudioPlayerStatus(player);
   const [isPlaying, setIsPlaying] = useState(false);
   useEffect(() => {
-    const sub = player.addListener('playbackStatusUpdate', (status) => {
-      if (status.didJustFinish) setIsPlaying(false);
-    });
-    return () => sub.remove();
-  }, [player]);
+    if (status.didJustFinish) setIsPlaying(false);
+  }, [status.didJustFinish]);
   const toggle = () => {
     if (isPlaying) { player.pause(); setIsPlaying(false); return; }
     // iOS silent-switch override: set right before playback, not at
@@ -506,7 +505,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.cream },
 
   // Decorative backdrop
-  backdrop: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
+  backdrop: { ...StyleSheet.absoluteFill, overflow: 'hidden' },
   blob1: {
     position: 'absolute', top: -80, right: -60,
     width: 240, height: 240, borderRadius: 120,

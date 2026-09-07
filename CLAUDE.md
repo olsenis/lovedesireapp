@@ -91,7 +91,7 @@ If hit on Pro: check Vercel project settings or open a support ticket — should
 
 ## Architecture
 
-**Expo SDK 54 + TypeScript + Expo Router v6 (file-based routing)**
+**Expo SDK 57 + TypeScript + Expo Router v6 (file-based routing)**
 
 ### Navigation structure
 
