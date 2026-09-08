@@ -28,10 +28,42 @@ Test affordances: `DEV_IGNORE_WEEKDAY_GATES` (constants/devFlags.ts) and `MEMORY
 - [x] **WhileYouWait** — ✅ PASSED on Memory Lane and Activity Cards. Feedback "only 2 chips, center it, bigger" → `afc50c1`: added contextual Mood + Daily chips (live, hidden once done today), centered, larger. Confirmed chips drop off as actions complete.
 - [ ] **Presence `?mini=1`** (`2a326cd`) — NOT testable: 7-day nudge absent (Presence used recently). Will surface naturally; code path is 10 lines.
 - [x] **Activity Cards custom** — ✅ PASSED after fix. Found: every button in the "New deck?" sheet rendered as an empty pill — `confirmBtn`/`cancelBtn` carry `flex: 1` for the undo row and RN 0.86 Yoga collapses them when stacked in a column (old Yoga let the label overflow). Fixed `e7ee5ca` with `stackedBtn { flex: 0 }`; same latent bug in Sunday "Save verdicts" fixed `6af191a`. Audit of all other flex:1 buttons: all in rows. Custom cards: add 2 → ↺ New → "Includes 2 of your own cards" → found in deck.
-- [x] **Sunday predictions, week 1** — ✅ PASSED. Q5 "Next →" → Call it → Finish → Done! Waiting + WhileYouWait. **Week 2 grading still pending** (Eva finishes week 37 on B, then next Sunday A grades).
-- [x] **Memory Lane** — ✅ PASSED on phone A with dev unlock. Locked state also verified: Discover pill said "18d" (couple.createdAt is 12 days old), toast on tap. Unlocked: NEW badge, 5 questions, instant ✓/✗, score 2/5, "Eva has not played this week yet", WhileYouWait. First open was slow (generation) → `384ce3f` parallelised the Sunday entry reads and filtered Fantasy Wishes to matched items. **Pending:** phone B plays → partner score line; Thursday Home nudge (weekday flag showed it would render but Memory Lane was already completed by then).
+- [x] **Sunday predictions, week 1** — ✅ PASSED. Q5 "Next →" → Call it → Finish → Done! Waiting + WhileYouWait. **Week 2 grading still pending** (Eva finishes week 37 on B, then next Sunday A grades). Grading model changed in `aba5ba7` (see Review #11 below) so week-2 also verifies the look-back path.
+- [x] **Memory Lane** — ✅ PASSED on phone A with dev unlock. Locked state also verified: Discover pill said "18d" (couple.createdAt is 12 days old), toast on tap. Unlocked: NEW badge, 5 questions, instant ✓/✗, score 2/5, "Eva has not played this week yet", WhileYouWait. First open was slow (generation) → `384ce3f` parallelised the Sunday entry reads and filtered Fantasy Wishes to matched items. **Pending:** phone B plays → partner score line; Thursday Home nudge (weekday flag showed it would render but Memory Lane was already completed by then). ⚠️ Round-1 pass was single-phone and hid B1/B2/B3 below; week 37 doc was deleted after the fix so both phones regenerate it in the new shape (Óli replays).
 
 Also fixed in this round, unrelated to the build: Firestore transport warning was not actually addressed by `2e59e6e` (auto-detect is the SDK default) → `d98a73c` forces long-polling, `e513747` hides the recovered-retry warning from the dev overlay. Known-harmless dev warnings triaged and left alone: expo-router "state update on unmounted" ([expo/expo#35224](https://github.com/expo/expo/issues/35224)), `Response.blob()` perf hint (needs `expo-blob`, not in Expo Go → POST_LAUNCH SDK57-1).
+
+### Review #11 fixes (Sep 8) — code review of the retention build, all 7 main findings confirmed real
+
+Plan: `plans/` (shimmying-badger). Four code commits + rules deploy. None of B1/B2/B3 were visible in round 1 because only one phone played.
+
+| # | Finding | Fix | Commit |
+|---|---|---|---|
+| B1 | Memory Lane generated ONE question set from the first opener's perspective; the second opener got a quiz about themselves under their own name | Per-uid sets: `questions: { [uid]: [...] }`, built from one shared `loadSources` read via pure `buildQuestions(sources, view, seed)`; `questionsFor(doc, uid)` reads legacy array docs too | `52e529e` |
+| B2 | Daily source quizzed you on partner answers to questions you had NOT answered (broke Daily's mutual-reveal promise) | `fromDaily` requires both `answers[partner][gi]` and `answers[me][gi]` | `52e529e` |
+| B3 | Moments source always empty: `d.data()` has no `date` (it is the doc id) | `({ date: d.id, ...d.data() })` | `52e529e` |
+| B4 | Rules let either partner write the other's `completedAt` key on memoryLane, and rewrite `questions` | Wildcard update: `completedAt` map diff `hasOnly([uid])` (guarded `is map`, blueprints has scalar), `questions` immutable. **Deployed** | `4c6500e` |
+| B5 | Empty week wrote a permanent 0-question doc | `ensureMemoryLaneWeek` returns before the transaction when both sets are empty; 🌱 copy "then come back" | `52e529e` |
+| B6 | Sunday predictions were graded on "weekId minus 1" only; one skipped week orphaned them forever | `verdictsOnPartner` lives on the SAME week as the predictions; screen looks back up to 3 both-completed weeks, eyebrow "Last week / Two weeks ago / Three weeks ago" | `aba5ba7` |
+| B7 | WYR Wednesday authoring jumped `questionIndex` mid-round and wiped the partner's in-flight answer | Jump only when nobody has answered the current question; otherwise the custom lands at index 0 of the next session | `6228da3` |
+| B8 | `markMemoryLaneUnlocked` cached the unlock before the Firestore write, so a failed write never retried | Cache only after successful `setDoc` | `52e529e` |
+| B9 | Copy promised "Sealed until next Sunday" (never true, reveal needs the next both-completed check-in) | "Hidden until the next check-in you both finish" | `aba5ba7` |
+| B10 | Two near-identical custom Activity Cards could both land in one deck | Case-insensitive dedupe before the 5-cap | `6228da3` |
+| Gate | Memory Lane 30-day gate anchored on pairing date, so a couple that paired and did nothing got a NEW badge on an empty week | Anchor = `max(couple.createdAt, couple.firstRitualCompletedAt)` | `52e529e` |
+
+B11 (bingoCustom.text rules validation), B12 (weekday dev flag misses Sun/Mon cards), B13 (weekId memoised over midnight) → POST_LAUNCH R11.
+
+**Round-2 repro table (device):**
+
+| Test | Phones | Setup | Expect |
+|---|---|---|---|
+| B1 | A + B | `MEMORY_LANE_DEV_UNLOCK` on both. A opens Memory Lane first, then B | B's Daily/mood questions say "what did Óli say" / "Óli's mood", never B's own name. Both scores side by side when both done |
+| B2 | A + B | Eva answers a Daily question Óli skips | That question never appears in Óli's Memory Lane |
+| B3 | A | ≥3 Moments across ≥2 calendar months (QA couple is 12 days old, so likely next month) | A "which month was this photo" question appears |
+| B5 | A | Fresh test couple, dev unlock on | 🌱 state, no `memoryLane/{week}` doc in Firestore console; after adding history and reopening → quiz |
+| B6 | A + B | Needs a Sunday: both finish week N with predictions, skip week N+1, both finish N+2 | Week N+2 screen grades week N under "Two weeks ago" |
+| B7 | A + B | Eva mid-WYR on Q3, Óli authors a question | Eva's answer survives; custom shows up next session, not mid-round |
+| B4 | dev console | `updateDoc(memoryLane/{week}, {'completedAt.<partnerUid>': 1})` | permission-denied; The Lovers quiz (scalar `completedAt` under the same wildcard) still saves |
 
 ## ⏳ Pending — Bug bash Round 2 remainder
 

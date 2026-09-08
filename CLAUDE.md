@@ -152,7 +152,7 @@ app/                         Full-screen sub-screens
   daily-wishes.tsx           Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   (time-capsules.tsx removed July 2026 — abstract long-timeline payoff didn't demo well pre-launch; revisit if users request "seal for later" mechanics)
   (versus.tsx removed Aug 2026 — guess-what-partner-picked mechanic merged into Daily's binary-question reveal flow; see `submitGuess` / `skipGuess` in dailyQuestionsService)
-  memory-lane.tsx            Memory Lane ("Manstu?") — weekly 5-question quiz generated from the couple's OWN history (Moments, Daily answers, moods, milestones, Sunday pulses, FW matches). Free, data-gated on 30 days since couple.createdAt (not paywalled). Instant ✓/✗ per question, score card, partner score when both done. Sep 2026.
+  memory-lane.tsx            Memory Lane ("Manstu?") — weekly 5-question quiz generated from the couple's OWN history (Moments, Daily answers, moods, milestones, Sunday pulses, FW matches). Free, data-gated on 30 days since max(couple.createdAt, couple.firstRitualCompletedAt) (not paywalled). Each partner gets their OWN question set (`questions{uid:[]}`, Review #11 B1): Daily/mood questions are about the partner from the viewer's side, symmetric sources (milestones, Sunday, FW, Moment month) come out identical for both. Instant ✓/✗ per question, score card, partner score when both done. Sep 2026.
   (wishlist.tsx and fantasy.tsx removed — legacy features replaced by fantasy-wishes.tsx / dailyWishes)
 ```
 
@@ -186,8 +186,8 @@ couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
 couples/{coupleId}/stateUnion/{weekId} StateUnionDoc — weekId, startedAt, completedAt{uid:ts}, answeredCount{uid:n}
-couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers{qi:text}, pulseScores?, predictions?[] (Sep 2026: up to 3 sealed calls about the partner for the coming week), priorVerdicts?{idx:bool} (grading the partner's previous-week predictions), updatedAt (rules: only readable by owner OR after both completed)
-couples/{coupleId}/memoryLane/{weekId} MemoryLaneDoc — questions[] (generated once per week, seeded weekId::coupleId), answers{uid:{qi:optionIndex}} (inherits catch-all 'answers' guard), completedAt{uid:ts}
+couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers{qi:text}, pulseScores?, predictions?[] (Sep 2026: up to 3 calls about the partner for the coming week), verdictsOnPartner?{idx:bool} (MY verdicts on the PARTNER's predictions from this SAME week W, written from a later week once W is both-complete; the screen looks back up to 3 weeks so a skipped week orphans nothing, Review #11 B6), updatedAt (rules: only readable by owner OR after both completed; owner-write has no week restriction, which is what lets a later week grade an earlier one)
+couples/{coupleId}/memoryLane/{weekId} MemoryLaneDoc — questions{uid:[]} (one set per partner, generated once per week from a single shared source read, seeded weekId::coupleId; legacy docs from Sep 8 2026 hold a plain array, read via `questionsFor(doc, uid)`), answers{uid:{qi:optionIndex}} (inherits catch-all 'answers' guard), completedAt{uid:ts} (rules: each member may only stamp their own key; `questions` immutable after create). Never created for a week with zero questions on both sides.
 couples/{coupleId}/bingoCustom/{id}  CustomCard — text, createdBy, createdAt (couple-authored Activity Cards; up to 5 newest join each deck on ↺ New)
 
 reports/{reportId}                   H33 Report — reporterUid, coupleId, targetUid, contentType, contentPath, contentSnippet, contentStorageUrl?, category, detail?, disconnected, status, createdAt, resolvedAt?, resolvedBy?, resolveNotes? (top-level, admin-SDK-only access via callables; couples wildcard NOT applied)
@@ -219,8 +219,8 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 | `reportService.ts` | `submitReport(input)`, `reportCategoryLabel`, `shouldPrecheckDisconnect`, `offersDisconnect` — H33 moderation. Wraps `submitReport` callable which writes to top-level `/reports/{reportId}` and optionally atomically disconnects the reporter's couple. Rate-limited server-side (20/day/uid). |
 | `photoConsentService.ts` | `hasPhotoConsent(uid)`, `confirmPhotoConsent(uid)` — H42 first-photo re-attestation. AsyncStorage cache short-circuits Firestore read after first grant. |
-| `memoryLaneService.ts` | `subscribeMemoryLane`, `ensureMemoryLaneWeek` (generates + creates in a transaction), `answerMemoryQuestion`, `completeMemoryLane`, `memoryLaneScore`, `MEMORY_LANE_QUESTIONS` — six generators (moments / daily / mood / milestone / sunday / fw) with per-source cold-start minimums, max 2 per source, seeded selection. Sep 2026. |
-| `featureUnlockService.ts` | `getFeatureUnlockState`, `markMemoryLaneUnlocked`, `isUnlockRecent`, `memoryLaneEligible`, `memoryLaneDaysLeft`, `MEMORY_LANE_UNLOCK_DAYS` (30), `MEMORY_LANE_DEV_UNLOCK` — sticky per-user data-gate unlocks at `users/{uid}/private/features`. Rebuilt Sep 2026 after the Versus version was deleted. |
+| `memoryLaneService.ts` | `subscribeMemoryLane`, `ensureMemoryLaneWeek(coupleId, weekId, uid, partnerUid, myName, partnerName)` (one `loadSources` read → pure `buildQuestions(sources, view, seed)` per partner → transaction create-if-missing; returns without writing when both sets are empty), `questionsFor(doc, uid)`, `answerMemoryQuestion`, `completeMemoryLane`, `memoryLaneScore(doc, uid)`, `MEMORY_LANE_QUESTIONS` — six generators (moments / daily / mood / milestone / sunday / fw) with per-source cold-start minimums, max 2 per source, seeded selection. Daily source only uses questions BOTH answered (keeps Daily's mutual-reveal promise). Sep 2026, per-uid rewrite Review #11. |
+| `featureUnlockService.ts` | `getFeatureUnlockState`, `markMemoryLaneUnlocked` (caches only after a successful write), `isUnlockRecent`, `memoryLaneEligible(couple)`, `memoryLaneDaysLeft(couple)` (anchor = max(createdAt, firstRitualCompletedAt)), `MEMORY_LANE_UNLOCK_DAYS` (30), `MEMORY_LANE_DEV_UNLOCK` — sticky per-user data-gate unlocks at `users/{uid}/private/features`. Rebuilt Sep 2026 after the Versus version was deleted. |
 | `seed.ts` | `hashString`, `mulberry32`, `seededShuffle`, `seededPick` — shared deterministic randomness for anything both phones must agree on without a server. Extracted from loveLanguageNudgeService Sep 2026. dailyQuestionsService and bingoService keep their own older LCGs on purpose (changing them would alter historical picks). |
 
 ### Hooks
@@ -330,8 +330,8 @@ Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate 
 - Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)
 - Daily: Playful category only — combines old Sweet Daily Picks (5/day) + old Playful Questions (3/day, incl. binary + scale variants). Flirty Daily Picks moved to Spicy tier July 2026 as part of the Daily merge.
 - Guess-partner's-answer on binary Daily questions (ex-Versus, inside Daily since Aug 2026; not a separate screen)
-- Memory Lane (data-gated: Discover card shows "Nd" pill + toast until 30 days since couple.createdAt, then permanently visible with a NEW badge for 7 days. Not paywalled.)
-- Sunday Check-in predictions (optional "Call it" step after Q5; graded by the partner the following week)
+- Memory Lane (data-gated: Discover card shows "Nd" pill + toast until 30 days since max(couple.createdAt, couple.firstRitualCompletedAt), then permanently visible with a NEW badge for 7 days. Not paywalled.)
+- Sunday Check-in predictions (optional "Call it" step after Q5; graded by the partner from the next check-in both finish, looking back up to 3 weeks)
 - Would You Rather: Playful + Romantic only
 - Tonight's Date (full)
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders (full)

@@ -153,6 +153,18 @@ Prompt ("Write the story of how you'd spend a million"). Partners alternate one 
 
 ---
 
+## R11 Review #11 low-severity leftovers (raised Sep 8 2026)
+
+Review #11 covered the Sep 8 retention build. B1–B10 were fixed the same day (`52e529e`, `6228da3`, `4c6500e`, `aba5ba7`, see BUG_BASH "Review #11 fixes"). Three low items deferred:
+
+- **B11 `bingoCustom.text` has no rules validation.** The catch-all couple-subcollection rule only checks `createdBy`; a modified client could write a 10 KB card text or a non-string. Fix: dedicated rules block for `bingoCustom` (and `wyrCustom`, same shape) with `text is string && text.size() <= 120`. Needs a rules deploy + a denied-write test. Risk today: partner-only blast radius, no public surface. ~30 min.
+- **B12 `DEV_IGNORE_WEEKDAY_GATES` does not cover the Sunday / Monday cards.** The flag only lifts the Wednesday (WYR author) and Thursday (Memory Lane / Sunday history) gates. Sunday Check-in nudge and Monday love-language nudge still need the real weekday, so a weekday test round cannot see the whole ritual calendar on one day. Fix: route those two through the same flag. ~15 min, only matters for device testing.
+- **B13 `weekId` is memoised at mount and does not roll over at midnight.** Pre-existing in `state-union.tsx` (and now `memory-lane.tsx`): a screen left open across Sunday→Monday midnight keeps writing to the old ISO week. Real users close the app; QA sessions that straddle midnight could hit it. Fix: derive `weekId` from an `AppState`-driven "now" tick, or recompute on focus (`useFocusEffect`). ~30 min.
+
+**Decision criteria:** B11 before any public API surface or if a moderation report ever cites a custom card; B12 next device test round that needs Sunday/Monday cards mid-week; B13 if any Sunday-night support ticket mentions a check-in "landing in the wrong week".
+
+---
+
 ## Voice Notes with condition unlocks (raised Aug 2026, D2 from prior review)
 
 Audio Love Notes with unlock conditions matching the existing text-note openCondition system (sad / visit / missing / sleepless). Existing audio infra from Truth or Dare + existing condition-unlock infra from noteService — combining them, not building either.
