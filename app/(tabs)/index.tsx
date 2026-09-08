@@ -21,6 +21,7 @@ import { subscribeWYR, WYRSession, subscribeCustomWYRQuestions, WYRCustomQuestio
 import { weekAnchor } from '../../services/loveLanguageNudgeService';
 import { subscribeMemoryLane, MemoryLaneDoc } from '../../services/memoryLaneService';
 import { memoryLaneEligible } from '../../services/featureUnlockService';
+import { DEV_IGNORE_WEEKDAY_GATES } from '../../constants/devFlags';
 import { subscribeTruthDare, TruthDareSession } from '../../services/truthDareService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
@@ -990,7 +991,7 @@ export default function HomeScreen() {
   // a hard cap: the weekly cadence is the ritual, authoring more is
   // fine. Hidden once the user has authored anything this ISO week.
   // Wednesday keeps it off the Sunday/Monday stack.
-  if (partnerId && uid && new Date().getDay() === 3) {
+  if (partnerId && uid && (DEV_IGNORE_WEEKDAY_GATES || new Date().getDay() === 3)) {
     const mondayMs = weekAnchor().getTime();
     const authoredThisWeek = wyrCustom.some(q => q.createdBy === uid && q.createdAt >= mondayMs);
     if (!authoredThisWeek) {
@@ -1012,7 +1013,7 @@ export default function HomeScreen() {
   // Memory Lane shares Thursday and takes precedence when unlocked and
   // unplayed this week: a fresh quiz beats a re-read.
   const memoryLaneReady = !!partnerId && memoryLaneEligible(couple?.createdAt) && !mlDoc?.completedAt?.[uid];
-  if (partnerId && new Date().getDay() === 4 && memoryLaneReady) {
+  if (partnerId && (DEV_IGNORE_WEEKDAY_GATES || new Date().getDay() === 4) && memoryLaneReady) {
     list.push({
       emoji: '🧠',
       title: "This week's Memory Lane is ready",
@@ -1021,7 +1022,7 @@ export default function HomeScreen() {
       bg: '#E8F5E9',
     });
   }
-  if (partnerId && user?.uid && new Date().getDay() === 4 && !memoryLaneReady) {
+  if (partnerId && user?.uid && (DEV_IGNORE_WEEKDAY_GATES || new Date().getDay() === 4) && !memoryLaneReady) {
     const localUid = user.uid;
     const bothDone = suHistory.filter(h => h.completedAt?.[localUid] && h.completedAt?.[partnerId]);
     if (bothDone.length >= 2) {
