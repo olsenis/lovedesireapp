@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Evu-listinn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Lato:wght@400;700&display=swap">
+<style>
+  /* Tokens follow the Love Desire app's own palette (constants/colors.ts)
+     so the page reads as a sheet from the app Eva is testing. */
+  :root {
+    color-scheme: light;
+    --bg: #FFF8F0;
+    --surface: #FFFFFF;
+    --ink: #3D1A24;
+    --ink-2: #6B4652;
+    --muted: #9E7B84;
+    --accent: #880E4F;
+    --accent-ink: #FFF8F0;
+    --rose: #F4A7B9;
+    --line: #F0D5DC;
+    --good: #2E7D32;
+    --warn: #7A5200;
+    --warn-bg: #FFF4CC;
+    --focus: #880E4F;
+    --serif: "Cormorant Garamond", "Cormorant", Georgia, "Times New Roman", serif;
+    --sans: "Lato", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #1F1016;
+      --surface: #2A171E;
+      --ink: #FFF1E8;
+      --ink-2: #E5C9D1;
+      --muted: #B98F9A;
+      --accent: #F4A7B9;
+      --accent-ink: #2A171E;
+      --rose: #B0566F;
+      --line: #4A2A35;
+      --good: #9CCC65;
+      --warn: #F1D27A;
+      --warn-bg: #3A2E10;
+      --focus: #F4A7B9;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #1F1016;
+    --surface: #2A171E;
+    --ink: #FFF1E8;
+    --ink-2: #E5C9D1;
+    --muted: #B98F9A;
+    --accent: #F4A7B9;
+    --accent-ink: #2A171E;
+    --rose: #B0566F;
+    --line: #4A2A35;
+    --good: #9CCC65;
+    --warn: #F1D27A;
+    --warn-bg: #3A2E10;
+    --focus: #F4A7B9;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+
+  main { max-width: 34rem; margin: 0 auto; padding: 1.75rem 1.25rem 4rem; }
+
+  .eyebrow {
+    margin: 0 0 .5rem;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 2.6rem;
+    line-height: 1.05;
+    letter-spacing: -.01em;
+    color: var(--accent);
+    text-wrap: balance;
+  }
+  .lede { margin: .6rem 0 0; color: var(--ink-2); max-width: 60ch; }
+
+  .progress { display: flex; align-items: center; gap: .75rem; margin-top: 1.25rem; }
+  .bar { flex: 1; height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .fill { display: block; height: 100%; background: var(--accent); transition: width .25s ease; }
+  .count { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  .day { margin-top: 2.25rem; }
+  .day h2 { display: flex; align-items: baseline; gap: .75rem; margin: 0; padding-bottom: .35rem; border-bottom: 1px solid var(--line); }
+  .dayname { font-family: var(--serif); font-weight: 600; font-size: 1.65rem; line-height: 1.1; color: var(--accent); }
+  .daydate { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+  .item { padding: 1rem 0; border-top: 1px solid var(--line); }
+  .item:first-of-type { border-top: 0; }
+  .row {
+    display: flex; align-items: center; gap: .75rem;
+    min-height: 44px; cursor: pointer; position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .row input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .box {
+    flex: none; width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--rose); background: var(--surface);
+    display: grid; place-items: center;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  .box::after {
+    content: ""; width: 11px; height: 6px;
+    border-left: 2.5px solid var(--accent-ink); border-bottom: 2.5px solid var(--accent-ink);
+    transform: rotate(-45deg) translate(1px, -1px); opacity: 0;
+  }
+  .row input:checked + .box { background: var(--accent); border-color: var(--accent); }
+  .row input:checked + .box::after { opacity: 1; }
+  .row input:focus-visible + .box { outline: 2px solid var(--focus); outline-offset: 3px; }
+  .num { width: 1.3em; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .title { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+  .item.done .title { color: var(--muted); }
+  .item.done .body { opacity: .55; }
+
+  .body { display: grid; gap: .55rem; margin-top: .45rem; padding-left: calc(28px + .75rem); }
+  .where { margin: 0; font-size: .85rem; color: var(--muted); }
+  .warn {
+    margin: 0; padding: .6rem .8rem; border-radius: 8px;
+    background: var(--warn-bg); color: var(--warn); font-size: .9rem; line-height: 1.45;
+  }
+  .steps { margin: 0; padding-left: 1.3em; color: var(--ink-2); font-size: .95rem; display: grid; gap: .25rem; }
+  .steps li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .expect { margin: 0; display: flex; gap: .5rem; align-items: baseline; font-size: .9rem; color: var(--ink-2); }
+  .tick { color: var(--good); font-weight: 700; flex: none; }
+
+  .foot { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  .foot p { margin: 0; font-size: .8rem; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+</style>
+</head>
+<body>
+<main id="app"></main>
+
+<script>
+(function () {
+  // Content. Icelandic prose for Eva; app labels quoted exactly as the
+  // English UI renders them (the partner's profile name is "Oli").
+  var DAYS = [
+    { id: 'today', label: 'Í dag', date: 'Þriðjudagur 8. september', items: [
+      { id: 'sunday', num: 1, title: 'Sunday Check-in', where: 'Us → Sunday Check-in',
+        steps: [
+          '5 sleðar (pulse) → „Next"',
+          '5 spurningar. Hverja → „Save and next", eftir þá fimmtu → „Next →"',
+          'Kortið „Call it": skrifaðu 1–3 spár um Óla fyrir vikuna. Má sleppa með „Skip".',
+          '„Finish check-in ✓"'
+        ],
+        expect: 'Svör ykkar beggja hlið við hlið. Óli er búinn með sína.' },
+      { id: 'wyr', num: 2, title: 'Would You Rather', where: 'Discover → Would You Rather → veldu level',
+        steps: [
+          'Fyrsta spurningin á að vera Óla eigin: „Í sófa / Upp í rúmi"',
+          'Veldu A eða B'
+        ],
+        expect: 'Sýnir hvort þið völduð það sama þegar Óli hefur líka svarað.' },
+      { id: 'moment', num: 3, title: 'Moments', where: 'Home → „Capture today\'s moment"',
+        steps: ['Taktu mynd'],
+        expect: 'Báðar myndir birtast hlið við hlið. Óli tók sína.' },
+      { id: 'daily', num: 4, title: 'Daily', where: 'Home → Daily',
+        steps: [
+          'Svaraðu að minnsta kosti einni spurningu',
+          'Ef hún er tveggja valkosta kemur „Wanna guess Oli\'s pick first?" → giskaðu'
+        ],
+        expect: 'Sýnir strax hvort giskið var rétt.' },
+      { id: 'memory', num: 5, title: 'Memory Lane', where: 'Discover → Memory Lane',
+        warn: 'Læst fyrir þig eins og er („18 more days"). Segðu Óla áður en þú byrjar, hann opnar það tímabundið.',
+        steps: ['5 spurningar úr ykkar eigin sögu. Svaraðu bara, þú sérð strax hvort það var rétt.'],
+        expect: 'Skor í lokin, og Óli sér „Eva got X of 5" á sínum síma.' }
+    ]},
+    { id: 'wed', label: 'Miðvikudagur', date: '9. september', items: [
+      { id: 'wyr-author', num: 6, title: 'Skrifaðu eina Would You Rather', where: 'Home',
+        steps: [
+          'Gula kortið ✍️ „Write one Would You Rather for Oli" á að vera þarna af sjálfu sér',
+          'Tap → skrifaðu spurningu → „Save"'
+        ],
+        expect: 'Kortið hverfur af Home.' }
+    ]},
+    { id: 'thu', label: 'Fimmtudagur', date: '10. september', items: [
+      { id: 'sunday-history', num: 7, title: 'Eitt augnablik á Home', where: 'Home',
+        steps: ['Er þar kort sem segir 📖 „Your first Sunday Check-in was N weeks ago"?'],
+        expect: 'Já eða nei nægir. Segðu Óla.' }
+    ]},
+    { id: 'sun', label: 'Sunnudagur', date: '13. september', items: [
+      { id: 'verdicts', num: 8, title: 'Sunday Check-in, vika 38', where: 'Us → Sunday Check-in',
+        steps: [
+          'Kláraðu eins og í nr. 1',
+          'Eftir „Finish check-in ✓" á að birtast „Last week Oli predicted"',
+          'Hver spá: „✓ Came true" eða „✗ Did not"',
+          '„Save verdicts"'
+        ],
+        expect: 'Óli sér „Eva called X of 3" á sínum síma.' }
+    ]}
+  ];
+  var ALL = DAYS.reduce(function (a, d) { return a.concat(d.items); }, []);
+
+  // Ticks live in this phone's browser only.
+  var LS = 'evu-listinn-v1';
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) {}
+
+  var app = document.getElementById('app');
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  function render() {
+    var total = ALL.length;
+    var doneN = ALL.filter(function (i) { return !!done[i.id]; }).length;
+    var pct = total ? Math.round(doneN / total * 100) : 0;
+    var h = '';
+    h += '<header class="top">';
+    h += '<p class="eyebrow">Love Desire · prófun á síma B</p>';
+    h += '<h1>Evu-listinn</h1>';
+    h += '<p class="lede">Fjórir dagar, átta atriði. Hakaðu við jafnóðum. Enskir takkar eru skrifaðir eins og þeir birtast í appinu.</p>';
+    h += '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + doneN + '" aria-label="Framvinda">';
+    h += '<span class="bar"><span class="fill" style="width:' + pct + '%"></span></span>';
+    h += '<span class="count">' + doneN + ' af ' + total + ' búið</span></div>';
+    h += '</header>';
+    DAYS.forEach(function (d) {
+      h += '<section class="day"><h2><span class="dayname">' + esc(d.label) + '</span><span class="daydate">' + esc(d.date) + '</span></h2>';
+      d.items.forEach(function (it) {
+        var on = !!done[it.id];
+        h += '<article class="item' + (on ? ' done' : '') + '">';
+        h += '<label class="row"><input type="checkbox" data-id="' + esc(it.id) + '"' + (on ? ' checked' : '') + '>';
+        h += '<span class="box" aria-hidden="true"></span>';
+        h += '<span class="num">' + it.num + '</span><span class="title">' + esc(it.title) + '</span></label>';
+        h += '<div class="body">';
+        if (it.where) h += '<p class="where">' + esc(it.where) + '</p>';
+        if (it.warn) h += '<p class="warn">' + esc(it.warn) + '</p>';
+        if (it.steps && it.steps.length) {
+          h += '<ol class="steps">';
+          it.steps.forEach(function (s) { h += '<li>' + esc(s) + '</li>'; });
+          h += '</ol>';
+        }
+        if (it.expect) h += '<p class="expect"><span class="tick" aria-hidden="true">✓</span><span>' + esc(it.expect) + '</span></p>';
+        h += '</div></article>';
+      });
+      h += '</section>';
+    });
+    h += '<footer class="foot"><p>Hökin vistast í þessum síma.</p></footer>';
+    app.innerHTML = h;
+  }
+
+  app.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!(t && t.matches && t.matches('input[type="checkbox"][data-id]'))) return;
+    var id = t.getAttribute('data-id');
+    if (t.checked) done[id] = Date.now(); else delete done[id];
+    try { localStorage.setItem(LS, JSON.stringify(done)); } catch (e2) {}
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
