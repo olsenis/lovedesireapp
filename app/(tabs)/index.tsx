@@ -17,7 +17,8 @@ import { subscribeNotes, LoveNote, unlockMoodNotes, unlockVisitNotes } from '../
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
 import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQuestionsService';
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
-import { subscribeWYR, WYRSession } from '../../services/wyrService';
+import { subscribeWYR, WYRSession, subscribeCustomWYRQuestions, WYRCustomQuestion } from '../../services/wyrService';
+import { weekAnchor } from '../../services/loveLanguageNudgeService';
 import { subscribeTruthDare, TruthDareSession } from '../../services/truthDareService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
@@ -347,6 +348,9 @@ export default function HomeScreen() {
   // Last 12 Sunday Check-in weeks (startedAt desc). Powers the Thursday
   // "your first check-in was N weeks ago" compounder card.
   const [suHistory, setSuHistory] = useState<StateUnionDoc[]>([]);
+  // Couple-authored WYR questions. Powers the Wednesday "write one for
+  // {partner}" nudge: hidden once the user has authored this ISO week.
+  const [wyrCustom, setWyrCustom] = useState<WYRCustomQuestion[]>([]);
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
@@ -416,7 +420,8 @@ export default function HomeScreen() {
     const u19 = subscribeStateUnionEntry(coupleId, getCurrentWeekId(), user?.uid ?? '', setMySuEntry);
     const u20 = subscribeMoodHistory(coupleId, setMoodHistory);
     const u21 = subscribeStateUnionHistory(coupleId, setSuHistory);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); u21(); };
+    const u22 = subscribeCustomWYRQuestions(coupleId, setWyrCustom);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); u21(); u22(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   // One-shot Moments archive peek + seasonal-pack dismissals — resolves
@@ -972,6 +977,27 @@ export default function HomeScreen() {
     }
   }
 
+  // WYR partner-authored weekly — Wednesday-only ritual card asking the
+  // user to write ONE Would You Rather for the partner. Couple-authored
+  // questions jump to the front of the deck (addCustomWYRQuestion
+  // resets questionIndex to 0), so the pool never feels depleted. Not
+  // a hard cap: the weekly cadence is the ritual, authoring more is
+  // fine. Hidden once the user has authored anything this ISO week.
+  // Wednesday keeps it off the Sunday/Monday stack.
+  if (partnerId && uid && new Date().getDay() === 3) {
+    const mondayMs = weekAnchor().getTime();
+    const authoredThisWeek = wyrCustom.some(q => q.createdBy === uid && q.createdAt >= mondayMs);
+    if (!authoredThisWeek) {
+      list.push({
+        emoji: '✍️',
+        title: `Write one Would You Rather for ${partner?.name ?? 'your partner'}`,
+        subtitle: 'Yours goes to the front of the deck',
+        route: '/would-you-rather?author=1',
+        bg: '#FFF9C4',
+      });
+    }
+  }
+
   // Sunday Check-in history peek — Thursday-only compounder card that
   // points back at the couple's FIRST both-completed check-in. Makes
   // the archive value visible at week 2-3 instead of month 4. Thursday
@@ -1151,7 +1177,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

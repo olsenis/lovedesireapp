@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Modal, TextInput } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
@@ -160,6 +160,20 @@ export default function WouldYouRatherScreen() {
     if (!coupleId) return;
     return subscribeCustomWYRQuestions(coupleId, setCustomQs);
   }, [coupleId]);
+
+  // Deep-link from the Wednesday Home nudge: /would-you-rather?author=1
+  // opens the add-your-own modal straight away. Fires once per mount so
+  // closing the modal doesn't reopen it. Same pattern as
+  // /intimacy-tracker?prefill.
+  const { author } = useLocalSearchParams<{ author?: string }>();
+  const authorHandledRef = useRef(false);
+  useEffect(() => {
+    if (author === '1' && !authorHandledRef.current) {
+      authorHandledRef.current = true;
+      setEditingId(null);
+      setShowAddModal(true);
+    }
+  }, [author]);
 
   // Milestone detection. Snapshots the current match count on first sight
   // so historical milestones don't retroactively celebrate on app open,

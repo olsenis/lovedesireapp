@@ -266,6 +266,7 @@ export async function addCustomWYRQuestion(
     createdAt: Date.now(),
     createdBy: uid,
   });
+  trackEvent('wyr_custom_authored');
   // Best-effort jump the active session so the couple actually plays
   // the new question next instead of it landing at the tail of a 70-item
   // curated pool. Only touch the session when it's mid-level (not pack
