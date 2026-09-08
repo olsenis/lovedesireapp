@@ -93,12 +93,23 @@ function generateCard(seed: string, mode: 'quick' | 'all' = 'quick', customTexts
     return arr;
   };
   // Couple-authored cards are always in (capped), never shuffled out.
-  const custom = customTexts.slice(0, MAX_CUSTOM_IN_DECK);
-  const customSet = new Set(custom);
+  // Deduped case-insensitively against each other (Review #11 B10) and
+  // against the curated pool, so two near-identical custom cards or a
+  // custom copy of a curated one cannot both land in the same deck.
+  const seen = new Set<string>();
+  const custom: string[] = [];
+  for (const raw of customTexts) {
+    const t = raw.trim();
+    const k = t.toLowerCase();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    custom.push(t);
+    if (custom.length >= MAX_CUSTOM_IN_DECK) break;
+  }
   const filtered: BingoActivity[] = mode === 'quick'
     ? BINGO_ACTIVITIES.filter((a) => a.duration === 'quick')
     : [...BINGO_ACTIVITIES];
-  const pool = shuffle(filtered.map((a) => a.text).filter((t) => !customSet.has(t)));
+  const pool = shuffle(filtered.map((a) => a.text).filter((t) => !seen.has(t.trim().toLowerCase())));
   // Second shuffle over the combined 25 so custom cards land anywhere in
   // the face-down grid, not predictably in the top row.
   return shuffle([...custom, ...pool.slice(0, 25 - custom.length)]);

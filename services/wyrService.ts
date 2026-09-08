@@ -282,7 +282,13 @@ export async function addCustomWYRQuestion(
     const snap = await getDoc(activeRef);
     if (snap.exists()) {
       const live = snap.data() as WYRSession;
-      if (live.level === data.level && !live.packId) {
+      // Review #11 B7: the jump resets `answers`, so it must never run
+      // while the partner has an answer in on the current question. The
+      // modal is reachable mid-session since dbf23cf, so this guard is
+      // what keeps authoring non-destructive. If someone is mid-answer the
+      // new custom simply leads the deck next session.
+      const nobodyAnswered = Object.keys(live.answers ?? {}).length === 0;
+      if (live.level === data.level && !live.packId && nobodyAnswered) {
         await updateDoc(activeRef, {
           questionIndex: 0,
           answers: {},
