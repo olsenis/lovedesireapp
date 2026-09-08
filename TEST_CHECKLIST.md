@@ -2491,7 +2491,11 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
 
 - [ ] **Stats empty state below 3 entries**
   1. 0-2 entries → Stats
-  - **Expected:** 🔥 'Start logging to see your stats'.
+  - **Expected:** 🔥 0 entries: 'Start logging to see your stats'. 1 entry: 'Two more and your stats appear' + '1 of 3 logged'. 2 entries: 'One more and your stats appear' + '2 of 3 logged'. (Sep 2026: copy used to say 'Start logging' even with entries present.)
+
+- [ ] **Privacy note renders the partner's name in full** 📱
+  1. Log tab bottom + Stats tab bottom, Android
+  - **Expected:** '🔒 Only you and {partner} can see this', name not clipped. (Sep 2026: Android clipped the last word when the lock emoji sat inside the italic Text.)
 
 - [ ] **Stats fully render with 3+ entries**
   1. Log 3+ varied entries → Stats
@@ -2513,9 +2517,13 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
   1. Phone A logs 'I did'; both open Stats
   - **Expected:** A: You +1; B: Them +1.
 
-- [ ] **Orgasm rate uses only entries logged by the current user** 📱 ⚠️
-  1. Setup as described in inventory
-  - **Expected:** Per-uid filter applied.
+- [ ] **Orgasm rates flip per perspective, partner-logged entries included** 📱
+  1. Phone A logs with 'You: yes, {partner}: no'; both open Stats
+  - **Expected:** A: You 100% / {partner} 0%. B: You 0% / {partner} 100%. (Sep 2026: used to drop partner-logged entries entirely.)
+
+- [ ] **'Who started it' in entry detail flips per perspective** 📱
+  1. Phone A logs 'I did'; Phone B opens the entry
+  - **Expected:** B sees the partner's name, not 'You'.
 
 - [ ] **6-month bar chart includes current month at right**
   1. Mixed-month entries

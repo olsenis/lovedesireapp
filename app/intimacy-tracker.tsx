@@ -8,6 +8,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import {
   IntimacyEntry, IntimacyLocation, IntimacyType, IntimacyMood,
   subscribeIntimacyLog, addIntimacyEntry, deleteIntimacyEntry, getIntimacyStats,
+  initiatedFromViewer, STATS_MIN_ENTRIES,
   LOCATION_LABELS as LOC_LABELS,
   generateMonthlyNarrative, computeMonthlyDelta, previousMonthDate,
 } from '../services/intimacyService';
@@ -256,7 +257,7 @@ export default function IntimacyTrackerScreen() {
             </View>
           )}
 
-          <Text style={styles.privacy}>🔒 Private, only visible to you and {partnerName}</Text>
+          <PrivacyNote partnerName={partnerName} />
         </ScrollView>
       ) : (
         <StatsView stats={stats} entries={entries} partnerName={partnerName} />
@@ -279,7 +280,9 @@ export default function IntimacyTrackerScreen() {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Who started it</Text>
-                  <Text style={styles.detailValue}>{selectedEntry.initiatedBy === 'me' ? 'You' : selectedEntry.initiatedBy === 'partner' ? partnerName : 'Both of you'}</Text>
+                  <Text style={styles.detailValue}>
+                    {(() => { const who = initiatedFromViewer(selectedEntry, uid); return who === 'me' ? 'You' : who === 'partner' ? partnerName : 'Both of you'; })()}
+                  </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Where</Text>
@@ -374,14 +377,35 @@ export default function IntimacyTrackerScreen() {
   );
 }
 
+// ── Privacy note ──────────────────────────────────────────────────────────────
+// The lock lives in its own Text and the note stretches to the container:
+// Android under-measures emoji inside a custom font, and a shrink-wrapped
+// centered Text then clips its last word (the partner's name, Sep 2026).
+function PrivacyNote({ partnerName }: { partnerName: string }) {
+  return (
+    <View style={styles.privacyRow}>
+      <Text style={styles.privacyLock}>🔒</Text>
+      <Text style={styles.privacy}>Only you and {partnerName} can see this</Text>
+    </View>
+  );
+}
+
 // ── Stats view ────────────────────────────────────────────────────────────────
 function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof getIntimacyStats>; entries: IntimacyEntry[]; partnerName: string }) {
-  if (entries.length < 3) {
+  if (entries.length < STATS_MIN_ENTRIES) {
+    const left = STATS_MIN_ENTRIES - entries.length;
     return (
       <View style={styles.emptyStats}>
         <Text style={styles.emptyEmoji}>🔥</Text>
-        <Text style={styles.emptyText}>Start logging to see your stats</Text>
-        <Text style={styles.privacy}>🔒 Private, only visible to you and {partnerName}</Text>
+        <Text style={styles.emptyText}>
+          {entries.length === 0
+            ? 'Start logging to see your stats'
+            : left === 1 ? 'One more and your stats appear' : 'Two more and your stats appear'}
+        </Text>
+        {entries.length > 0 && (
+          <Text style={styles.emptySub}>{entries.length} of {STATS_MIN_ENTRIES} logged</Text>
+        )}
+        <PrivacyNote partnerName={partnerName} />
       </View>
     );
   }
@@ -463,9 +487,9 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
           <View style={[styles.initiateSegPartner, { flex: Math.max(100 - meW - bothW, 0) }]} />
         </View>
         <View style={styles.initiateLegend}>
-          <Text style={styles.legendText}>🙋 You {Math.round(meW)}%</Text>
-          <Text style={styles.legendText}>🤝 Both {Math.round(bothW)}%</Text>
-          <Text style={styles.legendText}>💑 {partnerName} {Math.round(100 - meW - bothW)}%</Text>
+          <Text style={[styles.legendText, { textAlign: 'left' }]}>🙋 You {Math.round(meW)}%</Text>
+          <Text style={[styles.legendText, { textAlign: 'center' }]}>🤝 Both {Math.round(bothW)}%</Text>
+          <Text style={[styles.legendText, { textAlign: 'right' }]}>💑 {partnerName} {Math.round(100 - meW - bothW)}%</Text>
         </View>
       </View>
 
@@ -538,7 +562,7 @@ function StatsView({ stats, entries, partnerName }: { stats: ReturnType<typeof g
         )}
       </View>
 
-      <Text style={styles.privacy}>🔒 Private, only visible to you and {partnerName}</Text>
+      <PrivacyNote partnerName={partnerName} />
     </ScrollView>
   );
 }
@@ -920,13 +944,16 @@ const styles = StyleSheet.create({
   entryMood: { fontSize: 20 },
   longPressHint: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, textAlign: 'center' },
 
-  privacy: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, textAlign: 'center' },
+  privacyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, alignSelf: 'stretch' },
+  privacyLock: { fontSize: 11 },
+  privacy: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, textAlign: 'center', flexShrink: 1 },
 
   // Stats
   statsContent: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxl, paddingTop: Spacing.md, gap: Spacing.md },
   emptyStats: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.md, padding: Spacing.xl },
   emptyEmoji: { fontSize: 56 },
   emptyText: { fontFamily: Fonts.bodyItalic, fontSize: 16, color: Colors.muted, textAlign: 'center' },
+  emptySub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: -Spacing.xs },
 
   // Past-month narrative card (Aug 2026, #7 Phase 1). Sits at top of the
   // Stats scroll when prior month had ≥3 entries. Warm blush background,
@@ -982,8 +1009,10 @@ const styles = StyleSheet.create({
   initiateSegMe: { backgroundColor: Colors.burgundy },
   initiateSegBoth: { backgroundColor: Colors.rose },
   initiateSegPartner: { backgroundColor: Colors.blush },
-  initiateLegend: { flexDirection: 'row', justifyContent: 'space-between' },
-  legendText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
+  initiateLegend: { flexDirection: 'row', gap: Spacing.xs },
+  // flex: 1 so each label owns a third of the row instead of being
+  // shrink-wrapped (emoji + custom font under-measures on Android).
+  legendText: { flex: 1, fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
 
   moodGrid: { flexDirection: 'row', gap: Spacing.sm },
   moodCard: { flex: 1, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },

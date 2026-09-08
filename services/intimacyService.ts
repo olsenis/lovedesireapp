@@ -113,6 +113,17 @@ export async function deleteIntimacyEntry(coupleId: string, entryId: string): Pr
   await deleteDoc(doc(db, 'couples', coupleId, 'intimacyLog', entryId));
 }
 
+// Stats need a few entries before percentages and averages mean anything.
+export const STATS_MIN_ENTRIES = 3;
+
+// `initiatedBy` is stored relative to whoever LOGGED the entry. Resolve it
+// to the viewer's side so a partner-logged "I did" reads as the partner.
+export function initiatedFromViewer(e: IntimacyEntry, uid: string): 'me' | 'partner' | 'both' {
+  if (e.initiatedBy === 'both') return 'both';
+  const loggerIsViewer = e.loggedBy === uid;
+  return (e.initiatedBy === 'me') === loggerIsViewer ? 'me' : 'partner';
+}
+
 export function getIntimacyStats(entries: IntimacyEntry[], uid: string): IntimacyStats {
   const now = Date.now();
   const MS_DAY = 86400000;
@@ -135,15 +146,10 @@ export function getIntimacyStats(entries: IntimacyEntry[], uid: string): Intimac
 
   let initiatedByMe = 0, initiatedByPartner = 0, initiatedByBoth = 0;
   for (const e of entries) {
-    if (e.loggedBy === uid) {
-      if (e.initiatedBy === 'me') initiatedByMe++;
-      else if (e.initiatedBy === 'partner') initiatedByPartner++;
-      else initiatedByBoth++;
-    } else {
-      if (e.initiatedBy === 'me') initiatedByPartner++;
-      else if (e.initiatedBy === 'partner') initiatedByMe++;
-      else initiatedByBoth++;
-    }
+    const who = initiatedFromViewer(e, uid);
+    if (who === 'me') initiatedByMe++;
+    else if (who === 'partner') initiatedByPartner++;
+    else initiatedByBoth++;
   }
 
   const byMonth: { month: string; count: number }[] = [];
@@ -167,15 +173,18 @@ export function getIntimacyStats(entries: IntimacyEntry[], uid: string): Intimac
     ? Math.round((ratedEntries.reduce((s, e) => s + e.rating!, 0) / ratedEntries.length) * 10) / 10
     : null;
 
-  // Orgasm stats (from perspective of who logged: 'me' = the logger)
+  // Orgasm stats. `orgasm.me` is the LOGGER, so entries the partner logged
+  // are flipped to the viewer's side (same as initiatedBy above) instead
+  // of being dropped, otherwise each partner only ever saw half the log.
   const orgasmEntries = entries.filter(e => e.orgasm !== undefined);
-  const myOrgasmEntries = orgasmEntries.filter(e => e.loggedBy === uid);
-  const myHad = myOrgasmEntries.filter(e => e.orgasm!.me.had);
-  const partnerHad = myOrgasmEntries.filter(e => e.orgasm!.partner.had);
-  const myRate = myOrgasmEntries.length > 0 ? Math.round((myHad.length / myOrgasmEntries.length) * 100) : 0;
-  const partnerRate = myOrgasmEntries.length > 0 ? Math.round((partnerHad.length / myOrgasmEntries.length) * 100) : 0;
-  const myAvgCount = myHad.length > 0 ? Math.round((myHad.reduce((s, e) => s + e.orgasm!.me.count, 0) / myHad.length) * 10) / 10 : 0;
-  const partnerAvgCount = partnerHad.length > 0 ? Math.round((partnerHad.reduce((s, e) => s + e.orgasm!.partner.count, 0) / partnerHad.length) * 10) / 10 : 0;
+  const mineOf = (e: IntimacyEntry) => (e.loggedBy === uid ? e.orgasm!.me : e.orgasm!.partner);
+  const theirsOf = (e: IntimacyEntry) => (e.loggedBy === uid ? e.orgasm!.partner : e.orgasm!.me);
+  const myHad = orgasmEntries.filter(e => mineOf(e).had);
+  const partnerHad = orgasmEntries.filter(e => theirsOf(e).had);
+  const myRate = orgasmEntries.length > 0 ? Math.round((myHad.length / orgasmEntries.length) * 100) : 0;
+  const partnerRate = orgasmEntries.length > 0 ? Math.round((partnerHad.length / orgasmEntries.length) * 100) : 0;
+  const myAvgCount = myHad.length > 0 ? Math.round((myHad.reduce((s, e) => s + mineOf(e).count, 0) / myHad.length) * 10) / 10 : 0;
+  const partnerAvgCount = partnerHad.length > 0 ? Math.round((partnerHad.reduce((s, e) => s + theirsOf(e).count, 0) / partnerHad.length) * 10) / 10 : 0;
 
   return {
     totalCount, lastDate, daysSinceLast, avgPerMonth,
