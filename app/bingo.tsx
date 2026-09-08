@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Animated, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -9,7 +9,7 @@ import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
 import { WhileYouWait } from '../components/WhileYouWait';
-import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
+import { ActivityCardsSession, MAX_PASSES, MAX_CUSTOM_IN_DECK, CustomCard, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard, subscribeCustomCards, addCustomCard, deleteCustomCard } from '../services/bingoService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
 import { personalise } from '../services/personalise';
@@ -38,6 +38,12 @@ export default function ActivityCardsScreen() {
   const [revealIndex, setRevealIndex] = useState<number | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [undoCard, setUndoCard] = useState<{ index: number; text: string } | null>(null);
+  // Couple-authored cards. Live list for the manage modal; the deck
+  // itself only picks them up on ↺ New (see bingoService).
+  const [customCards, setCustomCards] = useState<CustomCard[]>([]);
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customText, setCustomText] = useState('');
+  const [savingCustom, setSavingCustom] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const help = useHelp('bingo');
 
@@ -51,6 +57,25 @@ export default function ActivityCardsScreen() {
     if (!coupleId) return;
     return subscribeActivityCards(coupleId, uid, (s) => { setSession(s); setLoading(false); });
   }, [coupleId, uid]);
+
+  useEffect(() => {
+    if (!coupleId) return;
+    return subscribeCustomCards(coupleId, setCustomCards);
+  }, [coupleId]);
+
+  const handleSaveCustom = async () => {
+    const text = customText.trim();
+    if (!coupleId || !text || savingCustom) return;
+    setSavingCustom(true);
+    try {
+      await addCustomCard(coupleId, uid, text);
+      setCustomText('');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showToast('Added. It joins the deck on your next ↺ New.');
+    } finally {
+      setSavingCustom(false);
+    }
+  };
 
   // Animate reveal modal
   useEffect(() => {
@@ -207,6 +232,13 @@ export default function ActivityCardsScreen() {
         <Text style={styles.deckModeText}>
           {(session.deckMode ?? 'quick') === 'quick' ? '✨ Quick deck, tap ↺ New for bucket-list mode' : '🌙 Bucket-list deck'}
         </Text>
+        <TouchableOpacity onPress={() => setShowCustomModal(true)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Add your own card">
+          <Text style={[styles.deckModeText, { color: Colors.burgundy, fontFamily: Fonts.bodyBold }]}>
+            {customCards.length === 0
+              ? '+ Add your own card'
+              : `+ Add your own · ${customCards.length} of yours in the pool`}
+          </Text>
+        </TouchableOpacity>
 
         {/* Progress + passes */}
         <Text style={styles.progressText}>{revealed.length} of 25 flipped · {remaining} remaining</Text>
@@ -367,6 +399,11 @@ export default function ActivityCardsScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>New deck?</Text>
             <Text style={styles.modalText}>Pick which activities to shuffle in:</Text>
+            {customCards.length > 0 && (
+              <Text style={styles.modalText}>
+                Includes {Math.min(MAX_CUSTOM_IN_DECK, customCards.length)} of your own card{Math.min(MAX_CUSTOM_IN_DECK, customCards.length) === 1 ? '' : 's'}
+              </Text>
+            )}
             <TouchableOpacity
               style={styles.confirmBtn}
               onPress={async () => {
@@ -393,6 +430,63 @@ export default function ActivityCardsScreen() {
             </TouchableOpacity>
             <TouchableOpacity style={[styles.cancelBtn, { marginTop: 8 }]} onPress={() => setConfirmReset(false)} accessibilityRole="button">
               <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Couple-authored cards. Kept deliberately small: one input, a list
+          with delete, honest copy about when cards enter the deck. */}
+      <Modal visible={showCustomModal} transparent animationType="slide" onRequestClose={() => setShowCustomModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Your own cards</Text>
+            <Text style={styles.modalText}>
+              Up to {MAX_CUSTOM_IN_DECK} of yours join each new deck, mixed in face-down with the rest. They show up the next time you tap ↺ New.
+            </Text>
+            <TextInput
+              value={customText}
+              onChangeText={setCustomText}
+              placeholder="e.g. Cook dinner blindfolded"
+              placeholderTextColor={Colors.muted}
+              maxLength={80}
+              style={{
+                fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
+                borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md,
+                paddingHorizontal: Spacing.md, paddingVertical: 10, marginTop: Spacing.sm,
+                backgroundColor: Colors.cream,
+              }}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveCustom}
+              accessibilityLabel="Your card text"
+            />
+            <TouchableOpacity
+              style={[styles.confirmBtn, { marginTop: Spacing.sm, opacity: customText.trim() && !savingCustom ? 1 : 0.5 }]}
+              onPress={handleSaveCustom}
+              disabled={!customText.trim() || savingCustom}
+              accessibilityRole="button"
+            >
+              <Text style={styles.confirmText}>Add card</Text>
+            </TouchableOpacity>
+            {customCards.length > 0 && (
+              <View style={{ marginTop: Spacing.md, gap: 6 }}>
+                {customCards.map((c) => (
+                  <View key={c.id} style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                    <Text style={[styles.modalText, { flex: 1, textAlign: 'left', marginBottom: 0 }]} numberOfLines={2}>{c.text}</Text>
+                    <TouchableOpacity
+                      onPress={() => coupleId && deleteCustomCard(coupleId, c.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete card ${c.text}`}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={{ fontSize: 16 }}>🗑</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+            <TouchableOpacity style={[styles.cancelBtn, { marginTop: Spacing.sm }]} onPress={() => setShowCustomModal(false)} accessibilityRole="button">
+              <Text style={styles.cancelText}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
