@@ -68,6 +68,16 @@ One couple opens the mode, app shows same content on both phones with 1-2s heart
 
 ---
 
+## SDK57-1 expo-blob for uploads (raised Sep 8 2026, device test)
+
+SDK 57 warns on every `Response.blob()`: React Native's Blob copies the response through the native blob store via base64, slow for large payloads. All five call sites are in `services/storageService.ts` (profile photo, moment, flash photo/video/voice, Truth or Dare audio). Photos are already compressed to <500 KB so the cost is ~100-300 ms; Tease **videos** are the case that actually matters.
+
+**Why deferred:** `expo-blob` is not in SDK 57's bundledNativeModules and not in Expo Go, so adding it now would break device testing. Needs a dev-client build.
+
+**Decision criteria:** first thing after H40/H44 unlock dev-client builds. `npx expo install expo-blob`, no code change expected (drop-in for the global Blob).
+
+---
+
 ## D6 Manstu? (Memory Lane) — weekly quiz on your own history (raised Sep 2026, Review #10)
 
 **✅ SHIPPED pre-launch Sep 8 2026** (`f22ee35`, `876db56`, `2c5997e`) as "Memory Lane": `services/memoryLaneService.ts`, `app/memory-lane.tsx`, rebuilt `featureUnlockService`, Discover card with 30-day data-gate + NEW badge, Thursday Home nudge. Design below kept for reference; live spec is in CLAUDE.md. Post-launch follow-ups: history UI for past weeks, more generators once feature-frequency shows which sources land.

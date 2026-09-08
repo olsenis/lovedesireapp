@@ -18,16 +18,20 @@ _(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 - [x] **T-or-D `{partner}` POV substitution** — ✅ PASSED across Sweet / Flirty / Spicy after hard-refresh + Vercel deploy landed (`9c4d6b1`).
 - [x] **New manual T-or-D mode** — ✅ PASSED. Wherever You Are picker shows draw-random + write-your-own rows, TextInput opens, Send flows through playCard (`fafc46a`).
 
-### Pre-launch retention build (Sep 8, Review #10) — all pending device test
+### Pre-launch retention build (Sep 8, Review #10) — device round 1 done Sep 8 (Android, phone A)
 
-- [ ] **Moments archive-peek threshold** back to ≥8 (`b04034d`) — card must NOT show on a couple with <8 moments.
-- [ ] **Sunday history Thursday card** (`a286d66`) — Thursday only, needs 2+ both-completed weeks, one dismissal per ISO week, tap → /state-union history block. Test by temporarily forcing `getDay()===4`.
-- [ ] **WYR Wednesday author nudge** (`bc3cd21`) — Wednesday only, hidden once authored this week, tap → add modal opens directly via `?author=1`. `wyr_custom_authored` increments.
-- [ ] **WhileYouWait** (`c4dbc73`, chip set narrowed in `2a326cd`) — appears under the wait state on all 7 screens; Moment chip hidden once captured; Moments screen excludes its own chip.
-- [ ] **Presence `?mini=1`** (`2a326cd`) — 7-day Home nudge lands directly in the mini; `sensate_mini_completed` +1 per mini (was +2); reflection reveal shows the real partner name.
-- [ ] **Activity Cards custom** (`ba79581`) — add 2 cards → ↺ New → both in deck (find by flipping); delete → next reset excludes; reset modal shows "Includes N of your own cards".
-- [ ] **Sunday predictions** (`23b2236` + fix `34f1431`) — Q5 "Next →" → Call it card; Skip and Save both complete; next week partner sees grading block, verdicts save, both see scores once both complete. Verify week-1 (no grading block) does not break.
-- [ ] **Memory Lane** (`f22ee35`, `876db56`, 7.6) — flip `MEMORY_LANE_DEV_UNLOCK` if QA couple < 30d; Discover card NEW badge; 5 questions from ≥3 sources on the QA couple; instant ✓/✗; score; partner score after B; thin-history state on a fresh couple; Thursday nudge; gate view via deep link on a <30d couple.
+Test affordances: `DEV_IGNORE_WEEKDAY_GATES` (constants/devFlags.ts) and `MEMORY_LANE_DEV_UNLOCK` (featureUnlockService). Both flipped on for the round, both back to `false` in HEAD.
+
+- [ ] **Moments archive-peek threshold** back to ≥8 (`b04034d`) — not explicitly verified; card was absent on Home Sep 8, moments count not checked.
+- [ ] **Sunday history Thursday card** (`a286d66`) — NOT testable yet: needs 2+ weeks where both completed Sunday Check-in. Eva has not finished week 37 on phone B. Re-check Thursday Sep 17 or with the weekday flag once week 2 is both-complete.
+- [x] **WYR Wednesday author nudge** — ✅ PASSED after fix. Found: modal was only mounted in the level-picker view, so `?author=1` did nothing mid-session (had to reset the round); and the keyboard covered Level + Save. Both fixed `dbf23cf` (modal rendered in all views, KeyboardAvoidingView + ScrollView). Re-test confirmed modal opens over the live game, Save works, nudge disappears.
+- [x] **WhileYouWait** — ✅ PASSED on Memory Lane and Activity Cards. Feedback "only 2 chips, center it, bigger" → `afc50c1`: added contextual Mood + Daily chips (live, hidden once done today), centered, larger. Confirmed chips drop off as actions complete.
+- [ ] **Presence `?mini=1`** (`2a326cd`) — NOT testable: 7-day nudge absent (Presence used recently). Will surface naturally; code path is 10 lines.
+- [x] **Activity Cards custom** — ✅ PASSED after fix. Found: every button in the "New deck?" sheet rendered as an empty pill — `confirmBtn`/`cancelBtn` carry `flex: 1` for the undo row and RN 0.86 Yoga collapses them when stacked in a column (old Yoga let the label overflow). Fixed `e7ee5ca` with `stackedBtn { flex: 0 }`; same latent bug in Sunday "Save verdicts" fixed `6af191a`. Audit of all other flex:1 buttons: all in rows. Custom cards: add 2 → ↺ New → "Includes 2 of your own cards" → found in deck.
+- [x] **Sunday predictions, week 1** — ✅ PASSED. Q5 "Next →" → Call it → Finish → Done! Waiting + WhileYouWait. **Week 2 grading still pending** (Eva finishes week 37 on B, then next Sunday A grades).
+- [x] **Memory Lane** — ✅ PASSED on phone A with dev unlock. Locked state also verified: Discover pill said "18d" (couple.createdAt is 12 days old), toast on tap. Unlocked: NEW badge, 5 questions, instant ✓/✗, score 2/5, "Eva has not played this week yet", WhileYouWait. First open was slow (generation) → `384ce3f` parallelised the Sunday entry reads and filtered Fantasy Wishes to matched items. **Pending:** phone B plays → partner score line; Thursday Home nudge (weekday flag showed it would render but Memory Lane was already completed by then).
+
+Also fixed in this round, unrelated to the build: Firestore transport warning was not actually addressed by `2e59e6e` (auto-detect is the SDK default) → `d98a73c` forces long-polling, `e513747` hides the recovered-retry warning from the dev overlay. Known-harmless dev warnings triaged and left alone: expo-router "state update on unmounted" ([expo/expo#35224](https://github.com/expo/expo/issues/35224)), `Response.blob()` perf hint (needs `expo-blob`, not in Expo Go → POST_LAUNCH SDK57-1).
 
 ## ⏳ Pending — Bug bash Round 2 remainder
 
