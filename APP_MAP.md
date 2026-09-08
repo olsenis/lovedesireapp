@@ -76,9 +76,10 @@ Categories:
 | Daily Picks | Daily voting + Together List seed | Mixed (Sweet + Flirty free, Spicy paid) | **224** (Sw 60 · Fl 60 · Sp 104) | 4/5 | 4/5 | Real payoff (feeds Together List). Post-merge to 3 cats. Binary Qs include inline guess-partner-answer sheet (ex-Versus, merged Aug 2026). |
 | Would You Rather | Simultaneous reveal | Mixed (Playful + Romantic free, Spicy paid) | **191** (Pl 70 · Rm 60 · Sp 61) | 4/5 | 3/5 | Same DNA as Questions binary format. Some overlap. |
 | Truth or Dare | Multiplayer state machine + audio + Solo Dare mode | Mixed (Sweet + Flirty free, Spicy paid) | Truths **311** (Sw 95 · Fl 95 · Sp 121) + Dares **189** (Sw 45 · Fl 46 · Sp 98) | **5/5** | **5/5** | Deepest interaction. Audio + skip system + score. Solo Dare (ex-Dare Wheel) folded in July 2026. |
-| Activity Cards | Turn-based reveal grid | Paid | Activities **55** + Rewards **10** | 4/5 | 4/5 | Passes system + 3-state cards is a strong pattern. Paid-only limits reach. |
+| Activity Cards | Turn-based reveal grid | Paid | Activities **50** + Rewards **10** + couple-authored (up to 5 per deck) | 4/5 | 4/5 | Passes system + 3-state cards is a strong pattern. Paid-only limits reach. Custom cards (Sep 2026) remove the pool ceiling. |
 | 30-Day Challenge | Guided daily program | Mixed (Reconnect + Spark free, Fire + Desire paid) | 4 programs × 30 tasks = **120** | 3/5 | 3/5 | Commitment feature; low return once done. Edit/veto system is clever. |
 | Fantasy Wishes | Explicit double-blind voting | Paid | **394** presets | 4/5 | 4/5 | Biggest content pool. No user-facing categories. |
+| Memory Lane | Weekly quiz on the couple's own history | Free, unlocks day 30 | Generated from Moments / Daily / moods / milestones / Sunday / FW | 5/5 | 5/5 | Only game whose pool grows with usage. Sep 2026. Instant ✓/✗, score card, partner score. |
 | Roulette | Spin for date idea | Free | **130** Date Ideas | 3/5 | 3/5 | Static utility. LDR filter for virtual dates. |
 
 ### Intimacy
@@ -211,7 +212,7 @@ Ranked by strength of case.
 | Daily Picks | 224 | 300 | Under |
 | Fantasy Wishes | 394 | 400+ | On target |
 | Date Ideas | 130 | — | Healthy |
-| Activity Cards | 55 | — | Thin — 55 with 25/deck means 2 decks before recycling |
+| Activity Cards | 50 + couple-authored | — | Ceiling removed Sep 2026: up to 5 of the couple's own cards join every deck |
 | Challenge | 120 (4×30) | — | Healthy |
 | Blueprint | 15 Q | — | Fixed |
 | Love Language | 10 Q | — | Fixed |

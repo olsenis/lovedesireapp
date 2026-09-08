@@ -70,6 +70,8 @@ One couple opens the mode, app shows same content on both phones with 1-2s heart
 
 ## D6 Manstu? (Memory Lane) — weekly quiz on your own history (raised Sep 2026, Review #10)
 
+**✅ SHIPPED pre-launch Sep 8 2026** (`f22ee35`, `876db56`, `2c5997e`) as "Memory Lane": `services/memoryLaneService.ts`, `app/memory-lane.tsx`, rebuilt `featureUnlockService`, Discover card with 30-day data-gate + NEW badge, Thursday Home nudge. Design below kept for reference; live spec is in CLAUDE.md. Post-launch follow-ups: history UI for past weeks, more generators once feature-frequency shows which sources land.
+
 Weekly 5-question quiz generated from the couple's own archive: "Which month was this Moment taken?", "What did {partner} answer to this Daily question in March?", "What was your mood on this day?", "What was milestone #3 in Our Story?". Both answer privately, reveal + score. Unlocks at day 30 of history, reusing the `featureUnlockService` sticky-unlock + NEW-badge pattern from Versus.
 
 **Why this is the strategic bet:** the only game whose content pool grows with usage instead of depleting. Turns the invisible compounder archive (Moments, Daily, moods, milestones) into something played. Day-30 unlock converts the month-1 cliff into a milestone ("5 days until a new game"). Competitors can't copy it without the archive infra.
@@ -81,6 +83,8 @@ Weekly 5-question quiz generated from the couple's own archive: "Which month was
 ---
 
 ## D7 Spá (Predictions) — sealed weekly predictions about each other (raised Sep 2026, Review #10)
+
+**✅ SHIPPED pre-launch Sep 8 2026** (`23b2236` + `34f1431`) as the optional "Call it" step after Q5 in Sunday Check-in, graded by the partner the following week. Watch `sunday_predictions_added / sunday_checkin_submitted`: >40% after a month → consider default-on; <20% → standalone or drop.
 
 Each partner writes 3 predictions about the other for the coming week ("Óli will forget to text before noon at least once"). Sealed. Next Sunday: reveal, each marks whether the other's predictions came true, score. Infinite user-generated content, pure playful teasing.
 
@@ -120,9 +124,9 @@ Prompt ("Write the story of how you'd spend a million"). Partners alternate one 
 
 ---
 
-## R10 Review #10 mechanic follow-ups — analytics-gated (raised Sep 2026)
+## R10 Review #10 mechanic follow-ups (raised Sep 2026)
 
-Small mechanic changes accepted from Review #10, none pre-launch. Full reasoning in the Sep 8 plan file; summary here so the timeline survives.
+**✅ Decision reversed Sep 8: user chose to build pre-launch.** Shipped: Moments-peek threshold revert (`b04034d`), Sunday history Thursday card (`a286d66`), WYR Wednesday author nudge (`bc3cd21`), WhileYouWait (`c4dbc73`, `2a326cd`), Presence `?mini=1` + fixes (`2a326cd`), Activity Cards custom (`ba79581`). NOT built: streak or any together-counter (user: "we don't need streak"), partner-quiet nudge, solo Presence variant (the mini is a two-person touch exercise, so a true solo stage would be new content). Original analytics-gated timeline kept below for the record.
 
 **Launch + 2 weeks (no-regret, ~9h):**
 - WYR partner-authored weekly question — Home card, cap 1/partner/week, **Wednesday** not Sunday (Sunday already carries CI + LL nudge). Infra exists: `addCustomWYRQuestion` inserts at deck front.

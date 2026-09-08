@@ -133,6 +133,7 @@ app/                         Full-screen sub-screens
   daily-wishes.tsx           Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   (time-capsules.tsx removed July 2026 — abstract long-timeline payoff didn't demo well pre-launch; revisit if users request "seal for later" mechanics)
   (versus.tsx removed Aug 2026 — guess-what-partner-picked mechanic merged into Daily's binary-question reveal flow; see `submitGuess` / `skipGuess` in dailyQuestionsService)
+  memory-lane.tsx            Memory Lane ("Manstu?") — weekly 5-question quiz generated from the couple's OWN history (Moments, Daily answers, moods, milestones, Sunday pulses, FW matches). Free, data-gated on 30 days since couple.createdAt (not paywalled). Instant ✓/✗ per question, score card, partner score when both done. Sep 2026.
   (wishlist.tsx and fantasy.tsx removed — legacy features replaced by fantasy-wishes.tsx / dailyWishes)
 ```
 
@@ -166,7 +167,9 @@ couples/{coupleId}/truthDare/active  TruthDareSession — level, turnUid, phase(
 couples/{coupleId}/dailyWishes/{date} DailyWishDoc — items[], votes{}, addToList{}
 couples/{coupleId}/dailyQuestions/{date} DailyQuestionDoc — items[], discussed{}, answers{uid:{gi:text}}
 couples/{coupleId}/stateUnion/{weekId} StateUnionDoc — weekId, startedAt, completedAt{uid:ts}, answeredCount{uid:n}
-couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers{qi:text}, updatedAt (rules: only readable by owner OR after both completed)
+couples/{coupleId}/stateUnion/{weekId}/entries/{uid} StateUnionEntry — answers{qi:text}, pulseScores?, predictions?[] (Sep 2026: up to 3 sealed calls about the partner for the coming week), priorVerdicts?{idx:bool} (grading the partner's previous-week predictions), updatedAt (rules: only readable by owner OR after both completed)
+couples/{coupleId}/memoryLane/{weekId} MemoryLaneDoc — questions[] (generated once per week, seeded weekId::coupleId), answers{uid:{qi:optionIndex}} (inherits catch-all 'answers' guard), completedAt{uid:ts}
+couples/{coupleId}/bingoCustom/{id}  CustomCard — text, createdBy, createdAt (couple-authored Activity Cards; up to 5 newest join each deck on ↺ New)
 
 reports/{reportId}                   H33 Report — reporterUid, coupleId, targetUid, contentType, contentPath, contentSnippet, contentStorageUrl?, category, detail?, disconnected, status, createdAt, resolvedAt?, resolvedBy?, resolveNotes? (top-level, admin-SDK-only access via callables; couples wildcard NOT applied)
 ```
@@ -197,6 +200,9 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
 | `reportService.ts` | `submitReport(input)`, `reportCategoryLabel`, `shouldPrecheckDisconnect`, `offersDisconnect` — H33 moderation. Wraps `submitReport` callable which writes to top-level `/reports/{reportId}` and optionally atomically disconnects the reporter's couple. Rate-limited server-side (20/day/uid). |
 | `photoConsentService.ts` | `hasPhotoConsent(uid)`, `confirmPhotoConsent(uid)` — H42 first-photo re-attestation. AsyncStorage cache short-circuits Firestore read after first grant. |
+| `memoryLaneService.ts` | `subscribeMemoryLane`, `ensureMemoryLaneWeek` (generates + creates in a transaction), `answerMemoryQuestion`, `completeMemoryLane`, `memoryLaneScore`, `MEMORY_LANE_QUESTIONS` — six generators (moments / daily / mood / milestone / sunday / fw) with per-source cold-start minimums, max 2 per source, seeded selection. Sep 2026. |
+| `featureUnlockService.ts` | `getFeatureUnlockState`, `markMemoryLaneUnlocked`, `isUnlockRecent`, `memoryLaneEligible`, `memoryLaneDaysLeft`, `MEMORY_LANE_UNLOCK_DAYS` (30), `MEMORY_LANE_DEV_UNLOCK` — sticky per-user data-gate unlocks at `users/{uid}/private/features`. Rebuilt Sep 2026 after the Versus version was deleted. |
+| `seed.ts` | `hashString`, `mulberry32`, `seededShuffle`, `seededPick` — shared deterministic randomness for anything both phones must agree on without a server. Extracted from loveLanguageNudgeService Sep 2026. dailyQuestionsService and bingoService keep their own older LCGs on purpose (changing them would alter historical picks). |
 
 ### Hooks
 
@@ -268,6 +274,10 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Intimacy Log (reflection framing):** Paid + per-user opt-in (`profile.features.intimacyLog`). Reframed Aug 2026 (H25) — the composer's "Note" field is labeled "One thing memorable about this?" and the Us tab subtitle reads "Your shared story of closeness". Not entertainment; a private reflection surface for the self-selected user segment that wants it. Monthly narrative surfaces at top of Stats tab (past-month, ≥3 entries, `generateMonthlyNarrative`) + Home nudge on days 1-7 of new month → `/intimacy-tracker?tab=stats`. **Cross-flow prompts** hand off from three adjacent moments — Sensate cycle complete, Fantasy Wishes fresh match, Daily Spicy Picks fresh mutual-yes — each firing a `useToast()` bubble via the shared [`components/Toast.tsx`](components/Toast.tsx). Tap → `/intimacy-tracker?prefill=<source>` opens the composer with contextual defaults (initiatedBy / types / mood); user reviews and saves. `PREFILL_PRESETS` table in intimacy-tracker.tsx. All hooks gated on the opt-in feature flag so non-users see nothing.
 
+**WhileYouWait (`components/WhileYouWait.tsx`, Sep 2026):** rendered under every in-screen "waiting for {partner}" state (Sunday Check-in, Presence reflection, Moments, Daily, WYR, Truth or Dare, Activity Cards). Turns the dead end into 1-2 chips the user can act on alone: take today's Moment (self-subscribes to `moments/{today}`, hidden once captured) and leave a Love Note. Only genuinely solo actions belong here; the Presence mini was considered and dropped because it is a two-person touch exercise. `exclude` prop hides the chip that points back at the host screen. Answers the partner-lag churn driver without any per-user activity tracking.
+
+**Weekly ritual calendar (Sep 2026):** Sunday = Check-in (+ optional predictions) · Monday = love-language nudge · Wednesday = "write one Would You Rather for {partner}" (`/would-you-rather?author=1` opens the add modal; hidden once authored this ISO week) · Thursday = Memory Lane if unlocked and unplayed, else "your first Sunday Check-in was N weeks ago" history card. Daily = Daily + Moments. Keep new weekly rituals off Sunday/Monday.
+
 **Shared Toast (`components/Toast.tsx`):** `useToast()` hook returns `{ toast, showToast, dismiss }`. Two visual variants — `default` (cream fill, burgundy border, info tone) and `emphasis` (burgundy fill, cream text, celebrations). Optional `onTap` handler wraps in TouchableOpacity. Auto-dismisses after `duration` (default 3s). Extracted from fantasy-wishes.tsx inline pattern; used by FW, Bingo, Sensate, Daily. Render `{toast}` inside the screen's root View.
 
 **Firebase Storage:** Profile photos at `users/{uid}/profile.jpg`, memories at `couples/{coupleId}/memories/`, Truth or Dare audio at `couples/{coupleId}/truthDare/{round}_{uid}.m4a`, Moments at `couples/{coupleId}/moments/{date}_{uid}.jpg`, Flashes at `couples/{coupleId}/flashes/{ts}_{uid}.{ext}`. All photo uploads compressed via `expo-image-manipulator` (max 1920px, JPEG 0.7) before `uploadBytes`. (Time Capsules storage path at `couples/{coupleId}/timeCapsules/` no longer written — feature removed July 2026, any pre-launch test blobs remain in Storage until GDPR cascade cleans them.)
@@ -301,6 +311,8 @@ Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate 
 - Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)
 - Daily: Playful category only — combines old Sweet Daily Picks (5/day) + old Playful Questions (3/day, incl. binary + scale variants). Flirty Daily Picks moved to Spicy tier July 2026 as part of the Daily merge.
 - Guess-partner's-answer on binary Daily questions (ex-Versus, inside Daily since Aug 2026; not a separate screen)
+- Memory Lane (data-gated: Discover card shows "Nd" pill + toast until 30 days since couple.createdAt, then permanently visible with a NEW badge for 7 days. Not paywalled.)
+- Sunday Check-in predictions (optional "Call it" step after Q5; graded by the partner the following week)
 - Would You Rather: Playful + Romantic only
 - Tonight's Date (full)
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders (full)
