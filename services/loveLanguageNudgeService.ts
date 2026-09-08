@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { Notifications } from './notificationsGuard';
+import { seededShuffle } from './seed';
 import { LoveLanguage, LOVE_LANGUAGE_LABELS } from '../constants/content';
 import { LOVE_LANGUAGE_ACTIONS } from '../constants/loveLanguageActions';
 
@@ -112,36 +113,6 @@ function weekKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-// Deterministic Fisher-Yates shuffle seeded by string. Same seed →
-// same order. Used so both partners see the SAME 3 actions each week.
-function seededShuffle<T>(arr: T[], seed: string): T[] {
-  const rng = mulberry32(hashString(seed));
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-// 32-bit non-cryptographic PRNG — plenty for shuffling a 10-item pool.
-function mulberry32(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashString(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
+// seededShuffle / mulberry32 / hashString moved to services/seed.ts
+// (Sep 2026) so Memory Lane can share them. Same algorithms, same
+// output, so weekly picks are unchanged.
