@@ -14,6 +14,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
+import { WhileYouWait } from '../components/WhileYouWait';
 import { DARES, TRUTHS, DARE_LEVEL_CONFIG, DareLevel } from '../constants/content';
 import { personalise } from '../services/personalise';
 import {
@@ -764,9 +765,12 @@ export default function TruthDareScreen() {
 
             {/* ── TRUTH: picker waits ── */}
             {session.card.type === 'truth' && isMyTurn && (
-              <View style={styles.sentBanner}>
-                <Text style={styles.sentText}>✅ Sent to {partnerName}, waiting for the answer…</Text>
-              </View>
+              <>
+                <View style={styles.sentBanner}>
+                  <Text style={styles.sentText}>✅ Sent to {partnerName}, waiting for the answer…</Text>
+                </View>
+                <WhileYouWait />
+              </>
             )}
 
             {/* ── TRUTH: partner answers ── */}

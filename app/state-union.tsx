@@ -24,6 +24,7 @@ import {
 } from '../services/stateUnionService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
+import { WhileYouWait } from '../components/WhileYouWait';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
@@ -322,16 +323,19 @@ export default function StateUnionScreen() {
 
         {/* ─── PHASE 2: I'm done but partner isn't ─── */}
         {iCompleted && !both && (
-          <View style={styles.card}>
-            <Text style={styles.waitEmoji}>💗</Text>
-            <Text style={styles.waitTitle}>Done! Waiting for {partnerName}</Text>
-            <Text style={styles.waitText}>
-              {partnerAnswered === 0
-                ? `${partnerName} hasn't started yet`
-                : `${partnerName} has answered ${partnerAnswered} of ${weekQuestions.length}`}
-            </Text>
-            <Text style={styles.waitHint}>You'll see both answers side by side once {partnerName} is done.</Text>
-          </View>
+          <>
+            <View style={styles.card}>
+              <Text style={styles.waitEmoji}>💗</Text>
+              <Text style={styles.waitTitle}>Done! Waiting for {partnerName}</Text>
+              <Text style={styles.waitText}>
+                {partnerAnswered === 0
+                  ? `${partnerName} hasn't started yet`
+                  : `${partnerName} has answered ${partnerAnswered} of ${weekQuestions.length}`}
+              </Text>
+              <Text style={styles.waitHint}>You'll see both answers side by side once {partnerName} is done.</Text>
+            </View>
+            <WhileYouWait />
+          </>
         )}
 
         {/* ─── PHASE 3: Both completed — reveal ─── */}

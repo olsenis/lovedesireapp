@@ -8,6 +8,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
+import { WhileYouWait } from '../components/WhileYouWait';
 import { ActivityCardsSession, MAX_PASSES, subscribeActivityCards, flipCard, usePass, markCardDone, skipReceivedCard, resetActivityCards, uncompleteCard } from '../services/bingoService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
@@ -199,6 +200,7 @@ export default function ActivityCardsScreen() {
               : `${partnerName}'s turn to pick`}
           </Text>
         </View>
+        {!isMyTurn && <WhileYouWait />}
         {/* Deck mode indicator — helps users understand why some
             planned/seasonal cards aren't showing up. Absent = legacy
             doc from before deckMode existed, treat as quick. */}

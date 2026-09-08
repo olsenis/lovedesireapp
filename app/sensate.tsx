@@ -13,6 +13,7 @@ import { useToast } from '../components/Toast';
 import { SensateProgress, subscribeSensateProgress, completeStage, submitReflection, bothReflected, completeMini } from '../services/sensateService';
 import { SENSATE_PROMPT_POOLS } from '../constants/content';
 import { Colors } from '../constants/colors';
+import { WhileYouWait } from '../components/WhileYouWait';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
@@ -788,11 +789,14 @@ export default function SensateScreen() {
 
           if (reflectionSkipped || (mine && !theirs)) {
             return (
-              <View style={[styles.reflectionCard, { borderColor: activeStage.textColor }]}>
-                <Text style={styles.reflectionRevealWho}>
-                  {mine ? 'Saved. Waiting for your partner to share their word.' : 'Skipped. You can always write one after your next session.'}
-                </Text>
-              </View>
+              <>
+                <View style={[styles.reflectionCard, { borderColor: activeStage.textColor }]}>
+                  <Text style={styles.reflectionRevealWho}>
+                    {mine ? 'Saved. Waiting for your partner to share their word.' : 'Skipped. You can always write one after your next session.'}
+                  </Text>
+                </View>
+                {mine && <WhileYouWait exclude={['presence']} />}
+              </>
             );
           }
 

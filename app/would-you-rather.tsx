@@ -7,6 +7,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { WhileYouWait } from '../components/WhileYouWait';
 import { WYRSession, WYRAnswer, subscribeWYR, startWYR, answerWYR, nextWYRQuestion, resetWYR, saveMatchToList, getWYRRecords, updateWYRRecordIfBest, subscribeCustomWYRQuestions, addCustomWYRQuestion, updateCustomWYRQuestion, deleteCustomWYRQuestion, WYRRecords, WYRCustomQuestion, drawMoreWYR, WYR_DAILY_CAP, WYR_BONUS_PER_DRAW, WYR_MAX_BONUS_DRAWS } from '../services/wyrService';
 import { TodoCategory } from '../services/todoService';
 import { WYR_QUESTIONS, WYR_LEVEL_CONFIG, WYR_PACKS, WYRLevel, WYRPack } from '../constants/content';
@@ -827,6 +828,7 @@ export default function WouldYouRatherScreen() {
             <Text style={styles.waitingHint}>
               Tap {myAnswer === 'a' ? 'B' : 'A'} to change your pick before {partner?.name ?? 'your partner'} answers.
             </Text>
+            <WhileYouWait />
           </>
         )}
 

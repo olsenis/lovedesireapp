@@ -9,6 +9,7 @@ import { MomentEntry, subscribeMoments, submitMomentPhoto } from '../services/mo
 import { uploadMomentPhoto, UploadTooLargeError } from '../services/storageService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
+import { WhileYouWait } from '../components/WhileYouWait';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
@@ -137,15 +138,18 @@ export default function MomentsScreen() {
           </View>
         ) : !bothHavePhoto ? (
           // I submitted, waiting for partner
-          <View style={styles.waitingCard}>
-            <View style={styles.waitingPhotoWrap}>
-              <Image source={{ uri: todayMoment?.photos?.[uid]?.photoURL }} style={styles.myPhotoSmall} contentFit="cover" />
+          <>
+            <View style={styles.waitingCard}>
+              <View style={styles.waitingPhotoWrap}>
+                <Image source={{ uri: todayMoment?.photos?.[uid]?.photoURL }} style={styles.myPhotoSmall} contentFit="cover" />
+              </View>
+              <View style={styles.waitingRight}>
+                <Text style={styles.waitingTitle}>Waiting for {partner?.name ?? 'your partner'}...</Text>
+                <Text style={styles.waitingSub}>Your photo is ready. Both photos reveal when {partner?.name ?? 'your partner'} takes theirs.</Text>
+              </View>
             </View>
-            <View style={styles.waitingRight}>
-              <Text style={styles.waitingTitle}>Waiting for {partner?.name ?? 'your partner'}...</Text>
-              <Text style={styles.waitingSub}>Your photo is ready. Both photos reveal when {partner?.name ?? 'your partner'} takes theirs.</Text>
-            </View>
-          </View>
+            <WhileYouWait exclude={['moment']} />
+          </>
         ) : (
           // Both submitted — reveal side by side
           <TouchableOpacity style={styles.revealCard} onPress={() => setViewingMoment(todayMoment!)} activeOpacity={0.9} accessibilityRole="button">

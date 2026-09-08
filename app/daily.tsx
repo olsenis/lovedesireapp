@@ -24,6 +24,7 @@ import { notifyPartner } from '../services/notificationService';
 import { personalise } from '../services/personalise';
 import { DAILY_WISH_CATEGORY_CONFIG, QUESTION_CATEGORY_CONFIG, DailyWishCategory, QuestionCategory, Question } from '../constants/content';
 import { Colors } from '../constants/colors';
+import { WhileYouWait } from '../components/WhileYouWait';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
@@ -1114,10 +1115,13 @@ function QuestionCard({
       )}
 
       {mine && !both && !revealBlockedByGuess && (
-        <View style={styles.waitBanner}>
-          <Text style={styles.waitText}>✓ Sent! Waiting for {partnerName}…</Text>
-          <Text style={styles.waitAnswer}>Your answer: {mine}</Text>
-        </View>
+        <>
+          <View style={styles.waitBanner}>
+            <Text style={styles.waitText}>✓ Sent! Waiting for {partnerName}…</Text>
+            <Text style={styles.waitAnswer}>Your answer: {mine}</Text>
+          </View>
+          <WhileYouWait />
+        </>
       )}
 
       {/* H28 safety net — reveal locked because user hasn't yet guessed
