@@ -212,30 +212,38 @@ function weekIdToMonday(weekId: string): Date {
 
 async function fromSunday(ctx: Ctx): Promise<MemoryQuestion[]> {
   const weeks = await getAllCompletedSundayWeeks(ctx.coupleId, ctx.uid, ctx.partnerUid);
+  const recent = weeks.slice(0, 12);
+  // All entry reads in flight at once. The first version awaited each
+  // week in turn: 12 sequential round-trips, the single biggest reason
+  // first-open generation felt slow on a tunnel.
+  const entries = await Promise.all(recent.map((wk) => Promise.all([
+    getStateUnionEntry(ctx.coupleId, wk.weekId, ctx.uid),
+    getStateUnionEntry(ctx.coupleId, wk.weekId, ctx.partnerUid),
+  ])));
   const out: MemoryQuestion[] = [];
-  for (const wk of weeks.slice(0, 12)) {
-    const [mine, theirs] = await Promise.all([
-      getStateUnionEntry(ctx.coupleId, wk.weekId, ctx.uid),
-      getStateUnionEntry(ctx.coupleId, wk.weekId, ctx.partnerUid),
-    ]);
-    if (!mine?.pulseScores || !theirs?.pulseScores) continue;
+  recent.forEach((wk, i) => {
+    const [mine, theirs] = entries[i];
+    if (!mine?.pulseScores || !theirs?.pulseScores) return;
     const sums = PULSE_DIMENSION_KEYS.map((k) => ({ k, s: (mine.pulseScores?.[k] ?? 0) + (theirs.pulseScores?.[k] ?? 0) }));
     const top = Math.max(...sums.map((x) => x.s));
     const winners = sums.filter((x) => x.s === top);
-    if (winners.length !== 1 || top === 0) continue; // ties are unfair to quiz
+    if (winners.length !== 1 || top === 0) return; // ties are unfair to quiz
     const correct = PULSE_LABEL[winners[0].k];
     const others = seededPick(sums.filter((x) => x.s !== top).map((x) => PULSE_LABEL[x.k]), 3, `${ctx.seed}::su::${wk.weekId}`);
-    if (others.length < 3) continue;
+    if (others.length < 3) return;
     out.push(withShuffledOptions(
       { id: `sunday:${wk.weekId}`, source: 'sunday', prompt: `Which did you both rate highest the week of ${dateLabel(weekIdToMonday(wk.weekId).getTime())}?` },
       correct, others, ctx.seed,
     ));
-  }
+  });
   return out;
 }
 
 async function fromFantasyWishes(ctx: Ctx): Promise<MemoryQuestion[]> {
-  const snap = await getDocs(collection(db, 'couples', ctx.coupleId, 'fantasyWishes'));
+  // Only matched items carry matchedAt. Single-field range query uses the
+  // automatic index, so this fetches ~N matches instead of all ~394
+  // preset docs the couple has loaded.
+  const snap = await getDocs(query(collection(db, 'couples', ctx.coupleId, 'fantasyWishes'), where('matchedAt', '>', 0)));
   const matches = snap.docs
     .map((d) => d.data() as { text: string; matchedAt?: number })
     .filter((m) => m.text && typeof m.matchedAt === 'number')
