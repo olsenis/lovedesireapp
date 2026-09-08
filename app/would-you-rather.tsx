@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -349,6 +349,138 @@ export default function WouldYouRatherScreen() {
     await saveMatchToList(coupleId, uid, winningText, saveCategory(session.level));
   };
 
+  // Add / edit custom question modal. Defined once here, above the early
+  // returns, and rendered in EVERY view (picker, pack-complete, game) so
+  // the Wednesday deep-link (?author=1) works mid-session too — the
+  // service already jumps the new question to the front of the live deck
+  // (addCustomWYRQuestion resets questionIndex to 0), so gating authoring
+  // on "no session" was the UI contradicting the data model.
+  //
+  // KeyboardAvoidingView + ScrollView: with SDK 57 edge-to-edge on
+  // Android the window no longer resizes for the keyboard, so a fixed
+  // bottom sheet with three inputs had its Level row and Save button
+  // hidden behind the keyboard. The spacer keeps the sheet bottom-aligned;
+  // flexShrink lets it scroll when the keyboard eats the height.
+  const addEditModal = (
+    <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => setShowAddModal(false)}>
+      <KeyboardAvoidingView style={styles.addModalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={{ flex: 1 }} />
+        <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
+          <View style={styles.addModalCard}>
+            <Text style={styles.addModalTitle}>{editingId ? 'Edit question' : 'Add your own question'}</Text>
+            <Text style={styles.addModalHint}>Both of you will see it mixed in with the built-in questions on the level you pick.</Text>
+
+            <Text style={styles.addModalLabel}>Option A</Text>
+            <TextInput
+              style={styles.addModalInput}
+              value={addA}
+              onChangeText={setAddA}
+              placeholder="e.g. Stay in a luxury hotel"
+              placeholderTextColor={Colors.muted}
+              multiline
+              maxLength={140}
+            />
+
+            <Text style={styles.addModalLabel}>Option B</Text>
+            <TextInput
+              style={styles.addModalInput}
+              value={addB}
+              onChangeText={setAddB}
+              placeholder="e.g. Camp under the stars"
+              placeholderTextColor={Colors.muted}
+              multiline
+              maxLength={140}
+            />
+
+            <Text style={styles.addModalLabel}>Discussion prompt (optional)</Text>
+            <TextInput
+              style={styles.addModalInput}
+              value={addDiscussion}
+              onChangeText={setAddDiscussion}
+              placeholder="e.g. What does your ideal getaway look like?"
+              placeholderTextColor={Colors.muted}
+              multiline
+              maxLength={160}
+            />
+
+            <Text style={styles.addModalLabel}>Level</Text>
+            <View style={styles.addModalLevelRow}>
+              {LEVELS.map((lvl) => {
+                const lvlCfg = WYR_LEVEL_CONFIG[lvl];
+                const locked = lvl === 'spicy' && !isSubscribed;
+                const active = addLevel === lvl;
+                return (
+                  <TouchableOpacity
+                    key={lvl}
+                    style={[
+                      styles.addModalLevelChip,
+                      active && { backgroundColor: lvlCfg.color, borderColor: lvlCfg.textColor },
+                    ]}
+                    onPress={() => { if (locked) return; setAddLevel(lvl); }}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${lvlCfg.label} level${locked ? ' (premium locked)' : ''}`}
+                  >
+                    <Text style={styles.addModalLevelEmoji}>{lvlCfg.emoji}</Text>
+                    <Text style={[styles.addModalLevelText, active && { color: lvlCfg.textColor, fontFamily: Fonts.bodyBold }]}>
+                      {lvlCfg.label}{locked ? ' 🔒' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.addModalBtnRow}>
+              <TouchableOpacity
+                style={styles.addModalCancelBtn}
+                onPress={() => {
+                  setShowAddModal(false);
+                  setEditingId(null);
+                  setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
+                }}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+              >
+                <Text style={styles.addModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.addModalSaveBtn, (!addA.trim() || !addB.trim() || saving) && { opacity: 0.4 }]}
+                onPress={async () => {
+                  if (!coupleId || !addA.trim() || !addB.trim() || saving) return;
+                  setSaving(true);
+                  try {
+                    const payload = {
+                      a: addA.trim(),
+                      b: addB.trim(),
+                      level: addLevel,
+                      ...(addDiscussion.trim() ? { discussion: addDiscussion.trim() } : {}),
+                    };
+                    if (editingId) {
+                      await updateCustomWYRQuestion(coupleId, editingId, payload);
+                    } else {
+                      await addCustomWYRQuestion(coupleId, uid, payload);
+                    }
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    setShowAddModal(false);
+                    setEditingId(null);
+                    setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={!addA.trim() || !addB.trim() || saving}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+              >
+                <Text style={styles.addModalSaveText}>{saving ? 'Saving…' : (editingId ? 'Save changes' : 'Save')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+
   if (!loading && !session) {
     return (
       <View style={styles.screen}>
@@ -543,123 +675,7 @@ export default function WouldYouRatherScreen() {
           tips={["Pick a level and both answer simultaneously",`Your answer is hidden until ${partnerName} also answers`,"If you match → +1 point","If you don't → discuss why! That's the fun part"]}
           onDismiss={help.dismiss} onDismissAll={help.dismissAll} />
 
-        {/* Add-your-own modal. A/B text inputs + optional discussion +
-            level pick. Save writes to couples/{coupleId}/wyrCustom, list
-            surfaces immediately via subscription for both partners. */}
-        <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => setShowAddModal(false)}>
-          <View style={styles.addModalOverlay}>
-            <View style={styles.addModalCard}>
-              <Text style={styles.addModalTitle}>{editingId ? 'Edit question' : 'Add your own question'}</Text>
-              <Text style={styles.addModalHint}>Both of you will see it mixed in with the built-in questions on the level you pick.</Text>
-
-              <Text style={styles.addModalLabel}>Option A</Text>
-              <TextInput
-                style={styles.addModalInput}
-                value={addA}
-                onChangeText={setAddA}
-                placeholder="e.g. Stay in a luxury hotel"
-                placeholderTextColor={Colors.muted}
-                multiline
-                maxLength={140}
-              />
-
-              <Text style={styles.addModalLabel}>Option B</Text>
-              <TextInput
-                style={styles.addModalInput}
-                value={addB}
-                onChangeText={setAddB}
-                placeholder="e.g. Camp under the stars"
-                placeholderTextColor={Colors.muted}
-                multiline
-                maxLength={140}
-              />
-
-              <Text style={styles.addModalLabel}>Discussion prompt (optional)</Text>
-              <TextInput
-                style={styles.addModalInput}
-                value={addDiscussion}
-                onChangeText={setAddDiscussion}
-                placeholder="e.g. What does your ideal getaway look like?"
-                placeholderTextColor={Colors.muted}
-                multiline
-                maxLength={160}
-              />
-
-              <Text style={styles.addModalLabel}>Level</Text>
-              <View style={styles.addModalLevelRow}>
-                {LEVELS.map((lvl) => {
-                  const lvlCfg = WYR_LEVEL_CONFIG[lvl];
-                  const locked = lvl === 'spicy' && !isSubscribed;
-                  const active = addLevel === lvl;
-                  return (
-                    <TouchableOpacity
-                      key={lvl}
-                      style={[
-                        styles.addModalLevelChip,
-                        active && { backgroundColor: lvlCfg.color, borderColor: lvlCfg.textColor },
-                      ]}
-                      onPress={() => { if (locked) return; setAddLevel(lvl); }}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${lvlCfg.label} level${locked ? ' (premium locked)' : ''}`}
-                    >
-                      <Text style={styles.addModalLevelEmoji}>{lvlCfg.emoji}</Text>
-                      <Text style={[styles.addModalLevelText, active && { color: lvlCfg.textColor, fontFamily: Fonts.bodyBold }]}>
-                        {lvlCfg.label}{locked ? ' 🔒' : ''}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <View style={styles.addModalBtnRow}>
-                <TouchableOpacity
-                  style={styles.addModalCancelBtn}
-                  onPress={() => {
-                    setShowAddModal(false);
-                    setEditingId(null);
-                    setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
-                  }}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.addModalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.addModalSaveBtn, (!addA.trim() || !addB.trim() || saving) && { opacity: 0.4 }]}
-                  onPress={async () => {
-                    if (!coupleId || !addA.trim() || !addB.trim() || saving) return;
-                    setSaving(true);
-                    try {
-                      const payload = {
-                        a: addA.trim(),
-                        b: addB.trim(),
-                        level: addLevel,
-                        ...(addDiscussion.trim() ? { discussion: addDiscussion.trim() } : {}),
-                      };
-                      if (editingId) {
-                        await updateCustomWYRQuestion(coupleId, editingId, payload);
-                      } else {
-                        await addCustomWYRQuestion(coupleId, uid, payload);
-                      }
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                      setShowAddModal(false);
-                      setEditingId(null);
-                      setAddA(''); setAddB(''); setAddDiscussion(''); setAddLevel('playful');
-                    } finally {
-                      setSaving(false);
-                    }
-                  }}
-                  disabled={!addA.trim() || !addB.trim() || saving}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.addModalSaveText}>{saving ? 'Saving…' : (editingId ? 'Save changes' : 'Save')}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        {addEditModal}
 
         <ConfirmModal
           visible={!!deletingId}
@@ -698,6 +714,7 @@ export default function WouldYouRatherScreen() {
             <Text style={styles.packDoneBack}>‹ Back to Discover</Text>
           </TouchableOpacity>
         </View>
+        {addEditModal}
       </View>
     );
   }
@@ -1021,6 +1038,7 @@ export default function WouldYouRatherScreen() {
         contentRef={reportContentRef}
         onClose={closeReport}
       />
+      {addEditModal}
     </View>
   );
 }
