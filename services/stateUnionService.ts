@@ -286,13 +286,20 @@ export interface StateUnionEntry {
     teamwork?: number;
   };
   // Predictions (Sep 2026). Optional final step of the check-in: up to
-  // three sealed predictions about the partner for the coming week.
-  // Revealed one week later, when the PARTNER grades them on their own
-  // next-week entry as priorVerdicts (index -> came true). Both fields
-  // live on the entry, never the parent doc, so they inherit the
-  // owner-write / read-after-both-complete rules with no rules change.
+  // three predictions about the partner for the coming week.
+  //
+  // Grading lives on the SAME week: on week W, `verdictsOnPartner` on my
+  // entry holds my verdicts (index -> came true) on the partner's week-W
+  // `predictions`. Everything about week W stays in week W, so a skipped
+  // week does not orphan anything (Review #11 B6): the grading screen
+  // looks back up to three weeks for the newest both-completed week that
+  // still has ungraded partner predictions. Both fields live on the entry,
+  // never the parent doc, so they inherit the owner-write /
+  // read-after-both-complete rules with no rules change. Owner-write has
+  // no week restriction, which is what lets a later week grade an
+  // earlier one.
   predictions?: string[];
-  priorVerdicts?: Record<string, boolean>;
+  verdictsOnPartner?: Record<string, boolean>;
   updatedAt: number;
 }
 
@@ -439,11 +446,14 @@ export async function markStateUnionCompleted(
   });
 }
 
-// ISO week id for seven days before `d`. getCurrentWeekId handles the
+// ISO week id `weeksBack` weeks before `d`. getCurrentWeekId handles the
 // year boundary, so this is safe on week 1.
-export function getPreviousWeekId(d: Date = new Date()): string {
-  return getCurrentWeekId(new Date(d.getTime() - 7 * 86400000));
+export function getPreviousWeekId(d: Date = new Date(), weeksBack = 1): string {
+  return getCurrentWeekId(new Date(d.getTime() - weeksBack * 7 * 86400000));
 }
+
+// How far back the grading screen looks for ungraded partner predictions.
+export const PREDICTION_LOOKBACK_WEEKS = 3;
 
 // Whole-array write: predictions are authored once at the end of the
 // check-in, never edited piecemeal, so no dotted-path merge needed.
@@ -460,16 +470,18 @@ export async function submitPredictions(
   trackEvent('sunday_predictions_added');
 }
 
-// Grades the PARTNER's previous-week predictions about me. Stored on MY
-// current-week entry, keyed by the prediction index. Full map each time.
-export async function submitPriorVerdicts(
+// Grades the PARTNER's predictions from week `targetWeekId`. Stored on MY
+// entry for that same week, keyed by the prediction index. Full map each
+// time. Writing an older week's entry is allowed: entries are owner-write
+// with no week restriction.
+export async function submitVerdictsOnPartner(
   coupleId: string,
-  weekId: string,
+  targetWeekId: string,
   uid: string,
   verdicts: Record<string, boolean>,
 ): Promise<void> {
-  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
-  await setDoc(entryRef, { priorVerdicts: verdicts, updatedAt: Date.now() }, { merge: true });
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', targetWeekId, 'entries', uid);
+  await setDoc(entryRef, { verdictsOnPartner: verdicts, updatedAt: Date.now() }, { merge: true });
   trackEvent('sunday_predictions_graded');
 }
 

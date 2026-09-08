@@ -23,8 +23,9 @@ import {
   subscribeStateUnionHistory,
   getPreviousWeekId,
   submitPredictions,
-  submitPriorVerdicts,
+  submitVerdictsOnPartner,
   MAX_PREDICTIONS,
+  PREDICTION_LOOKBACK_WEEKS,
 } from '../services/stateUnionService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
@@ -81,12 +82,16 @@ export default function StateUnionScreen() {
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
   // Predictions step draft (3 slots, empty = not made).
   const [predDraft, setPredDraft] = useState<string[]>(Array.from({ length: MAX_PREDICTIONS }, () => ''));
-  // Previous week's entries, one-shot. Partner's carries the predictions
-  // I grade this week; mine carries the predictions the partner grades.
-  // Both null until loaded or when last week was not both-completed
-  // (rules deny the partner read, getStateUnionEntry returns null).
-  const [prevPartnerEntry, setPrevPartnerEntry] = useState<StateUnionEntry | null>(null);
-  const [prevMyEntry, setPrevMyEntry] = useState<StateUnionEntry | null>(null);
+  // Grading targets, resolved one-shot once I have completed this week
+  // by looking back up to PREDICTION_LOOKBACK_WEEKS for both-completed
+  // weeks (Review #11 B6). `gradeTarget` is the newest such week where
+  // the partner made predictions (with my verdicts if already graded);
+  // `myPredTarget` is the newest where I made predictions (with the
+  // partner's verdicts if they have graded).
+  type GradeTarget = { weekId: string; weeksAgo: number; partnerPredictions: string[]; myVerdicts?: Record<string, boolean> };
+  type MyPredTarget = { weekId: string; weeksAgo: number; predictions: string[]; partnerVerdicts?: Record<string, boolean> };
+  const [gradeTarget, setGradeTarget] = useState<GradeTarget | null>(null);
+  const [myPredTarget, setMyPredTarget] = useState<MyPredTarget | null>(null);
   const [verdictDraft, setVerdictDraft] = useState<Record<string, boolean>>({});
   const [savingVerdicts, setSavingVerdicts] = useState(false);
   // Prevent the pulse-seed effect from clobbering user navigation after
@@ -217,41 +222,57 @@ export default function StateUnionScreen() {
     }
   };
 
-  // Once I have completed this week, load last week's entries one-shot.
-  // The partner's read only succeeds if last week was both-completed
-  // (rules); otherwise null and the grading block simply does not render.
+  // Once I have completed this week, walk back up to three weeks. Only
+  // both-completed weeks count (checked against the history subscription,
+  // no extra read), because the partner's entry is unreadable otherwise.
+  // Stops at the newest week with partner predictions and the newest
+  // with mine; a skipped week in between no longer orphans anything.
   useEffect(() => {
-    if (!coupleId || !partnerId || !iCompleted) return;
-    const prevWeekId = getPreviousWeekId();
+    if (!coupleId || !partnerId || !iCompleted || history.length === 0) return;
     let cancelled = false;
-    Promise.all([
-      getStateUnionEntry(coupleId, prevWeekId, partnerId),
-      getStateUnionEntry(coupleId, prevWeekId, uid),
-    ]).then(([theirs, mine]) => {
+    (async () => {
+      let grade: GradeTarget | null = null;
+      let mineT: MyPredTarget | null = null;
+      for (let back = 1; back <= PREDICTION_LOOKBACK_WEEKS; back++) {
+        const w = getPreviousWeekId(new Date(), back);
+        const h = history.find((x) => x.weekId === w);
+        if (!h?.completedAt?.[uid] || !h?.completedAt?.[partnerId]) continue;
+        const [theirs, mine] = await Promise.all([
+          getStateUnionEntry(coupleId, w, partnerId),
+          getStateUnionEntry(coupleId, w, uid),
+        ]);
+        if (cancelled) return;
+        if (!grade && theirs?.predictions?.length) {
+          grade = { weekId: w, weeksAgo: back, partnerPredictions: theirs.predictions, myVerdicts: mine?.verdictsOnPartner };
+        }
+        if (!mineT && mine?.predictions?.length) {
+          mineT = { weekId: w, weeksAgo: back, predictions: mine.predictions, partnerVerdicts: theirs?.verdictsOnPartner };
+        }
+        if (grade && mineT) break;
+      }
       if (cancelled) return;
-      setPrevPartnerEntry(theirs);
-      setPrevMyEntry(mine);
-    }).catch(() => {});
+      setGradeTarget(grade);
+      setMyPredTarget(mineT);
+      if (grade?.myVerdicts) setVerdictDraft(grade.myVerdicts);
+    })().catch(() => {});
     return () => { cancelled = true; };
-  }, [coupleId, partnerId, uid, iCompleted]);
+  }, [coupleId, partnerId, uid, iCompleted, history]);
 
-  // Seed the verdict draft from what I already saved, so reopening the
-  // screen shows my grades instead of blank toggles.
-  useEffect(() => {
-    if (myEntry?.priorVerdicts) setVerdictDraft(myEntry.priorVerdicts);
-  }, [myEntry?.priorVerdicts]);
-
-  const partnerPredictions = prevPartnerEntry?.predictions ?? [];
-  const verdictsSaved = !!myEntry?.priorVerdicts;
+  const partnerPredictions = gradeTarget?.partnerPredictions ?? [];
+  const verdictsSaved = !!gradeTarget?.myVerdicts;
   const allGraded = partnerPredictions.length > 0
     && partnerPredictions.every((_, i) => typeof verdictDraft[String(i)] === 'boolean');
+  const agoLabel = (n: number) => (n === 1 ? 'Last week' : n === 2 ? 'Two weeks ago' : 'Three weeks ago');
 
   const handleSaveVerdicts = async () => {
-    if (!coupleId || !allGraded || savingVerdicts) return;
+    if (!coupleId || !gradeTarget || !allGraded || savingVerdicts) return;
     setSavingVerdicts(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await submitPriorVerdicts(coupleId, weekId, uid, verdictDraft);
+      await submitVerdictsOnPartner(coupleId, gradeTarget.weekId, uid, verdictDraft);
+      // Verdicts live on a past week's entry, which is not subscribed;
+      // reflect the save locally so the block flips to read-only.
+      setGradeTarget((t) => (t ? { ...t, myVerdicts: verdictDraft } : t));
     } finally {
       setSavingVerdicts(false);
     }
@@ -397,7 +418,7 @@ export default function StateUnionScreen() {
             <Text style={styles.questionLabel}>Optional</Text>
             <Text style={styles.questionText}>Call it</Text>
             <Text style={styles.waitHint}>
-              Up to three predictions about {partnerName} for the coming week. Sealed until next Sunday, then {partnerName} says which came true.
+              Up to three predictions about {partnerName} for the coming week. Hidden until the next check-in you both finish, when {partnerName} says which came true.
             </Text>
             {[
               'e.g. Will suggest sushi at least once',
@@ -463,17 +484,16 @@ export default function StateUnionScreen() {
           </>
         )}
 
-        {/* ─── Predictions: grade last week's, see how mine landed ───
-            Renders in both PHASE 2 and PHASE 3 as its own card. Grading
-            needs only my completion (partner's last-week entry is readable
-            once last week was both-completed). Seeing the partner's
-            verdicts on MY predictions needs this week's partnerEntry,
-            which only exists once both have completed. */}
-        {iCompleted && partnerId && (partnerPredictions.length > 0 || (prevMyEntry?.predictions?.length ?? 0) > 0) && (
+        {/* ─── Predictions: grade the partner's, see how mine landed ───
+            Renders in both PHASE 2 and PHASE 3 as its own card. Both
+            targets come from the look-back effect above; grading needs
+            only my completion this week (the retention hook: you finish
+            this week's check-in to see how last week's calls landed). */}
+        {iCompleted && partnerId && (gradeTarget || myPredTarget) && (
           <View style={styles.card}>
-            {partnerPredictions.length > 0 && (
+            {gradeTarget && partnerPredictions.length > 0 && (
               <>
-                <Text style={styles.questionLabel}>Last week {partnerName} predicted</Text>
+                <Text style={styles.questionLabel}>{agoLabel(gradeTarget.weeksAgo)} {partnerName} predicted</Text>
                 {partnerPredictions.map((p, i) => {
                   const k = String(i);
                   const v = verdictDraft[k];
@@ -525,25 +545,25 @@ export default function StateUnionScreen() {
               </>
             )}
 
-            {(prevMyEntry?.predictions?.length ?? 0) > 0 && (
-              <View style={{ marginTop: partnerPredictions.length > 0 ? Spacing.lg : 0 }}>
-                <Text style={styles.questionLabel}>You predicted last week</Text>
-                {prevMyEntry!.predictions!.map((p, i) => {
-                  const theirs = partnerEntry?.priorVerdicts?.[String(i)];
+            {myPredTarget && (
+              <View style={{ marginTop: gradeTarget ? Spacing.lg : 0 }}>
+                <Text style={styles.questionLabel}>You predicted {agoLabel(myPredTarget.weeksAgo).toLowerCase()}</Text>
+                {myPredTarget.predictions.map((p, i) => {
+                  const theirs = myPredTarget.partnerVerdicts?.[String(i)];
                   return (
                     <View key={i} style={{ marginTop: Spacing.sm }}>
                       <Text style={styles.questionText}>{p}</Text>
                       <Text style={styles.waitText}>
                         {typeof theirs === 'boolean'
                           ? (theirs ? '✓ Came true' : '✗ Did not')
-                          : (both ? `${partnerName} has not graded yet` : `Revealed once ${partnerName} finishes this week`)}
+                          : `${partnerName} has not graded these yet`}
                       </Text>
                     </View>
                   );
                 })}
-                {partnerEntry?.priorVerdicts && (
+                {myPredTarget.partnerVerdicts && (
                   <Text style={[styles.waitHint, { marginTop: Spacing.sm }]}>
-                    You called {prevMyEntry!.predictions!.filter((_, i) => partnerEntry.priorVerdicts?.[String(i)]).length} of {prevMyEntry!.predictions!.length}
+                    You called {myPredTarget.predictions.filter((_, i) => myPredTarget.partnerVerdicts?.[String(i)]).length} of {myPredTarget.predictions.length}
                   </Text>
                 )}
               </View>
