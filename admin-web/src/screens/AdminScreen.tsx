@@ -161,22 +161,40 @@ export function AdminScreen() {
     }
   };
 
+  // MoM compares a PARTIAL current month against a FULL previous one, so
+  // on day 8 every row read -90% "by construction". Pro-rate the previous
+  // month to the fraction of a month elapsed so far (day-of-month over the
+  // previous month's length). Converges on the plain ratio at month end.
+  const proRate = useMemo(() => {
+    const now = new Date();
+    const dayOfMonth = now.getUTCDate();
+    const prevMonthDays = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0)).getUTCDate();
+    return { fraction: Math.min(1, dayOfMonth / prevMonthDays), dayOfMonth, prevMonthDays };
+  }, []);
+
   const rows = useMemo(() => {
     const prefix = activeTab === 'screens' ? 'screen_' : activeTab === 'admin' ? 'admin_' : null;
     const entries = Object.entries(curStats).filter(([key]) => {
       if (activeTab === 'screens') return key.startsWith('screen_');
       if (activeTab === 'admin') return key.startsWith('admin_');
-      return !key.startsWith('screen_') && !key.startsWith('admin_');
+      // Actions = real events only. time_* feeds the Screens timing
+      // columns and heat_* feeds the heatmap; both are internal counters
+      // that drowned the actual events in this list.
+      return !key.startsWith('screen_') && !key.startsWith('admin_')
+        && !key.startsWith('time_') && !key.startsWith('heat_');
     });
     entries.sort((a, b) => b[1] - a[1]);
     return entries.map(([key, count]) => {
       const label = prefix ? key.slice(prefix.length) : key;
       const prev = prevStats[key] ?? 0;
       let deltaPct: number | null = null;
-      if (prev > 0) deltaPct = Math.round(((count - prev) / prev) * 100);
+      if (prev > 0) {
+        const prevScaled = prev * proRate.fraction;
+        deltaPct = Math.round(((count - prevScaled) / prevScaled) * 100);
+      }
       return { key, label, count, prev, deltaPct };
     });
-  }, [curStats, prevStats, activeTab]);
+  }, [curStats, prevStats, activeTab, proRate]);
 
   const sessionByScreen = useMemo(() => {
     const map = new Map<string, ScreenSessionStats>();
@@ -268,8 +286,12 @@ export function AdminScreen() {
           );
         })}
       </div>
-      {activeTab === 'screens' && !statsLoading && rows.length > 0 && (
-        <div className="table-legend">count · MoM % · <strong>avg · min · max</strong> time per opening</div>
+      {!statsLoading && rows.length > 0 && (
+        <div className="table-legend">
+          count · MoM % vs {currentMonthKey(-1)}
+          {proRate.fraction < 1 && <> (pro-rated to day {proRate.dayOfMonth} of {proRate.prevMonthDays})</>}
+          {activeTab === 'screens' && <> · <strong>avg · min · max</strong> time per opening</>}
+        </div>
       )}
 
       {/* ─── Reports queue (H33) ─── */}

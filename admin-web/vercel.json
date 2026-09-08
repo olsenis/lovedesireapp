@@ -4,5 +4,5 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "rewrites": [{ "source": "/(.*)", "destination": "/" }],
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- admin-web/"
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ':(top)admin-web/'"
 }
