@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { Platform, View, Text, StyleSheet, TouchableOpacity, Animated, LogBox } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, router, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -30,6 +30,15 @@ import { LoveLanguage } from '../constants/content';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+
+// Firestore logs "WebChannelConnection RPC 'Listen' stream ... transport
+// errored" at warn level every time a long-poll request drops and is
+// retried, which on a dev tunnel is often. The SDK recovers on its own
+// (long-polling is already forced in services/firebase.ts); the message
+// is a recovered network blip, not a bug. Hide it from the dev overlay so
+// device testing isn't interrupted by yellow boxes. Dev-only: LogBox does
+// not exist in production builds. Console output is untouched.
+LogBox.ignoreLogs(['WebChannelConnection RPC']);
 
 // Show notifications even when app is in foreground. Guarded by the
 // notificationsGuard — in Expo Go Android the module is null, skip
