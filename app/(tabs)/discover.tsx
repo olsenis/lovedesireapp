@@ -1,9 +1,18 @@
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useCouple } from '../../hooks/useCouple';
 import { useSubscription } from '../../hooks/useSubscription';
+import { useToast } from '../../components/Toast';
 import { personalise } from '../../services/personalise';
+import {
+  getFeatureUnlockState,
+  markMemoryLaneUnlocked,
+  isUnlockRecent,
+  memoryLaneEligible,
+  memoryLaneDaysLeft,
+} from '../../services/featureUnlockService';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/fonts';
 import { Spacing, Radius, Shadow } from '../../constants/spacing';
@@ -34,17 +43,31 @@ const CHALLENGES = [
   { emoji: '💘', title: "Tonight's Date",       subtitle: 'Let fate pick your perfect date idea',      route: '/roulette',  bg: '#E8F5E9', paid: false },
 ];
 
+// Memory Lane (Sep 2026) is the only data-gated card: free, but hidden
+// behind 30 days of history because it quizzes the couple on their own
+// past. Not paywalled, so it must not show the 🔒 or route to /upgrade.
+const MEMORY_LANE: GameCard = {
+  emoji: '🧠', title: 'Memory Lane', subtitle: 'A weekly quiz on your own story', route: '/memory-lane', bg: '#E8F5E9', paid: false,
+};
+
 function FeatureCard({
-  emoji, title, subtitle, route, bg, paid, isSubscribed, isNew, inPerson, isLDR,
+  emoji, title, subtitle, route, bg, paid, isSubscribed, isNew, inPerson, isLDR, gateLabel, onGatedPress,
 }: {
   emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean; isNew?: boolean; inPerson?: boolean; isLDR?: boolean;
+  // Data-gate (not paywall): when set, the card is dimmed, the arrow is
+  // replaced by this label, and taps call onGatedPress instead of routing.
+  gateLabel?: string; onGatedPress?: () => void;
 }) {
   const locked = paid && !isSubscribed;
+  const gated = !!gateLabel;
   const showInPersonPill = !!inPerson && !!isLDR;
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: bg }]}
-      onPress={() => router.push(locked ? '/upgrade' : route as any)}
+      style={[styles.card, { backgroundColor: bg }, gated && { opacity: 0.65 }]}
+      onPress={() => {
+        if (gated) { onGatedPress?.(); return; }
+        router.push(locked ? '/upgrade' : route as any);
+      }}
       activeOpacity={0.8}
      accessibilityRole="button">
       <Text style={styles.cardEmoji}>{emoji}</Text>
@@ -64,7 +87,11 @@ function FeatureCard({
         </View>
         <Text style={styles.cardSub}>{subtitle}</Text>
       </View>
-      <Text style={styles.arrow}>{locked ? '🔒' : '›'}</Text>
+      {gated ? (
+        <View style={styles.gatePill}><Text style={styles.gatePillText}>{gateLabel}</Text></View>
+      ) : (
+        <Text style={styles.arrow}>{locked ? '🔒' : '›'}</Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -73,10 +100,34 @@ export default function DiscoverScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
+  const { toast, showToast } = useToast();
 
   useTrackScreen('discover');
 
   const isLDR = !!couple?.isLongDistance;
+
+  // Memory Lane unlock. Eligibility from couple.createdAt; the unlock
+  // timestamp is persisted per-user so the NEW badge window is stable.
+  // undefined while loading so the card doesn't flash between states.
+  const [memoryLaneUnlockedAt, setMemoryLaneUnlockedAt] = useState<number | null | undefined>(undefined);
+  const memoryLaneDays = memoryLaneDaysLeft(couple?.createdAt);
+  useEffect(() => {
+    const uid = user?.uid;
+    if (!uid || !couple) return;
+    let cancelled = false;
+    (async () => {
+      const state = await getFeatureUnlockState(uid);
+      if (cancelled) return;
+      if (state.memoryLaneUnlockedAt) { setMemoryLaneUnlockedAt(state.memoryLaneUnlockedAt); return; }
+      if (memoryLaneEligible(couple.createdAt)) {
+        const ts = await markMemoryLaneUnlocked(uid);
+        if (!cancelled) setMemoryLaneUnlockedAt(ts);
+      } else {
+        setMemoryLaneUnlockedAt(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.uid, couple?.createdAt]);
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
@@ -93,9 +144,21 @@ export default function DiscoverScreen() {
           isLDR={isLDR}
         />
       ))}
+      {memoryLaneUnlockedAt !== undefined && (
+        <FeatureCard
+          {...MEMORY_LANE}
+          subtitle={memoryLaneUnlockedAt ? MEMORY_LANE.subtitle : `Unlocks after ${memoryLaneDays === 1 ? '1 more day' : `${memoryLaneDays} more days`} together`}
+          isSubscribed={isSubscribed}
+          isLDR={isLDR}
+          isNew={isUnlockRecent(memoryLaneUnlockedAt ?? undefined)}
+          gateLabel={memoryLaneUnlockedAt ? undefined : `${memoryLaneDays}d`}
+          onGatedPress={() => showToast(`Memory Lane quizzes you on your own story, so it needs ${memoryLaneDays === 1 ? 'one more day' : `${memoryLaneDays} more days`} of it first.`)}
+        />
+      )}
 
       <Text style={styles.sectionLabel}>Challenges</Text>
       {CHALLENGES.map((f) => <FeatureCard key={f.route} {...f} subtitle={personalise(f.subtitle, partner?.name)} isSubscribed={isSubscribed} isLDR={isLDR} />)}
+      {toast}
     </ScrollView>
   );
 }
@@ -140,5 +203,16 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: Colors.burgundy,
     letterSpacing: 0.8,
+  },
+  gatePill: {
+    backgroundColor: 'rgba(136,14,79,0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+  },
+  gatePillText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 12,
+    color: Colors.burgundy,
   },
 });
