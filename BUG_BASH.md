@@ -18,6 +18,17 @@ _(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 - [x] **T-or-D `{partner}` POV substitution** — ✅ PASSED across Sweet / Flirty / Spicy after hard-refresh + Vercel deploy landed (`9c4d6b1`).
 - [x] **New manual T-or-D mode** — ✅ PASSED. Wherever You Are picker shows draw-random + write-your-own rows, TextInput opens, Send flows through playCard (`fafc46a`).
 
+### Pre-launch retention build (Sep 8, Review #10) — all pending device test
+
+- [ ] **Moments archive-peek threshold** back to ≥8 (`b04034d`) — card must NOT show on a couple with <8 moments.
+- [ ] **Sunday history Thursday card** (`a286d66`) — Thursday only, needs 2+ both-completed weeks, one dismissal per ISO week, tap → /state-union history block. Test by temporarily forcing `getDay()===4`.
+- [ ] **WYR Wednesday author nudge** (`bc3cd21`) — Wednesday only, hidden once authored this week, tap → add modal opens directly via `?author=1`. `wyr_custom_authored` increments.
+- [ ] **WhileYouWait** (`c4dbc73`, chip set narrowed in `2a326cd`) — appears under the wait state on all 7 screens; Moment chip hidden once captured; Moments screen excludes its own chip.
+- [ ] **Presence `?mini=1`** (`2a326cd`) — 7-day Home nudge lands directly in the mini; `sensate_mini_completed` +1 per mini (was +2); reflection reveal shows the real partner name.
+- [ ] **Activity Cards custom** (`ba79581`) — add 2 cards → ↺ New → both in deck (find by flipping); delete → next reset excludes; reset modal shows "Includes N of your own cards".
+- [ ] **Sunday predictions** (`23b2236` + fix `34f1431`) — Q5 "Next →" → Call it card; Skip and Save both complete; next week partner sees grading block, verdicts save, both see scores once both complete. Verify week-1 (no grading block) does not break.
+- [ ] **Memory Lane** (`f22ee35`, `876db56`, 7.6) — flip `MEMORY_LANE_DEV_UNLOCK` if QA couple < 30d; Discover card NEW badge; 5 questions from ≥3 sources on the QA couple; instant ✓/✗; score; partner score after B; thin-history state on a fresh couple; Thursday nudge; gate view via deep link on a <30d couple.
+
 ## ⏳ Pending — Bug bash Round 2 remainder
 
 - [x] **#7 T-or-D Truth flow** — ✅ PASSED. Text answer path + audio recording path (record → upload → reveal on both phones) + score bump + next turn. Send-my-answer button padding polish fix landed same session.
@@ -30,7 +41,17 @@ _(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 
 - [ ] **Read every content-pool text by hand** — the automated sweeps caught structural issues (em dashes, `{partner}` tokens, first-position pronouns, POV substitution) but only a human can catch tone / typos / awkward phrasing / anything that "reads off" in context. Scope: DARES (274) · TRUTHS (310) · QUESTIONS (474) · DAILY_WISH_ITEMS (254) · FANTASY_WISHES_PRESETS (294) · BINGO_ACTIVITIES (55). Approach: read a category at a time, flag any that need rewriting, batch-fix. Estimate ~2-3h across several sessions.
 
-## ⏳ Pending — Bug bash Round 5 (tail sweep)
+## ✅ Bug bash Round 5 (tail sweep) — COMPLETE (Aug 19)
+
+All five sub-rounds passed. Fixes shipped in-flight: H26 Sensate re-entry
++ auto-scroll (00c3dac + c541331), H26 delta 2 FW toast removal + Daily
+Spicy Note prefill (f0eabd3), menu flicker v1-v4 + pre-mount HTML splash
++ static output (af29581 → d554def → 92bc32f), Profile plan pill (892c4fa),
+manifest.json PWA tweaks (d489080), 5D fixes: Roulette LDR filter both
+directions + Flirt Reminders time picker + Memory Wall doc cleanup
+(f182fce). Splash wordmark redesign deferred as design task.
+
+
 
 Systematic walkthrough of features that Rounds 1-4 didn't cover — standalone
 screens, home-nudge remainder, profile, and regression checks for the
@@ -129,7 +150,7 @@ Screens that didn't get their own round.
 
 - [x] **Copy sweep** across all screens — ✅ shipped `b1bb14a`. Round 3 agent audit found 8 lingering issues + 1 defensive opportunity. All fixed: challenge.tsx error message (leaked "Permission denied, check Firebase rules"), profile.tsx pairing error fallback (leaked reason codes), inactive-partner hint on Home, T-or-D sent-truth banner, Us tab "Speak their language" card, state-union wait hint, 2 sensate guided prompts, T-or-D mode picker sub. Also defensive-wrapped `versus.tsx` question text in personalise(). **Zero em dashes** and **zero unwrapped `{partner}` tokens** confirmed clean across app/ and components/.
 - [x] **LDR mode toggle test** — ✅ PASSED. Profile toggle flips filters cleanly: T-or-D pool switches between `ldr + either` and `physical + either`, Home ritual copy adapts, Notes / Countdowns / Roulette LDR variants surface.
-- [ ] **Unpaid user coverage** — flip `couples/{id}.isPremium = false` on QA couple in Firebase Console → verify gates on Discover / Us / paywalled screens / category gates in Daily + WYR + T-or-D + Challenge.
+- [x] **Unpaid user coverage** — PASSED Aug 2026. Flipped `couples/{id}.isPremium = false` on QA couple. Verified: Profile plan pill → Free, Discover lock icons on Fantasy Wishes + Activity Cards, Us Nurture lock icons on Intimacy Log + The Lovers + Presence, deep-link paywall gates redirect (/fantasy-wishes, /sensate, /blueprint, /intimacy-tracker, /bingo → /upgrade), Daily Deep + Spicy category locks, WYR + TorD Spicy level locks (both solo + multiplayer modes), 30-Day Challenge Fire + Desire locks, Mood picker Kinky + Horny greyed locks. TorD "Write your own" naturally gated by Spicy level redirect — no separate gate needed.
 
 ## ⏳ Launch-prep chain (after bug bash passes)
 
