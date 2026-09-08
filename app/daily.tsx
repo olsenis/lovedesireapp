@@ -1120,7 +1120,7 @@ function QuestionCard({
             <Text style={styles.waitText}>✓ Sent! Waiting for {partnerName}…</Text>
             <Text style={styles.waitAnswer}>Your answer: {mine}</Text>
           </View>
-          <WhileYouWait />
+          <WhileYouWait exclude={['daily']} />
         </>
       )}
 
