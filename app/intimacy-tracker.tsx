@@ -8,7 +8,8 @@ import { useSubscription } from '../hooks/useSubscription';
 import {
   IntimacyEntry, IntimacyLocation, IntimacyType, IntimacyMood,
   subscribeIntimacyLog, addIntimacyEntry, deleteIntimacyEntry, getIntimacyStats,
-  initiatedFromViewer, STATS_MIN_ENTRIES,
+  initiatedFromViewer, directionFromViewer, isDirectionalType, STATS_MIN_ENTRIES,
+  DIRECTIONAL_TYPES, DirectionalType, IntimacyDirection,
   LOCATION_LABELS as LOC_LABELS,
   generateMonthlyNarrative, computeMonthlyDelta, previousMonthDate,
 } from '../services/intimacyService';
@@ -88,6 +89,21 @@ const PREFILL_PRESETS: Record<string, PrefillPreset> = {
 
 function fmtDate(ts: number): string {
   return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// Viewer-side wording for a direction. Lowercase so it can trail a type
+// label ("Oral · for Eva"); the composer chips capitalise it themselves.
+function directionLabel(d: IntimacyDirection, partnerName: string): string {
+  return d === 'gave' ? `for ${partnerName}` : d === 'received' ? 'for you' : 'both ways';
+}
+
+// "Oral · for Eva" when the logger set a direction, plain label otherwise.
+function typePillLabel(entry: IntimacyEntry, t: IntimacyType, uid: string, partnerName: string): string {
+  if (t === 'other' && entry.otherLabel) return entry.otherLabel;
+  const base = TYPE_LABELS[t];
+  if (!isDirectionalType(t)) return base;
+  const d = directionFromViewer(entry, t, uid);
+  return d ? `${base} · ${directionLabel(d, partnerName)}` : base;
 }
 
 // ── Chip ──────────────────────────────────────────────────────────────────────
@@ -244,9 +260,7 @@ export default function IntimacyTrackerScreen() {
                   <View style={styles.entryTypes}>
                     {entry.types.slice(0, 3).map(t => (
                       <View key={t} style={styles.entryTypePill}>
-                        <Text style={styles.entryTypePillText}>
-                          {t === 'other' && entry.otherLabel ? entry.otherLabel : TYPE_LABELS[t]}
-                        </Text>
+                        <Text style={styles.entryTypePillText}>{typePillLabel(entry, t, uid, partnerName)}</Text>
                       </View>
                     ))}
                   </View>
@@ -297,10 +311,8 @@ export default function IntimacyTrackerScreen() {
                   <Text style={styles.detailLabel}>What</Text>
                   <View style={styles.chipRow}>
                     {selectedEntry.types.map(t => (
-                      <View key={t} style={styles.chipSelected}>
-                        <Text style={styles.chipTextSelected}>
-                          {t === 'other' && selectedEntry.otherLabel ? selectedEntry.otherLabel : TYPE_LABELS[t]}
-                        </Text>
+                      <View key={t} style={[styles.chip, styles.chipSelected]}>
+                        <Text style={[styles.chipText, styles.chipTextSelected]}>{typePillLabel(selectedEntry, t, uid, partnerName)}</Text>
                       </View>
                     ))}
                   </View>
@@ -310,8 +322,8 @@ export default function IntimacyTrackerScreen() {
                     <Text style={styles.detailLabel}>Positions</Text>
                     <View style={styles.chipRow}>
                       {selectedEntry.positions.map(p => (
-                        <View key={p} style={styles.chipSelected}>
-                          <Text style={styles.chipTextSelected}>
+                        <View key={p} style={[styles.chip, styles.chipSelected]}>
+                          <Text style={[styles.chipText, styles.chipTextSelected]}>
                             {p === 'Other' && selectedEntry.otherPositionLabel ? selectedEntry.otherPositionLabel : p}
                           </Text>
                         </View>
@@ -589,6 +601,9 @@ function DetailSheet({
   const [initiatedBy, setInitiatedBy] = useState<'me' | 'partner' | 'both' | null>(null);
   const [location, setLocation] = useState<IntimacyLocation | null>(null);
   const [types, setTypes] = useState<IntimacyType[]>([]);
+  // Direction per oral / hands, only while that type is selected. Empty
+  // means the logger did not say, which is the default.
+  const [typeDetail, setTypeDetail] = useState<Partial<Record<DirectionalType, IntimacyDirection>>>({});
   // Free-text label surfaced when 'other' is selected in the type chips.
   // Persists to IntimacyEntry.otherLabel so entry display can show a
   // specific description instead of just "Other".
@@ -627,7 +642,7 @@ function DetailSheet({
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
-    setInitiatedBy(null); setLocation(null); setTypes([]); setOtherLabel(''); setDuration('');
+    setInitiatedBy(null); setLocation(null); setTypes([]); setTypeDetail({}); setOtherLabel(''); setDuration('');
     setPositions([]); setOtherPositionLabel(''); setOtherLocationLabel('');
     setMood(null); setNote(''); setRating(0);
     setMyOrgasm(null); setMyOrgasmCount(1); setPartnerOrgasm(null); setPartnerOrgasmCount(1);
@@ -651,6 +666,11 @@ function DetailSheet({
         ...(duration ? { duration: parseInt(duration) } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(rating > 0 ? { rating: rating as 1 | 2 | 3 | 4 | 5 } : {}),
+        ...(() => {
+          // Only directions for types still selected, never an orphan key.
+          const kept = Object.fromEntries(Object.entries(typeDetail).filter(([k]) => types.includes(k as IntimacyType)));
+          return Object.keys(kept).length > 0 ? { typeDetail: kept as typeof typeDetail } : {};
+        })(),
         ...(types.includes('other') && otherLabel.trim() ? { otherLabel: otherLabel.trim() } : {}),
         ...(location === 'other' && otherLocationLabel.trim() ? { otherLocationLabel: otherLocationLabel.trim() } : {}),
         ...(positions.includes('Other') && otherPositionLabel.trim() ? { otherPositionLabel: otherPositionLabel.trim() } : {}),
@@ -669,8 +689,20 @@ function DetailSheet({
     }
   };
 
-  const toggleType = (t: IntimacyType) =>
+  const toggleType = (t: IntimacyType) => {
     setTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+    // Deselecting oral / hands drops its direction so a stale one cannot save.
+    if (isDirectionalType(t) && types.includes(t)) {
+      setTypeDetail(prev => { const { [t]: _dropped, ...rest } = prev; return rest; });
+    }
+  };
+
+  // Tap the selected direction again to go back to unspecified.
+  const setDirection = (t: DirectionalType, d: IntimacyDirection) =>
+    setTypeDetail(prev => {
+      if (prev[t] === d) { const { [t]: _dropped, ...rest } = prev; return rest; }
+      return { ...prev, [t]: d };
+    });
 
   const togglePosition = (p: string) =>
     setPositions(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
@@ -756,6 +788,34 @@ function DetailSheet({
                 <Chip key={t.key} label={t.label} selected={types.includes(t.key)} onPress={() => toggleType(t.key)} />
               ))}
             </View>
+
+            {/* Direction rows, one per selected oral / hands. Optional:
+                nothing selected means unspecified, so ignoring the row
+                costs nothing. Shown from the logger's side; the partner's
+                phone flips it on display (directionFromViewer). */}
+            {DIRECTIONAL_TYPES.filter(t => types.includes(t)).map(t => (
+              <View key={t} style={styles.directionRow}>
+                <Text style={styles.directionLabel}>{TYPE_LABELS[t]}</Text>
+                <View style={styles.directionChips}>
+                  {(['gave', 'received', 'both'] as const).map(d => {
+                    const on = typeDetail[t] === d;
+                    const label = d === 'gave' ? `For ${partnerName}` : d === 'received' ? 'For you' : 'Both ways';
+                    return (
+                      <TouchableOpacity
+                        key={d}
+                        style={[styles.miniChip, on && styles.chipSelected]}
+                        onPress={() => setDirection(t, d)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: on }}
+                        accessibilityLabel={`${TYPE_LABELS[t]}, ${label}`}>
+                        <Text style={[styles.miniChipText, on && styles.chipTextSelected]}>{label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
 
             {/* Free-text label surfaces when 'other' is selected so the
                 entry captures what "other" specifically was. Empty is fine
@@ -1043,6 +1103,12 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   chipText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   chipTextSelected: { color: Colors.white },
+  // Direction sub-row under What? (oral / hands): type label + 3 mini chips
+  directionRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: -Spacing.xs },
+  directionLabel: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, width: 52 },
+  directionChips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  miniChip: { paddingVertical: 5, paddingHorizontal: 10, borderRadius: Radius.full, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
+  miniChipText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted },
 
   locationGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   locationBtn: { width: '30%', padding: Spacing.sm, borderRadius: Radius.lg, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', gap: 4 },

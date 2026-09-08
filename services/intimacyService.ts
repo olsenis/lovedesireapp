@@ -10,6 +10,13 @@ export type IntimacyLocation =
 export type IntimacyType = 'intercourse' | 'oral' | 'hands' | 'toys' | 'foreplay_only' | 'other';
 export type IntimacyMood = 'amazing' | 'good' | 'okay' | 'disconnected';
 
+// Types that have a direction (Sep 2026). Stored relative to the LOGGER,
+// like initiatedBy: 'gave' = the logger did it for the partner. Optional
+// per type; unspecified is the default and costs the logger nothing.
+export const DIRECTIONAL_TYPES = ['oral', 'hands'] as const;
+export type DirectionalType = typeof DIRECTIONAL_TYPES[number];
+export type IntimacyDirection = 'gave' | 'received' | 'both';
+
 export const LOCATION_LABELS: Record<IntimacyLocation, { emoji: string; label: string }> = {
   bedroom:          { emoji: '🛏️', label: 'Bedroom' },
   living_room:      { emoji: '🛋️', label: 'Living room' },
@@ -32,6 +39,10 @@ export interface IntimacyEntry {
   initiatedBy: 'me' | 'partner' | 'both';
   location: IntimacyLocation;
   types: IntimacyType[];
+  // Optional direction per directional type (oral / hands), keyed by
+  // type, relative to the logger. Only present for types in `types`
+  // that the logger chose a direction for. Read via directionFromViewer.
+  typeDetail?: Partial<Record<DirectionalType, IntimacyDirection>>;
   // Custom label for the 'other' type — free-text field surfaced when
   // 'other' is included in types. Optional. When present, entry display
   // shows the custom text instead of just "Other".
@@ -122,6 +133,19 @@ export function initiatedFromViewer(e: IntimacyEntry, uid: string): 'me' | 'part
   if (e.initiatedBy === 'both') return 'both';
   const loggerIsViewer = e.loggedBy === uid;
   return (e.initiatedBy === 'me') === loggerIsViewer ? 'me' : 'partner';
+}
+
+// Same flip for a directional type: a partner-logged 'gave' is 'received'
+// from the viewer's side. null when the logger left it unspecified.
+export function directionFromViewer(e: IntimacyEntry, type: DirectionalType, uid: string): IntimacyDirection | null {
+  const d = e.typeDetail?.[type];
+  if (!d) return null;
+  if (d === 'both' || e.loggedBy === uid) return d;
+  return d === 'gave' ? 'received' : 'gave';
+}
+
+export function isDirectionalType(t: IntimacyType): t is DirectionalType {
+  return (DIRECTIONAL_TYPES as readonly string[]).includes(t);
 }
 
 export function getIntimacyStats(entries: IntimacyEntry[], uid: string): IntimacyStats {

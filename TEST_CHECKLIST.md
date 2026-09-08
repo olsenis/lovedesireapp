@@ -2429,6 +2429,18 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
   2. Save → tap entry
   - **Expected:** Detail sheet shows all values.
 
+- [ ] **Oral / Hands direction row appears only while that type is selected** (Sep 2026)
+  1. Tap Oral → row "Oral: For {partner} · For you · Both ways" appears under What?; tap Hands → second row. Untap Oral
+  - **Expected:** Row appears and disappears with the chip. Nothing selected is fine, Save still enabled.
+
+- [ ] **Direction toggles off on second tap and is dropped with the type**
+  1. Oral → For {partner} → tap again; Oral → For you → untap Oral → retap Oral
+  - **Expected:** First: chip clears. Second: row comes back with nothing selected (no stale direction saved, check Firestore `typeDetail` absent).
+
+- [ ] **Direction renders viewer-side on both phones** 📱
+  1. Phone A logs Oral → "For {partner}"; both open Log and the entry detail
+  - **Expected:** A: pill "Oral · for {partner}". B: pill "Oral · for you". "Both ways" reads the same on both.
+
 - [ ] **Star rating tap-to-toggle clears when same star tapped**
   1. Tap 4th star then 4th again
   - **Expected:** Clears to 0; label disappears.
