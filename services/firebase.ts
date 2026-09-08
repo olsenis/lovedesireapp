@@ -36,15 +36,25 @@ if (Platform.OS === 'web') {
 
 export const auth = _auth;
 
-// Firestore WebChannel transport works over browsers but flakes badly
-// through React Native + tunnel / cellular network switches, spamming
-// "RPC 'Listen' stream transport errored" warnings. Auto-detect long-
-// polling as a fallback: the SDK still tries WebChannel first, then
-// gracefully drops to long-polling when the transport misbehaves.
-// Safe on all platforms; on web it stays on WebChannel unless needed.
+// Firestore's default transport is WebChannel, which is tuned for browsers
+// and flakes through React Native's networking stack (tunnel, cellular
+// switches, backgrounding), spamming "RPC 'Listen' stream transport
+// errored" warnings on every flap.
+//
+// Sep 8 2026: an earlier attempt set experimentalAutoDetectLongPolling,
+// which has been the SDK default since v9.22 (May 2023) and so changed
+// nothing; the warning is logged precisely during auto-detect's failed
+// WebChannel probe. experimentalForceLongPolling skips WebChannel
+// entirely. Long-polling costs a little latency, imperceptible at this
+// app's ~20 subscriptions and low write volume, and is the standard
+// recommendation for React Native. The two settings are mutually
+// exclusive, so this replaces rather than adds.
+//
+// Web preview (Vercel, not a target platform) also gets long-polling;
+// fine for a dev preview.
 let _db: Firestore;
 try {
-  _db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+  _db = initializeFirestore(app, { experimentalForceLongPolling: true });
 } catch {
   // Already initialized (fast refresh) — reuse existing instance
   _db = getFirestore(app);
