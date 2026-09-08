@@ -224,8 +224,8 @@ All static game content lives here — import from this file, never hardcode in 
 - `FANTASY_PRESETS` + `FANTASY_CATEGORY_CONFIG` — 60 fantasy presets (Roleplay/Sensual/Bold/Adventurous)
 - `FANTASY_WISHES_PRESETS` — 294 scenario items for Fantasy Wishes (Sensual/Roleplay/Explicit/BDSM). Target 400+. See `memory/fantasy_wishes_prompt.md`.
 - `CHALLENGE_PROGRAMS` + `CHALLENGE_PROGRAM_CONFIG` — 4 programs x 30 tasks
-- `WYR_QUESTIONS` + `WYR_LEVEL_CONFIG` — 90 Would You Rather questions (Playful/Romantic/Spicy)
-- `BINGO_ACTIVITIES` + `BINGO_REWARDS` — 55 activities + 10 rewards for Intimacy Bingo
+- `WYR_QUESTIONS` + `WYR_LEVEL_CONFIG` — 191 Would You Rather questions (Playful 70 / Romantic 60 / Spicy 61). Plus `WYR_PACKS` (6 themed packs × 10) and per-couple `wyrCustom` collection (`addCustomWYRQuestion` inserts at deck front).
+- `BINGO_ACTIVITIES` + `BINGO_REWARDS` — 50 activities + 10 rewards for Activity Cards
 - `DAILY_WISH_ITEMS` + `DAILY_WISH_CATEGORY_CONFIG` — 254 items across 4 categories (Sweet 60 + Flirty 60 + Spicy 104 + Deep 30). Old 'sexual' category merged into 'spicy' July 2026. Deep actions added Aug 2026 (reflective, connection-oriented prompts) to give the Deep tab in Daily its own action pool alongside its questions. `sx()` factory still exists but now emits `category: 'spicy'`; `dp()` factory added for Deep. See `memory/explicit_content_prompt.md` for Spicy.
 
 ### Content generation prompts (`memory/`)

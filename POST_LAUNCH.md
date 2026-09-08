@@ -6,6 +6,38 @@ Update rule: when an idea ships, move it out to CLAUDE.md / APP_MAP.md. When an 
 
 ---
 
+## QA1 Post-SDK-57 full-device sweep on both phones (raised Sep 8 2026)
+
+After SDK 54 → 57 upgrade shipped, the initial device pass covered app-loading and layout basics. A full behavior sweep across real-multiplayer, media, animation, and Firebase paths on both iPhone and Android is queued for a dedicated session so any residual SDK 57 regressions land in one bug-bash.
+
+**Critical paths (2-phone, real-multiplayer):**
+- Truth or Dare "Wherever You Are" — pick truth on A, record audio, B answers, dare confirmation
+- Sunday Check-in — both answer privately, mutual reveal
+- Daily Questions — binary/scale answers reveal side-by-side
+- Fantasy Wishes — both vote, mutual-yes matches surface
+- Pair via QR — expo-camera scan works
+
+**Media capture + upload:**
+- Moments: take photo → compression → upload → shows on partner
+- Tease: photo + video + voice → 24h preview
+- Profile photo pick + upload
+
+**Animations + gestures:**
+- Fantasy Wishes card swipe smooth
+- Daily drag-to-sort
+- Challenge setup drag day cards
+- Truth or Dare wheel spin
+
+**Notifications (limited in Expo Go):**
+- Sunday LL nudge scheduling
+- Flirt Reminder local scheduled notif
+
+**Why deferred:** minor SDK 57 friction we've hit so far (edge-to-edge tab overlap, keyboard cover, expo-notifications guard, Firestore WebChannel flake) has been fixed inline. A full pass needs uninterrupted time on both phones; better as a focused session than trickled through casual test moments.
+
+**Decision criteria:** run before App Store submission, and again after any subsequent SDK bump or major dependency change.
+
+---
+
 ## D1 Emotional Weather — cross-partner pattern detection (raised Aug 2026)
 
 Passive Cloud Function computes weekly patterns across mood + Sunday Check-in + Pulse data, surfaces as an actionable Home card ("this app noticed we always feel disconnected on Sundays"). Viral one-liner potential — nothing in market does this.
@@ -33,6 +65,77 @@ One couple opens the mode, app shows same content on both phones with 1-2s heart
 **Why deferred:** ~10-14h including 4-6 activity types. Captures 20-25% LDR user segment currently getting scattered features (LDR mood UTC, virtual dates, distance tips), but not launch-critical — LDR users can still use every existing feature.
 
 **Decision criteria:** post-launch when analytics show LDR retention lagging non-LDR retention, or when user feedback specifically asks for "we want to do something together but we're apart".
+
+---
+
+## D6 Manstu? (Memory Lane) — weekly quiz on your own history (raised Sep 2026, Review #10)
+
+Weekly 5-question quiz generated from the couple's own archive: "Which month was this Moment taken?", "What did {partner} answer to this Daily question in March?", "What was your mood on this day?", "What was milestone #3 in Our Story?". Both answer privately, reveal + score. Unlocks at day 30 of history, reusing the `featureUnlockService` sticky-unlock + NEW-badge pattern from Versus.
+
+**Why this is the strategic bet:** the only game whose content pool grows with usage instead of depleting. Turns the invisible compounder archive (Moments, Daily, moods, milestones) into something played. Day-30 unlock converts the month-1 cliff into a milestone ("5 days until a new game"). Competitors can't copy it without the archive infra.
+
+**Why deferred:** 30-40h (question generators for 5-6 source types are the bulk). Cannot be tested without 30 days of real data on a QA couple. Free tier.
+
+**Decision criteria:** start build at launch + 8 weeks regardless of cohort shape. Sources verified present: Moments path carries date, `dailyQuestions` 45-day query exists (Versus), moods + milestones exist. New doc: `couples/{id}/memoryQuiz/{weekId}` with the same nested-map answer guard as Daily.
+
+---
+
+## D7 Spá (Predictions) — sealed weekly predictions about each other (raised Sep 2026, Review #10)
+
+Each partner writes 3 predictions about the other for the coming week ("Óli will forget to text before noon at least once"). Sealed. Next Sunday: reveal, each marks whether the other's predictions came true, score. Infinite user-generated content, pure playful teasing.
+
+**Why deferred:** 10-15h. Review proposed embedding in Sunday Check-in, which is already 5 pulse + 5 questions; +3 written +3 graded doubles ritual length. Not bloating the strongest anchor before completion-rate is measured.
+
+**Decision criteria:** launch + 4-6 weeks, after Sunday CI completion-rate is visible. Ship as **optional final step** ("Add predictions for the week?" skip/yes) on `stateUnion/{weekId}/entries/{uid}` (already has sealed-until-both-complete rules; add `predictions: string[]` + `predictionOutcomes`). If opt-in >40% after a month → default on. If <20% → standalone or drop.
+
+---
+
+## D8 Helgar-Quest (Weekend Mission) — procedural off-screen cooperative mission (raised Sep 2026, Review #10)
+
+Friday: couple receives one mission composed from building blocks: [place neither has been] + [do X there] + [twist]. Photo-verify via Moments. Sunday: complete → Our Story milestone. ~30 blocks give hundreds of combos without authoring debt. Seed from `DATE_IDEAS` (130).
+
+**Why deferred:** 25-30h. The only proposed game that gets the couple off the screen — strong word-of-mouth angle — but no differentiator on par with D6. Free basic; paid "spicy missions" variant possible.
+
+**Decision criteria:** Q4, if feature-frequency shows Tonight's Date (Roulette) in top-5, indicating off-screen demand.
+
+---
+
+## D9 Top 5 (Rank It) — weekly private ranking with overlap reveal (raised Sep 2026, Review #10)
+
+Weekly category ("Best dates so far", "Things to do this summer", paid: "Favourite positions"). Items drawn from Roulette history, Together List done-items, FW matches. Each ranks 5 privately; reveal overlap score + where you disagree.
+
+**Why deferred:** ~15h. Semi-content-dependent (needs ~30 category prompts for a year). Fine mechanic, not differentiated.
+
+**Decision criteria:** after feature-frequency shows top-N games; only if variety is a measured gap. If an economy mechanic is ever wanted, start here (no tokens, no outcomes) rather than an auction.
+
+---
+
+## D10 Story Together — collaborative story, one line per day (raised Sep 2026, Review #10)
+
+Prompt ("Write the story of how you'd spend a million"). Partners alternate one line per day, 14 days = one story. Archive of stories. Paid: spicy prompts.
+
+**Why deferred:** 15-20h. Daily-turn cadence is fragile under partner-lag (needs 48h grace + skip-turn). Love Notes-like doc with `lines: {uid, text, ts}[]`, turn enforcement via rules like Bingo `turnUid`.
+
+**Decision criteria:** after analytics; lowest priority of the Review #10 games.
+
+---
+
+## R10 Review #10 mechanic follow-ups — analytics-gated (raised Sep 2026)
+
+Small mechanic changes accepted from Review #10, none pre-launch. Full reasoning in the Sep 8 plan file; summary here so the timeline survives.
+
+**Launch + 2 weeks (no-regret, ~9h):**
+- WYR partner-authored weekly question — Home card, cap 1/partner/week, **Wednesday** not Sunday (Sunday already carries CI + LL nudge). Infra exists: `addCustomWYRQuestion` inserts at deck front.
+- Compounder visibility on Home: "You have N Moments — see timeline" (day 10+), "Your first Sunday Check-in was N weeks ago — read it again?" deep-linking to old `stateUnion/{weekId}`.
+- "Waiting for {partner}" nudge-copy reframe: point at what YOU can do solo meanwhile (Moment, Love Note). Addresses partner-lag without any new data model.
+
+**Launch + 4-6 weeks (branch on cohort D14/D30):**
+- If cliff is week 2-4 (habit): monotonic together-counter ("You've done 47 things together in the app", never resets — chosen over a reset-streak, which was deliberately removed July 2026) + D7 Spá opt-in.
+- If cliff is week 8-12 (content): Activity Cards add-your-own card (~2h, `bingo/{month}.squares` is `string[]`) + content pass on top-3 games from feature-frequency.
+
+**Q4:** Solo Presence stage (~4h, `completeMini` infra exists) only if Presence ranks top-5 among paid.
+
+**Rejected:** reset-based couple streak (loss-aversion, contradicts July removal); "partner quiet 5 days → Spark" (needs per-user `lastActiveAt`, which breaks the aggregate-only telemetry rule and is the "we miss you" pattern in a new coat); Uppboð / Favor Auction (self-flagged tone risk, no A/B infra for a 2-person team); Presence-archive teaser (archive UI does not exist — reflections are stored but not browsable).
 
 ---
 
