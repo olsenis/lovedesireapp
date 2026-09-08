@@ -285,11 +285,20 @@ export interface StateUnionEntry {
     sex?: number;
     teamwork?: number;
   };
+  // Predictions (Sep 2026). Optional final step of the check-in: up to
+  // three sealed predictions about the partner for the coming week.
+  // Revealed one week later, when the PARTNER grades them on their own
+  // next-week entry as priorVerdicts (index -> came true). Both fields
+  // live on the entry, never the parent doc, so they inherit the
+  // owner-write / read-after-both-complete rules with no rules change.
+  predictions?: string[];
+  priorVerdicts?: Record<string, boolean>;
   updatedAt: number;
 }
 
 export const PULSE_DIMENSION_KEYS = ['fun', 'communication', 'closeness', 'sex', 'teamwork'] as const;
 export type PulseDimensionKey = typeof PULSE_DIMENSION_KEYS[number];
+export const MAX_PREDICTIONS = 3;
 
 export function getCurrentWeekId(d: Date = new Date()): string {
   // ISO 8601 week number, YYYY-WW
@@ -428,6 +437,40 @@ export async function markStateUnionCompleted(
   await updateDoc(doc(db, 'couples', coupleId, 'stateUnion', weekId), {
     [`completedAt.${uid}`]: Date.now(),
   });
+}
+
+// ISO week id for seven days before `d`. getCurrentWeekId handles the
+// year boundary, so this is safe on week 1.
+export function getPreviousWeekId(d: Date = new Date()): string {
+  return getCurrentWeekId(new Date(d.getTime() - 7 * 86400000));
+}
+
+// Whole-array write: predictions are authored once at the end of the
+// check-in, never edited piecemeal, so no dotted-path merge needed.
+export async function submitPredictions(
+  coupleId: string,
+  weekId: string,
+  uid: string,
+  predictions: string[],
+): Promise<void> {
+  const clean = predictions.map((p) => p.trim()).filter(Boolean).slice(0, MAX_PREDICTIONS);
+  if (clean.length === 0) return;
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  await setDoc(entryRef, { predictions: clean, updatedAt: Date.now() }, { merge: true });
+  trackEvent('sunday_predictions_added');
+}
+
+// Grades the PARTNER's previous-week predictions about me. Stored on MY
+// current-week entry, keyed by the prediction index. Full map each time.
+export async function submitPriorVerdicts(
+  coupleId: string,
+  weekId: string,
+  uid: string,
+  verdicts: Record<string, boolean>,
+): Promise<void> {
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  await setDoc(entryRef, { priorVerdicts: verdicts, updatedAt: Date.now() }, { merge: true });
+  trackEvent('sunday_predictions_graded');
 }
 
 export function answeredCount(suDoc: StateUnionDoc | null, uid: string): number {

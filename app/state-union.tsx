@@ -21,6 +21,10 @@ import {
   hasUserCompleted,
   bothCompleted,
   subscribeStateUnionHistory,
+  getPreviousWeekId,
+  submitPredictions,
+  submitPriorVerdicts,
+  MAX_PREDICTIONS,
 } from '../services/stateUnionService';
 import { notifyPartner } from '../services/notificationService';
 import { Colors } from '../constants/colors';
@@ -49,9 +53,10 @@ const PULSE_DIMENSIONS: PulseDim[] = [
   { key: 'teamwork',       label: 'Teamwork',            emoji: '🙌' },
 ];
 
-// Compose is a two-phase step-through: first a single pulse screen (all 5
-// dimensions on one page), then the existing 5-question text wizard.
-type ComposeStep = 'pulse' | number;
+// Compose is a three-phase step-through: a single pulse screen (all 5
+// dimensions on one page), the 5-question text wizard, then an optional
+// predictions card (Sep 2026) before the check-in is marked complete.
+type ComposeStep = 'pulse' | number | 'predictions';
 
 export default function StateUnionScreen() {
   const { user, profile } = useAuth();
@@ -74,6 +79,16 @@ export default function StateUnionScreen() {
   const [draftAnswer, setDraftAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
+  // Predictions step draft (3 slots, empty = not made).
+  const [predDraft, setPredDraft] = useState<string[]>(Array.from({ length: MAX_PREDICTIONS }, () => ''));
+  // Previous week's entries, one-shot. Partner's carries the predictions
+  // I grade this week; mine carries the predictions the partner grades.
+  // Both null until loaded or when last week was not both-completed
+  // (rules deny the partner read, getStateUnionEntry returns null).
+  const [prevPartnerEntry, setPrevPartnerEntry] = useState<StateUnionEntry | null>(null);
+  const [prevMyEntry, setPrevMyEntry] = useState<StateUnionEntry | null>(null);
+  const [verdictDraft, setVerdictDraft] = useState<Record<string, boolean>>({});
+  const [savingVerdicts, setSavingVerdicts] = useState(false);
   // Prevent the pulse-seed effect from clobbering user navigation after
   // the initial myEntry snapshot arrives. Without this, tapping "← Back"
   // from text step 0 back to pulse would immediately snap forward again.
@@ -164,15 +179,30 @@ export default function StateUnionScreen() {
     }
   };
 
-  const handleComplete = async () => {
-    if (!coupleId || step === 'pulse') return;
+  // Last question's "Finish" no longer completes directly: it saves the
+  // answer and moves to the optional predictions card. Completion happens
+  // from there (Skip or Save and finish).
+  const handleFinishQuestions = async () => {
+    if (!coupleId || typeof step !== 'number' || !draftAnswer.trim()) return;
     const textStep = step;
+    setSubmitting(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await submitStateUnionAnswer(coupleId, weekId, uid, textStep, draftAnswer.trim());
+      setDraftAnswer('');
+      setStep('predictions');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleComplete = async (withPredictions: boolean) => {
+    if (!coupleId) return;
     setSubmitting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
-      // Save the current draft for the last question if not already saved
-      if (draftAnswer.trim()) {
-        await submitStateUnionAnswer(coupleId, weekId, uid, textStep, draftAnswer.trim());
+      if (withPredictions) {
+        await submitPredictions(coupleId, weekId, uid, predDraft);
       }
       await markStateUnionCompleted(coupleId, weekId, uid);
       trackEvent('sunday_checkin_submitted');
@@ -184,6 +214,46 @@ export default function StateUnionScreen() {
       ).catch(() => {});
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Once I have completed this week, load last week's entries one-shot.
+  // The partner's read only succeeds if last week was both-completed
+  // (rules); otherwise null and the grading block simply does not render.
+  useEffect(() => {
+    if (!coupleId || !partnerId || !iCompleted) return;
+    const prevWeekId = getPreviousWeekId();
+    let cancelled = false;
+    Promise.all([
+      getStateUnionEntry(coupleId, prevWeekId, partnerId),
+      getStateUnionEntry(coupleId, prevWeekId, uid),
+    ]).then(([theirs, mine]) => {
+      if (cancelled) return;
+      setPrevPartnerEntry(theirs);
+      setPrevMyEntry(mine);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [coupleId, partnerId, uid, iCompleted]);
+
+  // Seed the verdict draft from what I already saved, so reopening the
+  // screen shows my grades instead of blank toggles.
+  useEffect(() => {
+    if (myEntry?.priorVerdicts) setVerdictDraft(myEntry.priorVerdicts);
+  }, [myEntry?.priorVerdicts]);
+
+  const partnerPredictions = prevPartnerEntry?.predictions ?? [];
+  const verdictsSaved = !!myEntry?.priorVerdicts;
+  const allGraded = partnerPredictions.length > 0
+    && partnerPredictions.every((_, i) => typeof verdictDraft[String(i)] === 'boolean');
+
+  const handleSaveVerdicts = async () => {
+    if (!coupleId || !allGraded || savingVerdicts) return;
+    setSavingVerdicts(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await submitPriorVerdicts(coupleId, weekId, uid, verdictDraft);
+    } finally {
+      setSavingVerdicts(false);
     }
   };
 
@@ -259,7 +329,7 @@ export default function StateUnionScreen() {
         )}
 
         {/* ─── PHASE 1B: Text-question wizard (5 Gottman questions) ─── */}
-        {!iCompleted && step !== 'pulse' && (
+        {!iCompleted && typeof step === 'number' && (
           <View style={styles.card}>
             <View style={styles.progressRow}>
               {weekQuestions.map((_, i) => (
@@ -310,13 +380,68 @@ export default function StateUnionScreen() {
               ) : (
                 <TouchableOpacity
                   style={[styles.primaryBtn, (!draftAnswer.trim() || submitting) && styles.btnDisabled]}
-                  onPress={handleComplete}
+                  onPress={handleFinishQuestions}
                   disabled={!draftAnswer.trim() || submitting}
                   accessibilityRole="button"
                 >
-                  {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Finish check-in ✓</Text>}
+                  {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Next →</Text>}
                 </TouchableOpacity>
               )}
+            </View>
+          </View>
+        )}
+
+        {/* ─── PHASE 1C: Optional predictions (Sep 2026) ─── */}
+        {!iCompleted && step === 'predictions' && (
+          <View style={styles.card}>
+            <Text style={styles.questionLabel}>Optional</Text>
+            <Text style={styles.questionText}>Call it</Text>
+            <Text style={styles.waitHint}>
+              Up to three predictions about {partnerName} for the coming week. Sealed until next Sunday, then {partnerName} says which came true.
+            </Text>
+            {[
+              'e.g. Will suggest sushi at least once',
+              'e.g. Will fall asleep during a movie',
+              'e.g. Will send a voice note before Wednesday',
+            ].slice(0, MAX_PREDICTIONS).map((ph, i) => (
+              <TextInput
+                key={i}
+                style={[styles.input, { minHeight: 44, marginTop: i === 0 ? Spacing.sm : 6 }]}
+                placeholder={ph}
+                placeholderTextColor={Colors.muted}
+                value={predDraft[i]}
+                onChangeText={(t) => setPredDraft((prev) => prev.map((v, j) => (j === i ? t : v)))}
+                maxLength={100}
+              />
+            ))}
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={styles.secondaryBtn}
+                onPress={() => {
+                  const last = weekQuestions.length - 1;
+                  setDraftAnswer(myEntry?.answers?.[String(last)] ?? '');
+                  setStep(last);
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.secondaryBtnText}>← Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryBtn}
+                onPress={() => handleComplete(false)}
+                disabled={submitting}
+                accessibilityRole="button"
+              >
+                <Text style={styles.secondaryBtnText}>Skip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryBtn, submitting && styles.btnDisabled]}
+                onPress={() => handleComplete(predDraft.some((p) => p.trim()))}
+                disabled={submitting}
+                accessibilityRole="button"
+              >
+                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Finish check-in ✓</Text>}
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -336,6 +461,92 @@ export default function StateUnionScreen() {
             </View>
             <WhileYouWait />
           </>
+        )}
+
+        {/* ─── Predictions: grade last week's, see how mine landed ───
+            Renders in both PHASE 2 and PHASE 3 as its own card. Grading
+            needs only my completion (partner's last-week entry is readable
+            once last week was both-completed). Seeing the partner's
+            verdicts on MY predictions needs this week's partnerEntry,
+            which only exists once both have completed. */}
+        {iCompleted && partnerId && (partnerPredictions.length > 0 || (prevMyEntry?.predictions?.length ?? 0) > 0) && (
+          <View style={styles.card}>
+            {partnerPredictions.length > 0 && (
+              <>
+                <Text style={styles.questionLabel}>Last week {partnerName} predicted</Text>
+                {partnerPredictions.map((p, i) => {
+                  const k = String(i);
+                  const v = verdictDraft[k];
+                  return (
+                    <View key={k} style={{ marginTop: Spacing.sm, gap: 6 }}>
+                      <Text style={styles.questionText}>{p}</Text>
+                      {verdictsSaved ? (
+                        <Text style={styles.waitText}>{v ? '✓ Came true' : '✗ Did not'}</Text>
+                      ) : (
+                        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                          {([true, false] as const).map((val) => (
+                            <TouchableOpacity
+                              key={String(val)}
+                              onPress={() => setVerdictDraft((prev) => ({ ...prev, [k]: val }))}
+                              accessibilityRole="button"
+                              accessibilityLabel={val ? 'Came true' : 'Did not'}
+                              style={{
+                                paddingVertical: 8, paddingHorizontal: Spacing.md, borderRadius: Radius.full,
+                                borderWidth: 1, borderColor: Colors.burgundy,
+                                backgroundColor: v === val ? Colors.burgundy : 'transparent',
+                              }}
+                            >
+                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: v === val ? Colors.cream : Colors.burgundy }}>
+                                {val ? '✓ Came true' : '✗ Did not'}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+                {verdictsSaved ? (
+                  <Text style={[styles.waitHint, { marginTop: Spacing.sm }]}>
+                    {partnerName} called {partnerPredictions.filter((_, i) => verdictDraft[String(i)]).length} of {partnerPredictions.length}
+                  </Text>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.primaryBtn, { marginTop: Spacing.md }, (!allGraded || savingVerdicts) && styles.btnDisabled]}
+                    onPress={handleSaveVerdicts}
+                    disabled={!allGraded || savingVerdicts}
+                    accessibilityRole="button"
+                  >
+                    {savingVerdicts ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Save verdicts</Text>}
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+            {(prevMyEntry?.predictions?.length ?? 0) > 0 && (
+              <View style={{ marginTop: partnerPredictions.length > 0 ? Spacing.lg : 0 }}>
+                <Text style={styles.questionLabel}>You predicted last week</Text>
+                {prevMyEntry!.predictions!.map((p, i) => {
+                  const theirs = partnerEntry?.priorVerdicts?.[String(i)];
+                  return (
+                    <View key={i} style={{ marginTop: Spacing.sm }}>
+                      <Text style={styles.questionText}>{p}</Text>
+                      <Text style={styles.waitText}>
+                        {typeof theirs === 'boolean'
+                          ? (theirs ? '✓ Came true' : '✗ Did not')
+                          : (both ? `${partnerName} has not graded yet` : `Revealed once ${partnerName} finishes this week`)}
+                      </Text>
+                    </View>
+                  );
+                })}
+                {partnerEntry?.priorVerdicts && (
+                  <Text style={[styles.waitHint, { marginTop: Spacing.sm }]}>
+                    You called {prevMyEntry!.predictions!.filter((_, i) => partnerEntry.priorVerdicts?.[String(i)]).length} of {prevMyEntry!.predictions!.length}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
         )}
 
         {/* ─── PHASE 3: Both completed — reveal ─── */}
