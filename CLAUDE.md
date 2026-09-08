@@ -58,6 +58,15 @@ npm run ios        # Start on iOS simulator (macOS only)
 npx tsc --noEmit   # TypeScript type check
 ```
 
+### Device testing (Expo Go, two phones)
+
+- `npx expo start --tunnel --clear` — tunnel is **Cloudflare**, not ngrok: `@expo/ngrok` is aliased to `expo-cloudflared` in package.json because the bundled ngrok v2 is rejected by ngrok's cloud (Sep 2026). First run downloads `cloudflared` to `~/.expo/expo-cloudflared/` and may hit Expo's startup timeout or Windows Firewall once; run again. `--lan` works too but iOS needs Local Network permission for Expo Go.
+- **Expo Go 57 on iOS requires login on both sides** (changelog: expo-go-57-login). Terminal: `npx expo login` (account `olsenis`; `--sso` is broken on Windows because cmd mangles `&` in the URL, so use email + password). Phones: avatar icon top-right in Expo Go. Android is exempt for now.
+- Run Metro in your own terminal, not from Claude in the background: the QR only renders in an interactive TTY.
+- Weekday-gated Home cards (Wed WYR author, Thu Memory Lane / Sunday history) and the Memory Lane 30-day gate have `__DEV__ && false` overrides: `DEV_IGNORE_WEEKDAY_GATES` in `constants/devFlags.ts`, `MEMORY_LANE_DEV_UNLOCK` in `services/featureUnlockService.ts`. Flip for a session, flip back before committing.
+- Dev-overlay warnings that are known-harmless on SDK 57: Firestore "WebChannelConnection RPC … transport errored" (already hidden via LogBox), expo-router "state update on a component that hasn't mounted" (expo/expo#35224), `Response.blob()` perf hint (needs `expo-blob`, not in Expo Go). Red errors and anything visibly wrong are the signal.
+- Chain type-checks as `npx tsc --noEmit 2>&1 | tail -8; test ${PIPESTATUS[0]} -eq 0 && git …` — a bare `tsc | tail && git commit` reads tail's exit code and commits broken code.
+
 Install packages with `--legacy-peer-deps` due to react-dom peer conflict:
 ```bash
 npm install <package> --legacy-peer-deps
@@ -66,6 +75,16 @@ npm install <package> --legacy-peer-deps
 ## Git workflow & deploy budget
 
 This project deploys to Vercel Pro on every push to `main` (~60-90s per build). Pro tier allows **1000+ deploys / day per project**, so rate limit is no longer a daily constraint, but batching is still good hygiene — each commit is a separate revert point and noisy history is harder to read.
+
+### Vercel projects (three, one repo)
+
+| Project | Source | Domain | Builds when |
+|---|---|---|---|
+| `lovedesireapp` | root `vercel.json` → `expo export --platform web` → `dist/` | https://lovedesireapp.vercel.app | any changed file outside `web/` and `admin-web/` |
+| `lovedesireapp-web` | `web/` (Astro + Tailwind marketing site, 9 pages) | https://lovedesireapp-web.vercel.app (→ `lovedesireapp.com` once the domain is assigned) | `web/` changes |
+| `admin-lovedesireapp` | `admin-web/` (Vite React SPA, admin dashboard) | https://admin-lovedesireapp.vercel.app | `admin-web/` changes |
+
+Root `public/` ships into the app preview only. **A page a human should open on a phone without a login (QA checklists, one-off notes) goes in `web/public/qa/`** and is served at `lovedesireapp-web.vercel.app/qa/<file>.html`. Claude artifacts require a Claude account to view, so they are not a way to hand a page to a non-user.
 
 **Default:** batch related changes into a single commit. Push when you genuinely want to see it live.
 
