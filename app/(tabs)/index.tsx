@@ -32,6 +32,7 @@ import {
   StateUnionEntry,
   subscribeStateUnion,
   subscribeStateUnionEntry,
+  subscribeStateUnionHistory,
   getCurrentWeekId,
   answeredCount as suAnsweredCount,
   hasUserCompleted as suHasUserCompleted,
@@ -343,6 +344,9 @@ export default function HomeScreen() {
   const [flashes, setFlashes] = useState<FlashEntry[]>([]);
   const [moments, setMoments] = useState<MomentEntry[]>([]);
   const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);
+  // Last 12 Sunday Check-in weeks (startedAt desc). Powers the Thursday
+  // "your first check-in was N weeks ago" compounder card.
+  const [suHistory, setSuHistory] = useState<StateUnionDoc[]>([]);
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
@@ -411,7 +415,8 @@ export default function HomeScreen() {
     // 7 days cross-prompt into intimacy log.
     const u19 = subscribeStateUnionEntry(coupleId, getCurrentWeekId(), user?.uid ?? '', setMySuEntry);
     const u20 = subscribeMoodHistory(coupleId, setMoodHistory);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); };
+    const u21 = subscribeStateUnionHistory(coupleId, setSuHistory);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); u21(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   // One-shot Moments archive peek + seasonal-pack dismissals — resolves
@@ -967,6 +972,36 @@ export default function HomeScreen() {
     }
   }
 
+  // Sunday Check-in history peek — Thursday-only compounder card that
+  // points back at the couple's FIRST both-completed check-in. Makes
+  // the archive value visible at week 2-3 instead of month 4. Thursday
+  // is the midweek lull (Sunday carries the check-in + Monday the
+  // love-language nudge). One dismissal per ISO week via helpService.
+  // Memory Lane (Fasi 7) will share Thursday and take precedence when
+  // unlocked and unplayed.
+  if (partnerId && user?.uid && new Date().getDay() === 4) {
+    const localUid = user.uid;
+    const bothDone = suHistory.filter(h => h.completedAt?.[localUid] && h.completedAt?.[partnerId]);
+    if (bothDone.length >= 2) {
+      const first = bothDone.reduce((a, b) => (a.startedAt < b.startedAt ? a : b));
+      const weeksAgo = Math.floor((Date.now() - first.startedAt) / (7 * 86400000));
+      const dismissKey = `sunday-history-peek-${getCurrentWeekId()}`;
+      if (weeksAgo >= 1 && !dismissedKeys.has(dismissKey)) {
+        list.push({
+          emoji: '📖',
+          title: `Your first Sunday Check-in was ${weeksAgo} week${weeksAgo === 1 ? '' : 's'} ago`,
+          subtitle: 'Read both sides again',
+          route: '/state-union',
+          bg: '#FFF0F3',
+          onTap: () => {
+            setDismissedKeys(prev => new Set(prev).add(dismissKey));
+            markFeatureSeen(localUid, dismissKey).catch(() => {});
+          },
+        });
+      }
+    }
+  }
+
   // Together List "partner suggested" nudge was removed Aug 2026 (H6) —
   // the dedicated Together List row above already surfaces
   // `N suggestions waiting · N open` in its subtitle when
@@ -1116,7 +1151,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {
