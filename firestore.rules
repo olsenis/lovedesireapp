@@ -253,7 +253,22 @@ service cloud.firestore {
             || request.resource.data.get('guesses', {}).size() == 0
             || request.resource.data.get('guesses', {}).diff(resource.data.get('guesses', {}))
                  .affectedKeys().hasOnly([request.auth.uid])
-          );
+          )
+          && (
+            // Memory Lane (Sep 2026) stamps completedAt.{uid}. A member may
+            // only stamp their own key, otherwise a partner could be marked
+            // "done" with an empty score. blueprints/{uid} lives under this
+            // same wildcard with a SCALAR completedAt (The Lovers quiz), so
+            // the per-uid guard applies only when the field is a map.
+            !('completedAt' in request.resource.data.diff(resource.data).affectedKeys())
+            || !(request.resource.data.get('completedAt', 0) is map)
+            || request.resource.data.get('completedAt', {}).diff(resource.data.get('completedAt', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          )
+          // Memory Lane questions (and correctIndex inside them) are written
+          // once at create and never updated by a client. No other wildcard
+          // collection carries a `questions` field.
+          && !('questions' in request.resource.data.diff(resource.data).affectedKeys());
         allow delete: if request.auth != null && isMemberOfCouple(coupleId);
       }
     }
