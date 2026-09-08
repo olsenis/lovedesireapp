@@ -25,6 +25,10 @@ export interface Couple {
   inviteExpiresAt?: number; // expires 7 days after creation
   createdAt: number;
   startDate?: number; // actual relationship start date (set by couple)
+  // Set once by markFirstRitualIfUnset (Sep 2026) when the couple first
+  // completes a Sunday Check-in, Daily answer or Moment. Anchors the
+  // Memory Lane 30-day gate so it measures 30 days of USE, not of pairing.
+  firstRitualCompletedAt?: number;
   isLongDistance?: boolean; // LDR toggle — changes home screen, roulette, notes, etc.
   nextVisitDate?: number; // timestamp of next planned reunion (only when isLongDistance)
   partnerBirthdays?: Record<string, string>; // uid -> 'DD.MM' — entered for partner by other partner in onboarding; partner's own UserProfile.birthday takes precedence

@@ -110,7 +110,7 @@ export default function DiscoverScreen() {
   // timestamp is persisted per-user so the NEW badge window is stable.
   // undefined while loading so the card doesn't flash between states.
   const [memoryLaneUnlockedAt, setMemoryLaneUnlockedAt] = useState<number | null | undefined>(undefined);
-  const memoryLaneDays = memoryLaneDaysLeft(couple?.createdAt);
+  const memoryLaneDays = memoryLaneDaysLeft(couple);
   useEffect(() => {
     const uid = user?.uid;
     if (!uid || !couple) return;
@@ -119,7 +119,7 @@ export default function DiscoverScreen() {
       const state = await getFeatureUnlockState(uid);
       if (cancelled) return;
       if (state.memoryLaneUnlockedAt) { setMemoryLaneUnlockedAt(state.memoryLaneUnlockedAt); return; }
-      if (memoryLaneEligible(couple.createdAt)) {
+      if (memoryLaneEligible(couple)) {
         const ts = await markMemoryLaneUnlocked(uid);
         if (!cancelled) setMemoryLaneUnlockedAt(ts);
       } else {
@@ -127,7 +127,7 @@ export default function DiscoverScreen() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user?.uid, couple?.createdAt]);
+  }, [user?.uid, couple?.createdAt, couple?.firstRitualCompletedAt]);
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>

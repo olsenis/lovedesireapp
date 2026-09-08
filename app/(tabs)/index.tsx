@@ -1012,7 +1012,7 @@ export default function HomeScreen() {
   // love-language nudge). One dismissal per ISO week via helpService.
   // Memory Lane shares Thursday and takes precedence when unlocked and
   // unplayed this week: a fresh quiz beats a re-read.
-  const memoryLaneReady = !!partnerId && memoryLaneEligible(couple?.createdAt) && !mlDoc?.completedAt?.[uid];
+  const memoryLaneReady = !!partnerId && memoryLaneEligible(couple) && !mlDoc?.completedAt?.[uid];
   if (partnerId && (DEV_IGNORE_WEEKDAY_GATES || new Date().getDay() === 4) && memoryLaneReady) {
     list.push({
       emoji: '🧠',
@@ -1194,7 +1194,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, mlDoc, couple?.createdAt, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, mlDoc, couple?.createdAt, couple?.firstRitualCompletedAt, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

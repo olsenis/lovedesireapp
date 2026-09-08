@@ -11,7 +11,7 @@ import { getCurrentWeekId } from '../services/stateUnionService';
 import { memoryLaneDaysLeft, memoryLaneEligible } from '../services/featureUnlockService';
 import {
   MemoryLaneDoc, MemorySource,
-  subscribeMemoryLane, ensureMemoryLaneWeek, answerMemoryQuestion, completeMemoryLane, memoryLaneScore,
+  subscribeMemoryLane, ensureMemoryLaneWeek, answerMemoryQuestion, completeMemoryLane, memoryLaneScore, questionsFor,
 } from '../services/memoryLaneService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -36,8 +36,9 @@ export default function MemoryLaneScreen() {
   const weekId = useMemo(() => getCurrentWeekId(), []);
   useTrackScreen('memory_lane');
 
-  const eligible = memoryLaneEligible(couple?.createdAt);
-  const daysLeft = memoryLaneDaysLeft(couple?.createdAt);
+  const myName = profile?.name ?? 'your partner';
+  const eligible = memoryLaneEligible(couple);
+  const daysLeft = memoryLaneDaysLeft(couple);
 
   const [docState, setDocState] = useState<MemoryLaneDoc | null | undefined>(undefined);
   const [generating, setGenerating] = useState(false);
@@ -57,13 +58,13 @@ export default function MemoryLaneScreen() {
     if (!coupleId || !partnerId || !eligible || docState !== null || ensuredRef.current) return;
     ensuredRef.current = true;
     setGenerating(true);
-    ensureMemoryLaneWeek(coupleId, weekId, uid, partnerId, partnerName)
+    ensureMemoryLaneWeek(coupleId, weekId, uid, partnerId, myName, partnerName)
       .catch(() => {})
       .finally(() => setGenerating(false));
-  }, [coupleId, partnerId, eligible, docState, weekId, uid, partnerName]);
+  }, [coupleId, partnerId, eligible, docState, weekId, uid, myName, partnerName]);
 
   const score = memoryLaneScore(docState ?? null, uid);
-  const questions = docState?.questions ?? [];
+  const questions = questionsFor(docState ?? null, uid);
   const myAnswers = docState?.answers?.[uid] ?? {};
   const firstUnanswered = questions.findIndex((_, i) => typeof myAnswers[String(i)] !== 'number');
   const allAnswered = questions.length > 0 && firstUnanswered === -1;
@@ -134,7 +135,7 @@ export default function MemoryLaneScreen() {
           <Text style={styles.bigEmoji}>🌱</Text>
           <Text style={styles.cardTitle}>Not enough history yet</Text>
           <Text style={styles.cardText}>
-            Keep taking Moments, answering Daily and checking in on Sundays. Check back next week.
+            Keep taking Moments, answering Daily and checking in on Sundays, then come back.
           </Text>
         </View>
       </View>

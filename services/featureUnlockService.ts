@@ -45,13 +45,14 @@ export async function markMemoryLaneUnlocked(uid: string): Promise<number> {
   const existing = await getFeatureUnlockState(uid);
   if (existing.memoryLaneUnlockedAt) return existing.memoryLaneUnlockedAt;
   const ts = Date.now();
-  const next: FeatureUnlockState = { ...existing, memoryLaneUnlockedAt: ts };
-  cache.set(uid, next);
   try {
     await setDoc(doc(db, 'users', uid, 'private', 'features'), { memoryLaneUnlockedAt: ts }, { merge: true });
+    // Cache only what actually persisted (Review #11 B8): caching first
+    // made a failed write look unlocked for this session and restart the
+    // NEW-badge window on the next one.
+    cache.set(uid, { ...existing, memoryLaneUnlockedAt: ts });
   } catch {
-    // Cache already updated; a failed write just means the NEW badge
-    // window restarts next session. Not worth surfacing.
+    // Not cached: the next session retries the write.
   }
   return ts;
 }
@@ -60,13 +61,22 @@ export function isUnlockRecent(unlockedAt?: number): boolean {
   return !!unlockedAt && Date.now() - unlockedAt < NEW_BADGE_MS;
 }
 
-export function memoryLaneDaysLeft(coupleCreatedAt?: number): number {
+// The 30 days count from the LATER of pairing and the couple's first
+// completed ritual, so a couple that pairs and goes quiet does not get a
+// NEW badge on a quiz with nothing behind it (Review #11 §2).
+export interface MemoryLaneGateInput {
+  createdAt?: number;
+  firstRitualCompletedAt?: number;
+}
+
+export function memoryLaneDaysLeft(couple?: MemoryLaneGateInput | null): number {
   if (MEMORY_LANE_DEV_UNLOCK) return 0;
-  if (!coupleCreatedAt) return MEMORY_LANE_UNLOCK_DAYS;
-  const days = Math.floor((Date.now() - coupleCreatedAt) / 86400000);
+  const anchor = Math.max(couple?.createdAt ?? 0, couple?.firstRitualCompletedAt ?? 0);
+  if (!anchor) return MEMORY_LANE_UNLOCK_DAYS;
+  const days = Math.floor((Date.now() - anchor) / 86400000);
   return Math.max(0, MEMORY_LANE_UNLOCK_DAYS - days);
 }
 
-export function memoryLaneEligible(coupleCreatedAt?: number): boolean {
-  return memoryLaneDaysLeft(coupleCreatedAt) === 0;
+export function memoryLaneEligible(couple?: MemoryLaneGateInput | null): boolean {
+  return memoryLaneDaysLeft(couple) === 0;
 }
