@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -613,10 +613,17 @@ export default function OurStoryScreen() {
         </View>
       </Modal>
 
-      {/* Add / Edit modal */}
-      <Modal visible={showAdd} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <ScrollView contentContainerStyle={styles.modal}>
+      {/* Add / Edit modal. Same shape as the WYR add sheet: spacer keeps
+          the card bottom-aligned, the ScrollView shrinks when the keyboard
+          takes height (SDK 57 edge-to-edge Android no longer resizes the
+          window). The card itself carries the background; putting the
+          sheet style on contentContainerStyle with a maxHeight painted the
+          cream only 85% high while the fields ran on below it. */}
+      <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={{ flex: 1 }} />
+          <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
+          <View style={styles.editCard}>
             <Text style={styles.modalTitle}>{editing ? 'Edit milestone' : 'Add milestone'}</Text>
 
             <Text style={styles.modalLabel}>What happened?</Text>
@@ -672,8 +679,9 @@ export default function OurStoryScreen() {
                 <Text style={styles.saveBtnText}>{editing ? 'Save' : 'Add to story'}</Text>
               </TouchableOpacity>
             </View>
+          </View>
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <ConfirmModal
@@ -740,6 +748,9 @@ const styles = StyleSheet.create({
   // the modal grew to fit its content and slid the whole card
   // (including the close ✕ and title) off screen.
   modal: { maxHeight: '85%', backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.md },
+  // Add / Edit card: no maxHeight (the ScrollView around it shrinks
+  // instead), extra bottom padding so Save clears the gesture bar.
+  editCard: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, paddingBottom: Spacing.xxl, gap: Spacing.md },
   modalTitle: { fontFamily: Fonts.heading, fontSize: 26, color: Colors.burgundy },
   modalLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
 

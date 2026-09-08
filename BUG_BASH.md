@@ -33,6 +33,14 @@ Test affordances: `DEV_IGNORE_WEEKDAY_GATES` (constants/devFlags.ts) and `MEMORY
 
 Also fixed in this round, unrelated to the build: Firestore transport warning was not actually addressed by `2e59e6e` (auto-detect is the SDK default) → `d98a73c` forces long-polling, `e513747` hides the recovered-retry warning from the dev overlay. Known-harmless dev warnings triaged and left alone: expo-router "state update on unmounted" ([expo/expo#35224](https://github.com/expo/expo/issues/35224)), `Response.blob()` perf hint (needs `expo-blob`, not in Expo Go → POST_LAUNCH SDK57-1).
 
+### Evening sweep Sep 8 (phone A, outside the retention build)
+
+- [x] **Intimacy Log Stats "Start logging" with 2 entries** → `2318049` counts down to the 3-entry minimum ("One more and your stats appear", "2 of 3 logged").
+- [x] **Intimacy Log privacy note lost the partner's name** → `2318049`. Android under-measures emoji inside a custom-font Text; shrink-wrapped centered Text clipped the last word. Lock in its own Text, row stretched. Same guard on the initiate legend (unverified on device until Stats renders).
+- [x] **Intimacy Log perspective bugs found while there** → `2318049`. "Who started it" in entry detail and orgasm rates read logger-relative fields raw. Both flip via `loggedBy` now. Needs a two-phone check (TEST_CHECKLIST Stats tab items).
+- [x] **Intimacy Log: optional direction for Oral / Hands** (user request) → `d27d544`. Sub-row under What? while the type is selected: For {partner} / For you / Both ways. Pending: two-phone check that "for you" on A reads "for Óli" on B.
+- [x] **Our Story Edit milestone sheet: cream background stopped at Note, Cancel/Save floated over the timeline** → `maxHeight: '85%'` sat on the ScrollView's contentContainerStyle, which RN 0.86 Yoga now honors; the WYR add-sheet shape (spacer + shrinking ScrollView + card) replaces it, with KeyboardAvoidingView and Android back-button close. Re-test: open Edit on a milestone, then tap Note and confirm Save stays above the keyboard.
+
 ### Review #11 fixes (Sep 8) — code review of the retention build, all 7 main findings confirmed real
 
 Plan: `plans/` (shimmying-badger). Four code commits + rules deploy. None of B1/B2/B3 were visible in round 1 because only one phone played.
