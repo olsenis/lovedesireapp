@@ -680,7 +680,7 @@ export default function HomeScreen() {
           emoji: '⏱️',
           title: 'Been a busy week?',
           subtitle: 'Try a 5-min Presence mini tonight, low pressure',
-          route: '/sensate',
+          route: '/sensate?mini=1',
           bg: '#FAEEF2',
         });
       }

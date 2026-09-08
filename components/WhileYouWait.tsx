@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../hooks/useAuth';
-import { useSubscription } from '../hooks/useSubscription';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -16,9 +15,13 @@ import { Spacing, Radius } from '../constants/spacing';
 // animation, no pressure copy. Self-subscribes to today's Moments doc so
 // the Moment chip disappears once the user has captured.
 //
+// Only genuinely solo actions belong here. The Presence mini was
+// considered and dropped: it is a two-person touch exercise, so it
+// cannot be the answer to "your partner is not here right now".
+//
 // `exclude` lets a screen hide the chip that points back at itself.
 
-type Chip = 'moment' | 'note' | 'presence';
+type Chip = 'moment' | 'note';
 
 interface Props {
   exclude?: Chip[];
@@ -26,7 +29,6 @@ interface Props {
 
 export function WhileYouWait({ exclude = [] }: Props) {
   const { user, profile } = useAuth();
-  const { isSubscribed } = useSubscription();
   const coupleId = profile?.coupleId;
   const uid = user?.uid;
   // null = unknown (don't flash the chip), boolean once resolved.
@@ -49,9 +51,6 @@ export function WhileYouWait({ exclude = [] }: Props) {
   }
   if (!exclude.includes('note')) {
     chips.push({ emoji: '💌', label: 'Leave a Love Note', route: '/notes' });
-  }
-  if (!exclude.includes('presence') && isSubscribed) {
-    chips.push({ emoji: '🫁', label: '5-min Presence mini', route: '/sensate?mini=1' });
   }
   if (chips.length === 0) return null;
 

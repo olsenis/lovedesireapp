@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, AppState, Platform, TextInput, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Notifications } from '../services/notificationsGuard';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -133,7 +133,7 @@ const STAGES: Stage[] = [
 
 export default function SensateScreen() {
   const { user, profile } = useAuth();
-  const { couple } = useCouple(user?.uid, profile?.coupleId);
+  const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed, isLoading: subLoading } = useSubscription();
   // Toast for cross-flow prompts (Intimacy Log hand-off after cycle
   // completion, H7 Phase 2). Silent no-op when the Intimacy Log feature
@@ -454,6 +454,22 @@ export default function SensateScreen() {
     }, true);
   };
 
+  // Deep-link from Home's 7-day "try a 5-min mini" nudge: /sensate?mini=1
+  // starts the mini directly instead of dropping the user on the stage
+  // list to hunt for the "Or just 5 min tonight" link. Waits for the
+  // first Firestore snapshot (progressLoaded) so sessionCycleNumber is
+  // correct, and fires once per mount so exiting the mini doesn't
+  // restart it.
+  const { mini } = useLocalSearchParams<{ mini?: string }>();
+  const miniHandledRef = useRef(false);
+  useEffect(() => {
+    if (mini === '1' && progressLoaded && !activeStage && !miniHandledRef.current) {
+      miniHandledRef.current = true;
+      startMini();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mini, progressLoaded, activeStage]);
+
   const exitStage = () => {
     cancelCompletionNotif();
     setActiveStage(null);
@@ -472,8 +488,9 @@ export default function SensateScreen() {
     // Mini sessions bump miniSessionsCompleted + lastActivityAt only —
     // no stage count, no currentCycleStages advance, no cycle overlay.
     if (isMini) {
+      // completeMini fires trackEvent('sensate_mini_completed') itself;
+      // a second call here was double-counting every mini in stats.
       await completeMini(coupleId);
-      trackEvent('sensate_mini_completed');
       setMarked(true);
       return;
     }
@@ -766,7 +783,9 @@ export default function SensateScreen() {
           const { both, entries } = bothReflected(progress, sessionCycleNumber, stageIdKey, p1, p2);
           const mine = entries[uid];
           const theirs = entries[uid === p1 ? p2 : p1];
-          const partnerName = (uid === p1 ? couple?.partner2Uid : couple?.partner1Uid) ? 'your partner' : 'your partner';
+          // Was a no-op ternary that always produced 'your partner', so the
+          // reveal card never showed the real name.
+          const partnerName = partner?.name ?? 'your partner';
 
           if (both) {
             return (
@@ -795,7 +814,7 @@ export default function SensateScreen() {
                     {mine ? 'Saved. Waiting for your partner to share their word.' : 'Skipped. You can always write one after your next session.'}
                   </Text>
                 </View>
-                {mine && <WhileYouWait exclude={['presence']} />}
+                {mine && <WhileYouWait />}
               </>
             );
           }
