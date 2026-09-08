@@ -404,8 +404,12 @@ export default function ActivityCardsScreen() {
                 Includes {Math.min(MAX_CUSTOM_IN_DECK, customCards.length)} of your own card{Math.min(MAX_CUSTOM_IN_DECK, customCards.length) === 1 ? '' : 's'}
               </Text>
             )}
+            {/* confirmBtn / cancelBtn carry flex: 1 for the side-by-side
+                undo modal. Stacked in this column they must be flex: 0,
+                otherwise flexBasis 0 collapses the label to zero height
+                (RN 0.86 Yoga clips it; the old Yoga let it overflow). */}
             <TouchableOpacity
-              style={styles.confirmBtn}
+              style={[styles.confirmBtn, styles.stackedBtn]}
               onPress={async () => {
                 if (!coupleId || !session) return;
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -417,7 +421,7 @@ export default function ActivityCardsScreen() {
               <Text style={styles.confirmText}>✨ Quick only, do tonight</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.confirmBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.burgundy, marginTop: 8 }]}
+              style={[styles.confirmBtn, styles.stackedBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.burgundy, marginTop: 8 }]}
               onPress={async () => {
                 if (!coupleId || !session) return;
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -428,7 +432,7 @@ export default function ActivityCardsScreen() {
             >
               <Text style={[styles.confirmText, { color: Colors.burgundy }]}>🌙 Bucket list, includes planned</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.cancelBtn, { marginTop: 8 }]} onPress={() => setConfirmReset(false)} accessibilityRole="button">
+            <TouchableOpacity style={[styles.cancelBtn, styles.stackedBtn, { marginTop: 8 }]} onPress={() => setConfirmReset(false)} accessibilityRole="button">
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -461,7 +465,7 @@ export default function ActivityCardsScreen() {
               accessibilityLabel="Your card text"
             />
             <TouchableOpacity
-              style={[styles.confirmBtn, { marginTop: Spacing.sm, opacity: customText.trim() && !savingCustom ? 1 : 0.5 }]}
+              style={[styles.confirmBtn, styles.stackedBtn, { marginTop: Spacing.sm, opacity: customText.trim() && !savingCustom ? 1 : 0.5 }]}
               onPress={handleSaveCustom}
               disabled={!customText.trim() || savingCustom}
               accessibilityRole="button"
@@ -485,7 +489,7 @@ export default function ActivityCardsScreen() {
                 ))}
               </View>
             )}
-            <TouchableOpacity style={[styles.cancelBtn, { marginTop: Spacing.sm }]} onPress={() => setShowCustomModal(false)} accessibilityRole="button">
+            <TouchableOpacity style={[styles.cancelBtn, styles.stackedBtn, { marginTop: Spacing.sm }]} onPress={() => setShowCustomModal(false)} accessibilityRole="button">
               <Text style={styles.cancelText}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -585,4 +589,7 @@ const styles = StyleSheet.create({
   cancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   confirmBtn: { flex: 1, paddingVertical: Spacing.md, alignItems: 'center', borderRadius: Radius.full, backgroundColor: Colors.burgundy },
   confirmText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.white },
+  // Override for confirmBtn / cancelBtn when stacked in a column instead
+  // of the undo modal's side-by-side row. See comment in the reset modal.
+  stackedBtn: { flex: 0 },
 });
