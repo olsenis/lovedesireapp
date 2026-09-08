@@ -122,8 +122,10 @@ Every admin callable begins with `assertAdmin(req)`. Client-side check is only f
 
 **Feature usage table** — reads `stats/{month}` doc via callable, renders sortable rows:
 - Feature name / this-month count / vs last-month %
+- **MoM % is pro-rated (Sep 8 2026):** the previous month's count is scaled by `dayOfMonth / daysInPrevMonth` before comparing, because a partial current month against a full previous one read −90% on every row by construction. The legend states the pro-ration day. Converges on the plain ratio at month end.
 - Highlights: <10 opens/month flagged red (candidate to drop)
 - Highlights: >20% MoM growth flagged green
+- **Actions tab shows real events only (Sep 8 2026):** `time_*` counters (feed the Screens timing columns) and `heat_*` counters (feed the heatmap) are filtered out; before this they buried `daily_wish_voted` etc. under a dozen internal keys.
 
 **User search**
 - Input: email
@@ -221,7 +223,8 @@ Shipped briefly at commit `4903b93` as `app/admin.tsx`. Reverted in Phase 4 afte
 
 **Phase 4: Standalone admin web app — ✅ SHIPPED Aug 2026**
 - Commit `TBD`, standalone Vite + React + TypeScript SPA at `admin-web/`
-- Deployed as a separate Vercel project pointing at `admin-web/` root directory
+- Deployed as a separate Vercel project (`admin-lovedesireapp`, https://admin-lovedesireapp.vercel.app) pointing at `admin-web/` root directory
+- **Deploy gotcha found Sep 8 2026:** Vercel runs `ignoreCommand` inside the Root Directory, so the Aug 14 `git diff --quiet HEAD^ HEAD -- admin-web/` never matched a path, always exited 0, and Vercel silently skipped every admin build from Aug 14 to Sep 8 — the live bundle lacked both the H33 Reports queue and the Retention tab for three weeks. Fixed with the `:(top)admin-web/` pathspec (resolves from repo root regardless of cwd). Same fix applied to `web/vercel.json`, which had the mirror bug plus an inverted `!` (built on every push). Verify a deploy landed by grepping the served bundle for a new callable name, not by trusting the green tick on the last build.
 - Same 5 Cloud Function callables from Phase 2 (unchanged, no redeploy)
 - Same three sections as Phase 3 (overview strip / feature usage / user lookup) but web-native (HTML/CSS, real tables, real keyboard, browser scroll)
 - Firebase Auth email + password login → `isCurrentUserAdmin` client gate → `assertAdmin` server gate
