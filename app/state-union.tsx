@@ -165,7 +165,7 @@ export default function StateUnionScreen() {
   };
 
   const handleSaveAndNext = async () => {
-    if (!coupleId || !draftAnswer.trim() || step === 'pulse') return;
+    if (!coupleId || !draftAnswer.trim() || typeof step !== 'number') return;
     const textStep = step;
     setSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
