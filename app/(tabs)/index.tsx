@@ -19,6 +19,8 @@ import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQ
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
 import { subscribeWYR, WYRSession, subscribeCustomWYRQuestions, WYRCustomQuestion } from '../../services/wyrService';
 import { weekAnchor } from '../../services/loveLanguageNudgeService';
+import { subscribeMemoryLane, MemoryLaneDoc } from '../../services/memoryLaneService';
+import { memoryLaneEligible } from '../../services/featureUnlockService';
 import { subscribeTruthDare, TruthDareSession } from '../../services/truthDareService';
 import { subscribeIntimacyLog, IntimacyEntry } from '../../services/intimacyService';
 import { SparkEntry, SPARK_OPTIONS, subscribeRecentSparks, sendSpark, markSparkSeen } from '../../services/sparkService';
@@ -351,6 +353,9 @@ export default function HomeScreen() {
   // Couple-authored WYR questions. Powers the Wednesday "write one for
   // {partner}" nudge: hidden once the user has authored this ISO week.
   const [wyrCustom, setWyrCustom] = useState<WYRCustomQuestion[]>([]);
+  // This week's Memory Lane doc (null until someone opens the screen and
+  // generates it). Only completedAt is read here, for the Thursday nudge.
+  const [mlDoc, setMlDoc] = useState<MemoryLaneDoc | null>(null);
   const [bingoSession, setBingoSession] = useState<ActivityCardsSession | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [sensateProgress, setSensateProgress] = useState<SensateProgress | null>(null);
@@ -421,7 +426,8 @@ export default function HomeScreen() {
     const u20 = subscribeMoodHistory(coupleId, setMoodHistory);
     const u21 = subscribeStateUnionHistory(coupleId, setSuHistory);
     const u22 = subscribeCustomWYRQuestions(coupleId, setWyrCustom);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); u21(); u22(); };
+    const u23 = subscribeMemoryLane(coupleId, getCurrentWeekId(), setMlDoc);
+    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); u21(); u22(); u23(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   // One-shot Moments archive peek + seasonal-pack dismissals — resolves
@@ -1003,9 +1009,19 @@ export default function HomeScreen() {
   // the archive value visible at week 2-3 instead of month 4. Thursday
   // is the midweek lull (Sunday carries the check-in + Monday the
   // love-language nudge). One dismissal per ISO week via helpService.
-  // Memory Lane (Fasi 7) will share Thursday and take precedence when
-  // unlocked and unplayed.
-  if (partnerId && user?.uid && new Date().getDay() === 4) {
+  // Memory Lane shares Thursday and takes precedence when unlocked and
+  // unplayed this week: a fresh quiz beats a re-read.
+  const memoryLaneReady = !!partnerId && memoryLaneEligible(couple?.createdAt) && !mlDoc?.completedAt?.[uid];
+  if (partnerId && new Date().getDay() === 4 && memoryLaneReady) {
+    list.push({
+      emoji: '🧠',
+      title: "This week's Memory Lane is ready",
+      subtitle: '5 questions from your own story',
+      route: '/memory-lane',
+      bg: '#E8F5E9',
+    });
+  }
+  if (partnerId && user?.uid && new Date().getDay() === 4 && !memoryLaneReady) {
     const localUid = user.uid;
     const bothDone = suHistory.filter(h => h.completedAt?.[localUid] && h.completedAt?.[partnerId]);
     if (bothDone.length >= 2) {
@@ -1177,7 +1193,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, mlDoc, couple?.createdAt, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {
