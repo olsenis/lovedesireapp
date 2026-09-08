@@ -512,7 +512,9 @@ export default function StateUnionScreen() {
                   </Text>
                 ) : (
                   <TouchableOpacity
-                    style={[styles.primaryBtn, { marginTop: Spacing.md }, (!allGraded || savingVerdicts) && styles.btnDisabled]}
+                    // primaryBtn is flex: 1 for actionsRow; stacked here it
+                    // must be flex: 0 or RN 0.86 collapses the label.
+                    style={[styles.primaryBtn, { flex: 0, marginTop: Spacing.md }, (!allGraded || savingVerdicts) && styles.btnDisabled]}
                     onPress={handleSaveVerdicts}
                     disabled={!allGraded || savingVerdicts}
                     accessibilityRole="button"
