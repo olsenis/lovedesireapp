@@ -880,9 +880,7 @@ export default function HomeScreen() {
   // One-shot Moments archive peek — surfaces the compounder value at
   // week 2 instead of month 4. Fires once the couple has 8+ moments
   // captured. Tap or navigation marks it seen; never reappears.
-  // QA MODE Aug 27: threshold lowered from 8 to 1 so the nudge is
-  // reachable during local device testing. REVERT to >= 8 before ship.
-  if (momentsArchivePeekSeen === false && moments.length >= 1 && user?.uid) {
+  if (momentsArchivePeekSeen === false && moments.length >= 8 && user?.uid) {
     const localUid = user.uid;
     list.push({
       emoji: '📸',

@@ -132,7 +132,7 @@ app/                         Full-screen sub-screens
   pulse.tsx                  Redirect stub → /state-union (Pulse merged into Sunday Check-in Aug 2026 as a 5-dimension pre-step)
   daily-wishes.tsx           Redirect stub → /daily?category=... (kept for deep-linked URLs from July 2026 merge)
   (time-capsules.tsx removed July 2026 — abstract long-timeline payoff didn't demo well pre-launch; revisit if users request "seal for later" mechanics)
-  versus.tsx                 Versus — guess what your partner picked, binary-question knowledge quiz
+  (versus.tsx removed Aug 2026 — guess-what-partner-picked mechanic merged into Daily's binary-question reveal flow; see `submitGuess` / `skipGuess` in dailyQuestionsService)
   (wishlist.tsx and fantasy.tsx removed — legacy features replaced by fantasy-wishes.tsx / dailyWishes)
 ```
 
@@ -144,7 +144,7 @@ Firebase project: `lovedesireapp-8c7f2`
 users/{uid}                          UserProfile — name, photoURL, coupleId, inviteCode, pushToken
 users/{uid}/private/blueprint        BlueprintResult — type, scores, completedAt
 users/{uid}/private/help             HelpState — enabled, seen[]
-users/{uid}/private/features         FeatureUnlockState — versusUnlockedAt? (sticky, per-user data-gate unlocks)
+users/{uid}/private/features         FeatureUnlockState — sticky per-user data-gate unlocks (Versus unlock removed Aug 2026; doc currently unused, reserved for Memory Lane day-30 unlock)
 users/{uid}/private/consent          ConsentState — confirmed, confirmedAt (age + explicit-content attestation)
 users/{uid}/private/photoConsent     PhotoConsentState — confirmed, confirmedAt (H42 first-photo re-attestation)
 
@@ -195,8 +195,6 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 | `wyrService.ts` | `subscribeWYR`, `startWYR`, `answerWYR`, `nextWYRQuestion`, `resetWYR`, `saveMatchToList`, `drawMoreWYR`, exports `WYR_DAILY_CAP` / `WYR_BONUS_PER_DRAW` / `WYR_MAX_BONUS_DRAWS` |
 | `bingoService.ts` | `subscribeActivityCards`, `flipCard`, `markCardDone`, `skipReceivedCard`, `usePass`, `resetActivityCards` |
 | `truthDareService.ts` | `subscribeTruthDare`, `startTruthDare`, `playCard`, `submitTruthAnswer`, `confirmDare`, `nextTurn`, `skipCard`, `resetTruthDare` |
-| `versusService.ts` | `loadVersusPool`, `getPartnerBinaryAnswerCount`, `VERSUS_UNLOCK_THRESHOLD` — queries last 45 days of `dailyQuestions`, filters binary questions partner has answered, returns shuffled quiz items. Threshold gates whether Versus is shown in Discover at all (see below). |
-| `featureUnlockService.ts` | `getFeatureUnlockState`, `markVersusUnlocked`, `isVersusUnlockRecent` — persists per-user unlocks at `users/{uid}/private/features`. In-memory cached. |
 | `reportService.ts` | `submitReport(input)`, `reportCategoryLabel`, `shouldPrecheckDisconnect`, `offersDisconnect` — H33 moderation. Wraps `submitReport` callable which writes to top-level `/reports/{reportId}` and optionally atomically disconnects the reporter's couple. Rate-limited server-side (20/day/uid). |
 | `photoConsentService.ts` | `hasPhotoConsent(uid)`, `confirmPhotoConsent(uid)` — H42 first-photo re-attestation. AsyncStorage cache short-circuits Firestore read after first grant. |
 
@@ -248,7 +246,7 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Questions Game reveal:** Both partners answer privately. Open-text uses TextInput. Binary uses two large buttons (q.options[0] | or | q.options[1]). Scale uses 1-5 chips with "1 = not at all · 5 = completely" hint. Neither sees the other's answer until both have submitted. When both answered, both answers reveal side by side.
 
-**Versus:** Pulls binary-format answers from last 45 days of `dailyQuestions`. Builds a 10-question shuffled quiz of items where partner has answered. Each card shows partner's actual answer + 1 decoy (the other binary option). Instant reveal with ✓/✗ after pick. Final score shown with gradient hero card. Empty state nudges to play more Questions first.
+**Guess-in-Daily (ex-Versus, merged Aug 2026):** On binary Daily questions, after you answer, a bottom sheet offers "Wanna guess {partner}'s pick first?" with the two options or "Just show me". Guess or skip unlocks the reveal; a ✓/✗ banner shows instantly. Stored at `dailyQuestions/{date}.guesses.{uid}.{gi}` (sentinel `__skipped__`). `getWeeklyGuessStats` and `getGuessStreak` in `dailyQuestionsService` feed Home. Standalone Versus screen, `versusService`, and `featureUnlockService` were deleted.
 
 **Activity Cards:** 25 face-down cards, turn-based. Picker has 2 passes to swap before accepting. Receiver gets the card and can mark "We did it!" or skip (1 pass). Cards have 3 states: face-down, pending (accepted not done), completed (green). `pendingCard` field tracks which card is waiting for receiver. Paid feature.
 
@@ -302,7 +300,7 @@ Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate 
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)
 - Daily: Playful category only — combines old Sweet Daily Picks (5/day) + old Playful Questions (3/day, incl. binary + scale variants). Flirty Daily Picks moved to Spicy tier July 2026 as part of the Daily merge.
-- Versus mode (data-gated — hidden in Discover until partner has answered 5+ binary questions in Daily, then permanently visible with a NEW badge for the first 7 days. Not paywalled. Empty state deep-link explains the unlock threshold.)
+- Guess-partner's-answer on binary Daily questions (ex-Versus, inside Daily since Aug 2026; not a separate screen)
 - Would You Rather: Playful + Romantic only
 - Tonight's Date (full)
 - All connection features: Mood, Notes, Moments, Countdowns, Reminders (full)
