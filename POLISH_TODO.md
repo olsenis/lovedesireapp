@@ -133,6 +133,25 @@ RED, do not revisit: Vespera, Sienna, Velora ("Veloura: Couples Intimacy"), Nuvi
 
 **Recommendation:** pursue Kyssa, Tvenna, Brenna in that order. Before deciding anything, register the free domains for all three today (kyssa.app, tvenna.app, tvenna.com, brenna.is, about $15 each); solene.app and brenna.app were both taken within the last eight weeks. Then run the Hugverkastofa + EUIPO check on the one you like.
 
+**Shortlist v2b, non-Icelandic only (Sep 9 2026, user asked for a list without Icelandic words).** 15 new Romance / French / coined names checked the same way (iTunes Search API + web + registry RDAP), merged with the four non-Icelandic survivors from v2.
+
+| # | Name | Meaning / origin | Couples-space collision | .app | .com | .is | Main caveat |
+|---|---|---|---|---|---|---|---|
+| 1 | **Tenero** | IT "tender" | none; no mark found | **free** | taken 2002 (Korean registrar) | **free** | Tenga (sex-toy brand) is a loose phonetic neighbour |
+| 2 | **Cerise** | FR cherry, the colour | none; Fruitz uses "cerise" for "serious relationship" | taken | taken | **free** | many small unrelated Cerise brands |
+| 3 | **Carezza** | IT "caress"; Karezza slow-intimacy method | none | taken Aug 2026 | taken, **expires 2026-09-30** (backorder) | **free** | Karezza = "no-orgasm method" association cuts both ways |
+| 4 | **Solene** | FR name | none (Solene Fertility adjacent) | taken Aug 2026 | taken | **free** | EN vs IS pronunciation split; reads as a person |
+| 5 | **Serein** | FR "serene"; sunset rain | none (Serein Collective sells couples card decks, no app) | taken Dec 2025, 1-yr term | taken | **free** | 6+ small Serein apps incl. mindfulness; pronunciation split |
+| 6 | **Bacio** | IT "kiss" | Bacioo, Italian dating app, one letter away (Android) | **free** | taken | **free** | English misreads "BAY-see-oh"; Leprino BACIO cheese mark |
+| 7 | **Tesoro** | IT/ES "treasure, darling" | none | taken | taken | **free** | generic: Tesoro oil company, 6+ unrelated Tesoro apps |
+| 8 | **Mauve** | colour | none | taken | taken | **free** | generic colour word, awkward in Icelandic |
+| 9 | **Orla** | Irish name | none | taken Jan 2026 | taken | taken Jun 2026 | two 2026 wellness apps, Orla Kiely mark, no domains |
+| 10 | **Perle** | FR/DE "pearl" | none | taken | Perle Systems | **free** | Perle Systems owns the word mark; EN "Perl/pearl" ambiguity |
+
+Dropped: Querida (Spanish colloquial "mistress"), Ambre (Nasdaq-listed AMBR launched a consumer AI product "Ambre" on 2026-09-01; Spanish "hambre"). RED: Velvet (10+ couples/kink/dating apps), Nuit (NUiT astrology dating app), Beso ("Beso - For Couples", May 2026), Bisou (Bisou Match + Bisoux Couples App), Embra (Ember: For Couples + "Embra: Relationship Archive" + Spanish "hembra"), Ardora ("Ardore", a live 17+ desire-matching couples app one letter away), Tessera (30+ apps, software-class marks, .is held by Avola ehf.).
+
+**Recommendation (non-Icelandic):** Tenero. Only GREEN of 19; register tenero.app + tenero.is today. Backorder carezza.com (drops 2026-09-30) if Carezza is the runner-up. Then Hugverkastofa + EUIPO on the finalist.
+
 **User next actions (before code rename):**
 1. Domain check — `vespera.com` (likely taken by telescope co; check price), `vespera.app`, `vespera.love`, `vespera.co`, `vespera.is`
 2. Trademark check — [ISIPO](https://www.hugverk.is) (Iceland class 9 + 45) + [EUIPO eSearch plus](https://euipo.europa.eu/eSearch/)
