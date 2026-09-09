@@ -112,6 +112,27 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 - ❌ **Ember** — 238+ apps in "ember couples" topic on AppsHunter; Ember-AI Couples Intimacy + Ember: AI Relationship Coach both live on App Store. Crowded.
 - ❌ **Amara** — 4+ near-collisions in couples category: Amora - Couples App, Amora: For Deeper Relationship, Amara Club (dating), Amorno: Couples & Relationship. Contested naming space.
 - ❌ **Kindra** — brand collision with Kindu (established competitor, users would misspell) + Kindra menopause brand owns .com + trademark.
+**Shortlist v2 (Sep 9 2026) — 30 names checked by 6 parallel agents against App Store / Play (web + iTunes Search API), well-known brands and marks (web-indexed only, NOT a USPTO/EUIPO/Hugverkastofa clearance), and registry RDAP for .app / .com / .is.** Vespera from the Aug 21 list is now RED: "Vespera X" sits in Google Play's Dating category and Vaonis holds an EU mark covering data-transmission services. Full agent tables are in the Sep 9 session transcript; this is the digest.
+
+| # | Name | Meaning / origin | Couples-space collision | .app | .com | .is | Main caveat |
+|---|---|---|---|---|---|---|---|
+| 1 | **Kyssa** | IS + SV "to kiss" | none (only a Kyssa audiobook app, Books category) | **free** | for sale (GoDaddy aftermarket) | server hold, likely dropping (Vercel Inc. reg. 2024) | Swedish children's "kissa" = pee, different spelling |
+| 2 | **Tvenna** | IS "a pair" (tvennd) | none (Tveni flirt app is a phonetic neighbour) | **free** | **free** | Lýsi hf (Heilsutvenna), forward only | "tv-" cluster awkward for English speakers |
+| 3 | **Brenna** | IS "to burn / bonfire"; Irish name | none (Australian aged-care app "Brenna", other category) | taken Jul 2026, owner unknown | taken 1997 | **free** | bare "Brenna" already an App Store trackName, listing would be "Brenna: …" |
+| 4 | **Cerise** | FR cherry, the colour | none; Fruitz uses "cerise" = "serious relationship" (a plus) | taken | taken | **free** | many small unrelated Cerise brands; EN "suh-REESE" vs IS "SER-i-se" |
+| 5 | **Blida** | IS blíða, tenderness | none | **free** | taken, expires 2026-12-16 (backorder) | Blíða weather site | Algerian city of 330k owns search; ð lost in ASCII |
+| 6 | **Solene** | FR name, "solemn" | none (Solene Fertility is adjacent wellness) | taken Aug 2026 | taken | **free** | pronounced differently EN vs IS; reads as a person |
+| 7 | **Glóa** | IS "to glow" | none, no exact-name app on App Store at all | French skincare | taken | Icelandic running brand | zero domains; big "Glo" wellness app one letter away |
+| 8 | **Mauve** | colour | none | taken | taken | **free** | generic colour word, 5+ unrelated Mauve apps, awkward in Icelandic |
+| 9 | **Ylur** | IS "warmth" | none | **free** | taken | Icelandic clothing brand | English cannot read "Yl-"; two Icelandic companies trade under it |
+| 10 | **Ylja** | IS "to warm" | none | **free** | taken | the band Ylja | well-known Icelandic band + restaurant + salon; English pronunciation |
+
+Also survived but ranked below 10: Sindra (3 registered SINDRA marks, sindra.app is a PCOS tracker), Saman (Saman Bank, Sky Lagoon "Saman Pass", German "Samen"), Perle (Perle Systems owns the word mark + perle.com), Lofa (new AI-companion app, "loofah"), Vina (Hey! VINA residue, "booze" in Finnish), Fjóla (common given name, possible "pansy" slang, .is taken 2025).
+
+RED, do not revisit: Vespera, Sienna, Velora ("Veloura: Couples Intimacy"), Nuvia (Qualcomm/STADA), Elska (elska.app is a live couples app + Elska magazine), Unna (Unna by Unprude sex-wellness app), Lilac (HeyLilac AI sex coach), Tinna (Tinder/Tinda), Duetta (four "Duet" couples apps), Yndi (Yndi Yoga owns the Icelandic-bliss story), Loga (new Icelandic brand on loga.is), Halda (Halda Watch since 1887 + USPTO reg.), Tendra (STI dating brand + two live apps), Kindla (Amazon Kindle one letter away, "little child" in Franconian).
+
+**Recommendation:** pursue Kyssa, Tvenna, Brenna in that order. Before deciding anything, register the free domains for all three today (kyssa.app, tvenna.app, tvenna.com, brenna.is, about $15 each); solene.app and brenna.app were both taken within the last eight weeks. Then run the Hugverkastofa + EUIPO check on the one you like.
+
 **User next actions (before code rename):**
 1. Domain check — `vespera.com` (likely taken by telescope co; check price), `vespera.app`, `vespera.love`, `vespera.co`, `vespera.is`
 2. Trademark check — [ISIPO](https://www.hugverk.is) (Iceland class 9 + 45) + [EUIPO eSearch plus](https://euipo.europa.eu/eSearch/)
