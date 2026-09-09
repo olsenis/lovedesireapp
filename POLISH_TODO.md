@@ -152,6 +152,25 @@ Dropped: Querida (Spanish colloquial "mistress"), Ambre (Nasdaq-listed AMBR laun
 
 **Recommendation (non-Icelandic):** Tenero. Only GREEN of 19; register tenero.app + tenero.is today. Backorder carezza.com (drops 2026-09-30) if Carezza is the runner-up. Then Hugverkastofa + EUIPO on the finalist.
 
+**Shortlist v2c, domain-first (Sep 9 2026, user: "only 2 on the list are free").** Reversed the method: 50 coined non-Icelandic names bulk-checked on registry RDAP first. Finding: **every pronounceable .com is squatted** (50/50 taken, verified against Verisign), so .com is off the table for any short name; plan on `get<name>.com` or an aftermarket buy. 18 names had `.app` + `.is` free; the 10 best went through the full app / brand / meaning pass, 4 more got a light check (iTunes API + one web search). All ten below have **.app and .is free today**.
+
+| # | Name | Origin | App / brand collision | Pronounce (US) | Caveat |
+|---|---|---|---|---|---|
+| 1 | **Tenero** | IT "tender" | none | teh-NEH-ro | Tenga (sex-toy brand) loose phonetic neighbour |
+| 2 | **Belisa** | Lorca's Belisa, "bella" | none (Belisa by Lunata hair tools, class 3) | buh-LEE-sa | a real given name; @belisa taken on IG/X, free on TikTok |
+| 3 | **Tenira** | coined from tender | none found (light check only) | teh-NEER-a | same Tenga neighbour; needs the full pass |
+| 4 | **Dulcea** | Latin dulcis, sweet | none | DUL-see-a / dul-SAY-a | Americans split the pronunciation; "dull-" onset |
+| 5 | **Fervia** | coined from fervor | none found (light check only); Fervi SpA tools unrelated | FER-via | needs the full pass |
+| 6 | **Fervora** | coined from fervor | no app; **Fervora = AvantLink's influencer-marketing software platform** (software class) | fer-VOR-a | TM check vs AvantLink before filing; @fervora free on X |
+| 7 | **Tenerra** | tender + terra | no app; **Tenerra, Inc. (tenerra.ai) live US software company** | teh-NERR-a | same-class TM risk |
+| 8 | **Bacio** | IT "kiss" | Bacioo, Italian Android dating app one letter away | BAH-cho, misread BAY-see-oh | Leprino BACIO cheese mark |
+| 9 | **Querenza** | from ES querencia, "safe place" | none; Quenza (therapist platform) absorbs typed searches | kweh-REN-za | three pronunciations, hard to spell from hearing |
+| 10 | **Cherisa** | coined from cherish | none exact; Cherrish (dating) neighbour | sheh-REE-sa / CHER-i-sa | spelling ambiguity |
+
+Checked and dropped even though .app was free: Ardente (Ardore couples app again, plus an Italian casino brand), Diletta (Diletta Leotta owns search in Italy, "dilettante" echo), Amorea (Amoréa intimacy academy + three "Amora" couples apps), Adorea (Adoree.ai couples AI + Adorea Beauty), Luvena (US feminine-care brand, too close to sexual wellness), Kisera (Indonesian hijab brand, weak sound). Not checked beyond domains: Carezo, Dolcia, Tuvela, Corenza.
+
+**Recommendation (domain-first):** Tenero or Belisa. Register `.app` + `.is` for both today (four domains, ~8,000 ISK); add tenira.app/.is if you like the sound. Then Hugverkastofa + EUIPO class 9/42/45 on the finalist.
+
 **User next actions (before code rename):**
 1. Domain check — `vespera.com` (likely taken by telescope co; check price), `vespera.app`, `vespera.love`, `vespera.co`, `vespera.is`
 2. Trademark check — [ISIPO](https://www.hugverk.is) (Iceland class 9 + 45) + [EUIPO eSearch plus](https://euipo.europa.eu/eSearch/)
