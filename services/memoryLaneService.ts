@@ -59,6 +59,18 @@ export interface MemoryLaneDoc {
 export const MEMORY_LANE_QUESTIONS = 5;
 const MAX_PER_SOURCE = 2;
 const MIN_TO_PLAY = 3;
+// A memory quiz needs something to have been forgotten. Daily answers and
+// moods younger than this are never question targets (they still serve as
+// distractors, where recency does not matter). Sep 2026.
+const MIN_AGE_DAYS = 3;
+// Questions asked in the last N weeks are excluded so the same Daily answer
+// does not come back two Thursdays running. Falls back to the full pool if
+// the exclusion would leave fewer than MIN_TO_PLAY.
+const NO_REPEAT_WEEKS = 4;
+
+function minAgeCutoffKey(): string {
+  return new Date(Date.now() - MIN_AGE_DAYS * 86400000).toISOString().slice(0, 10);
+}
 const OPTION_MAX_CHARS = 64;
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -232,8 +244,12 @@ function fromDaily(s: Sources, view: View, seed: string): MemoryQuestion[] {
     });
   }
   const open = rows.filter((r) => (r.q.format ?? 'open') === 'open');
+  const cutoff = minAgeCutoffKey();
   const out: MemoryQuestion[] = [];
   for (const r of rows) {
+    // Targets must be at least MIN_AGE_DAYS old (date keys are YYYY-MM-DD,
+    // so string order is date order). Distractors above still use every row.
+    if (r.date >= cutoff) continue;
     const format = r.q.format ?? 'open';
     const id = `daily:${r.date}:${r.gi}`;
     const prompt = `When asked "${personalise(r.q.text, view.partnerName)}", what did ${view.partnerName} say?`;
@@ -262,7 +278,8 @@ function fromMoods(s: Sources, view: View, seed: string): MemoryQuestion[] {
   const theirs = s.moods.filter((m) => m.uid === view.partnerUid);
   if (theirs.length < 5) return [];
   const label = (e: MoodEmoji) => `${e} ${MOOD_LABELS[e]}`;
-  return theirs.map((m) => {
+  const maxCreatedAt = Date.now() - MIN_AGE_DAYS * 86400000;
+  return theirs.filter((m) => m.createdAt < maxCreatedAt).map((m) => {
     const id = `mood:${m.uid}:${m.createdAt}`;
     const others = seededPick(ALL_MOODS.filter((e) => e !== m.emoji), 3, `${seed}::md::${id}`);
     return withShuffledOptions(
@@ -347,11 +364,14 @@ function fromFantasyWishes(s: Sources, _view: View, seed: string): MemoryQuestio
 
 // ─── Selection ───────────────────────────────────────────────────────────
 
-function buildQuestions(s: Sources, view: View, seed: string): MemoryQuestion[] {
-  const pool = [
+function buildQuestions(s: Sources, view: View, seed: string, exclude: Set<string> = new Set()): MemoryQuestion[] {
+  const all = [
     ...fromMoments(s, view, seed), ...fromDaily(s, view, seed), ...fromMoods(s, view, seed),
     ...fromMilestones(s, view, seed), ...fromSunday(s, view, seed), ...fromFantasyWishes(s, view, seed),
   ];
+  const unseen = all.filter((q) => !exclude.has(q.id));
+  // Better a repeat than an empty week.
+  const pool = unseen.length >= MIN_TO_PLAY ? unseen : all;
   if (pool.length < MIN_TO_PLAY) return [];
   const shuffled = seededShuffle(pool, seed);
   const perSource: Partial<Record<MemorySource, number>> = {};
@@ -383,6 +403,25 @@ export function subscribeMemoryLane(coupleId: string, weekId: string, onChange: 
   );
 }
 
+// Ids of every question either partner was asked in the last NO_REPEAT_WEEKS
+// weeks (legacy single-array docs included). One small read; silent on
+// failure so generation never blocks on it.
+async function recentQuestionIds(coupleId: string, uidA: string, uidB: string): Promise<Set<string>> {
+  const ids = new Set<string>();
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'couples', coupleId, 'memoryLane'), orderBy('weekId', 'desc'), limit(NO_REPEAT_WEEKS),
+    ));
+    for (const d of snap.docs) {
+      const data = d.data() as MemoryLaneDoc;
+      for (const q of [...questionsFor(data, uidA), ...questionsFor(data, uidB)]) ids.add(q.id);
+    }
+  } catch {
+    // Fall through with whatever was collected.
+  }
+  return ids;
+}
+
 // Creates this week's doc if missing, with one question set per partner.
 // Sources are read once; the transaction only guards the create, so the
 // second opener finds the doc and returns without generating. When the
@@ -397,10 +436,13 @@ export async function ensureMemoryLaneWeek(
   partnerName: string,
 ): Promise<void> {
   const ref = doc(db, 'couples', coupleId, 'memoryLane', weekId);
-  const sources = await loadSources(coupleId, uid, partnerUid);
+  const [sources, recentIds] = await Promise.all([
+    loadSources(coupleId, uid, partnerUid),
+    recentQuestionIds(coupleId, uid, partnerUid),
+  ]);
   const seed = `${weekId}::${coupleId}`;
-  const mine = buildQuestions(sources, { uid, partnerUid, partnerName }, seed);
-  const theirs = buildQuestions(sources, { uid: partnerUid, partnerUid: uid, partnerName: myName }, seed);
+  const mine = buildQuestions(sources, { uid, partnerUid, partnerName }, seed, recentIds);
+  const theirs = buildQuestions(sources, { uid: partnerUid, partnerUid: uid, partnerName: myName }, seed, recentIds);
   if (mine.length === 0 && theirs.length === 0) return;
   const fresh: MemoryLaneDoc = {
     weekId,

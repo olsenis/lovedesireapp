@@ -2771,6 +2771,34 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
   1. Sign out from Together view; sign in different account
   - **Expected:** No prior data remains.
 
+### Memory Lane (app/memory-lane.tsx, Sep 2026)
+
+Test affordance: `MEMORY_LANE_DEV_UNLOCK` in `services/featureUnlockService.ts` lifts the 30-day gate; flip back before committing.
+
+- [ ] **Each partner gets their own question set** 📱
+  1. Both phones open Memory Lane the same week
+  - **Expected:** Daily and mood questions on phone B name phone A's partner ("what did Óli say"), never B's own name. Milestone / Sunday / Moments questions are identical on both.
+
+- [ ] **Daily questions only where BOTH answered** 📱
+  1. B answers a Daily question A skipped; A opens Memory Lane
+  - **Expected:** That question never appears for A.
+
+- [ ] **No question about the last 3 days**
+  1. Log a mood today and yesterday; answer a Daily today; open Memory Lane on a fresh week
+  - **Expected:** No mood or Daily question dated within the last 3 days. Older ones appear.
+
+- [ ] **No repeats across 4 weeks**
+  1. Compare this week's 5 questions with the previous weeks' docs in Firestore (`memoryLane/{weekId}.questions.{uid}[].id`)
+  - **Expected:** No id from the previous 4 weeks unless the pool had fewer than 3 unseen (thin history).
+
+- [ ] **Thin history writes no doc**
+  1. Fresh test couple, dev unlock on, open Memory Lane
+  - **Expected:** 🌱 "then come back" state and NO `memoryLane/{week}` doc in Firestore console.
+
+- [ ] **Partner cannot stamp my completedAt** (rules, dev console)
+  1. `updateDoc(memoryLane/{week}, {'completedAt.<partnerUid>': 1})`
+  - **Expected:** permission-denied.
+
 ---
 
 ## 9. 30-Day Challenge + Flirt Reminders
