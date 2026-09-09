@@ -37,6 +37,7 @@ Launch pressure released — user decision to prioritise "app worth talking abou
 - Name: **Love Desire** (verified clear of trademark blocks in [BRAND_RESEARCH.md](BRAND_RESEARCH.md))
 - Tagline: **"A private app for two"** (was "For couples who want more" — swapped per editorial agent's feedback for something more concrete)
 - Primary domain **lovedesireapp.com** purchased (via Cloudflare Registrar, olsenis@gmail.com)
+- App Store metadata, channels, Search Ads and KPIs now live in [MARKETING.md](MARKETING.md) (Sep 9 2026). Name rename question is H43 in POLISH_TODO.
 
 ### Pricing (decided August 2026)
 - Monthly: $9.99

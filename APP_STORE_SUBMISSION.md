@@ -4,8 +4,7 @@ Ready-to-paste text and decisions for App Store Connect. Update this file whenev
 
 ## App identity
 
-- **Name (max 30 chars):** `Love Desire` (11 chars)
-- **Subtitle (max 30 chars):** `For couples who want more` (25 chars)
+- **Name + subtitle:** drafted in [MARKETING.md §2.2-2.3](MARKETING.md) with a `{APP_NAME}` token while H43 (rename) is open. Current draft: `{APP_NAME}: Couples Intimacy` / `Rituals, games & check-ins`. (The old subtitle `For couples who want more` was retired Aug 2026 for the tagline "A private app for two".)
 - **Bundle ID (iOS):** `com.desire.app`
 - **Package (Android):** `com.desire.app` (Android via APK sideload only, not Google Play)
 - **Primary category:** Lifestyle
@@ -42,45 +41,9 @@ Answer the App Store Age Rating questionnaire as:
 
 Final rating: **17+**. In-app age attestation is 18+ (see [CLAUDE.md](CLAUDE.md) "Age gate + explicit-content consent").
 
-## Description (App Store)
+## Description, promo text, keywords
 
-**Short version (first 3 lines shown before "more"):**
-
-> Love Desire is a private couples app for two. Grow together with weekly rituals, daily conversation starters, playful games, and quiet insight tools that meet you where you are.
->
-> One subscription covers both partners. Explicit content is behind a paywall and an 18+ attestation.
-
-**Full description:**
-
-> Love Desire is a private space for two people who want to keep choosing each other.
->
-> **Daily rhythm**
-> - Mood check-ins your partner sees
-> - Sunday Check-in: 5 questions each week, answered privately, revealed together
-> - Moments: your BeReal-style daily photo, side-by-side reveal
-> - Love Notes that unlock on the right moment
->
-> **Get closer**
-> - Truth or Dare, Would You Rather, Fantasy Wishes: play together across two phones
-> - Daily picks + questions: three curated categories (Playful, Deep, Spicy)
-> - The Lovers: your intimacy type + how you fit together
-> - Sensate Focus: guided touch sessions
->
-> **Long distance ready**
-> - Partner's local time on your home screen
-> - Next-visit countdown + pre-visit hype nudges
-> - LDR-tagged questions and virtual date filter
->
-> **What we don't do**
-> - No public feed, no strangers, no ads
-> - Pairing requires a code you share out-of-band
-> - Explicit content is text-only, paywalled, and behind an 18+ attestation
-
-## Keywords (max 100 chars, comma-separated)
-
-`couples, intimacy, relationship, date night, love language, ldr, long distance, questions, mood, ritual`
-
-(96 chars — leaves room for tuning)
+Moved to [MARKETING.md §2.4-2.10](MARKETING.md): keyword strings per locale (en-US, es-MX, en-GB, en-AU, 100 chars each), IAP display names, promotional text, and the full description with current feature names (Presence, Our Story, Memory Lane, Activity Cards). Paste from there.
 
 ## Reviewer notes (App Store Connect submission form)
 
@@ -102,18 +65,7 @@ Paste into "Notes for the Reviewer" verbatim:
 
 ## Screenshot strategy
 
-App Store requires 6.5" (iPhone Pro Max) and 5.5" (older) screenshots. Take from a premium admin account so paid features render:
-
-**Only free-tier surfaces — never Fantasy Wishes / Spicy Daily / Fire challenge etc.:**
-
-1. **Home** — couple card + Insight for you + Waiting for you nudges
-2. **Sunday Check-in reveal** — both partners' answers side by side
-3. **Love Language quiz result** — with primary language + tip on Home
-4. **Tonight's Date spin** — 💘 wheel + a date result card
-5. **Together List** — with tame preset items visible
-6. **Moments grid** — past photo pairs
-
-**Reason to keep Spicy content out of screenshots:** reduces reviewer's opportunity to misread an isolated item as advertising porn. Everything above sells the emotional/relational value.
+Six free-tier screens with caption copy in [MARKETING.md §2.8](MARKETING.md). Rule kept from here: never show Fantasy Wishes / Spicy Daily / Fire challenge in screenshots, it invites the reviewer to misread an isolated item as advertising porn.
 
 ## Legal
 
@@ -157,8 +109,8 @@ Based on [BRAND_RESEARCH.md](BRAND_RESEARCH.md) — "Love Desire" is clear of tr
 - [ ] Test account credentials created + verified (see reviewer notes above)
 - [ ] Age rating questionnaire completed (see this doc)
 - [ ] Reviewer notes pasted from this doc
-- [ ] Keywords set from this doc
-- [ ] Description pasted from this doc
+- [ ] Keywords set from MARKETING.md §2.4 (all four locales)
+- [ ] Description + promo text pasted from MARKETING.md §2.10
 - [ ] EAS build submitted via `npx eas build --platform ios --profile production`
 - [ ] Build uploaded to App Store Connect
 - [ ] Final review of everything above before hitting "Submit for Review"
