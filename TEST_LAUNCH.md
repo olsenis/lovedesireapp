@@ -181,6 +181,12 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
       - Date: ______________
       - Notes / caveats: ______________
 
+### 🔒 Dev flags and gate decisions before the first store build
+
+- [ ] **`MEMORY_LANE_DEV_UNLOCK` back to `__DEV__ && false`** (`services/featureUnlockService.ts`). Set to `__DEV__ && true` on Sep 9 2026 for the test period. Harmless in release builds, but reset it so dev and prod behave the same before TestFlight.
+- [ ] **Decide `MEMORY_LANE_UNLOCK_DAYS`: 14 or 30.** Currently 30. Recommendation on file (Sep 8): 14, because the churn cliff is weeks 2 to 4 and the thin-week guard already protects an empty quiz. Anchor is max(couple.createdAt, couple.firstRitualCompletedAt).
+- [ ] **`DEV_IGNORE_WEEKDAY_GATES` is `__DEV__ && false`** (`constants/devFlags.ts`).
+
 ---
 
 ## 1. Auth + Pairing (7 tests)

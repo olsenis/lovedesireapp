@@ -23,7 +23,12 @@ const cache = new Map<string, FeatureUnlockState>();
 // a milestone ("5 days until a new game").
 export const MEMORY_LANE_UNLOCK_DAYS = 30;
 // Flip to true locally to test on a fresh couple. Never ship true.
-export const MEMORY_LANE_DEV_UNLOCK = __DEV__ && false;
+// ON for the Sep 2026 device-test period (user decision Sep 9): Memory Lane
+// opens immediately in dev builds so the two-phone tests can run daily.
+// Dead in release builds (__DEV__ is false). Before the first store build:
+// pick MEMORY_LANE_UNLOCK_DAYS (14 vs 30, undecided) and set this back to
+// `__DEV__ && false`. Tracked in TEST_LAUNCH.md "Dev flags".
+export const MEMORY_LANE_DEV_UNLOCK = __DEV__ && true;
 // How long the Discover card wears the NEW badge after unlocking.
 const NEW_BADGE_MS = 7 * 86400000;
 

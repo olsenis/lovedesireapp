@@ -20,7 +20,7 @@ _(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
 
 ### Pre-launch retention build (Sep 8, Review #10) — device round 1 done Sep 8 (Android, phone A)
 
-Test affordances: `DEV_IGNORE_WEEKDAY_GATES` (constants/devFlags.ts) and `MEMORY_LANE_DEV_UNLOCK` (featureUnlockService). Both flipped on for the round, both back to `false` in HEAD.
+Test affordances: `DEV_IGNORE_WEEKDAY_GATES` (constants/devFlags.ts), flipped per session and back to `false` in HEAD; `MEMORY_LANE_DEV_UNLOCK` (featureUnlockService) is **ON in HEAD since Sep 9** for the whole test period (dev builds only), reset before the first store build per TEST_LAUNCH.
 
 - [ ] **Moments archive-peek threshold** back to ≥8 (`b04034d`) — not explicitly verified; card was absent on Home Sep 8, moments count not checked.
 - [ ] **Sunday history Thursday card** (`a286d66`) — NOT testable yet: needs 2+ weeks where both completed Sunday Check-in. Eva has not finished week 37 on phone B. Re-check Thursday Sep 17 or with the weekday flag once week 2 is both-complete.
