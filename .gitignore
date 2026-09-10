@@ -63,3 +63,8 @@ web/.astro/
 # lib/ would ship out-of-date function code even if src/ was fresh.
 functions/lib/
 functions/node_modules/
+
+# Review-agent output kept locally as reference (user, Sep 2026). Never
+# committed: raw findings, not curated docs. Curated conclusions go into
+# BUG_BASH / POLISH_TODO / POST_LAUNCH.
+reviews/
