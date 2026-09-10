@@ -45,6 +45,12 @@ export default function RouletteScreen() {
   const [saved, setSaved] = useState(false);
   const [ratings, setRatings] = useState<DateRatings>({});
   const spinAnim = useRef(new Animated.Value(0)).current;
+  // Picking from the list below sets the same result card as a spin and
+  // scrolls up to it, so the card is the one place a date is chosen from
+  // (Sep 2026, user request: list rows were not tappable).
+  const scrollRef = useRef<ScrollView>(null);
+  const resultY = useRef(0);
+  const scrollToResult = useRef(false);
   const [filter, setFilter] = useState<'all' | 'home' | 'out' | 'adventure'>('all');
   const [topRatedOnly, setTopRatedOnly] = useState(false);
   // LDR couples: default to virtual-only filter (in-person dates aren't
@@ -78,6 +84,15 @@ export default function RouletteScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await addTodo(profile.coupleId, result.title, 'dates', user.uid, 'roulette');
     setSaved(true);
+  };
+
+  const pickFromList = (idea: DateIdea) => {
+    if (spinning) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSaved(false);
+    scrollToResult.current = true;
+    setResult(idea);
+    trackEvent('roulette_picked_from_list');
   };
 
   const spin = () => {
@@ -119,7 +134,7 @@ export default function RouletteScreen() {
         <View style={{ width: 60 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content}>
         <Text style={styles.sub}>Let fate decide your next date</Text>
 
         {/* Filter */}
@@ -176,7 +191,16 @@ export default function RouletteScreen() {
 
         {/* Result */}
         {result && (
-          <View style={[styles.resultCard, { backgroundColor: TYPE_COLORS[result.type] }]}>
+          <View
+            style={[styles.resultCard, { backgroundColor: TYPE_COLORS[result.type] }]}
+            onLayout={(e) => {
+              resultY.current = e.nativeEvent.layout.y;
+              if (scrollToResult.current) {
+                scrollToResult.current = false;
+                scrollRef.current?.scrollTo({ y: Math.max(0, resultY.current - Spacing.lg), animated: true });
+              }
+            }}
+          >
             <Text style={styles.resultEmoji}>{result.emoji}</Text>
             <Text style={styles.resultTitle}>{result.title}</Text>
             <Text style={styles.resultDesc}>{result.description}</Text>
@@ -208,7 +232,14 @@ export default function RouletteScreen() {
         {applyRatingFilter(applyVirtualFilter(filter === 'all' ? DATE_IDEAS : DATE_IDEAS.filter((d) => d.type === filter))).map((idea) => {
           const r = ratings[getKey(idea.title)] ?? 0;
           return (
-            <View key={idea.title} style={[styles.ideaRow, r > 0 && styles.ideaRowRated]}>
+            <TouchableOpacity
+              key={idea.title}
+              style={[styles.ideaRow, r > 0 && styles.ideaRowRated, result?.title === idea.title && styles.ideaRowSelected]}
+              onPress={() => pickFromList(idea)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={`Choose ${idea.title}`}
+            >
               <View style={[styles.ideaIconWrap, { backgroundColor: TYPE_COLORS[idea.type] }]}>
                 <Text style={styles.ideaEmoji}>{idea.emoji}</Text>
               </View>
@@ -217,7 +248,7 @@ export default function RouletteScreen() {
                 <Text style={styles.ideaDesc}>{idea.description}</Text>
                 <Stars rating={r} onRate={(s) => handleRate(idea.title, s)} />
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </ScrollView>
@@ -325,6 +356,7 @@ const styles = StyleSheet.create({
 
   listTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, alignSelf: 'flex-start', marginBottom: Spacing.md },
   ideaRowRated: { borderColor: '#F9A825' },
+  ideaRowSelected: { borderColor: Colors.burgundy, borderWidth: 2 },
   ideaRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

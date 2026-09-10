@@ -2284,6 +2284,10 @@ Daily Picks was merged into the unified Daily feature. See **[Section 5 → Dail
   1. Spin → immediately Spin again
   - **Expected:** Second tap ignored.
 
+- [ ] **Tapping a row in "All date ideas" picks it** (Sep 2026)
+  1. Scroll down, tap "Night Walk"
+  - **Expected:** Page scrolls up to the result card showing Night Walk with Rate + Save for later; the tapped row gets a burgundy border. Tapping the row's stars only rates, does not pick. Tapping a row while the wheel is spinning is ignored.
+
 ### Date Night Roulette — star ratings
 
 - [ ] **Rate a date — stars sync to partner phone** 📱
