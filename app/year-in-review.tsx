@@ -301,7 +301,7 @@ function CardView({
         colors={['#FFF4E8', '#F8DDC5', '#F4A7B9']}
         style={[wrap, styles.cardWrap]}
       >
-        <Text style={styles.statEyebrow}>SPARKS SENT</Text>
+        <Text style={styles.statEyebrow}>LOVE SENT</Text>
         <Text style={styles.bigNumber}>{summary.sparksSent}</Text>
         <Text style={styles.statLabel}>times you reached for {partnerName}</Text>
       </LinearGradient>

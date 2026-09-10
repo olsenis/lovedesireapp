@@ -95,7 +95,7 @@ type LangTip = { tip: string; cta: string; route: string };
 // long distance. These sit alongside (not replacing) love-language tips so
 // LDR pairs see genuinely distance-aware suggestions on some days.
 const LDR_TIPS: LangTip[] = [
-  { tip: `Send {partner} a morning spark with your first coffee.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
+  { tip: `Send {partner} a little love with your first coffee.`, cta: 'Send love', route: '/(tabs)?openSpark=1' },
   { tip: `Video call over dinner tonight, one candle each.`, cta: '', route: '' },
   { tip: `Watch the same episode at the same time, hit play together.`, cta: '', route: '' },
   { tip: `Send a voice note instead of a text today. Your voice lands differently.`, cta: 'Open Tease', route: '/flashes' },
@@ -113,7 +113,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
     words: [
       { tip: `Tell ${partnerName} one specific thing you love about who they are.`, cta: 'Write a Love Note', route: '/notes' },
       { tip: `Send ${partnerName} a voice note. Hearing it lands differently than reading it.`, cta: 'Open Tease', route: '/flashes' },
-      { tip: `Send a spark with words that name what you appreciate today.`, cta: 'Send a spark', route: '/(tabs)?openSpark=1' },
+      { tip: `Send ${partnerName} a Love tap that names what you appreciate today.`, cta: 'Send love', route: '/(tabs)?openSpark=1' },
       { tip: `Answer a question in Daily today with words ${partnerName} hasn't heard yet.`, cta: 'Open Daily', route: '/daily' },
     ],
     acts: [
