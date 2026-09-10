@@ -14,6 +14,8 @@ import {
   BlueprintType, BlueprintCompatibilityEntry,
 } from '../constants/content';
 import { personalise } from '../services/personalise';
+import { addTodo } from '../services/todoService';
+import { useToast } from '../components/Toast';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -40,6 +42,11 @@ export default function BlueprintScreen() {
   const [scores, setScores] = useState<Record<BlueprintType, number>>({ sensual: 0, sexual: 0, energetic: 0, kinky: 0, shapeshifter: 0 });
   const [done, setDone] = useState(false);
   const [coupleResults, setCoupleResults] = useState<CoupleBlueprints>({});
+  // Compatibility tips saved to the Together List this visit (index in
+  // compatibility.tips). Sep 2026 retention package: the three pair
+  // specific tips become dates instead of text nobody reopens.
+  const [savedTips, setSavedTips] = useState<Set<number>>(new Set());
+  const { toast, showToast } = useToast();
   const help = useHelp('blueprint');
 
   const coupleId = profile?.coupleId;
@@ -75,6 +82,20 @@ export default function BlueprintScreen() {
     setStep(0);
     setScores({ sensual: 0, sexual: 0, energetic: 0, kinky: 0, shapeshifter: 0 });
     setDone(false);
+    setSavedTips(new Set());
+  };
+
+  const saveTip = async (i: number, tip: string) => {
+    if (!coupleId || savedTips.has(i)) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setSavedTips(prev => new Set(prev).add(i));
+    try {
+      await addTodo(coupleId, personalise(tip, partner?.name), 'intimacy', uid, 'lovers');
+      showToast('💾 Saved to Together List, tap to view', { onTap: () => router.push('/todo' as any), duration: 6000 });
+      trackEvent('lovers_tip_saved');
+    } catch {
+      setSavedTips(prev => { const n = new Set(prev); n.delete(i); return n; });
+    }
   };
 
   // Results data
@@ -207,7 +228,20 @@ export default function BlueprintScreen() {
                     {compatibility.tips.map((tip, i) => (
                       <View key={i} style={styles.tipRow}>
                         <Text style={styles.tipDot}>·</Text>
-                        <Text style={styles.tipText}>{personalise(tip, partner?.name)}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.tipText}>{personalise(tip, partner?.name)}</Text>
+                          <TouchableOpacity
+                            onPress={() => saveTip(i, tip)}
+                            disabled={savedTips.has(i)}
+                            activeOpacity={0.7}
+                            accessibilityRole="button"
+                            accessibilityLabel={savedTips.has(i) ? 'Saved to Together List' : 'Add this tip to your Together List'}
+                          >
+                            <Text style={[styles.tipSave, savedTips.has(i) && styles.tipSaved]}>
+                              {savedTips.has(i) ? '✓ Saved to Together List' : '+ Together List'}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     ))}
                   </View>
@@ -264,6 +298,7 @@ export default function BlueprintScreen() {
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
       />
+      {toast}
     </View>
   );
 }
@@ -331,7 +366,9 @@ const styles = StyleSheet.create({
   compatChallenge: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.text, lineHeight: 20 },
   tipRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
   tipDot: { fontFamily: Fonts.bodyBold, fontSize: 16, color: Colors.rose, lineHeight: 22, marginTop: -1 },
-  tipText: { flex: 1, fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22 },
+  tipText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 22 },
+  tipSave: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, marginTop: 4 },
+  tipSaved: { color: Colors.muted },
 
   // Partner pending
   partnerPending: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, alignItems: 'center', gap: Spacing.sm, borderWidth: 1, borderColor: Colors.border },

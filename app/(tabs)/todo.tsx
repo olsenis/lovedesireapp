@@ -410,6 +410,9 @@ const SOURCE_LABELS: Record<string, string> = {
   'daily-picks': 'Daily Picks',
   'fantasy-wishes': 'Fantasy Wishes',
   'roulette': 'Date Night',
+  'wyr': 'Would You Rather',
+  'activity-cards': 'Activity Cards',
+  'lovers': 'The Lovers',
 };
 
 function TodoRow({ todo, cat, uid, partnerName, onToggle, onDelete, onSelect }: {

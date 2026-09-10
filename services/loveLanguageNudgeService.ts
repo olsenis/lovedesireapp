@@ -104,7 +104,7 @@ export function weekAnchor(now: Date = new Date()): Date {
   return d;
 }
 
-function weekKey(d: Date): string {
+export function weekKey(d: Date): string {
   // yyyy-mm-dd of the Monday anchor — collides only for dates within
   // the same week, which is exactly what we want.
   const y = d.getFullYear();

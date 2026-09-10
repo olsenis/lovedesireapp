@@ -33,6 +33,12 @@ Test affordances: `DEV_IGNORE_WEEKDAY_GATES` (constants/devFlags.ts), flipped pe
 
 Also fixed in this round, unrelated to the build: Firestore transport warning was not actually addressed by `2e59e6e` (auto-detect is the SDK default) → `d98a73c` forces long-polling, `e513747` hides the recovered-retry warning from the dev overlay. Known-harmless dev warnings triaged and left alone: expo-router "state update on unmounted" ([expo/expo#35224](https://github.com/expo/expo/issues/35224)), `Response.blob()` perf hint (needs `expo-blob`, not in Expo Go → POST_LAUNCH SDK57-1).
 
+### Sep 10 (phone A)
+
+- [x] **Tonight's Date: rows in "All date ideas" not tappable** → `ebb34f4`. Tap picks the date into the result card and scrolls to it.
+- [x] **"Spark" leaks after the rename to Love** → `bdc696c`. Insight tips, Year in Review card, both privacy policies.
+- [x] **The Lovers retention package** (user request after reviewing Lovers retention) → partner-finished Home nudge, Friday Lovers tip card (weekly, seeded, dismissable, paid + both complete), "+ Together List" on each compatibility tip, Together List source labels fixed for WYR / Activity Cards. Pending device: Friday card on both phones with the weekday flag; partner-finished nudge needs a fresh test couple (QA couple both done).
+
 ### Evening sweep Sep 8 (phone A, outside the retention build)
 
 - [x] **Intimacy Log Stats "Start logging" with 2 entries** → `2318049` counts down to the 3-entry minimum ("One more and your stats appear", "2 of 3 logged").

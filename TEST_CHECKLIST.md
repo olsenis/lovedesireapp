@@ -2365,6 +2365,22 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
   1. Both same type
   - **Expected:** Compatibility card if BLUEPRINT_COMPATIBILITY[type][type] exists.
 
+- [ ] **Home: partner finished, you have not** 📱 (Sep 2026)
+  1. Fresh premium test couple. A completes The Lovers; open Home on B
+  - **Expected:** "Waiting for you" card "{A} finished The Lovers. Take it to see how you two fit." B completes → card gone. Free couple: no card.
+
+- [ ] **Home: Friday Lovers tip** (Sep 2026)
+  1. Both have a result. `DEV_IGNORE_WEEKDAY_GATES` on (or a Friday). Open Home on A and B
+  - **Expected:** Card leads the stack, title "A Lovers tip for the weekend" or "What lights {partner} up", text names the partner, never yourself. A and B may see different tips (each side of the pair). Tap → opens The Lovers, card gone for the rest of the ISO week on that phone, still gone after reopening Home. Flip the flag back.
+
+- [ ] **Result view: add a tip to the Together List** (Sep 2026)
+  1. Result view with compatibility → tap "+ Together List" under tip 2
+  - **Expected:** Toast "Saved to Together List, tap to view"; button reads "✓ Saved to Together List" and ignores a second tap; Together List shows the tip under Intimacy with "· from The Lovers". Retake resets the buttons.
+
+- [ ] **Together List source labels** (Sep 2026)
+  1. Items saved from Would You Rather and Activity Cards
+  - **Expected:** "· from Would You Rather" / "· from Activity Cards" (used to render "· from " with nothing).
+
 ### Sensate Focus (app/sensate.tsx)
 
 - [ ] **Stage list renders all three stages with intro copy** 💰

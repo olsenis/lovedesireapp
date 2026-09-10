@@ -1,7 +1,9 @@
 import { doc, setDoc, getDoc, collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
-import { BlueprintType } from '../constants/content';
+import { BlueprintType, BLUEPRINT_COMPATIBILITY, BLUEPRINT_TYPE_CONFIG } from '../constants/content';
 import { trackEvent } from './statsService';
+import { seededPick } from './seed';
+import { weekAnchor, weekKey } from './loveLanguageNudgeService';
 
 export interface BlueprintHistoryEntry {
   type: BlueprintType;
@@ -23,6 +25,30 @@ export interface BlueprintResult {
 
 export interface CoupleBlueprints {
   [uid: string]: BlueprintResult;
+}
+
+// Weekly Lovers tip for Home (Sep 2026, retention). Pool per ORDERED type
+// pair: the three compatibility tips plus one "what lights the partner
+// up" line from BLUEPRINT_TYPE_CONFIG. Seeded per Monday-anchored week and
+// couple, so it is stable for the week and different next week. Each
+// partner sees the tip from their own side of the pair, which is intended:
+// the compatibility entry is written from the viewer's perspective. Texts
+// carry {partner} tokens; the caller runs personalise().
+export type LoversTip = { kind: 'tip' | 'turnOns'; text: string };
+
+export function pickWeeklyLoversTip(
+  myType: BlueprintType,
+  partnerType: BlueprintType,
+  coupleId: string,
+  when: Date = weekAnchor(),
+): LoversTip {
+  const entry = BLUEPRINT_COMPATIBILITY[myType]?.[partnerType];
+  const pool: LoversTip[] = [
+    ...(entry?.tips ?? []).map((text): LoversTip => ({ kind: 'tip', text })),
+    { kind: 'turnOns', text: BLUEPRINT_TYPE_CONFIG[partnerType].turnOns },
+  ];
+  const seed = `${weekKey(weekAnchor(when))}-${coupleId}-lovers`;
+  return seededPick(pool, 1, seed)[0];
 }
 
 // Cap on retake history entries per user. 10 covers many years of

@@ -49,7 +49,7 @@ import { PartnerAvatar } from '../../components/PartnerAvatar';
 import { useTrackScreen } from '../../hooks/useTrackScreen';
 import { trackEvent } from '../../services/statsService';
 import { getHelpState, markFeatureSeen } from '../../services/helpService';
-import { getMyBlueprintOneshot } from '../../services/blueprintService';
+import { subscribeCoupleBlueprints, pickWeeklyLoversTip, CoupleBlueprints } from '../../services/blueprintService';
 
 // Personalised greeting when the user has a name on their profile —
 // warmer first impression than a generic salutation. Falls back to the
@@ -364,9 +364,10 @@ export default function HomeScreen() {
   // compounder at week 2 instead of month 4. Undefined during load so
   // the nudge doesn't flash on mount; boolean once resolved.
   const [momentsArchivePeekSeen, setMomentsArchivePeekSeen] = useState<boolean | undefined>(undefined);
-  // The Lovers latest completedAt — used to fire an annual "has the
-  // answer shifted?" nudge on the anniversary of the most recent take.
-  const [loversCompletedAt, setLoversCompletedAt] = useState<number | null>(null);
+  // The Lovers results for both partners, live (Sep 2026). Feeds the
+  // partner-finished nudge, the Friday Lovers tip and the annual
+  // anniversary nudge. Rules let both members read the couple's docs.
+  const [blueprints, setBlueprints] = useState<CoupleBlueprints>({});
   // Which one-shot nudge keys the user has dismissed. Loaded once from
   // helpService.seen[] on mount. Used by seasonal-drops nudge (key
   // shape `seasonal-pack-${pack.id}`) and any future one-shot nudges
@@ -445,15 +446,10 @@ export default function HomeScreen() {
     });
   }, [user?.uid]);
 
-  // The Lovers latest take — fetched one-shot so the anniversary
-  // nudge below can compute how long since the couple last read.
-  // Null when never taken; treated as "no nudge" case.
   useEffect(() => {
-    if (!user?.uid) return;
-    getMyBlueprintOneshot(coupleId, user.uid).then((r) => {
-      setLoversCompletedAt(r?.completedAt ?? null);
-    }).catch(() => setLoversCompletedAt(null));
-  }, [coupleId, user?.uid]);
+    if (!coupleId) { setBlueprints({}); return; }
+    return subscribeCoupleBlueprints(coupleId, setBlueprints);
+  }, [coupleId]);
 
   const handleSendSpark = async (emoji: string, message: string) => {
     if (!coupleId || !partnerId) return;
@@ -956,8 +952,50 @@ export default function HomeScreen() {
     }
   }
 
-  // The Lovers anniversary — fires once a year on the anniversary of
-  // the couple's most recent quiz take. Uses a 7-day window starting
+  // The Lovers (Sep 2026 retention package). Three cards from the live
+  // blueprint subscription. All gated on isSubscribed so a lapsed couple
+  // never gets a card that bounces to /upgrade (the screen still guards).
+  const myBp = blueprints[uid];
+  const partnerBp = partnerId ? blueprints[partnerId] : undefined;
+  const loversCompletedAt = myBp?.completedAt ?? null;
+
+  // 1. Partner finished, I have not: the same "waiting for you" shape
+  // every other two-person feature has. Disappears by data once I finish.
+  if (partnerId && partnerBp && !myBp && isSubscribed) {
+    list.push({
+      emoji: '🧬',
+      title: 'The Lovers',
+      subtitle: `${partner?.name ?? 'Your partner'} finished The Lovers. Take it to see how you two fit.`,
+      route: '/blueprint',
+      bg: '#F3E5F5',
+    });
+  }
+
+  // 2. Friday Lovers tip: one of the pair's compatibility tips (or what
+  // lights the partner up), seeded per week. Leads the stack like the
+  // other weekly ritual cards; one dismissal per ISO week.
+  const loversTipKey = `lovers-tip-${getCurrentWeekId()}`;
+  if (partnerId && coupleId && myBp && partnerBp && isSubscribed
+      && (DEV_IGNORE_WEEKDAY_GATES || new Date().getDay() === 5)
+      && !dismissedKeys.has(loversTipKey)) {
+    const tip = pickWeeklyLoversTip(myBp.type, partnerBp.type, coupleId);
+    const pName = partner?.name ?? 'your partner';
+    const localUid = uid;
+    list.unshift({
+      emoji: '🧬',
+      title: tip.kind === 'turnOns' ? `What lights ${pName} up` : 'A Lovers tip for the weekend',
+      subtitle: personalise(tip.text, pName),
+      route: '/blueprint',
+      bg: '#F3E5F5',
+      onTap: () => {
+        setDismissedKeys(prev => new Set(prev).add(loversTipKey));
+        markFeatureSeen(localUid, loversTipKey).catch(() => {});
+      },
+    });
+  }
+
+  // 3. Anniversary — fires once a year on the anniversary of the
+  // couple's most recent quiz take. Uses a 7-day window starting
   // on the anniversary date so the user is likely to catch it. One
   // dismissal per year via helpService.seen[] with key that carries
   // the current year, so next year fires anew.
@@ -1194,7 +1232,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, mlDoc, couple?.createdAt, couple?.firstRitualCompletedAt, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, mlDoc, couple?.createdAt, couple?.firstRitualCompletedAt, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory, blueprints, isSubscribed, coupleId]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {
