@@ -105,71 +105,7 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 **Problem:** App Store search for `Desire` returns at least three couples-category competitors before us: **Desire — Couples Game** (Desire Technologies, ~3.1M Play downloads, since 2014, dominant), **Couples Games: Desire for Love** (id 6443401871, phonetic collision with our name), **Desire42** (zombie listing). Users searching `love desire` will hit "Couples Games: Desire for Love" first because App Store search is token-based. Every marketing dollar spent on the "Desire" keyword partly benefits established competitors. Structural discoverability problem — not fixable with marketing budget.
 **Legal risk:** LOW ("Desire" is a common English word, unregistrable as an exclusive mark; our compound "Love Desire" is distinct enough). Real cost is SEO/discovery, not litigation.
 **Cost NOW vs POST-LAUNCH:** rename now = ~1 day of grep/replace across app strings + `app.json` + Firebase display name + marketing site + 4 legal files + ehf name (not yet registered). Post-launch = weeks (bundle ID cannot change → new App Store listing → lose ratings/reviews → user-notify migration → domain redirect + email migration).
-**Shortlist delivered (Aug 21) — App Store availability check:**
-- ✅ **Vespera** — Latin "evening star". Zero couples-app conflict. Only other Vespera brand: Vaonis smart telescope (different category). Feminine -a ending, works in Icelandic. Verb-friendly ("your Vespera hour"). Recommended top pick.
-- ✅ **Solene** — French "solemn/dignified". Equally clear, distinctive, feminine, but harder to spell for non-French speakers.
-- ⚠️ **Perle** — French "pearl". Single word, memorable. Not yet verified against App Store or trademark databases.
-- ❌ **Ember** — 238+ apps in "ember couples" topic on AppsHunter; Ember-AI Couples Intimacy + Ember: AI Relationship Coach both live on App Store. Crowded.
-- ❌ **Amara** — 4+ near-collisions in couples category: Amora - Couples App, Amora: For Deeper Relationship, Amara Club (dating), Amorno: Couples & Relationship. Contested naming space.
-- ❌ **Kindra** — brand collision with Kindu (established competitor, users would misspell) + Kindra menopause brand owns .com + trademark.
-**Shortlist v2 (Sep 9 2026) — 30 names checked by 6 parallel agents against App Store / Play (web + iTunes Search API), well-known brands and marks (web-indexed only, NOT a USPTO/EUIPO/Hugverkastofa clearance), and registry RDAP for .app / .com / .is.** Vespera from the Aug 21 list is now RED: "Vespera X" sits in Google Play's Dating category and Vaonis holds an EU mark covering data-transmission services. Full agent tables are in the Sep 9 session transcript; this is the digest.
-
-| # | Name | Meaning / origin | Couples-space collision | .app | .com | .is | Main caveat |
-|---|---|---|---|---|---|---|---|
-| 1 | **Kyssa** | IS + SV "to kiss" | none (only a Kyssa audiobook app, Books category) | **free** | for sale (GoDaddy aftermarket) | server hold, likely dropping (Vercel Inc. reg. 2024) | Swedish children's "kissa" = pee, different spelling |
-| 2 | **Tvenna** | IS "a pair" (tvennd) | none (Tveni flirt app is a phonetic neighbour) | **free** | **free** | Lýsi hf (Heilsutvenna), forward only | "tv-" cluster awkward for English speakers |
-| 3 | **Brenna** | IS "to burn / bonfire"; Irish name | none (Australian aged-care app "Brenna", other category) | taken Jul 2026, owner unknown | taken 1997 | **free** | bare "Brenna" already an App Store trackName, listing would be "Brenna: …" |
-| 4 | **Cerise** | FR cherry, the colour | none; Fruitz uses "cerise" = "serious relationship" (a plus) | taken | taken | **free** | many small unrelated Cerise brands; EN "suh-REESE" vs IS "SER-i-se" |
-| 5 | **Blida** | IS blíða, tenderness | none | **free** | taken, expires 2026-12-16 (backorder) | Blíða weather site | Algerian city of 330k owns search; ð lost in ASCII |
-| 6 | **Solene** | FR name, "solemn" | none (Solene Fertility is adjacent wellness) | taken Aug 2026 | taken | **free** | pronounced differently EN vs IS; reads as a person |
-| 7 | **Glóa** | IS "to glow" | none, no exact-name app on App Store at all | French skincare | taken | Icelandic running brand | zero domains; big "Glo" wellness app one letter away |
-| 8 | **Mauve** | colour | none | taken | taken | **free** | generic colour word, 5+ unrelated Mauve apps, awkward in Icelandic |
-| 9 | **Ylur** | IS "warmth" | none | **free** | taken | Icelandic clothing brand | English cannot read "Yl-"; two Icelandic companies trade under it |
-| 10 | **Ylja** | IS "to warm" | none | **free** | taken | the band Ylja | well-known Icelandic band + restaurant + salon; English pronunciation |
-
-Also survived but ranked below 10: Sindra (3 registered SINDRA marks, sindra.app is a PCOS tracker), Saman (Saman Bank, Sky Lagoon "Saman Pass", German "Samen"), Perle (Perle Systems owns the word mark + perle.com), Lofa (new AI-companion app, "loofah"), Vina (Hey! VINA residue, "booze" in Finnish), Fjóla (common given name, possible "pansy" slang, .is taken 2025).
-
-RED, do not revisit: Vespera, Sienna, Velora ("Veloura: Couples Intimacy"), Nuvia (Qualcomm/STADA), Elska (elska.app is a live couples app + Elska magazine), Unna (Unna by Unprude sex-wellness app), Lilac (HeyLilac AI sex coach), Tinna (Tinder/Tinda), Duetta (four "Duet" couples apps), Yndi (Yndi Yoga owns the Icelandic-bliss story), Loga (new Icelandic brand on loga.is), Halda (Halda Watch since 1887 + USPTO reg.), Tendra (STI dating brand + two live apps), Kindla (Amazon Kindle one letter away, "little child" in Franconian).
-
-**Recommendation:** pursue Kyssa, Tvenna, Brenna in that order. Before deciding anything, register the free domains for all three today (kyssa.app, tvenna.app, tvenna.com, brenna.is, about $15 each); solene.app and brenna.app were both taken within the last eight weeks. Then run the Hugverkastofa + EUIPO check on the one you like.
-
-**Shortlist v2b, non-Icelandic only (Sep 9 2026, user asked for a list without Icelandic words).** 15 new Romance / French / coined names checked the same way (iTunes Search API + web + registry RDAP), merged with the four non-Icelandic survivors from v2.
-
-| # | Name | Meaning / origin | Couples-space collision | .app | .com | .is | Main caveat |
-|---|---|---|---|---|---|---|---|
-| 1 | **Tenero** | IT "tender" | none; no mark found | **free** | taken 2002 (Korean registrar) | **free** | Tenga (sex-toy brand) is a loose phonetic neighbour |
-| 2 | **Cerise** | FR cherry, the colour | none; Fruitz uses "cerise" for "serious relationship" | taken | taken | **free** | many small unrelated Cerise brands |
-| 3 | **Carezza** | IT "caress"; Karezza slow-intimacy method | none | taken Aug 2026 | taken, **expires 2026-09-30** (backorder) | **free** | Karezza = "no-orgasm method" association cuts both ways |
-| 4 | **Solene** | FR name | none (Solene Fertility adjacent) | taken Aug 2026 | taken | **free** | EN vs IS pronunciation split; reads as a person |
-| 5 | **Serein** | FR "serene"; sunset rain | none (Serein Collective sells couples card decks, no app) | taken Dec 2025, 1-yr term | taken | **free** | 6+ small Serein apps incl. mindfulness; pronunciation split |
-| 6 | **Bacio** | IT "kiss" | Bacioo, Italian dating app, one letter away (Android) | **free** | taken | **free** | English misreads "BAY-see-oh"; Leprino BACIO cheese mark |
-| 7 | **Tesoro** | IT/ES "treasure, darling" | none | taken | taken | **free** | generic: Tesoro oil company, 6+ unrelated Tesoro apps |
-| 8 | **Mauve** | colour | none | taken | taken | **free** | generic colour word, awkward in Icelandic |
-| 9 | **Orla** | Irish name | none | taken Jan 2026 | taken | taken Jun 2026 | two 2026 wellness apps, Orla Kiely mark, no domains |
-| 10 | **Perle** | FR/DE "pearl" | none | taken | Perle Systems | **free** | Perle Systems owns the word mark; EN "Perl/pearl" ambiguity |
-
-Dropped: Querida (Spanish colloquial "mistress"), Ambre (Nasdaq-listed AMBR launched a consumer AI product "Ambre" on 2026-09-01; Spanish "hambre"). RED: Velvet (10+ couples/kink/dating apps), Nuit (NUiT astrology dating app), Beso ("Beso - For Couples", May 2026), Bisou (Bisou Match + Bisoux Couples App), Embra (Ember: For Couples + "Embra: Relationship Archive" + Spanish "hembra"), Ardora ("Ardore", a live 17+ desire-matching couples app one letter away), Tessera (30+ apps, software-class marks, .is held by Avola ehf.).
-
-**Recommendation (non-Icelandic):** Tenero. Only GREEN of 19; register tenero.app + tenero.is today. Backorder carezza.com (drops 2026-09-30) if Carezza is the runner-up. Then Hugverkastofa + EUIPO on the finalist.
-
-**Shortlist v2c, domain-first (Sep 9 2026, user: "only 2 on the list are free").** Reversed the method: 50 coined non-Icelandic names bulk-checked on registry RDAP first. Finding: **every pronounceable .com is squatted** (50/50 taken, verified against Verisign), so .com is off the table for any short name; plan on `get<name>.com` or an aftermarket buy. 18 names had `.app` + `.is` free; the 10 best went through the full app / brand / meaning pass, 4 more got a light check (iTunes API + one web search). All ten below have **.app and .is free today**.
-
-| # | Name | Origin | App / brand collision | Pronounce (US) | Caveat |
-|---|---|---|---|---|---|
-| 1 | **Tenero** | IT "tender" | none | teh-NEH-ro | Tenga (sex-toy brand) loose phonetic neighbour |
-| 2 | **Belisa** | Lorca's Belisa, "bella" | none (Belisa by Lunata hair tools, class 3) | buh-LEE-sa | a real given name; @belisa taken on IG/X, free on TikTok |
-| 3 | **Tenira** | coined from tender | none found (light check only) | teh-NEER-a | same Tenga neighbour; needs the full pass |
-| 4 | **Dulcea** | Latin dulcis, sweet | none | DUL-see-a / dul-SAY-a | Americans split the pronunciation; "dull-" onset |
-| 5 | **Fervia** | coined from fervor | none found (light check only); Fervi SpA tools unrelated | FER-via | needs the full pass |
-| 6 | **Fervora** | coined from fervor | no app; **Fervora = AvantLink's influencer-marketing software platform** (software class) | fer-VOR-a | TM check vs AvantLink before filing; @fervora free on X |
-| 7 | **Tenerra** | tender + terra | no app; **Tenerra, Inc. (tenerra.ai) live US software company** | teh-NERR-a | same-class TM risk |
-| 8 | **Bacio** | IT "kiss" | Bacioo, Italian Android dating app one letter away | BAH-cho, misread BAY-see-oh | Leprino BACIO cheese mark |
-| 9 | **Querenza** | from ES querencia, "safe place" | none; Quenza (therapist platform) absorbs typed searches | kweh-REN-za | three pronunciations, hard to spell from hearing |
-| 10 | **Cherisa** | coined from cherish | none exact; Cherrish (dating) neighbour | sheh-REE-sa / CHER-i-sa | spelling ambiguity |
-
-Checked and dropped even though .app was free: Ardente (Ardore couples app again, plus an Italian casino brand), Diletta (Diletta Leotta owns search in Italy, "dilettante" echo), Amorea (Amoréa intimacy academy + three "Amora" couples apps), Adorea (Adoree.ai couples AI + Adorea Beauty), Luvena (US feminine-care brand, too close to sexual wellness), Kisera (Indonesian hijab brand, weak sound). Not checked beyond domains: Carezo, Dolcia, Tuvela, Corenza.
-
-**Recommendation (domain-first):** Tenero or Belisa. Register `.app` + `.is` for both today (four domains, ~8,000 ISK); add tenira.app/.is if you like the sound. Then Hugverkastofa + EUIPO class 9/42/45 on the finalist.
+**Shortlists → [NAMING.md](NAMING.md) (Sep 12 2026).** Four runs (Aug 21 shortlist, Sep 9 v2 / v2b / v2c, the outside review agent's top 20, the Sep 12 100-name run across ES / FR / IT / PT / LA / coined / IS / Nordic) are merged there into one ranked top 100 with method, tiers and a "checked and out" appendix. Findings that shaped it: every plain English relationship word is already an app; every pronounceable short .com is squatted (50/50); survivors are foreign or coined words. Top 3 as of Sep 12: **Tenero, Belisa, Tepore** (all `.app` + `.is` free). Vespera from the Aug 21 list is RED (Vespera X in Play's Dating category, Vaonis EU mark).
 
 **User next actions (before code rename):**
 1. Domain check — `vespera.com` (likely taken by telescope co; check price), `vespera.app`, `vespera.love`, `vespera.co`, `vespera.is`
