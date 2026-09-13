@@ -1804,8 +1804,10 @@ const styles = StyleSheet.create({
 
   coupleCard: { borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, overflow: 'hidden', ...Shadow.md },
   heartWatermark: { position: 'absolute', fontSize: 130, color: 'rgba(255,255,255,0.04)', top: -22, right: -8, lineHeight: 140 },
-  coupleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  avatarCol: { alignItems: 'center', gap: 8 },
+  // Top-aligned so both avatars and names sit on the same line even though my
+  // column is taller (Tonight pill); the middle column centres itself instead.
+  coupleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  avatarCol: { alignItems: 'center', gap: 8, minWidth: 96 },
   avatarRing: { borderRadius: Radius.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.28)', padding: 3 },
   avatarNameLight: { fontFamily: Fonts.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
   tzClock: { fontFamily: Fonts.body, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1, letterSpacing: 0.3 },
@@ -1818,7 +1820,7 @@ const styles = StyleSheet.create({
   tonightBannerSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   moodPill: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 4 },
   moodPillEmoji: { fontSize: 18 },
-  middleCol: { alignItems: 'center', gap: 4 },
+  middleCol: { alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', gap: 4 },
   sinceLabel: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
   sinceDate: { fontFamily: Fonts.heading, fontSize: 20, color: '#FFFFFF', textAlign: 'center', lineHeight: 24 },
   anniversaryPill: { alignItems: 'center', gap: 1, marginTop: 2 },
