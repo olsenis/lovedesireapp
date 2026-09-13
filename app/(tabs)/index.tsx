@@ -19,6 +19,7 @@ import { subscribeDailyQuestions, DailyQuestionDoc } from '../../services/dailyQ
 import { subscribeDailyWishes, DailyWishDoc } from '../../services/dailyWishService';
 import { subscribeWYR, WYRSession, subscribeCustomWYRQuestions, WYRCustomQuestion } from '../../services/wyrService';
 import { weekAnchor } from '../../services/loveLanguageNudgeService';
+import { TonightSignal, isTonightLive, setTonight, clearTonight, subscribeMyTonight, subscribePartnerTonight, tonightMatchKey, formatClearTime } from '../../services/tonightService';
 import { subscribeMemoryLane, MemoryLaneDoc } from '../../services/memoryLaneService';
 import { memoryLaneEligible } from '../../services/featureUnlockService';
 import { DEV_IGNORE_WEEKDAY_GATES } from '../../constants/devFlags';
@@ -235,6 +236,11 @@ export default function HomeScreen() {
 
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
+  // "Tonight?" signal (Sep 2026): my private flag, the partner's only
+  // while mine is live (rules), and the match key the push was sent for.
+  const [myTonight, setMyTonight] = useState<TonightSignal | null>(null);
+  const [partnerTonight, setPartnerTonight] = useState<TonightSignal | null>(null);
+  const tonightPushedRef = useRef<string | null>(null);
   // History-backed subscriptions for cross-flow nudges. Pulse 4-week
   // return nudge + intimacy-log prompts triggered by low pulse closeness
   // or 3+ low-mood check-ins in the last 7 days.
@@ -389,6 +395,45 @@ export default function HomeScreen() {
       .catch(() => { /* keep last known */ });
     return () => { cancelled = true; };
   }, [coupleId, partnerId, uid, dailyQDoc?.guesses, dailyQDoc?.answers]);
+
+  // Tonight signal: mine always; the partner's only while mine is live
+  // (rules deny it otherwise), re-subscribed when that changes.
+  useEffect(() => {
+    if (!coupleId || !uid) { setMyTonight(null); return; }
+    return subscribeMyTonight(coupleId, uid, setMyTonight);
+  }, [coupleId, uid]);
+  // `tick` (60 s Home ticker) re-renders so expiry is re-evaluated without a listener.
+  void tick;
+  const myTonightLive = isTonightLive(myTonight);
+  useEffect(() => {
+    if (!coupleId || !partnerId || !myTonightLive) { setPartnerTonight(null); return; }
+    return subscribePartnerTonight(coupleId, partnerId, setPartnerTonight);
+  }, [coupleId, partnerId, myTonightLive]);
+  const tonightMatch = myTonightLive && isTonightLive(partnerTonight) && myTonight && partnerTonight
+    ? { key: tonightMatchKey(myTonight, partnerTonight), expiresAt: Math.min(myTonight.expiresAt, partnerTonight.expiresAt) }
+    : null;
+  // One push per match, sent by whoever completed it (the later signal),
+  // to the one who was waiting.
+  useEffect(() => {
+    if (!tonightMatch || !coupleId || !myTonight || !partnerTonight) return;
+    if (tonightPushedRef.current === tonightMatch.key) return;
+    tonightPushedRef.current = tonightMatch.key;
+    if (myTonight.setAt >= partnerTonight.setAt) {
+      trackEvent('tonight_matched');
+      notifyPartner(coupleId, uid, "You're both in the mood 🔥", `${profile?.name ?? 'Your partner'} said tonight too.`).catch(() => {});
+    }
+  }, [tonightMatch?.key, coupleId, uid, myTonight, partnerTonight, profile?.name]);
+
+  const handleTonightToggle = async () => {
+    if (!coupleId || !uid) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      if (myTonightLive) await clearTonight(coupleId, uid);
+      else await setTonight(coupleId, uid);
+    } catch (e) {
+      console.error('tonight toggle failed:', e);
+    }
+  };
 
   // Mood subscription
   useEffect(() => {
@@ -1297,6 +1342,16 @@ export default function HomeScreen() {
               <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Mood history">
                 <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tonightPill, myTonightLive && styles.tonightPillOn]}
+                onPress={handleTonightToggle}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityState={{ selected: myTonightLive }}
+                accessibilityLabel={myTonightLive ? 'Tonight signal on, tap to clear' : 'Signal that you are in the mood tonight'}
+              >
+                <Text style={[styles.tonightPillText, myTonightLive && styles.tonightPillTextOn]}>{myTonightLive ? 'Tonight 🔥 ✓' : 'Tonight? 🔥'}</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.middleCol}>
               <Text style={styles.sinceLabel}>together since</Text>
@@ -1368,6 +1423,15 @@ export default function HomeScreen() {
             </View>
           )}
         </TouchableOpacity>
+      )}
+
+      {/* Tonight match: only renders when BOTH signals are live. Nothing
+          shows for a one-sided signal, by design and by rules. */}
+      {tonightMatch && (
+        <View style={styles.tonightBanner} accessibilityRole="text">
+          <Text style={styles.tonightBannerTitle}>You're both in the mood tonight 🔥</Text>
+          <Text style={styles.tonightBannerSub}>Only the two of you know. Clears at {formatClearTime(tonightMatch.expiresAt)}.</Text>
+        </View>
       )}
 
       {/* Inactive-partner hint (H12) — paired via invite code but partner
@@ -1733,6 +1797,13 @@ const styles = StyleSheet.create({
   avatarRing: { borderRadius: Radius.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.28)', padding: 3 },
   avatarNameLight: { fontFamily: Fonts.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
   tzClock: { fontFamily: Fonts.body, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1, letterSpacing: 0.3 },
+  tonightPill: { marginTop: 6, borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
+  tonightPillOn: { backgroundColor: 'rgba(255,255,255,0.92)', borderColor: 'rgba(255,255,255,0.92)' },
+  tonightPillText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: 'rgba(255,255,255,0.85)' },
+  tonightPillTextOn: { color: Colors.burgundy },
+  tonightBanner: { backgroundColor: Colors.blush, borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.rose, gap: 4 },
+  tonightBannerTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
+  tonightBannerSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   moodPill: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 4 },
   moodPillEmoji: { fontSize: 18 },
   middleCol: { alignItems: 'center', gap: 4 },

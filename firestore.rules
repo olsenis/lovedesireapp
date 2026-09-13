@@ -185,10 +185,30 @@ service cloud.firestore {
       // Schema validation: prevent spoofing of identity fields.
       // Any document the caller creates with these fields MUST have them set to themselves.
       // Reads + updates + deletes remain available to either couple member.
+      // ── Tonight signal (Sep 2026): a private "in the mood tonight" flag ──
+      // Owner reads and writes their own doc. The partner may read it ONLY
+      // while the partner's own signal is live, which is the mutual-only
+      // reveal: you learn the other said yes only after you said yes.
+      // Excluded from the wildcard below so no other rule can widen this.
+      match /tonight/{userId} {
+        allow read: if request.auth != null && isMemberOfCouple(coupleId) && (
+          request.auth.uid == userId
+          || (exists(/databases/$(database)/documents/couples/$(coupleId)/tonight/$(request.auth.uid))
+              && get(/databases/$(database)/documents/couples/$(coupleId)/tonight/$(request.auth.uid)).data.expiresAt > request.time.toMillis())
+        );
+        allow delete: if request.auth != null && isMemberOfCouple(coupleId) && request.auth.uid == userId;
+        allow create, update: if request.auth != null && isMemberOfCouple(coupleId)
+          && request.auth.uid == userId
+          && request.resource.data.uid == userId
+          && request.resource.data.expiresAt is number
+          && request.resource.data.expiresAt <= request.time.toMillis() + 24 * 3600 * 1000;
+      }
+
       match /{subcollection}/{document=**} {
-        allow read: if request.auth != null && isMemberOfCouple(coupleId);
+        allow read: if request.auth != null && isMemberOfCouple(coupleId) && subcollection != 'tonight';
         allow create: if request.auth != null
           && isMemberOfCouple(coupleId)
+          && subcollection != 'tonight'
           && (!('fromUid'   in request.resource.data) || request.resource.data.fromUid   == request.auth.uid)
           // createdBy = auth.uid for user-authored docs. Auto-milestones in
           // Our Story write createdBy: "system" — allowed only when paired
@@ -221,6 +241,7 @@ service cloud.firestore {
         // gamification concern, not a data-integrity or privacy concern.
         allow update: if request.auth != null
           && isMemberOfCouple(coupleId)
+          && subcollection != 'tonight'
           && (!('fromUid'   in resource.data) || request.resource.data.fromUid   == resource.data.fromUid)
           && (!('createdBy' in resource.data) || request.resource.data.createdBy == resource.data.createdBy)
           && (!('loggedBy'  in resource.data) || request.resource.data.loggedBy  == resource.data.loggedBy)
@@ -269,7 +290,7 @@ service cloud.firestore {
           // once at create and never updated by a client. No other wildcard
           // collection carries a `questions` field.
           && !('questions' in request.resource.data.diff(resource.data).affectedKeys());
-        allow delete: if request.auth != null && isMemberOfCouple(coupleId);
+        allow delete: if request.auth != null && isMemberOfCouple(coupleId) && subcollection != 'tonight';
       }
     }
 

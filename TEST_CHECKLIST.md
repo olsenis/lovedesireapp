@@ -1173,6 +1173,24 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 ---
 
+### Home: Tonight? signal (Sep 2026)
+
+- [ ] **One-sided signal shows nothing to the partner** 📱 ⚠️
+  1. A taps "Tonight? 🔥" (pill turns solid, reads "Tonight 🔥 ✓"); B opens Home
+  - **Expected:** B sees nothing new, no push. Firestore console: `couples/{id}/tonight/{A}` exists with expiresAt 8 h ahead. B's client cannot read it (rules).
+
+- [ ] **Mutual signal: banner on both, one push to the first** 📱
+  1. B taps "Tonight? 🔥"
+  - **Expected:** Both Home screens show "You're both in the mood tonight 🔥 · Only the two of you know. Clears at HH:MM." A (who signalled first) gets exactly one push "You're both in the mood 🔥 · {B} said tonight too."; B gets none.
+
+- [ ] **Clearing and expiry**
+  1. A taps the solid pill again
+  - **Expected:** A's doc deleted, banner gone on both, B's pill still solid. Wait past expiresAt (or edit it in the console): banner and solid pill clear on the next Home tick.
+
+- [ ] **Rules: partner cannot write or spoof** (dev console)
+  1. As B, `setDoc(couples/{id}/tonight/{A}, {...})` and `getDoc(couples/{id}/tonight/{A})` while B has no live signal
+  - **Expected:** both permission-denied.
+
 ## 3. Love Notes + Tease + Moments + Journal
 Timed messages, ephemeral photos, daily ritual photos, and shared journal.
 
