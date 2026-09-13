@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import Constants from 'expo-constants';
 import { Notifications } from '../services/notificationsGuard';
+import { noteFirstOpen } from '../services/reviewPromptService';
 import {
   useFonts,
   CormorantGaramond_400Regular,
@@ -253,6 +254,7 @@ export default function RootLayout() {
   const { partner: nudgePartner, couple: rootCouple } = useCouple(user?.uid, profile?.coupleId);
   useEffect(() => {
     if (loading || !user) return;
+    noteFirstOpen();
     if (nudgePartner?.name && nudgePartner?.loveLanguage) {
       scheduleLoveLanguageNudge(nudgePartner.name, nudgePartner.loveLanguage as LoveLanguage);
     } else {

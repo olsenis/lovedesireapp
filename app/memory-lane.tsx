@@ -8,6 +8,7 @@ import { useCouple } from '../hooks/useCouple';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { WhileYouWait } from '../components/WhileYouWait';
 import { getCurrentWeekId } from '../services/stateUnionService';
+import { noteHappyMoment } from '../services/reviewPromptService';
 import { memoryLaneDaysLeft, memoryLaneEligible } from '../services/featureUnlockService';
 import {
   MemoryLaneDoc, MemorySource,
@@ -77,6 +78,7 @@ export default function MemoryLaneScreen() {
     if (!coupleId || !allAnswered || iCompleted || completedRef.current) return;
     completedRef.current = true;
     completeMemoryLane(coupleId, weekId, uid).catch(() => {});
+    noteHappyMoment('memory_lane_score');
   }, [coupleId, allAnswered, iCompleted, weekId, uid]);
 
   const displayIndex = revealed ? revealed.qi : firstUnanswered;

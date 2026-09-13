@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StoreBadge from '../components/StoreBadge.astro';
+// Landing page for the in-app "Send invite" share sheet (Sep 2026).
+// The partner's 6-character invite code arrives as ?code=ABC123 and is
+// read on the client, so the page stays static. Without a code it still
+// works as a plain "how to join" page.
+---
+
+<BaseLayout
+  title="Join your partner, Love Desire"
+  description="Someone wants you in a private app for two. Install, create an account, enter the code."
+>
+  <section class="max-w-3xl mx-auto px-6 pt-20 pb-12 text-center">
+    <p class="text-xs uppercase tracking-[0.35em] text-muted font-bold mb-3">You're invited</p>
+    <h1 class="font-heading text-5xl md:text-6xl leading-tight text-burgundy">
+      One space,<br />
+      <em class="font-normal">for the two of you</em>.
+    </h1>
+    <p class="text-lg text-burgundy/80 mt-6 max-w-2xl mx-auto leading-relaxed">
+      Your partner set up Love Desire and wants you in it. Three steps, about two minutes.
+    </p>
+  </section>
+
+  <section class="max-w-3xl mx-auto px-6 pb-20">
+    <div class="bg-burgundy text-cream rounded-3xl p-8 md:p-12 flex flex-col items-center gap-6 text-center">
+      <p class="text-xs uppercase tracking-[0.35em] text-cream/60 font-bold">Your partner's code</p>
+      <p id="join-code" class="font-heading text-5xl md:text-6xl tracking-[0.3em] text-cream select-all" data-empty="true">------</p>
+      <button
+        id="join-copy"
+        type="button"
+        class="inline-flex items-center gap-2 bg-cream text-burgundy px-6 py-3 rounded-full font-body font-bold text-sm hover:shadow-lg transition-shadow"
+        hidden
+      >
+        Copy code
+      </button>
+      <p id="join-nocode" class="text-sm text-cream/70 italic">
+        No code in this link. Ask your partner to open Profile in the app and read you the six characters, or to tap Send invite again.
+      </p>
+    </div>
+
+    <ol class="mt-12 flex flex-col gap-6 text-burgundy/85 leading-relaxed">
+      <li class="bg-blush rounded-3xl p-6 flex gap-4">
+        <span class="font-heading text-3xl text-burgundy">1</span>
+        <div>
+          <p class="font-bold">Install Love Desire</p>
+          <p class="text-sm mt-1">iPhone from the App Store. Android is a direct download, see the Android page.</p>
+          <div class="mt-4"><StoreBadge variant="compact" /></div>
+        </div>
+      </li>
+      <li class="bg-blush rounded-3xl p-6 flex gap-4">
+        <span class="font-heading text-3xl text-burgundy">2</span>
+        <div>
+          <p class="font-bold">Create your account</p>
+          <p class="text-sm mt-1">Email and password, a first name, and an 18+ confirmation. No feed, no strangers: nobody but your partner will ever see anything you do here.</p>
+        </div>
+      </li>
+      <li class="bg-blush rounded-3xl p-6 flex gap-4">
+        <span class="font-heading text-3xl text-burgundy">3</span>
+        <div>
+          <p class="font-bold">Enter the code</p>
+          <p class="text-sm mt-1">On the pairing screen choose "I have a code" and type the six characters above. Your partner confirms on their phone, and you are in.</p>
+        </div>
+      </li>
+    </ol>
+
+    <p class="mt-10 text-center text-sm text-burgundy/70 italic">
+      One subscription covers both of you. The free tier is enough to start.
+    </p>
+  </section>
+
+  <script>
+    // Read ?code=, show it, wire the copy button. Codes are 6 uppercase
+    // alphanumerics; anything else is ignored so the page never echoes
+    // arbitrary input.
+    const params = new URLSearchParams(window.location.search);
+    const raw = (params.get('code') ?? '').trim().toUpperCase();
+    const code = /^[A-Z0-9]{6}$/.test(raw) ? raw : '';
+    const el = document.getElementById('join-code');
+    const btn = document.getElementById('join-copy');
+    const none = document.getElementById('join-nocode');
+    if (code && el && btn && none) {
+      el.textContent = code;
+      el.removeAttribute('data-empty');
+      btn.hidden = false;
+      none.hidden = true;
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(code);
+          btn.textContent = 'Copied';
+          setTimeout(() => { btn.textContent = 'Copy code'; }, 2000);
+        } catch {
+          // Clipboard blocked: the code is select-all text, long-press works.
+        }
+      });
+    }
+  </script>
+</BaseLayout>

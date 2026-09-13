@@ -567,6 +567,10 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 ### Connect banner (unpaired)
 
+- [ ] **Send invite opens the share sheet with code + link** 📱 (Sep 2026)
+  1. Pairing screen → Send invite → pick Messages
+  - **Expected:** Message reads "Join me on Love Desire, a private app for two. Install it, then enter my code XXXXXX. https://lovedesireapp.com/join?code=XXXXXX". Cancelling the sheet does nothing. Tapping the link opens /join with the same code shown large and a Copy code button; a link without a code shows the "No code in this link" line instead.
+
 - [ ] **Invite banner shows invite code**
   1. New account, no partner, land on Home
   - **Expected:** Blush card with 💌 + invite code.
@@ -2518,6 +2522,16 @@ Erotic Blueprint quiz, guided Sensate Focus sessions, private Intimacy Log + sta
 - [ ] **Both phones see entries logged from either device** 📱 ⚠️
   1. Phone A logs; Phone B opens within 10s
   - **Expected:** Phone B sees entry; verify initiatedBy perspective display.
+
+### Rating prompt (services/reviewPromptService.ts, Sep 2026)
+
+- [ ] **No prompt in Expo Go, no crash** 📱
+  1. Trigger any happy moment (Fantasy Wishes match, Sunday reveal, Memory Lane done, day 30)
+  - **Expected:** Nothing visible; `review_prompted_*` never fires in dev. `expo-store-review` is a no-op outside a store build.
+
+- [ ] **Prompt on an EAS build once the gates pass** 📱 (launch build)
+  1. Device 7+ days since first authenticated open, 3+ happy moments seen, no ask in 90 days → trigger a happy moment
+  - **Expected:** Native rating sheet ~2 s after the moment, once; a second happy moment in the same session does not re-ask. Never on Home, never on open, never after the paywall.
 
 ### Intimacy Log: Stats tab
 

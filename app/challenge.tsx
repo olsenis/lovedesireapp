@@ -22,6 +22,7 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
+import { noteHappyMoment } from '../services/reviewPromptService';
 
 const BASE_PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire', 'desire'];
 // Programs that require a paid subscription. Free users see them with 🔒
@@ -160,6 +161,7 @@ export default function ChallengeScreen() {
     if (!coupleId || !user || !state) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await markDayComplete(coupleId, user.uid, state.currentDay, state);
+    if (state.currentDay >= 30) noteHappyMoment('challenge_complete');
     notifyPartner(coupleId, user.uid, 'Challenge update ✓', `${profile?.name ?? 'Your partner'} marked day ${state.currentDay} done, your turn`).catch(() => {});
   };
 

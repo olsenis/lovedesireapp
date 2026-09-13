@@ -18,6 +18,7 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
+import { noteHappyMoment } from '../services/reviewPromptService';
 
 export default function FantasyWishesScreen() {
   const { user, profile } = useAuth();
@@ -153,6 +154,7 @@ export default function FantasyWishesScreen() {
       const updated = { ...item, votes: { ...item.votes, [uid]: 'yes' as const } };
       if (isFWMatch(updated, uid, partnerId)) {
         notifyPartner(coupleId, uid, 'New match ✨', 'You have a shared fantasy wish').catch(() => {});
+        noteHappyMoment('fw_match');
       }
     }
     // Deck auto-advances naturally: the item leaves unvotedInDeck via the

@@ -226,6 +226,7 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 | `photoConsentService.ts` | `hasPhotoConsent(uid)`, `confirmPhotoConsent(uid)` — H42 first-photo re-attestation. AsyncStorage cache short-circuits Firestore read after first grant. |
 | `memoryLaneService.ts` | `subscribeMemoryLane`, `ensureMemoryLaneWeek(coupleId, weekId, uid, partnerUid, myName, partnerName)` (one `loadSources` read → pure `buildQuestions(sources, view, seed)` per partner → transaction create-if-missing; returns without writing when both sets are empty), `questionsFor(doc, uid)`, `answerMemoryQuestion`, `completeMemoryLane`, `memoryLaneScore(doc, uid)`, `MEMORY_LANE_QUESTIONS` — six generators (moments / daily / mood / milestone / sunday / fw) with per-source cold-start minimums, max 2 per source, seeded selection. Daily source only uses questions BOTH answered (keeps Daily's mutual-reveal promise). Targets must be at least `MIN_AGE_DAYS` (3) old so there is something to have forgotten (distractors may be recent); questions asked in the last `NO_REPEAT_WEEKS` (4) weeks are excluded via `recentQuestionIds`, falling back to the full pool if that leaves fewer than 3. Sep 2026, per-uid rewrite Review #11. |
 | `featureUnlockService.ts` | `getFeatureUnlockState`, `markMemoryLaneUnlocked` (caches only after a successful write), `isUnlockRecent`, `memoryLaneEligible(couple)`, `memoryLaneDaysLeft(couple)` (anchor = max(createdAt, firstRitualCompletedAt)), `MEMORY_LANE_UNLOCK_DAYS` (30), `MEMORY_LANE_DEV_UNLOCK` — sticky per-user data-gate unlocks at `users/{uid}/private/features`. Rebuilt Sep 2026 after the Versus version was deleted. |
+| `reviewPromptService.ts` | `noteFirstOpen()`, `noteHappyMoment(moment)` — App Store / Play rating prompt via `expo-store-review`, gated per device on 7 days since first open, 3 happy moments, 90 days between asks; called after a Fantasy Wishes match, a Sunday reveal that appears during the visit, Memory Lane completion, challenge day 30. Never on Home or open. No-op in Expo Go. Sep 2026. |
 | `seed.ts` | `hashString`, `mulberry32`, `seededShuffle`, `seededPick` — shared deterministic randomness for anything both phones must agree on without a server. Extracted from loveLanguageNudgeService Sep 2026. dailyQuestionsService and bingoService keep their own older LCGs on purpose (changing them would alter historical picks). |
 
 ### Hooks
@@ -267,6 +268,8 @@ Three prompts for expanding content — always use the right one for the categor
 - `colors.ts` — `Colors.burgundy` (#880E4F), `Colors.cream` (#FFF8F0), `Colors.rose` (#F4A7B9), `Colors.blush` (#FCE4EC), `Colors.muted` (#9E7B84), `Colors.border` (#F0D5DC)
 - `fonts.ts` — `Fonts.heading` (Cormorant Garamond SemiBold), `Fonts.body` (Lato Regular), `Fonts.bodyBold`, `Fonts.bodyItalic`, `Fonts.headingItalic`
 - `spacing.ts` — `Spacing` (xs→xxl), `Radius` (sm→full), `Shadow` (sm/md)
+- `app.ts` — `APP_NAME`, `SITE_URL`, `JOIN_URL` for copy that leaves the app (share sheets, links). One place to change on H43.
+- `pricing.ts` — `PRICING` (monthly, annual, trial days, intro month) + derived savings / discount; mirrored in `web/src/data/pricing.ts` because the site builds from `web/` as its Vercel root. The paywall shows live RevenueCat prices; these feed legal copy and docs.
 
 ### Key implementation patterns
 

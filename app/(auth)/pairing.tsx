@@ -10,9 +10,11 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Modal,
+  Share,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import { APP_NAME, JOIN_URL } from '../../constants/app';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../../hooks/useAuth';
 import { doc, getDoc, onSnapshot, deleteField, updateDoc } from 'firebase/firestore';
@@ -117,6 +119,21 @@ export default function PairingScreen() {
     await Clipboard.setStringAsync(inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Native share sheet (Sep 2026, growth loop). The link lands on the
+  // site's /join page, which shows the code, the store badges and the
+  // three steps, so the partner never has to type from memory.
+  const handleShare = async () => {
+    if (!inviteCode) return;
+    try {
+      await Share.share({
+        message: `Join me on ${APP_NAME}, a private app for two. Install it, then enter my code ${inviteCode}. ${JOIN_URL}?code=${inviteCode}`,
+      });
+      trackEvent('invite_shared');
+    } catch {
+      // User dismissed the sheet or no share target; nothing to do.
+    }
   };
 
   // First-time users get routed to the onboarding tour once pairing succeeds.
@@ -459,9 +476,14 @@ export default function PairingScreen() {
                 />
               </View>
             )}
+            {!!inviteCode && (
+              <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Send invite to your partner">
+                <Text style={styles.shareBtnText}>Send invite</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
-        <Text style={styles.cardNote}>Show the code or QR to your partner</Text>
+        <Text style={styles.cardNote}>Send the invite, or show the code or QR in person</Text>
       </View>
 
       <Text style={styles.or}>or</Text>
@@ -643,6 +665,19 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  shareBtn: {
+    marginTop: Spacing.md,
+    alignSelf: 'center',
+    backgroundColor: Colors.burgundy,
+    paddingVertical: Spacing.sm + 4,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radius.full,
+  },
+  shareBtnText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 15,
+    color: Colors.white,
   },
   scanBtn: {
     marginTop: Spacing.md,

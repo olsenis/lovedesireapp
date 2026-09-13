@@ -148,7 +148,7 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 - Only after a moment that just went well: a Fantasy Wishes match, a Sunday Check-in reveal, a Memory Lane score, a completed 30-day program.
 - Never on Home, never on open, never after a paywall.
 - Gate: at least 7 days since install and at least 3 rituals completed, tracked locally.
-- **Code follow-up, ~1 hour, not built yet** (§10).
+- **Built Sep 13 2026:** `services/reviewPromptService.ts`. `noteFirstOpen()` runs on every authenticated launch; `noteHappyMoment()` is called after a Fantasy Wishes match, when the Sunday reveal appears during a visit, when Memory Lane is completed, and on day 30 of a challenge. Ask fires 1.8 s after the moment. No-op in Expo Go; verify on the first EAS build.
 
 ### 2.10 Description and promo text
 
@@ -211,7 +211,7 @@ All of these are code tasks, listed in §10.
 ## 5. Built-in distribution
 
 - **Pairing is the growth loop.** Every user who finishes onboarding invites exactly one person, so the product has a viral coefficient of about 1 by design, before any marketing. Protect the pairing funnel above everything: it is measured in the admin dashboard (pair-completion rate).
-- **Invite copy.** Today the code is shown with a copy button and a QR (`app/(auth)/pairing.tsx`); there is no native share sheet. Follow-up: a "Send invite" button using `Share.share` with `"Join me on {APP_NAME}: lovedesireapp.com/join?code=XXXXXX"`, and a `/join` page on the site that shows the store badge and the code. Small code task (§10).
+- **Invite copy (built Sep 13 2026).** The pairing screen has a "Send invite" button that opens the native share sheet with "Join me on {APP_NAME}, a private app for two. Install it, then enter my code XXXXXX. lovedesireapp.com/join?code=XXXXXX". `/join` on the site (`web/src/pages/join.astro`) reads the code from the URL, shows it large with a copy button, the store badges and the three steps. App name and site URL come from `constants/app.ts`.
 - **Share cards** (post-launch): an opt-in image for moments worth showing a friend, the Sunday reveal, the Love Language result, Year in Review. Never automatic, never containing the partner's answers without both tapping share. This is the only "social" the app will ever have.
 - **No paid referral.** Cash or credit for invites is on the dark-pattern list next to streaks.
 
@@ -292,9 +292,9 @@ Measure cost per install and cost per trial against LTV: annual $39.99 minus App
 - Whether to nominate for App Store featuring (free, 6 to 8 weeks ahead).
 
 **Code follow-ups (not started):**
-1. Ratings prompt with `expo-store-review`, gated per §2.9. ~1 h.
+1. ~~Ratings prompt with `expo-store-review`, gated per §2.9.~~ Done Sep 13 (`services/reviewPromptService.ts`).
 2. Website: OG image, hero screenshot, favicon, Smart App Banner meta once the App Store ID exists. ~2 h.
-3. "Send invite" share sheet in pairing + `/join` page on the site. ~1.5 h.
+3. ~~"Send invite" share sheet in pairing + `/join` page on the site.~~ Done Sep 13.
 4. Share cards (post-launch).
 5. Per-feature landing pages on the site (post-launch, after §2.11 data).
 6. Screenshots: six, per §2.8, from a premium admin account on a Pro Max simulator or device.

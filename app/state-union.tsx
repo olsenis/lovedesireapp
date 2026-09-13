@@ -34,6 +34,7 @@ import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { trackEvent } from '../services/statsService';
+import { noteHappyMoment } from '../services/reviewPromptService';
 
 function weekIdToLabel(weekId: string): string {
   // YYYY-WW → "Week WW · YYYY"
@@ -113,6 +114,15 @@ export default function StateUnionScreen() {
   const partnerAnswered = partnerId ? answeredCount(suDoc, partnerId) : 0;
   const iCompleted = hasUserCompleted(suDoc, uid);
   const both = !!partnerId && bothCompleted(suDoc, uid, partnerId);
+  // Rating prompt hook: fires when the reveal appears DURING this visit
+  // (both flips false -> true), not when the screen opens on an already
+  // revealed week, so re-opening does not inflate the happy-moment count.
+  const prevBothRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (prevBothRef.current === null) { prevBothRef.current = both; return; }
+    if (!prevBothRef.current && both) noteHappyMoment('sunday_reveal');
+    prevBothRef.current = both;
+  }, [both]);
 
   // Questions for THIS week — resolved from the doc's questionSetId
   // (persisted on creation via ensureStateUnionDoc). Legacy pre-migration
