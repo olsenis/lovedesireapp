@@ -8,9 +8,22 @@ Live tracker of pending tests, roadmap items, and shipped-since-last-launch work
 
 ---
 
-## 🟡 In progress
+## 🟡 In progress: pre-launch sprint (started Sep 13 2026)
 
-_(none — Round 2 fully cleared, Round 3 LDR + unpaid coverage still pending)_
+Goal: be better than the shelf where it counts (COMPETITORS.md §5): reliable on two phones, believed by the App Store, three differentiators said out loud. Order is the order. Code items are Claude's, testing is Óli + Eva. Effort is code time.
+
+| # | Item | Owner | Effort | Status |
+|---|---|---|---|---|
+| 1 | **Round 2 on two phones**: B1 / B2 / B7 (Review #11), Lovers package (Friday tip, "+ Together List"), Intimacy Log direction + perspective, Our Story edit sheet, Tonight's Date list pick. Items are in TEST_CHECKLIST §§5, 7, 8 and the Review #11 repro table below. | Óli + Eva | 0 h code | ⬜ |
+| 2 | **Ratings prompt** with `expo-store-review` after a happy moment (Fantasy Wishes match, Sunday reveal, Memory Lane score, 30-day program done); gated on 7 days since install, 3 rituals completed, 90 days between asks. MARKETING §2.9. | Claude | 1 h | ⬜ |
+| 3 | **Send invite** share sheet in pairing + `/join` page on the site with the store badge and the code. MARKETING §5. | Claude | 1.5 h | ⬜ |
+| 4 | **Expiring mutual-only mood**: a mood that clears itself after N hours and pushes only when both match. POST_LAUNCH C1 #2, pulled forward. | Claude | 3 h | ⬜ |
+| 5 | **Joint consent screen before a Spicy session** (Truth or Dare Spicy, Fantasy Wishes): one shared "we both want this tonight" tap on top of the per-user 18+ attestation. POST_LAUNCH C1 #8, pulled forward. | Claude | 2 h | ⬜ |
+| 6 | **Say the differentiators**: "No streaks" on the paywall and screenshot 2; "not for everyone" block on `/about`; "no card needed" next to the trial; more free mood options. | Claude | 1 h | ⬜ |
+| 7 | **Hygiene before strangers**: rules validation on `bingoCustom` / `wyrCustom` text (R11 B11), weekId over midnight (R11 B13), WYR best-record in a transaction, PII hash in Cloud Logging. | Claude | 2.5 h | ⬜ |
+| 8 | **Loose ends**: VOICE.md (tone guide), Eva's web checklist refreshed for round 2, ratings + invite copy into MARKETING §10 as done. | Claude | 1.5 h | ⬜ |
+
+Not in this sprint, on purpose: home-screen widget (native, after the first EAS build), new games, content pools, the name (decide, do not build). Everything else that surfaced this week is filed in POST_LAUNCH C1 or MARKETING §10.
 
 ## ⏳ Pending — regression tests for recent commits
 
