@@ -3,7 +3,7 @@ import { db } from './firebase';
 import { trackEvent } from './statsService';
 
 // "Tonight?" signal (Sep 2026, borrowed from In The Mood; COMPETITORS.md).
-// A private "I'm in the mood tonight" flag that expires on its own. The
+// A private "I'm in the mood tonight" flag that clears itself at 04:00. The
 // partner never sees it unless they have set their own, so saying yes
 // never risks a no: either both said it and both see it, or nothing shows.
 //
@@ -15,7 +15,17 @@ import { trackEvent } from './statsService';
 //
 // couples/{coupleId}/tonight/{uid}: { uid, setAt, expiresAt }
 
-export const TONIGHT_HOURS = 8;
+// The flag lives until 04:00 local time, whenever it was set, so a tap at
+// nine in the morning still means tonight (a fixed 8 h would have run out
+// at five). Rules cap expiresAt at now + 24 h, which this never exceeds.
+export const TONIGHT_CLEAR_HOUR = 4;
+
+export function tonightExpiry(now: number = Date.now()): number {
+  const d = new Date(now);
+  d.setHours(TONIGHT_CLEAR_HOUR, 0, 0, 0);
+  if (d.getTime() <= now) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
 
 export interface TonightSignal {
   uid: string;
@@ -32,7 +42,7 @@ export async function setTonight(coupleId: string, uid: string): Promise<void> {
   await setDoc(doc(db, 'couples', coupleId, 'tonight', uid), {
     uid,
     setAt: now,
-    expiresAt: now + TONIGHT_HOURS * 3600000,
+    expiresAt: tonightExpiry(now),
   });
   trackEvent('tonight_set');
 }

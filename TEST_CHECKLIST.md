@@ -1177,7 +1177,7 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 
 - [ ] **One-sided signal shows nothing to the partner** 📱 ⚠️
   1. A taps "Tonight? 🔥" (pill turns solid, reads "Tonight 🔥 ✓"); B opens Home
-  - **Expected:** B sees nothing new, no push. Firestore console: `couples/{id}/tonight/{A}` exists with expiresAt 8 h ahead. B's client cannot read it (rules).
+  - **Expected:** B sees nothing new, no push. Firestore console: `couples/{id}/tonight/{A}` exists with expiresAt at the next 04:00 local time. B's client cannot read it (rules).
 
 - [ ] **Mutual signal: banner on both, one push to the first** 📱
   1. B taps "Tonight? 🔥"
