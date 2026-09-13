@@ -160,63 +160,66 @@
   // Content. Icelandic prose for Eva; app labels quoted exactly as the
   // English UI renders them (the partner's profile name is "Oli").
   var DAYS = [
-    { id: 'today', label: 'Í dag', date: 'Þriðjudagur 8. september', items: [
-      { id: 'sunday', num: 1, title: 'Sunday Check-in', where: 'Us → Sunday Check-in',
+    { id: 'sun13', label: 'Í dag', date: 'Sunnudagur 13. september', items: [
+      { id: 'sunday38', num: 1, title: 'Sunday Check-in, vika 38', where: 'Us → Sunday Check-in',
         steps: [
-          '5 sleðar (pulse) → „Next"',
-          '5 spurningar. Hverja → „Save and next", eftir þá fimmtu → „Next →"',
-          'Kortið „Call it": skrifaðu 1–3 spár um Óla fyrir vikuna. Má sleppa með „Skip".',
-          '„Finish check-in ✓"'
+          '5 sleðar → „Next", 5 spurningar → „Save and next", „Call it" (má sleppa), „Finish check-in ✓"',
+          'Eftir það: kort „Last week Oli predicted" → „✓ Came true" / „✗ Did not" → „Save verdicts"'
         ],
-        expect: 'Svör ykkar beggja hlið við hlið. Óli er búinn með sína.' },
-      { id: 'wyr', num: 2, title: 'Would You Rather', where: 'Discover → Would You Rather → veldu level',
+        expect: 'Svör hlið við hlið þegar Óli er búinn. Óli sér „Eva called X of 3".' },
+      { id: 'memory', num: 2, title: 'Memory Lane, þitt eigið sett', where: 'Discover → Memory Lane',
+        warn: 'Óli á að opna Memory Lane á undan þér. Ekki læst lengur.',
+        steps: ['Svaraðu 5 spurningum'],
+        expect: 'Spurningarnar tala um Óla („what did Oli say", „Oli\'s mood"), aldrei um þig með þínu nafni. Skor beggja hlið við hlið.' },
+      { id: 'tonight', num: 3, title: '„Tonight? 🔥" á Home', where: 'Home, undir mood-inu þínu í parakortinu',
         steps: [
-          'Fyrsta spurningin á að vera Óla eigin: „Í sófa / Upp í rúmi"',
-          'Veldu A eða B'
+          'Ýttu á „Tonight? 🔥" (verður „Tonight 🔥 ✓")',
+          'Athugaðu síma Óla: hann á að sjá EKKERT nýtt',
+          'Óli ýtir líka'
         ],
-        expect: 'Sýnir hvort þið völduð það sama þegar Óli hefur líka svarað.' },
-      { id: 'moment', num: 3, title: 'Moments', where: 'Home → „Capture today\'s moment"',
-        steps: ['Taktu mynd'],
-        expect: 'Báðar myndir birtast hlið við hlið. Óli tók sína.' },
-      { id: 'daily', num: 4, title: 'Daily', where: 'Home → Daily',
-        steps: [
-          'Svaraðu að minnsta kosti einni spurningu',
-          'Ef hún er tveggja valkosta kemur „Wanna guess Oli\'s pick first?" → giskaðu'
-        ],
-        expect: 'Sýnir strax hvort giskið var rétt.' },
-      { id: 'memory', num: 5, title: 'Memory Lane', where: 'Discover → Memory Lane',
-        warn: 'Læst fyrir þig eins og er („18 more days"). Segðu Óla áður en þú byrjar, hann opnar það tímabundið.',
-        steps: ['5 spurningar úr ykkar eigin sögu. Svaraðu bara, þú sérð strax hvort það var rétt.'],
-        expect: 'Skor í lokin, og Óli sér „Eva got X of 5" á sínum síma.' }
+        expect: 'Báðir símar sýna „You\'re both in the mood tonight 🔥". Þú (sem ýttir fyrst) færð eina push-tilkynningu. Ýttu aftur á pilluna → hverfur.' },
+      { id: 'spicy', num: 4, title: 'Spicy-samþykki', where: 'Discover → Truth or Dare → Together Right Here → Spicy',
+        steps: ['Ýttu á Truth'],
+        expect: 'Kort „Before Spicy, both of you" með „We\'re both in" / „Not tonight". Kemur bara einu sinni á dag.' },
+      { id: 'lovers', num: 5, title: 'The Lovers, ráð í Together List', where: 'Us → The Lovers, neðst undir „Try this"',
+        steps: ['„+ Together List" undir einu ráði'],
+        expect: 'Toast, takkinn verður „✓ Saved to Together List", ráðið er í Together List merkt „from The Lovers".' },
+      { id: 'intimacy', num: 6, title: 'Intimacy Log, stefna', where: 'Us → Intimacy Log → „We were intimate"',
+        steps: ['Veldu Oral → röð birtist: „For Oli" / „For you" / „Both ways" → „For Oli" → Save'],
+        expect: 'Í listanum: „Oral · for Oli". Á síma Óla: „Oral · for you". Stats-flipinn kviknar þegar 3 færslur eru komnar.' },
+      { id: 'story', num: 7, title: 'Our Story, breyta', where: 'Us → Our Story → ýttu á „Our first shared fantasy"',
+        steps: ['Ýttu í Note-reitinn'],
+        expect: 'Sheetið er heilt niður úr (kremaður bakgrunnur alla leið), Save helst fyrir ofan lyklaborðið.' },
+      { id: 'date', num: 8, title: 'Tonight\'s Date, velja af lista', where: 'Discover → Tonight\'s Date, skrunaðu niður',
+        steps: ['Ýttu á „Night Walk" í „All date ideas"'],
+        expect: 'Síðan skrunar upp og Night Walk er í kortinu með Rate og Save for later.' }
     ]},
-    { id: 'wed', label: 'Miðvikudagur', date: '9. september', items: [
-      { id: 'wyr-author', num: 6, title: 'Skrifaðu eina Would You Rather', where: 'Home',
-        steps: [
-          'Gula kortið ✍️ „Write one Would You Rather for Oli" á að vera þarna af sjálfu sér',
-          'Tap → skrifaðu spurningu → „Save"'
-        ],
-        expect: 'Kortið hverfur af Home.' }
+    { id: 'mon14', label: 'Mánudagur', date: '14. september', items: [
+      { id: 'daily-skip', num: 9, title: 'Daily, spurning sem Óli sleppir', where: 'Home → Daily',
+        steps: ['Svaraðu einni spurningu sem Óli ætlar að sleppa (talið saman um hvaða)'],
+        expect: 'Sú spurning kemur aldrei í Memory Lane hjá Óla. Óli staðfestir á fimmtudag.' },
+      { id: 'mood-new', num: 10, title: 'Nýtt mood', where: 'Home',
+        steps: ['Veldu „Cuddly" 🤗 (eða Playful 😏, Grateful 🫶)'],
+        expect: 'Óli sér það á sínum síma.' },
+      { id: 'wyr-b7', num: 11, title: 'Would You Rather á meðan Óli skrifar', where: 'Discover → Would You Rather',
+        steps: ['Svaraðu spurningu 3 og STOPPAÐU þar', 'Óli skrifar nýja spurningu á sínum síma'],
+        expect: 'Svarið þitt lifir, leikurinn hoppar ekki. Spurning Óla kemur í næstu umferð.' }
     ]},
-    { id: 'thu', label: 'Fimmtudagur', date: '10. september', items: [
-      { id: 'sunday-history', num: 7, title: 'Eitt augnablik á Home', where: 'Home',
-        steps: ['Er þar kort sem segir 📖 „Your first Sunday Check-in was N weeks ago"?'],
-        expect: 'Já eða nei nægir. Segðu Óla.' }
+    { id: 'fri18', label: 'Föstudagur', date: '18. september', items: [
+      { id: 'lovers-tip', num: 12, title: 'Lovers-ráð á Home', where: 'Home, efst í „Waiting for you"',
+        steps: ['Er þar kort 🧬 „A Lovers tip for the weekend" eða „What lights Oli up"?'],
+        expect: 'Textinn nefnir Óla, ekki þig. Tap opnar The Lovers, kortið hverfur út vikuna.' }
     ]},
-    { id: 'sun', label: 'Sunnudagur', date: '13. september', items: [
-      { id: 'verdicts', num: 8, title: 'Sunday Check-in, vika 38', where: 'Us → Sunday Check-in',
-        steps: [
-          'Kláraðu eins og í nr. 1',
-          'Eftir „Finish check-in ✓" á að birtast „Last week Oli predicted"',
-          'Hver spá: „✓ Came true" eða „✗ Did not"',
-          '„Save verdicts"'
-        ],
-        expect: 'Óli sér „Eva called X of 3" á sínum síma.' }
+    { id: 'sun20', label: 'Sunnudagur', date: '20. september', items: [
+      { id: 'sunday39', num: 13, title: 'Sunday Check-in, vika 39', where: 'Us → Sunday Check-in',
+        steps: ['Kláraðu eins og nr. 1'],
+        expect: 'Spár Óla frá síðustu viku koma til dóms, og þínar spár sýna dóma Óla („You called X of 3").' }
     ]}
   ];
   var ALL = DAYS.reduce(function (a, d) { return a.concat(d.items); }, []);
 
   // Ticks live in this phone's browser only.
-  var LS = 'evu-listinn-v1';
+  var LS = 'evu-listinn-v2';
   var done = {};
   try { done = JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) {}
 
@@ -236,7 +239,7 @@
     h += '<header class="top">';
     h += '<p class="eyebrow">Love Desire · prófun á síma B</p>';
     h += '<h1>Evu-listinn</h1>';
-    h += '<p class="lede">Fjórir dagar, átta atriði. Hakaðu við jafnóðum. Enskir takkar eru skrifaðir eins og þeir birtast í appinu.</p>';
+    h += '<p class="lede">Umferð 2: fjórir dagar, þrettán atriði. Hakaðu við jafnóðum. Enskir takkar eru skrifaðir eins og þeir birtast í appinu.</p>';
     h += '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + doneN + '" aria-label="Framvinda">';
     h += '<span class="bar"><span class="fill" style="width:' + pct + '%"></span></span>';
     h += '<span class="count">' + doneN + ' af ' + total + ' búið</span></div>';
