@@ -28,6 +28,7 @@ import {
   PREDICTION_LOOKBACK_WEEKS,
 } from '../services/stateUnionService';
 import { notifyPartner } from '../services/notificationService';
+import { useCurrentWeekId } from '../hooks/useCurrentWeekId';
 import { Colors } from '../constants/colors';
 import { WhileYouWait } from '../components/WhileYouWait';
 import { Fonts } from '../constants/fonts';
@@ -67,7 +68,7 @@ export default function StateUnionScreen() {
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
   const partnerName = partner?.name ?? 'Partner';
   const coupleId = profile?.coupleId;
-  const weekId = useMemo(() => getCurrentWeekId(), []);
+  const weekId = useCurrentWeekId();
   useTrackScreen('sunday_checkin');
 
   const [suDoc, setSuDoc] = useState<StateUnionDoc | null>(null);

@@ -219,18 +219,22 @@ export async function updateWYRRecordIfBest(
   const pct = total > 0 ? Math.round((match / total) * 100) : 0;
   if (total < minTotal) return { becameBest: false, pct };
   const ref = doc(db, 'couples', coupleId, 'wyr', 'records');
-  const snap = await getDoc(ref);
-  const existing = snap.exists() ? (snap.data() as WYRRecords) : {};
-  const currentBest = existing.bestPct ?? -1;
-  if (pct <= currentBest) return { becameBest: false, pct };
-  await setDoc(ref, {
-    bestPct: pct,
-    bestLevel: level,
-    bestMatch: match,
-    bestTotal: total,
-    bestAt: Date.now(),
-  }, { merge: true });
-  return { becameBest: true, pct };
+  // Transaction: two phones finishing the same session compare against the
+  // same live best, so a lower score can no longer overwrite a higher one.
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const existing = snap.exists() ? (snap.data() as WYRRecords) : {};
+    const currentBest = existing.bestPct ?? -1;
+    if (pct <= currentBest) return { becameBest: false, pct };
+    tx.set(ref, {
+      bestPct: pct,
+      bestLevel: level,
+      bestMatch: match,
+      bestTotal: total,
+      bestAt: Date.now(),
+    }, { merge: true });
+    return { becameBest: true, pct };
+  });
 }
 
 // Custom WYR questions authored by the couple themselves. Mixed into the

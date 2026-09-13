@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { WhileYouWait } from '../components/WhileYouWait';
-import { getCurrentWeekId } from '../services/stateUnionService';
+import { useCurrentWeekId } from '../hooks/useCurrentWeekId';
 import { noteHappyMoment } from '../services/reviewPromptService';
 import { memoryLaneDaysLeft, memoryLaneEligible } from '../services/featureUnlockService';
 import {
@@ -34,7 +34,7 @@ export default function MemoryLaneScreen() {
   const coupleId = profile?.coupleId;
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
   const partnerName = partner?.name ?? 'your partner';
-  const weekId = useMemo(() => getCurrentWeekId(), []);
+  const weekId = useCurrentWeekId();
   useTrackScreen('memory_lane');
 
   const myName = profile?.name ?? 'your partner';

@@ -3,6 +3,13 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Returns true if the requesting user is a member of the given couple
+    // Shape check for a couple-authored Would You Rather question.
+    function wyrCustomFieldsOk(d) {
+      return d.a is string && d.a.size() >= 1 && d.a.size() <= 200
+        && d.b is string && d.b.size() >= 1 && d.b.size() <= 200
+        && d.level in ['playful', 'romantic', 'spicy']
+        && (!('discussion' in d) || (d.discussion is string && d.discussion.size() <= 240));
+    }
     function isMemberOfCouple(coupleId) {
       let couple = get(/databases/$(database)/documents/couples/$(coupleId));
       return couple != null && (
@@ -204,11 +211,41 @@ service cloud.firestore {
           && request.resource.data.expiresAt <= request.time.toMillis() + 24 * 3600 * 1000;
       }
 
+      // ── Couple-authored content (Sep 2026, Review #11 B11) ──────────────
+      // bingoCustom and wyrCustom take free text that the partner renders.
+      // Bounded, typed, exact key sets; nothing else may be smuggled in.
+      // Both are excluded from the wildcard create/update below so these
+      // are the only rules that apply. Reads and deletes stay couple-wide.
+      match /bingoCustom/{cardId} {
+        allow create: if request.auth != null && isMemberOfCouple(coupleId)
+          && request.resource.data.keys().hasOnly(['text', 'createdBy', 'createdAt'])
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 120
+          && request.resource.data.createdAt is number;
+        allow update: if false;
+      }
+      match /wyrCustom/{questionId} {
+        allow create: if request.auth != null && isMemberOfCouple(coupleId)
+          && request.resource.data.keys().hasOnly(['a', 'b', 'level', 'discussion', 'createdAt', 'createdBy'])
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdAt is number
+          && wyrCustomFieldsOk(request.resource.data);
+        allow update: if request.auth != null && isMemberOfCouple(coupleId)
+          && request.resource.data.keys().hasOnly(['a', 'b', 'level', 'discussion', 'createdAt', 'createdBy'])
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && wyrCustomFieldsOk(request.resource.data);
+      }
+
       match /{subcollection}/{document=**} {
         allow read: if request.auth != null && isMemberOfCouple(coupleId) && subcollection != 'tonight';
         allow create: if request.auth != null
           && isMemberOfCouple(coupleId)
           && subcollection != 'tonight'
+          && subcollection != 'bingoCustom'
+          && subcollection != 'wyrCustom'
           && (!('fromUid'   in request.resource.data) || request.resource.data.fromUid   == request.auth.uid)
           // createdBy = auth.uid for user-authored docs. Auto-milestones in
           // Our Story write createdBy: "system" — allowed only when paired
@@ -242,6 +279,8 @@ service cloud.firestore {
         allow update: if request.auth != null
           && isMemberOfCouple(coupleId)
           && subcollection != 'tonight'
+          && subcollection != 'bingoCustom'
+          && subcollection != 'wyrCustom'
           && (!('fromUid'   in resource.data) || request.resource.data.fromUid   == resource.data.fromUid)
           && (!('createdBy' in resource.data) || request.resource.data.createdBy == resource.data.createdBy)
           && (!('loggedBy'  in resource.data) || request.resource.data.loggedBy  == resource.data.loggedBy)

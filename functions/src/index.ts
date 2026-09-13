@@ -16,6 +16,13 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { auth } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { createHash } from 'crypto';
+
+// Identifiers in logs are one-way hashed (Sep 2026, POST_LAUNCH "Cloud Logging
+// PII scrub"): the same input always gives the same 12 hex chars, so an
+// operator can still correlate events for one account, but a leaked
+// logs.viewer role no longer reveals uids or couple ids.
+const hid = (id: string): string => createHash('sha256').update(id).digest('hex').slice(0, 12);
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -209,7 +216,7 @@ export const rateLimitedJoin = onCall({ invoker: 'public' }, async (req) => {
 // must reflect this.
 export const deleteUserCascade = auth.user().onDelete(async (user) => {
   const uid = user.uid;
-  console.log(`Cascading delete for ${uid}`);
+  console.log(`Cascading delete for ${hid(uid)}`);
 
   // 1. Find any couples the user is part of
   const asPartner1 = await db.collection('couples').where('partner1Uid', '==', uid).get();
@@ -229,7 +236,7 @@ export const deleteUserCascade = auth.user().onDelete(async (user) => {
         partnerLeftAt: admin.firestore.FieldValue.serverTimestamp(),
         partnerLeftUid: uid,
       });
-      console.log(`Scrubbed ${uid} from couple ${coupleDoc.id}, kept shared data for ${otherUid}`);
+      console.log(`Scrubbed ${hid(uid)} from couple ${hid(coupleDoc.id)}, kept shared data for ${hid(otherUid)}`);
     } else {
       // No remaining partner — safe to delete everything
       await deleteCoupleData(coupleDoc.id);
@@ -240,7 +247,7 @@ export const deleteUserCascade = auth.user().onDelete(async (user) => {
   // 2. Delete the leaving user's identity-only data
   await deleteUserData(uid);
 
-  console.log(`Cascade delete complete for ${uid}`);
+  console.log(`Cascade delete complete for ${hid(uid)}`);
 });
 
 // Batches deletes of a plain doc collection, 400 per commit (Firestore limit is 500 including
@@ -301,7 +308,7 @@ async function deleteCoupleData(coupleId: string): Promise<void> {
   try {
     await storage.deleteFiles({ prefix: `couples/${coupleId}/` });
   } catch (e) {
-    console.error(`Storage delete failed for ${coupleId}:`, e);
+    console.error(`Storage delete failed for ${hid(coupleId)}:`, e);
   }
 
   // The couple doc itself.
@@ -323,7 +330,7 @@ async function deleteUserData(uid: string): Promise<void> {
   try {
     await storage.deleteFiles({ prefix: `users/${uid}/` });
   } catch (e) {
-    console.error(`Storage delete failed for user ${uid}:`, e);
+    console.error(`Storage delete failed for user ${hid(uid)}:`, e);
   }
 }
 
@@ -742,7 +749,7 @@ export const adminGetTimeInsights = onCall({ invoker: 'public' }, async (req) =>
             const names = partnerSnaps.map((s) => String((s.data() ?? {}).name ?? '(no name)'));
             return { coupleId, sessionCount, names, isPremium: !!couple.isPremium };
           } catch (e: any) {
-            console.error(`adminGetTimeInsights enrich failed for ${coupleId}:`, e?.message ?? e);
+            console.error(`adminGetTimeInsights enrich failed for ${hid(coupleId)}:`, e?.message ?? e);
             return { coupleId, sessionCount, names: [], isPremium: false };
           }
         }),

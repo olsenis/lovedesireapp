@@ -239,6 +239,8 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 - `useHelp(featureKey)` — returns `{ visible, dismiss, dismissAll }` for first-visit help popups
 - `useSubscription()` — returns `{ isSubscribed, isLoading }` from `couples/{id}.isPremium`
 - `usePhotoConsent()` — H42 photo consent guard; `guardPhotoAction(uid, action)` fires modal if unconsented, invokes action after grant
+- `useCurrentWeekId()` — ISO week id that follows the clock (AppState foreground + 60 s check). Use instead of memoising `getCurrentWeekId()` in a screen; Sunday Check-in and Memory Lane do.
+- `useSpicyConsent(uid)` — `{ spicyOk, requireSpicyConsent(mode, onProceed, onDecline?), spicyGate }`; render `{spicyGate}` in every root view of the screen.
 - `useReport()` — H33 report launcher; `openReport(contentRef)` opens ReportModal with content reference, `reportContentRef` + `closeReport` for modal state
 
 ### Static content (`/constants/content.ts`)
