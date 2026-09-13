@@ -1,9 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StoreBadge from '../components/StoreBadge.astro';
+import { PRICING, fmtUsd, annualSavingsUsd } from '../data/pricing';
 
 const free = [
-  'Mood check-ins and Sparks',
+  'Mood check-ins and Love taps',
   'Sunday Check-in (with quick pulse pre-step)',
   'Moments (daily photo ritual)',
   'Love Notes (timed and mood-triggered)',
@@ -53,7 +54,7 @@ const paid = [
   <section class="max-w-4xl mx-auto px-6 pb-8">
     <div class="bg-rose/40 border border-burgundy/20 rounded-2xl p-5 text-center">
       <p class="text-xs uppercase tracking-[0.35em] text-burgundy font-bold mb-1">Launch offer</p>
-      <p class="font-heading text-2xl text-burgundy">7 days free, then $4.99 for your first month.</p>
+      <p class="font-heading text-2xl text-burgundy">{PRICING.trialDays} days free, then {fmtUsd(PRICING.introFirstMonthUsd)} for your first month.</p>
       <p class="text-sm text-burgundy/70 italic mt-1">Regular pricing resumes on renewal. Cancel anytime.</p>
     </div>
   </section>
@@ -83,8 +84,8 @@ const paid = [
       <div>
         <p class="text-xs uppercase tracking-[0.35em] text-cream/60 font-bold mb-2">Premium</p>
         <h2 class="font-heading text-4xl text-cream">Go deeper</h2>
-        <p class="text-3xl font-bold text-cream mt-3">$9.99<span class="text-lg font-normal text-cream/70">/mo</span></p>
-        <p class="text-sm text-cream/70 mt-1">or $39.99/year (save $80)</p>
+        <p class="text-3xl font-bold text-cream mt-3">{fmtUsd(PRICING.monthlyUsd)}<span class="text-lg font-normal text-cream/70">/mo</span></p>
+        <p class="text-sm text-cream/70 mt-1">or {fmtUsd(PRICING.annualUsd)}/year (save ${annualSavingsUsd})</p>
         <p class="text-sm text-cream/70 italic mt-1">One subscription covers both partners</p>
       </div>
       <ul class="flex flex-col gap-2 text-sm text-cream/85">

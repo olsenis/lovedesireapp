@@ -12,7 +12,7 @@ Ready-to-paste text and decisions for App Store Connect. Update this file whenev
 
 ## Subscription pricing
 
-Decided August 2026.
+Decided August 2026; annual lowered Sep 13 2026. **Source of truth for the numbers:** `constants/pricing.ts` (app copy) and `web/src/data/pricing.ts` (site copy), kept identical. The paywall shows live RevenueCat prices. Change the two constants files first, then this section and App Store Connect.
 
 - **Monthly:** **$9.99** — matches Paired, mid-market standard for couples apps
 - **Annual:** **$39.99/yr** — ~67% off effective vs monthly ($3.33/mo). Lowered from $59.99 on Sep 13 2026 to sit inside the indie "one pays for both" cluster (Cozy Couples $29.99, see COMPETITORS.md); raise later on ratings, not before

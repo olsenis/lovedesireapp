@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import StoreBadge from '../components/StoreBadge.astro';
+import { PRICING, fmtUsd } from '../data/pricing';
 
 const faqs = [
   {
@@ -21,7 +22,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "The free tier is enough for daily use: mood, Moments, Sunday Check-in (with quick pulse), Love Notes, Playful Daily, Truth or Dare (Sweet + Flirty), Would You Rather (Playful + Romantic), Tonight's Date, Love Language, and long-distance mode. Premium is $9.99/month or $39.99/year (one subscription covers both partners) and unlocks Deep and Spicy content, Fantasy Wishes, Activity Cards, The Lovers, Presence slow-touch practice, Intimacy Log, and the Fire and Desire challenge programs. See the Pricing page for the current launch offer.",
+    a: `The free tier is enough for daily use: mood, Moments, Sunday Check-in (with quick pulse), Love Notes, Playful Daily, Truth or Dare (Sweet + Flirty), Would You Rather (Playful + Romantic), Tonight's Date, Love Language, and long-distance mode. Premium is ${fmtUsd(PRICING.monthlyUsd)}/month or ${fmtUsd(PRICING.annualUsd)}/year (one subscription covers both partners) and unlocks Deep and Spicy content, Fantasy Wishes, Activity Cards, The Lovers, Presence slow-touch practice, Intimacy Log, and the Fire and Desire challenge programs. See the Pricing page for the current launch offer.`,
   },
   {
     q: "How do I cancel?",
