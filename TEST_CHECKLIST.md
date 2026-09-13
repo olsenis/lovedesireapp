@@ -2054,6 +2054,20 @@ The Daily screen was created July 2026 by merging the old Daily Picks (`/daily-w
   1. Free user → Versus
   - **Expected:** Fully accessible.
 
+### Truth or Dare: Spicy consent card (Sep 2026)
+
+- [ ] **Together Right Here: joint card before the first Spicy pick of the day**
+  1. Premium account, solo mode, level Spicy, tap Truth (or Surprise me)
+  - **Expected:** "Before Spicy, both of you" card with "We're both in" / "Not tonight". Confirm → the pick proceeds. Cancel → nothing drawn, level unchanged. Second Spicy tap the same day: no card.
+
+- [ ] **Wherever You Are: per-phone card** 📱
+  1. Level select → Spicy, and separately the Spicy tab inside a picking round
+  - **Expected:** "Before Spicy" card with "I'm in" on the phone that tapped; the partner's phone is not prompted by A's tap, but gets its own card the first time B opens Spicy that day.
+
+- [ ] **Free user never sees the card**
+  1. Non-premium account, tap Spicy anywhere
+  - **Expected:** /upgrade as before, no consent card.
+
 ### Would You Rather — Lobby & Level Select (app/would-you-rather.tsx)
 
 - [ ] **Lobby shows level cards with question counts**
@@ -2135,6 +2149,13 @@ The Daily screen was created July 2026 by merging the old Daily Picks (`/daily-w
 ---
 
 ## 6. Activity Cards + Fantasy Wishes + Roulette
+
+### Fantasy Wishes: Spicy consent card on entry (Sep 2026)
+
+- [ ] **First open of the day asks, "Not tonight" leaves**
+  1. Premium account, open Fantasy Wishes
+  - **Expected:** "Before Spicy" card over the deck. "I'm in" → deck usable, no card again today (also not in Truth or Dare Spicy, same daily consent). "Not tonight" → back to the previous screen.
+
 Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks, date roulette spinner.
 
 ### Activity Cards — first session + grid (app/bingo.tsx)

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, K
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
+import { useSpicyConsent } from '../hooks/useSpicyConsent';
 import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
@@ -35,6 +36,15 @@ export default function FantasyWishesScreen() {
       router.replace('/upgrade' as any);
     }
   }, [subLoading, isSubscribed]);
+  // Spicy session consent (Sep 2026): the whole feature is explicit, so
+  // ask once per day on entry; "Not tonight" leaves the screen.
+  const { spicyOk, requireSpicyConsent, spicyGate } = useSpicyConsent(user?.uid ?? '');
+  const consentAskedRef = useRef(false);
+  useEffect(() => {
+    if (subLoading || !isSubscribed || spicyOk !== false || consentAskedRef.current) return;
+    consentAskedRef.current = true;
+    requireSpicyConsent('solo', () => {}, () => router.back());
+  }, [subLoading, isSubscribed, spicyOk, requireSpicyConsent]);
   const [items, setItems] = useState<FantasyWishesItem[]>([]);
   const [activeTab, setActiveTab] = useState<'explore' | 'matches'>('explore');
   const [showAdd, setShowAdd] = useState(false);
@@ -325,6 +335,7 @@ export default function FantasyWishesScreen() {
           immediate. Together List hand-off via +Add button on match
           cards remains. */}
       {toast}
+      {spicyGate}
 
       <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tab, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')} accessibilityRole="button">

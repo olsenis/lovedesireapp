@@ -11,6 +11,7 @@ import {
   setAudioModeAsync,
 } from 'expo-audio';
 import { useAuth } from '../hooks/useAuth';
+import { useSpicyConsent } from '../hooks/useSpicyConsent';
 import { useCouple } from '../hooks/useCouple';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
@@ -109,6 +110,9 @@ export default function TruthDareScreen() {
   const { reportContentRef, openReport, closeReport } = useReport();
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
   const partnerName = partner?.name ?? 'Partner';
+  // Spicy session consent (Sep 2026): once per day per person. One-phone
+  // mode asks both on the shared screen ('joint'), two-phone asks each.
+  const { spicyOk, requireSpicyConsent, spicyGate } = useSpicyConsent(uid);
 
   useEffect(() => {
     if (!coupleId) return;
@@ -308,6 +312,7 @@ export default function TruthDareScreen() {
   const handleSoloTap = (kind: 'truth' | 'dare') => {
     if (soloSpinning) return;
     if (soloLevel === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
+    if (soloLevel === 'spicy' && !spicyOk) { requireSpicyConsent('joint', () => handleSoloTap(kind)); return; }
     const pool = kind === 'truth'
       ? TRUTHS.filter(t => t.level === soloLevel)
       : daresPool.filter(d => d.level === soloLevel);
@@ -348,6 +353,7 @@ export default function TruthDareScreen() {
   const handleSurprise = () => {
     if (soloSpinning) return;
     if (soloLevel === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
+    if (soloLevel === 'spicy' && !spicyOk) { requireSpicyConsent('joint', () => handleSurprise()); return; }
     const truthPool = TRUTHS.filter(t => t.level === soloLevel);
     const darePool = daresPool.filter(d => d.level === soloLevel);
     const mixed = [
@@ -384,6 +390,7 @@ export default function TruthDareScreen() {
     if (mode === 'picker') {
       return (
         <View style={styles.screen}>
+          {spicyGate}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
             <Text style={styles.title}>Truth or Dare</Text>
@@ -424,6 +431,7 @@ export default function TruthDareScreen() {
     if (mode === 'solo') {
       return (
         <View style={styles.screen}>
+          {spicyGate}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
             <Text style={styles.title}>Together Right Here</Text>
@@ -522,6 +530,7 @@ export default function TruthDareScreen() {
     // MULTI — level select for multiplayer round
     return (
       <View style={styles.screen}>
+        {spicyGate}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setMode('picker')} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Wherever You Are</Text>
@@ -535,7 +544,7 @@ export default function TruthDareScreen() {
           {LEVELS.map(level => {
             const c = DARE_LEVEL_CONFIG[level];
             return (
-              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
+              <TouchableOpacity key={level} style={[styles.levelCard, { backgroundColor: c.color }]} onPress={() => { if (level === 'spicy' && !isSubscribed) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; } if (level === 'spicy' && !spicyOk) { requireSpicyConsent('solo', () => handleStart(level)); return; } handleStart(level); }} activeOpacity={0.85} accessibilityRole="button">
                 <Text style={styles.levelEmoji}>{c.emoji}</Text>
                 <View style={styles.levelInfo}>
                   <Text style={[styles.levelLabel, { color: c.textColor }]}>{c.label}</Text>
@@ -576,6 +585,7 @@ export default function TruthDareScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}
     >
+      {spicyGate}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
         <Text style={styles.title}>Truth or Dare</Text>
@@ -610,12 +620,16 @@ export default function TruthDareScreen() {
                   if (locked) { trackEvent('upgrade_cta_tapped'); router.push('/upgrade' as any); return; }
                   if (session.phase !== 'picking') return;
                   if (!coupleId) return;
-                  setDrawnCard(null);
-                  if (session) {
-                    await setTruthDareLevel(coupleId, level);
-                  } else {
-                    await startTruthDare(coupleId, uid, level);
-                  }
+                  const switchLevel = async () => {
+                    setDrawnCard(null);
+                    if (session) {
+                      await setTruthDareLevel(coupleId, level);
+                    } else {
+                      await startTruthDare(coupleId, uid, level);
+                    }
+                  };
+                  if (level === 'spicy' && !spicyOk) { requireSpicyConsent('solo', () => { switchLevel().catch(() => {}); }); return; }
+                  await switchLevel();
                 }}
                 activeOpacity={session.phase === 'picking' ? 0.8 : 1}
                 accessibilityRole="button"
