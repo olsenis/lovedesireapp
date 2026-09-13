@@ -15,7 +15,7 @@ Ready-to-paste text and decisions for App Store Connect. Update this file whenev
 Decided August 2026.
 
 - **Monthly:** **$9.99** — matches Paired, mid-market standard for couples apps
-- **Annual:** **$59.99/yr** — ~50% off effective vs monthly ($5/mo), sub-averse win
+- **Annual:** **$39.99/yr** — ~67% off effective vs monthly ($3.33/mo). Lowered from $59.99 on Sep 13 2026 to sit inside the indie "one pays for both" cluster (Cozy Couples $29.99, see COMPETITORS.md); raise later on ratings, not before
 - **Free trial:** **7 days** — Apple standard, needed because both partners must pair + try
 - **Launch introductory offer:** **First month $4.99** (50% off) — reduces friction for early adopters, expires after ~90 days per Apple intro-rate rules
 - **Lifetime tier:** none at launch — revisit post-launch if enough users ask
@@ -25,7 +25,7 @@ Decided August 2026.
 
 - Create subscription group: `Love Desire Premium`
 - Base subscription: `com.desire.app.premium.monthly` at $9.99
-- Auto-renewable subscription: `com.desire.app.premium.annual` at $59.99
+- Auto-renewable subscription: `com.desire.app.premium.annual` at $39.99
 - **Introductory offer** on both: 7 days free (`FREE_TRIAL`), for new subscribers only
 - **Promotional offer** (launch campaign, ~first 90 days): "First month $4.99" — `PAY_AS_YOU_GO` for 1 month at $4.99
 

@@ -154,7 +154,7 @@ Update rule: when an item ships, mark it ✅ with the commit hash, keep it in th
 
 **Server changes:**
 - **Install RevenueCat SDK on client** (`react-native-purchases` or `@revenuecat/react-native-purchases`). Both Android + iOS support.
-- **RevenueCat account setup** — new account at revenuecat.com (free tier covers < 10k MTR), connect to Apple + Google Play, set up products (monthly $9.99, annual $59.99 per ToS §5).
+- **RevenueCat account setup** — new account at revenuecat.com (free tier covers < 10k MTR), connect to Apple + Google Play, set up products (monthly $9.99, annual $39.99 per ToS §5).
 - **RevenueCat webhook → Firebase Cloud Function:** listens for subscription lifecycle events (`INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`, `EXPIRATION`, `PRODUCT_CHANGE`). For each event, resolves the purchaser's uid → their current coupleId → writes to `couples/{coupleId}.isPremium` + `premiumBoughtBy` + `premiumSince`. On cancel/expire, clears both flags. Also mirrors state onto `users/{uid}.activeSubscription`.
 - **Firestore rules** update: `couples/{coupleId}.isPremium`, `premiumBoughtBy`, `premiumSince` and `users/{uid}.activeSubscription` remain client-write-blocked (already are for `isPremium`) — server-only writes via admin SDK.
 

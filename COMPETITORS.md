@@ -153,7 +153,7 @@ Mentioned once alongside Between; the 2012 app was acquired and is effectively d
 | Leader | Paired ~$15/mo per the thread |
 | Punished | Agapé at $14.99/mo and $50 to $180/yr draws the angriest reviews in the whole sample |
 
-Ours is $9.99/mo and $59.99/yr (MARKETING.md, decided Aug 2026). That sits above the indie cluster and below Paired. Defensible on content depth, but the annual is twice what a 45,000-rating app with the same "one pays for both" model charges. **Decision for the user, not made here:** hold $59.99 on depth, or drop the annual to $39.99 to sit inside the cluster while keeping monthly at $9.99. The launch intro offer already covers month one.
+Ours was $9.99/mo and $59.99/yr (decided Aug 2026): above the indie cluster, below Paired, and twice what a 45,000-rating app with the same "one pays for both" model charges. **Decided Sep 13 2026: annual lowered to $39.99, monthly stays $9.99.** A new app with zero ratings cannot charge more than the one with 45,000; raise later on ratings, which is easier than cutting after the first "too expensive" reviews. The launch intro offer still covers month one.
 
 ### Actions taken from this file
 

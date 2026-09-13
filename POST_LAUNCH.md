@@ -168,7 +168,7 @@ Seven cheap ideas that surfaced in the Sep 13 competitor pass. None is a new fea
 
 Not borrowed, on purpose: streaks and paid streak recovery (Cherished, Orbs), coins / gems / pets (SumOne, Cozy Couples, LoveWidgets), relationship health scores (BaeSync), chat (Orbs, Pikant, Fenn), AI-generated content (Pikant, Lovefix, Flamme), per-partner unlocks (Couple Game), free-tier content that expires (Cozy Couples).
 
-**Pricing note for the user:** the indie "one pays for both" cluster sits at $4.99/mo and $29.99/yr (Cozy Couples with 45k ratings, Cuplido, koopla); Agapé is punished in reviews for $50 to $180/yr. Ours is $9.99 / $59.99. Decide whether to hold on depth or move the annual to $39.99 before the first submission. Not changed here.
+**Pricing (decided Sep 13 2026):** the indie "one pays for both" cluster sits at $4.99/mo and $29.99/yr (Cozy Couples with 45k ratings, Cuplido, koopla); Agapé is punished in reviews for $50 to $180/yr. Annual lowered from $59.99 to **$39.99**, monthly stays $9.99. Revisit upward once there are a few hundred ratings.
 
 ---
 

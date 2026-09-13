@@ -41,7 +41,7 @@ Launch pressure released — user decision to prioritise "app worth talking abou
 
 ### Pricing (decided August 2026)
 - Monthly: $9.99
-- Annual: $59.99 (~50% off effective)
+- Annual: $39.99 (~67% off effective, decided Sep 13 2026 after the competitor pass; was $59.99)
 - Free trial: 7 days
 - Launch promo: first month $4.99 (~90-day window)
 - No lifetime tier at launch — revisit post-launch if demand shows

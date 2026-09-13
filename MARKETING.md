@@ -255,7 +255,7 @@ Three layers, run from App Store Connect → Search Ads, Advanced (not Basic, so
 | Competitor conquest | paired, coral, desire couples game, between | allowed in Search Ads (not in metadata), 2 to 5x brand cost, converts when our listing looks different enough | $3/day test |
 | Generic | couples app, couples game, relationship app | expensive, $2 to 5 per tap in the US, only worth it with a strong listing and ratings | $5/day test, after 50 ratings |
 
-Measure cost per install and cost per trial against LTV: annual $59.99 minus Apple's cut is ~$42; monthly $9.99 net ~$7. A paid install that costs more than $10 to 15 does not pay back on the first year. **Do not bid on "desire" until H43 is decided** (POLISH_TODO L105: spend on that word partly buys installs for the 12-year-old competitor).
+Measure cost per install and cost per trial against LTV: annual $39.99 minus Apple's cut is ~$28; monthly $9.99 net ~$7. A paid install that costs more than $8 to 10 does not pay back on the first year. **Do not bid on "desire" until H43 is decided** (POLISH_TODO L105: spend on that word partly buys installs for the 12-year-old competitor).
 
 ---
 
