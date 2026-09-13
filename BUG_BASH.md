@@ -48,6 +48,7 @@ Also fixed in this round, unrelated to the build: Firestore transport warning wa
 
 ### Sep 10 (phone A)
 
+- [x] **Couple card: anniversary / next-visit pill not tappable** (user, Sep 13) → both pills open Special Days (`/calendar`).
 - [x] **Tonight's Date: rows in "All date ideas" not tappable** → `ebb34f4`. Tap picks the date into the result card and scrolls to it.
 - [x] **"Spark" leaks after the rename to Love** → `bdc696c`. Insight tips, Year in Review card, both privacy policies.
 - [x] **The Lovers retention package** (user request after reviewing Lovers retention) → partner-finished Home nudge, Friday Lovers tip card (weekly, seeded, dismissable, paid + both complete), "+ Together List" on each compatibility tip, Together List source labels fixed for WYR / Activity Cards. Pending device: Friday card on both phones with the weekday flag; partner-finished nudge needs a fresh test couple (QA couple both done).

@@ -1357,24 +1357,36 @@ export default function HomeScreen() {
               <Text style={styles.sinceLabel}>together since</Text>
               <Text style={styles.sinceDate}>{togetherSince}</Text>
               {(showBothEvents || showAnniversaryOnly) && anniversary && (
-                <View style={styles.anniversaryPill}>
+                <TouchableOpacity
+                  style={styles.anniversaryPill}
+                  onPress={() => router.push('/calendar' as any)}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Anniversary, open Special Days"
+                >
                   <Text style={styles.anniversaryText}>
                     {anniversary.daysUntil <= 1 ? '🎉 Today!' : `🎉 ${anniversary.dateLabel}`}
                   </Text>
                   <Text style={styles.anniversaryDays}>
                     {anniversary.daysUntil <= 1 ? `${anniversary.years} years` : `in ${anniversary.daysUntil} days · ${anniversary.years} yrs`}
                   </Text>
-                </View>
+                </TouchableOpacity>
               )}
               {(showBothEvents || showNextVisitOnly) && visibleNextVisit && (
-                <View style={[styles.anniversaryPill, { marginTop: showBothEvents ? 4 : 0 }]}>
+                <TouchableOpacity
+                  style={[styles.anniversaryPill, { marginTop: showBothEvents ? 4 : 0 }]}
+                  onPress={() => router.push('/calendar' as any)}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next visit, open Special Days"
+                >
                   <Text style={styles.anniversaryText}>
                     {visibleNextVisit.daysUntil === 0 ? '✈️ Today!' : `✈️ ${visibleNextVisit.dateLabel}`}
                   </Text>
                   <Text style={styles.anniversaryDays}>
                     {visibleNextVisit.daysUntil === 0 ? 'next visit' : `in ${visibleNextVisit.daysUntil} days · next visit`}
                   </Text>
-                </View>
+                </TouchableOpacity>
               )}
               {/* LDR: prompt to set a next-visit date if none is on file. The whole
                   pre-visit hype nudge system depends on this being set, so surface
