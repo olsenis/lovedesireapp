@@ -153,6 +153,25 @@ Prompt ("Write the story of how you'd spend a million"). Partners alternate one 
 
 ---
 
+## C1 Borrowed from competitors (raised Sep 13 2026, see COMPETITORS.md)
+
+Seven cheap ideas that surfaced in the Sep 13 competitor pass. None is a new feature area; each hangs on data or a screen we already have. Ordered by expected value over effort.
+
+1. **iOS / Android home-screen widget** (today's Moment photo, or the partner's mood). Six of ten category leaders and four apps in the Reddit thread live on one; LoveWidgets, Petiverse, sharedmood and drawn exist only as widgets. Needs an EAS build, so first post-launch feature, ahead of everything below. The July 2026 "Home screen widgets" entry further down is the spec; this bumps its priority to #1.
+2. **Expiring mutual-only mood** (from In The Mood): a mood that clears itself after N hours and sends a push only when both partners' moods match. Answers "who initiates" without anyone risking a no. Sits on the existing Home mood card and moods collection. ~3 h.
+3. **"One year ago today" Home card** (from SumOne's answer log): the couple's Daily answers or Moment from exactly a year ago. Data exists; card is ~2 h. Only fires once the couple has a year.
+4. **Post-date sealed line** (from Cuplido): after a Tonight's Date is marked done, each writes one line, revealed together, saved as a Memory Lane source. ~4 h.
+5. **"How do you think {partner} felt today?"** (from BaeSync): a Daily Deep variant graded against the partner's actual mood entry. ~3 h.
+6. **Life-stage tags on question pools** (from Agapé): LDR, parenting, reconnecting, engaged. Tagging is content work, the filter is small. Post-launch content pass.
+7. **"What's in the house" filter on Spicy dares and Activity Cards** (from Pikant): candles / blindfold / oil / none, so a drawn dare is executable. Needs dares tagged. Content pass.
+8. **Joint consent screen before a Spicy session** (from koopla): one shared "we both want this tonight" tap before Truth or Dare Spicy or Fantasy Wishes, on top of the per-user 18+ attestation. ~2 h, and a good App Review story.
+
+Not borrowed, on purpose: streaks and paid streak recovery (Cherished, Orbs), coins / gems / pets (SumOne, Cozy Couples, LoveWidgets), relationship health scores (BaeSync), chat (Orbs, Pikant, Fenn), AI-generated content (Pikant, Lovefix, Flamme), per-partner unlocks (Couple Game), free-tier content that expires (Cozy Couples).
+
+**Pricing note for the user:** the indie "one pays for both" cluster sits at $4.99/mo and $29.99/yr (Cozy Couples with 45k ratings, Cuplido, koopla); Agapé is punished in reviews for $50 to $180/yr. Ours is $9.99 / $59.99. Decide whether to hold on depth or move the annual to $39.99 before the first submission. Not changed here.
+
+---
+
 ## R11 Review #11 low-severity leftovers (raised Sep 8 2026)
 
 Review #11 covered the Sep 8 retention build. B1–B10 were fixed the same day (`52e529e`, `6228da3`, `4c6500e`, `aba5ba7`, see BUG_BASH "Review #11 fixes"). Three low items deferred:
@@ -452,7 +471,7 @@ Requires match aggregation logic (either client-side derivation from todos + wyr
 
 ---
 
-## Home screen widgets (Android + iOS) (raised July 2026)
+## Home screen widgets (Android + iOS) (raised July 2026) — priority #1 post-launch since Sep 13 2026, see C1
 
 ### What
 

@@ -37,15 +37,7 @@ Related: [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md) (submission checklis
 
 **Privacy angle (from `memory/launch_todo.md`):** say "private", "only the two of you", "encrypted in transit and at rest". **Never** say "end-to-end encrypted" or "zero-knowledge"; neither is true (Firebase, server-readable).
 
-**Competitor contrast (how we describe the shelf, not what we say publicly):**
-
-| App | What it is | Where we differ |
-|---|---|---|
-| Paired | daily questions + therapist-written courses | we have rituals and games, they have courses; they are "work on it", we are "enjoy it" |
-| Coral | sex-ed and intimacy exercises | we are the whole week, not the bedroom only |
-| Desire, Couples Game | dare-sending game, 12 years old, AI | single mechanic; we own the name collision problem (H43) |
-| Between | couples messenger + calendar | we deliberately have no chat |
-| Kindu, Happy Couple | dead or dormant | their users are looking for a replacement |
+**Competitors:** profiles, store numbers, what each does well and badly, and what we take from them are in [COMPETITORS.md](COMPETITORS.md) (Sep 13 2026, 14 new-wave apps + the incumbents + a Reddit voice-of-customer sample). The short version: Paired owns the category's trust (207k ratings) and its complaints are "pay twice", "routine pressure", "childish"; the blind mutual reveal is in every app and no longer differentiates; per-couple pricing is now table stakes; "no streaks" is a real differentiator only if we say it; nobody combines an 18+ layer with a two-phone weekly ritual loop.
 
 Our slot: **rituals + play + quiet insight, in one private space, near or far.** LDR is a distinctive feature (about a quarter of the app), not the niche (decided May 2026).
 
@@ -142,7 +134,7 @@ Six, free-tier surfaces only, taken from a premium admin account so nothing is l
 | # | Screen | Caption |
 |---|---|---|
 | 1 | Sunday Check-in reveal, both answers side by side | Five questions. Answered alone, read together. |
-| 2 | Home with couple card + "Waiting for you" nudge | One private space for two. |
+| 2 | Home with couple card + "Waiting for you" nudge | One private space for two. No streaks. |
 | 3 | Tonight's Date spin + result card | Tonight decided in one spin. |
 | 4 | Love Language result | Learn how your partner hears love. |
 | 5 | Moments grid, past photo pairs | One photo a day, side by side. |
@@ -162,9 +154,9 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 
 **Promotional text** (170 chars max, editable without a new build, shows above the description):
 
-> Weekly rituals, nightly questions, weekend games. Only the two of you can see any of it. One subscription covers both partners, 7 days free.
+> Weekly rituals, nightly questions, weekend games. No streaks, no ads. Only the two of you see any of it. One subscription covers you both, 7 days free.
 
-(140 chars.)
+(151 chars.)
 
 **Description** (first three lines show before "more"): the version in APP_STORE_SUBMISSION was written before several renames. Corrected feature names: **Presence** (was Sensate Focus), **The Lovers** (unchanged), **Our Story** (milestones timeline), **Memory Lane** (new, Sep 2026), **Activity Cards** (was Bingo). Draft:
 
@@ -236,7 +228,7 @@ All of these are code tasks, listed in §10.
 | T-7 | Icelandic press | Vísir / mbl / Viðskiptablaðið tech desks: "Icelandic couple builds a couples app, launches globally". Human-interest beats product. | Óli |
 | T-7 | Nordic tech | Nordic tech newsletters and podcasts, same angle. | Óli |
 | T-0 | Product Hunt | Launch post, first comment explains the anti-list. Ask TestFlight couples to comment. | both |
-| T-0 | Reddit | r/LongDistance, r/relationship_advice, r/couples: read each sub's self-promo rule first, post as a story not an ad, answer every comment. | Óli |
+| T-0 | Reddit | r/LongDistance, r/relationship_advice, r/couples, r/apps: read each sub's self-promo rule first. The Sep 2026 r/apps thread (COMPETITORS.md §1) shows the norm: founders who opened with "I built X" got silence or mockery; answer the question as a user of couples apps first, mention ours last, answer every comment. | Óli |
 | T-0 to T+30 | Apple Search Ads | §8, brand defence plus a small generic test. | Óli |
 | T+1 onward | TikTok / Instagram | One format only: the Sunday Check-in reveal, 20 seconds, two phones, one question. Never explicit content, always the 18+ note in bio. Two per week is enough. | both |
 | T+30 | Review | Search terms, keyword swap, custom product pages 6 to 10. | Claude |
