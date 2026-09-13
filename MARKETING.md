@@ -37,7 +37,7 @@ Related: [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md) (submission checklis
 
 **Privacy angle (from `memory/launch_todo.md`):** say "private", "only the two of you", "encrypted in transit and at rest". **Never** say "end-to-end encrypted" or "zero-knowledge"; neither is true (Firebase, server-readable).
 
-**Competitors:** profiles, store numbers, what each does well and badly, and what we take from them are in [COMPETITORS.md](COMPETITORS.md) (Sep 13 2026, 14 new-wave apps + the incumbents + a Reddit voice-of-customer sample). The short version: Paired owns the category's trust (207k ratings) and its complaints are "pay twice", "routine pressure", "childish"; the blind mutual reveal is in every app and no longer differentiates; per-couple pricing is now table stakes; "no streaks" is a real differentiator only if we say it; nobody combines an 18+ layer with a two-phone weekly ritual loop.
+**Competitors:** profiles, store numbers, what each does well and badly, and what we take from them are in [COMPETITORS.md](COMPETITORS.md) (Sep 13 2026, 14 new-wave apps + the incumbents + a Reddit voice-of-customer sample). The short version: Paired owns the category's trust (207k ratings) and its complaints are "pay twice", "routine pressure", "childish"; the blind mutual reveal is in every app and no longer differentiates; per-couple pricing is now table stakes; "no streaks" is a real differentiator only if we say it; nobody combines an 18+ layer with a two-phone weekly ritual loop. The review-mining pass in [USER_VOICE.md](USER_VOICE.md) (18,320 reviews, Sep 13 2026) adds the things to say out loud because users punish their absence: no ads, no AI-written questions, no streaks, most of the app free, your history is never locked, works for any two people, and the price stated in the description.
 
 Our slot: **rituals + play + quiet insight, in one private space, near or far.** LDR is a distinctive feature (about a quarter of the app), not the niche (decided May 2026).
 
@@ -298,3 +298,4 @@ Measure cost per install and cost per trial against LTV: annual $39.99 minus App
 4. Share cards (post-launch).
 5. Per-feature landing pages on the site (post-launch, after §2.11 data).
 6. Screenshots: six, per §2.8, from a premium admin account on a Pro Max simulator or device.
+7. USER_VOICE.md P7: add the anti-list line and "works for any two people" to §2.10, state the price in the description, and put "long distance" in the subtitle test list (largest praise context in 946 reviews).

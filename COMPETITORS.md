@@ -28,6 +28,8 @@ The thread is the best voice-of-customer sample we have. Grouped by theme, each 
 
 Household admin (Cupla, Miiro, Casito, Entwine) is a separate category. We do not compete there and should not drift there.
 
+**The deeper sample.** [USER_VOICE.md](USER_VOICE.md) (Sep 13 2026) reads 18,320 store reviews of 30 of these apps plus the Reddit threads, ranks the twelve complaints and the praise themes, and turns them into a gap table and a ranked change list. Read it before touching the paywall, notifications, pairing or the store copy.
+
 ---
 
 ## 2. The incumbents (numbers Sep 13 2026, US App Store)
@@ -43,6 +45,12 @@ Household admin (Cupla, Miiro, Casito, Entwine) is a separate category. We do no
 | LovBirdz | 4.81 (687) | 2023 | Sep 10 2026 | "more long-term, conversations incl. sexuality, genuinely good" | closest in spirit; quiz game DNA, per-person currency |
 | Desire, Couples Game | 4.31 (776) | 2014 | Jan 7 2026 | "fine, but kind of forgettable" | owns our name in search (H43); dares-only, AI now |
 | Flamme | 4.72 (416) | 2021 | Aug 2026 | not mentioned | AI love coach; we do not do AI content |
+| Evergreen | 4.82 (54,428) | 2021 | 2026 | not in thread; reviews: paywall creep, streak loss, "campy questions" | daily prompt + growth plan; we have the weekly calendar, no streak |
+| Couple Joy | 4.86 (37,440) | 2022 | 2026 | not in thread; reviews: widgets loved, AI questions hated, "$60" | quizzes + widgets + distance map; we have no widget yet |
+| Lasting | 4.68 (24,969) | 2017 | 2026 | not in thread; reviews: billing (21% of negatives), former-partner data leak | counselling sessions; therapy pricing, therapy expectations |
+| Couples Games & Challenges (Chouic) | 4.89 (23,126) | 2016 | 2026 | not in thread; reviews: "for dating couples", subscription on a party game | one-phone truth or dare; ours has two-phone live mode + 18+ tier |
+| Love Nudge | 4.58 (18,390) | 2013 | 2026 | not in thread; reviews: "another way to nag your spouse", bugs | love-language tank + goals; ours is a weekly one-way nudge |
+| Candle | 4.76 (10,841) | 2025 | 2026 | not in thread; reviews: widgets, thumb kiss, LDR; streak in the Dynamic Island, AI images | fastest 2025 grower; lives on widgets and review replies |
 
 Paired's 207,000 ratings against everyone else's four digits is the whole picture: one brand owns the category's trust, and the complaints about it (pay twice, routine, childish) are the openings.
 

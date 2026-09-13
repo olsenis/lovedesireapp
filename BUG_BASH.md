@@ -25,6 +25,19 @@ Goal: be better than the shelf where it counts (COMPETITORS.md §5): reliable on
 
 Not in this sprint, on purpose: home-screen widget (native, after the first EAS build), new games, content pools, the name (decide, do not build). Everything else that surfaced this week is filed in POST_LAUNCH C1 or MARKETING §10.
 
+### Proposed from review mining (USER_VOICE.md §7, Sep 13 2026), not started, awaiting pick
+
+| # | Item | Evidence | Effort | Status |
+|---|---|---|---|---|
+| P0 | **New partner never inherits the old partner's data**: `acceptPairing` fills the empty slot of the old couple doc after a disconnect, so the next partner reads the previous partner's Intimacy Log, Fantasy Wishes votes, Sunday answers, notes and Moments. Fresh couple unless the joiner is `partnerLeftUid`. Both cases into TEST_LAUNCH. | Lasting review (data leak to a new partner); USER_VOICE theme 1 | 4 h | ⬜ |
+| P1 | **Lapsed subscription keeps read access** to own Intimacy Log, FW matches, The Lovers result; only new writes gated. Rule into the CLAUDE.md paid-gate pattern. | Cozy Couples 2026 "cash grab" wall; theme 3 | 4 h | ⬜ |
+| P2 | **Billing honesty**: trial end date + renewal price on the paywall, "Manage subscription" in Profile, price in the store description. | 448 negative reviews in 13 apps; theme 2 | 2 h | ⬜ |
+| P3 | **Discreet pushes**: reword Tonight and FW match bodies; "Discreet notifications" toggle. | theme 11 | 1 h | ⬜ |
+| P4 | **Daily no-repeat** over 8 weeks, seeded, like Memory Lane's `recentQuestionIds`. | theme 4; 87-question free pool | 3 h | ⬜ |
+| P5 | **Fantasy Wishes opt-out**: "Skip scenarios that involve other people" + category chips. | Spicer's top 2026 complaint | 3 h | ⬜ |
+| P6 | **App lock** (Face ID / passcode, off by default). | Between, Nice, Coral; USER_VOICE §5 | 2 h | ⬜ |
+| P7 | **Store copy**: no ads / no AI / no streaks / one sub / most of it free / history never locked / any two people; price stated. | themes 3, 5, 6, 10 | 1 h | ⬜ |
+
 ## ⏳ Pending — regression tests for recent commits
 
 - [x] **Together List (todo screen) partner name** — ✅ PASSED. Items saved via Activity Cards "Save to Together List for later" render partner name in the todo screen (d830fed verified in-flow).
