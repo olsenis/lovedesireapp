@@ -84,6 +84,7 @@ export default function UpgradeScreen() {
         </TouchableOpacity>
 
         <Text style={styles.note}>One subscription covers both partners</Text>
+        <Text style={styles.note}>No streaks, no ads, no per-partner pricing. Cancel any time.</Text>
       </ScrollView>
     </View>
   );

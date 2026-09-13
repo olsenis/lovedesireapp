@@ -31,7 +31,7 @@ Related: [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md) (submission checklis
 
 **The anti-list is the product.** These are promises the website already makes on `/pricing` ("What you'll never see") and `/about`; repeat them everywhere:
 - No public feed, no strangers, no ads
-- No streaks, no points, no leaderboards
+- No streaks, no points, no leaderboards (said on the paywall, the pricing page and screenshot 2 since Sep 13 2026)
 - No weekly pricing, no coin packs, no per-partner pricing: one subscription covers both
 - Explicit content behind an 18+ attestation and the paid tier, text only
 

@@ -1,13 +1,16 @@
 import { collection, addDoc, query, getDocs, onSnapshot, orderBy, limit, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 
-export type MoodEmoji = '😍' | '🥰' | '😊' | '😌' | '😴' | '💪' | '😤' | '😢' | '🥺' | '😰' | '😈' | '🥵';
+export type MoodEmoji = '😍' | '🥰' | '😊' | '😌' | '🤗' | '😏' | '🫶' | '😴' | '💪' | '😤' | '😢' | '🥺' | '😰' | '😈' | '🥵';
 
 export const MOOD_LABELS: Record<MoodEmoji, string> = {
   '😍': 'In love',
   '🥰': 'Warm & fuzzy',
   '😊': 'Happy',
   '😌': 'Calm',
+  '🤗': 'Cuddly',
+  '😏': 'Playful',
+  '🫶': 'Grateful',
   '😴': 'Tired',
   '💪': 'Motivated',
   '😤': 'Frustrated',
@@ -18,7 +21,9 @@ export const MOOD_LABELS: Record<MoodEmoji, string> = {
   '🥵': 'Horny',
 };
 
-export const ALL_MOODS: MoodEmoji[] = ['😍', '🥰', '😊', '😌', '😴', '💪', '😤', '😢', '🥺', '😰', '😈', '🥵'];
+// Sep 2026: Cuddly / Playful / Grateful added; "more mood options" was the
+// top request against the best-rated mood-first competitor.
+export const ALL_MOODS: MoodEmoji[] = ['😍', '🥰', '😊', '😌', '🤗', '😏', '🫶', '😴', '💪', '😤', '😢', '🥺', '😰', '😈', '🥵'];
 
 export interface MoodEntry {
   id: string;
