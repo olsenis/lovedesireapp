@@ -4,7 +4,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { useSubscription } from '../hooks/useSubscription';
+import { usePaidAccess } from '../hooks/usePaidAccess';
+import { PremiumEndedBanner } from '../components/PremiumEndedBanner';
 import {
   IntimacyEntry, IntimacyLocation, IntimacyType, IntimacyMood,
   subscribeIntimacyLog, addIntimacyEntry, deleteIntimacyEntry, getIntimacyStats,
@@ -18,7 +19,6 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
-import { trackEvent } from '../services/statsService';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 
@@ -123,17 +123,12 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 export default function IntimacyTrackerScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
-  const { isSubscribed, isLoading: subLoading } = useSubscription();
   useTrackScreen('intimacy_log');
-  // Screen-level paywall gate — Us tab card is gated but future entry
-  // points (nudges, deep links) could bypass without this guard.
-  useEffect(() => {
-    if (!subLoading && !isSubscribed) {
-      trackEvent('upgrade_cta_tapped');
-      router.replace('/upgrade' as any);
-    }
-  }, [subLoading, isSubscribed]);
   const [entries, setEntries] = useState<IntimacyEntry[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  // Paid screen with a read view (USER_VOICE A2): a lapsed couple keeps
+  // the log and the stats, loses the composer and delete.
+  const { ready, readOnly } = usePaidAccess(loaded ? entries.length > 0 : null);
   // Deep-link support:
   //   ?tab=stats           opens straight into the Stats tab (used by Home's
   //                        Monthly Narrative nudge)
@@ -161,11 +156,11 @@ export default function IntimacyTrackerScreen() {
   const prefillPreset = params.prefill && PREFILL_PRESETS[params.prefill] ? PREFILL_PRESETS[params.prefill] : null;
   useEffect(() => {
     const key = params.prefill ?? null;
-    if (!key || !prefillPreset) return;
+    if (!key || !prefillPreset || readOnly) return;
     if (prefillHandledRef.current === key) return;
     prefillHandledRef.current = key;
     setShowSheet(true);
-  }, [params.prefill, prefillPreset]);
+  }, [params.prefill, prefillPreset, readOnly]);
 
   const coupleId = profile?.coupleId;
   const uid = user?.uid ?? '';
@@ -173,7 +168,7 @@ export default function IntimacyTrackerScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    return subscribeIntimacyLog(coupleId, setEntries);
+    return subscribeIntimacyLog(coupleId, (list) => { setEntries(list); setLoaded(true); });
   }, [coupleId]);
 
   const today = todayStart();
@@ -189,8 +184,8 @@ export default function IntimacyTrackerScreen() {
     setDeleteConfirm(null);
   };
 
-  // Don't render the log while paywall check resolves or during redirect.
-  if (subLoading || !isSubscribed) return null;
+  // Nothing until the gate has decided (no UI flash for a redirect).
+  if (!ready) return null;
 
   return (
     <>
@@ -225,8 +220,9 @@ export default function IntimacyTrackerScreen() {
 
       {tab === 'log' ? (
         <ScrollView contentContainerStyle={styles.content}>
+          {readOnly && <PremiumEndedBanner />}
           {/* Hero button */}
-          <View style={styles.heroWrap}>
+          {!readOnly && <View style={styles.heroWrap}>
             <TouchableOpacity
               style={styles.heroBtn}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setShowSheet(true); }}
@@ -242,7 +238,7 @@ export default function IntimacyTrackerScreen() {
                 <Text style={styles.loggedPillText}>✓ Logged today</Text>
               </View>
             )}
-          </View>
+          </View>}
 
           {/* Recent entries */}
           {recent.length > 0 && (
@@ -253,7 +249,7 @@ export default function IntimacyTrackerScreen() {
                   key={entry.id}
                   style={styles.entryRow}
                   onPress={() => setSelectedEntry(entry)}
-                  onLongPress={() => handleDelete(entry)}
+                  onLongPress={readOnly ? undefined : () => handleDelete(entry)}
                   activeOpacity={0.85}
                  accessibilityRole="button">
                   <Text style={styles.entryDate}>{fmtDate(entry.createdAt)}</Text>
@@ -343,13 +339,13 @@ export default function IntimacyTrackerScreen() {
                     <Text style={styles.detailValue}>{selectedEntry.note}</Text>
                   </View>
                 )}
-                <TouchableOpacity
+                {!readOnly && <TouchableOpacity
                   style={[styles.saveBtn, { backgroundColor: Colors.error, marginTop: Spacing.md }]}
                   onPress={() => { setSelectedEntry(null); handleDelete(selectedEntry); }}
                   activeOpacity={0.85}
                  accessibilityRole="button" accessibilityHint="Cannot be undone">
                   <Text style={styles.saveBtnText}>Delete entry</Text>
-                </TouchableOpacity>
+                </TouchableOpacity>}
               </ScrollView>
             )}
           </View>
@@ -358,7 +354,7 @@ export default function IntimacyTrackerScreen() {
 
       {/* Detail sheet */}
       <DetailSheet
-        visible={showSheet}
+        visible={showSheet && !readOnly}
         onClose={() => setShowSheet(false)}
         partnerName={partnerName}
         prefill={prefillPreset}

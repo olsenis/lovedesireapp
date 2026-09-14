@@ -5,7 +5,8 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useSpicyConsent } from '../hooks/useSpicyConsent';
 import { useCouple } from '../hooks/useCouple';
-import { useSubscription } from '../hooks/useSubscription';
+import { usePaidAccess } from '../hooks/usePaidAccess';
+import { PremiumEndedBanner } from '../components/PremiumEndedBanner';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
@@ -18,35 +19,30 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
-import { trackEvent } from '../services/statsService';
 import { noteHappyMoment } from '../services/reviewPromptService';
 
 export default function FantasyWishesScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
-  const { isSubscribed, isLoading: subLoading } = useSubscription();
   useTrackScreen('fantasy_wishes');
-  // Screen-level paywall gate: this feature is paid-tier only. Guarding here
-  // (instead of only on the Discover card + Us tab card) covers every entry
-  // point — including Home nudges that route directly here — so a non-
-  // subscribed user cannot bypass the paywall via deep link.
-  useEffect(() => {
-    if (!subLoading && !isSubscribed) {
-      trackEvent('upgrade_cta_tapped');
-      router.replace('/upgrade' as any);
-    }
-  }, [subLoading, isSubscribed]);
+  const [items, setItems] = useState<FantasyWishesItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  // Paid screen with a read view (USER_VOICE A2): a lapsed couple keeps
+  // their Matches, loses the deck, adding and reset. Nothing to read →
+  // /upgrade as before. Covers every entry point incl. Home nudges.
+  const { ready, readOnly } = usePaidAccess(loaded ? items.length > 0 : null);
   // Spicy session consent (Sep 2026): the whole feature is explicit, so
-  // ask once per day on entry; "Not tonight" leaves the screen.
+  // ask once per day on entry; "Not tonight" leaves the screen. Applies
+  // to the read view too (matches are explicit text).
   const { spicyOk, requireSpicyConsent, spicyGate } = useSpicyConsent(user?.uid ?? '');
   const consentAskedRef = useRef(false);
   useEffect(() => {
-    if (subLoading || !isSubscribed || spicyOk !== false || consentAskedRef.current) return;
+    if (!ready || spicyOk !== false || consentAskedRef.current) return;
     consentAskedRef.current = true;
     requireSpicyConsent('solo', () => {}, () => router.back());
-  }, [subLoading, isSubscribed, spicyOk, requireSpicyConsent]);
-  const [items, setItems] = useState<FantasyWishesItem[]>([]);
+  }, [ready, spicyOk, requireSpicyConsent]);
   const [activeTab, setActiveTab] = useState<'explore' | 'matches'>('explore');
+  useEffect(() => { if (readOnly) setActiveTab('matches'); }, [readOnly]);
   const [showAdd, setShowAdd] = useState(false);
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
@@ -87,7 +83,7 @@ export default function FantasyWishesScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    return subscribeFantasyWishes(coupleId, setItems);
+    return subscribeFantasyWishes(coupleId, (list) => { setItems(list); setLoaded(true); });
   }, [coupleId]);
 
   // Detect fresh mutual Yes matches. On first snapshot we snapshot existing
@@ -297,10 +293,8 @@ export default function FantasyWishesScreen() {
     return items.filter((i) => !i.votes[partnerId]).length;
   }, [items, partnerId]);
 
-  // While the paywall check resolves or the user is being redirected away,
-  // render nothing so a free user doesn't briefly see the FW UI flash
-  // before the router.replace to /upgrade takes effect.
-  if (subLoading || !isSubscribed) return null;
+  // Nothing until the gate has decided (no UI flash for a redirect).
+  if (!ready) return null;
 
   return (
     <KeyboardAvoidingView
@@ -312,7 +306,7 @@ export default function FantasyWishesScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Fantasy Wishes</Text>
-        <View style={{ flexDirection: 'row', gap: Spacing.md }}>
+        {readOnly ? <View style={{ width: 60 }} /> : <View style={{ flexDirection: 'row', gap: Spacing.md }}>
           {items.length > 0 && (
             <TouchableOpacity onPress={handleReset} disabled={resetting} accessibilityRole="button" accessibilityLabel="Reset wishes" accessibilityHint="Cannot be undone">
               <Text style={styles.resetBtn}>{resetting ? '…' : '↺'}</Text>
@@ -321,12 +315,12 @@ export default function FantasyWishesScreen() {
           <TouchableOpacity onPress={() => setShowAdd(true)} accessibilityRole="button" accessibilityLabel="Add wish">
             <Text style={styles.addBtn}>+ Add</Text>
           </TouchableOpacity>
-        </View>
+        </View>}
       </View>
 
-      <View style={styles.infoBanner}>
+      {readOnly ? <PremiumEndedBanner /> : <View style={styles.infoBanner}>
         <Text style={styles.infoText}>✨ Vote privately, only mutual Yes matches are ever revealed</Text>
-      </View>
+      </View>}
 
       {/* Shared toast (components/Toast.tsx) — fires on new match
           (emphasis + onTap→Matches tab) and on +Add / partner add
@@ -337,16 +331,16 @@ export default function FantasyWishesScreen() {
       {toast}
       {spicyGate}
 
-      <View style={styles.tabRow}>
+      {!readOnly && <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tab, activeTab === 'explore' && styles.tabActive]} onPress={() => setActiveTab('explore')} accessibilityRole="button">
           <Text style={[styles.tabText, activeTab === 'explore' && styles.tabTextActive]}>Explore</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, activeTab === 'matches' && styles.tabActive]} onPress={() => setActiveTab('matches')} accessibilityRole="button">
           <Text style={[styles.tabText, activeTab === 'matches' && styles.tabTextActive]}>✓ Matches ({matched.length})</Text>
         </TouchableOpacity>
-      </View>
+      </View>}
 
-      {activeTab === 'explore' && (
+      {activeTab === 'explore' && !readOnly && (
         <View style={styles.exploreBody}>
           {items.length === 0 ? (
             <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7} accessibilityRole="button">

@@ -19,7 +19,7 @@ import { Spacing, Radius, Shadow } from '../../constants/spacing';
 import { useTrackScreen } from '../../hooks/useTrackScreen';
 
 type GameCard = {
-  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; inPerson?: boolean;
+  emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; inPerson?: boolean; readable?: boolean;
 };
 
 // Versus was cut Aug 2026 — its guess-partner-answer mechanic merged
@@ -31,11 +31,11 @@ const GAMES: GameCard[] = [
   { emoji: '🤔', title: 'Would You Rather',     subtitle: 'Both answer at the same time, then reveal',   route: '/would-you-rather', bg: '#FFF9C4', paid: false },
   // Activity Cards' cards ask you to do things in the same room together.
   // LDR pairs get an "IN-PERSON" pill so they know before opening.
-  { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true, inPerson: true },
+  { emoji: '🃏', title: 'Activity Cards',        subtitle: 'Take turns picking a mystery card together',  route: '/bingo',          bg: '#FCE4EC', paid: true, inPerson: true, readable: true },
   // Standalone Dares card removed Aug 2026 — async dares now surface as
   // the "Send a Dare" mode inside Truth or Dare so Discover has one dare
   // brand, not two. Home nudges still deep-link to /dares directly.
-  { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5', paid: true },
+  { emoji: '✨', title: 'Fantasy Wishes',       subtitle: 'Vote privately, only mutual Yes is ever revealed', route: '/fantasy-wishes', bg: '#F3E5F5', paid: true, readable: true },
 ];
 
 const CHALLENGES = [
@@ -51,9 +51,13 @@ const MEMORY_LANE: GameCard = {
 };
 
 function FeatureCard({
-  emoji, title, subtitle, route, bg, paid, isSubscribed, isNew, inPerson, isLDR, gateLabel, onGatedPress,
+  emoji, title, subtitle, route, bg, paid, isSubscribed, isNew, inPerson, isLDR, gateLabel, onGatedPress, readable,
 }: {
   emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean; isNew?: boolean; inPerson?: boolean; isLDR?: boolean;
+  // Paid screen with a read view (USER_VOICE A2): a locked card still
+  // opens the screen, which shows the couple's own data read-only or
+  // redirects to /upgrade when there is nothing to read. 🔒 stays.
+  readable?: boolean;
   // Data-gate (not paywall): when set, the card is dimmed, the arrow is
   // replaced by this label, and taps call onGatedPress instead of routing.
   gateLabel?: string; onGatedPress?: () => void;
@@ -66,7 +70,7 @@ function FeatureCard({
       style={[styles.card, { backgroundColor: bg }, gated && { opacity: 0.65 }]}
       onPress={() => {
         if (gated) { onGatedPress?.(); return; }
-        router.push(locked ? '/upgrade' : route as any);
+        router.push(locked && !readable ? '/upgrade' : route as any);
       }}
       activeOpacity={0.8}
      accessibilityRole="button">

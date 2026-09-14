@@ -703,7 +703,10 @@ export default function HomeScreen() {
   // 14+ days: original "consider returning" prompt. Both suppressed until
   // cyclesCompleted >= 1 so first-time users aren't pushed toward a paid
   // feature they haven't opted into.
-  if (sensateProgress && (sensateProgress.cyclesCompleted ?? 0) >= 1) {
+  // Write-nudges to paid screens are gated on isSubscribed (USER_VOICE A2):
+  // a lapsed couple keeps read views, so only the read nudges (FW matches,
+  // monthly narrative, active challenge) still fire for them.
+  if (isSubscribed && sensateProgress && (sensateProgress.cyclesCompleted ?? 0) >= 1) {
     const lastActivity = sensateProgress.lastActivityAt
       ?? (() => {
         // Fallback for pre-migration docs: derive from stage lastDate strings.
@@ -740,7 +743,7 @@ export default function HomeScreen() {
   // destination, same emoji, so two ✨ cards in a row was pure noise.
   // Matches nudge wins because it's the higher-value signal (a specific
   // reward to claim vs an ambient "keep going" hint).
-  if (partnerId && fwItems.length > 0 && fwMatches.length === 0) {
+  if (isSubscribed && partnerId && fwItems.length > 0 && fwMatches.length === 0) {
     const partnerVoted = fwItems.filter(i => !!i.votes[partnerId]).length;
     const myVoted = fwItems.filter(i => !!i.votes[uid]).length;
     if (partnerVoted > myVoted) {
@@ -845,7 +848,7 @@ export default function HomeScreen() {
   // intimate moment. Migrated Aug 2026 to read from Sunday Check-in's
   // pulseScores instead of the deleted pulse subcollection. Same
   // threshold (≤ 2), same 14-day staleness cap, same target route.
-  if (profile?.features?.intimacyLog && mySuEntry?.pulseScores) {
+  if (isSubscribed && profile?.features?.intimacyLog && mySuEntry?.pulseScores) {
     const closenessScore = mySuEntry.pulseScores.closeness;
     const pulseAt = mySuEntry.updatedAt ?? 0;
     const pulseAge = Date.now() - pulseAt;
@@ -866,7 +869,7 @@ export default function HomeScreen() {
   // Intimacy Log cross-flow: 3+ low-mood check-ins in the last 7 days
   // (from CURRENT user's mood history only, not partner's) → nudge to
   // log a reflection. Low moods are 😢/🥺/😰/😤 per moodService MoodEmoji.
-  if (profile?.features?.intimacyLog && moodHistory.length > 0) {
+  if (isSubscribed && profile?.features?.intimacyLog && moodHistory.length > 0) {
     const weekAgo = Date.now() - 7 * 86400000;
     const LOW_MOOD_SET = new Set<MoodEmoji>(['😢', '🥺', '😰', '😤']);
     const recentLowCount = moodHistory
@@ -889,7 +892,7 @@ export default function HomeScreen() {
   }
 
   // Smart intimacy nudge — only if feature enabled AND entries exist AND > 7 days ago
-  if (profile?.features?.intimacyLog && partnerId && intimacyEntries.length > 0) {
+  if (isSubscribed && profile?.features?.intimacyLog && partnerId && intimacyEntries.length > 0) {
     const last = intimacyEntries[0].createdAt;
     const daysSince = Math.floor((Date.now() - last) / 86400000);
     if (daysSince >= 7) {
@@ -1138,7 +1141,7 @@ export default function HomeScreen() {
   // Activity Cards (Bingo) — partner picked a card and I'm the receiver.
   // Use typeof number check to guard against undefined/null pendingCard
   // (older session docs created before the resetActivityCards fix may not have the field).
-  if (bingoSession && partnerId && typeof bingoSession.pendingCard === 'number' && bingoSession.turnUid === uid) {
+  if (isSubscribed && bingoSession && partnerId && typeof bingoSession.pendingCard === 'number' && bingoSession.turnUid === uid) {
     const cardText = bingoSession.squares?.[bingoSession.pendingCard] ?? 'a challenge';
     list.push({
       emoji: '🃏',
@@ -1247,7 +1250,7 @@ export default function HomeScreen() {
 
   // Flashes: unviewed incoming flash from partner
   const incomingFlash = flashes.find(f => f.fromUid !== uid && !f.viewed) ?? null;
-  if (incomingFlash) {
+  if (isSubscribed && incomingFlash) {
     list.unshift({
       emoji: '📸',
       title: `${partner?.name ?? 'Partner'} sent you a tease`,

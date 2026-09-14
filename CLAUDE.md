@@ -244,6 +244,7 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 - `usePhotoConsent()` — H42 photo consent guard; `guardPhotoAction(uid, action)` fires modal if unconsented, invokes action after grant
 - `useCurrentWeekId()` — ISO week id that follows the clock (AppState foreground + 60 s check). Use instead of memoising `getCurrentWeekId()` in a screen; Sunday Check-in and Memory Lane do.
 - `useSpicyConsent(uid)` — `{ spicyOk, requireSpicyConsent(mode, onProceed, onDecline?), spicyGate }`; render `{spicyGate}` in every root view of the screen.
+- `usePaidAccess(hasData)` — paid-screen gate with a read view: `{ isSubscribed, ready, readOnly }`; see the paid-feature gate pattern below.
 - `useReport()` — H33 report launcher; `openReport(contentRef)` opens ReportModal with content reference, `reportContentRef` + `closeReport` for modal state
 
 ### Static content (`/constants/content.ts`)
@@ -325,24 +326,24 @@ Three prompts for expanding content — always use the right one for the categor
 
 **Subscription gating:** `hooks/useSubscription.ts` — returns `{ isSubscribed }`. Reads `couples/{coupleId}/isPremium` so **one subscription covers both partners**. RevenueCat webhook writes to the couple doc; QA test couples flipped manually in Firebase Console. Client cannot write `isPremium` or `premiumSince` (firestore.rules blocks the two fields explicitly). Legacy per-user `isPremium` on `users/{uid}` was deprecated Aug 2026 — any stale value is ignored by the hook.
 
-**Paid-feature gate pattern (defense in depth):** every paid screen (Fantasy Wishes, Sensate, Blueprint, Bingo, Intimacy Tracker, plus Fire/Desire challenge programs) enforces the paywall AT THE SCREEN, not just on the entry-point card. This covers Home nudges that route directly to the screen and would otherwise bypass the Discover/Us tab lock. Copy the pattern verbatim when adding a new paid screen:
+**Paid-feature gate pattern (defense in depth, read view since Sep 2026):** every paid screen enforces the paywall AT THE SCREEN, not just on the entry-point card, so Home nudges and deep links cannot bypass it. Paid screens gate WRITES; data the couple created is always readable (USER_VOICE A2: Cozy Couples, Evergreen and Lovewick were punished for locking what people had already made). Use `usePaidAccess(hasData)` from `hooks/usePaidAccess.ts`:
 
 ```tsx
-const { isSubscribed, isLoading: subLoading } = useSubscription();
-useEffect(() => {
-  if (!subLoading && !isSubscribed) router.replace('/upgrade' as any);
-}, [subLoading, isSubscribed]);
-// early return before rendering, so free users don't see the UI flash
-if (subLoading || !isSubscribed) return null;
+const [loaded, setLoaded] = useState(false);            // set true in the data subscription callback
+const { ready, readOnly } = usePaidAccess(loaded ? entries.length > 0 : null);
+// hasData null → not loaded (render nothing) · false → non-subscriber is sent to /upgrade
+// true → non-subscriber gets the screen read-only: hide every write affordance, render
+// <PremiumEndedBanner /> (components/PremiumEndedBanner.tsx) as the first thing under the header
+if (!ready) return null;
 ```
+
+Read views exist on Intimacy Log (log + stats; no composer, no delete), Fantasy Wishes (Matches only; "+ Add to Together List" stays), The Lovers (own result + compatibility; no retake) and Activity Cards (board with done/revealed cards; no flip, pass, reset, custom cards, receiver flow). Presence and Tease keep the full gate on purpose. Discover/Us cards for the four read-view screens carry `readable: true` and route to the screen even when locked (the screen decides); 🔒 stays as the cue. Home nudges that invite a WRITE on a paid screen are gated on `isSubscribed`; read nudges (FW matches, monthly narrative, active challenge) are not.
 
 For per-item gating (e.g. Challenge's Fire+Desire programs while Reconnect+Spark are free), gate the tap handler:
 
 ```tsx
 if (PAID_PROGRAMS.has(program) && !isSubscribed) { router.push('/upgrade' as any); return; }
 ```
-
-Discover/Us tab cards still show 🔒 for the visual cue; the screen-level gate is belt-and-suspenders.
 
 ### Free tier (store-safe)
 - Truth or Dare: Sweet + Flirty only across both modes — "Together Right Here" (one phone, quick spin, ex-Dare Wheel folded in July 2026) and "Wherever You Are" (two phones, turn-based multiplayer)

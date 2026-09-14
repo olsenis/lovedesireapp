@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { useSubscription } from '../hooks/useSubscription';
+import { usePaidAccess } from '../hooks/usePaidAccess';
+import { PremiumEndedBanner } from '../components/PremiumEndedBanner';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
@@ -17,24 +18,19 @@ import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
-import { trackEvent } from '../services/statsService';
 
 export default function ActivityCardsScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
-  const { isSubscribed, isLoading: subLoading } = useSubscription();
   useTrackScreen('activity_cards');
-  // Screen-level paywall gate — Discover card is gated but Home nudges
-  // route directly here and could bypass the paywall for non-subscribed
-  // users. Enforce at the screen so every entry point is covered.
-  useEffect(() => {
-    if (!subLoading && !isSubscribed) {
-      trackEvent('upgrade_cta_tapped');
-      router.replace('/upgrade' as any);
-    }
-  }, [subLoading, isSubscribed]);
   const [session, setSession] = useState<ActivityCardsSession | null>(null);
   const [loading, setLoading] = useState(true);
+  // Paid screen with a read view (USER_VOICE A2): a lapsed couple keeps
+  // the board with its done and revealed cards, loses flipping, passes,
+  // reset, custom cards and the receiver flow. Covers Home nudges too.
+  const { ready, readOnly } = usePaidAccess(
+    loading ? null : !!session && ((session.completed ?? []).length > 0 || (session.revealed ?? []).length > 0),
+  );
   const [revealIndex, setRevealIndex] = useState<number | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [undoCard, setUndoCard] = useState<{ index: number; text: string } | null>(null);
@@ -86,7 +82,7 @@ export default function ActivityCardsScreen() {
   }, [revealIndex]);
 
   const handleCardTap = (index: number) => {
-    if (!session || !isMyTurn) return;
+    if (!session || !isMyTurn || readOnly) return;
     if ((session.revealed ?? []).includes(index)) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setRevealIndex(index);
@@ -119,7 +115,7 @@ export default function ActivityCardsScreen() {
   // flipCard sets turnUid to the partner (the receiver), so when you ARE the
   // receiver, isMyTurn is true AND there's a pending card. The previous
   // `!isMyTurn` was inverted and meant receivers never saw the accept/skip modal.
-  const isReceiver = hasPendingCard && isMyTurn;
+  const isReceiver = hasPendingCard && isMyTurn && !readOnly;
 
   const handleMarkDone = async () => {
     if (!coupleId || !session || !partnerId) return;
@@ -182,9 +178,8 @@ export default function ActivityCardsScreen() {
     notifyPartner(coupleId, uid, 'Activity Cards 💾', `${profile?.name ?? 'Your partner'} saved this challenge to your Together List`).catch(() => {});
   };
 
-  // Don't render the deck while paywall check resolves or during redirect
-  // to /upgrade, otherwise a free user briefly sees the UI flash.
-  if (subLoading || !isSubscribed) return null;
+  // Nothing until the gate has decided (no UI flash for a redirect).
+  if (!ready) return null;
   if (loading || !session) return null;
 
   const revealed = session.revealed ?? [];
@@ -199,9 +194,9 @@ export default function ActivityCardsScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Activity Cards</Text>
-        <TouchableOpacity onPress={() => setConfirmReset(true)} style={styles.resetBtn} accessibilityRole="button" accessibilityLabel="Reset deck">
+        {readOnly ? <View style={styles.resetBtn} /> : <TouchableOpacity onPress={() => setConfirmReset(true)} style={styles.resetBtn} accessibilityRole="button" accessibilityLabel="Reset deck">
           <Text style={styles.resetBtnText}>↺ New</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -214,7 +209,8 @@ export default function ActivityCardsScreen() {
             skip). Show a context-aware "passed, try another" message
             instead of the generic "pick any card" so the in-app signal
             matches the push copy that only fires on real devices. */}
-        <View style={[styles.turnBadge, { backgroundColor: isReceiver ? '#E8F5E9' : isMyTurn ? Colors.burgundy : Colors.blush }]}>
+        {readOnly && <PremiumEndedBanner />}
+        {!readOnly && <View style={[styles.turnBadge, { backgroundColor: isReceiver ? '#E8F5E9' : isMyTurn ? Colors.burgundy : Colors.blush }]}>
           <Text style={[styles.turnText, { color: isReceiver ? '#2E7D32' : isMyTurn ? Colors.white : Colors.burgundy }]}>
             {isReceiver
               ? `${partnerName} picked an activity card for us!`
@@ -224,25 +220,25 @@ export default function ActivityCardsScreen() {
                   : 'Your turn, pick any card')
               : `${partnerName}'s turn to pick`}
           </Text>
-        </View>
-        {!isMyTurn && <WhileYouWait />}
+        </View>}
+        {!isMyTurn && !readOnly && <WhileYouWait />}
         {/* Deck mode indicator — helps users understand why some
             planned/seasonal cards aren't showing up. Absent = legacy
             doc from before deckMode existed, treat as quick. */}
-        <Text style={styles.deckModeText}>
+        {!readOnly && <Text style={styles.deckModeText}>
           {(session.deckMode ?? 'quick') === 'quick' ? '✨ Quick deck, tap ↺ New for bucket-list mode' : '🌙 Bucket-list deck'}
-        </Text>
-        <TouchableOpacity onPress={() => setShowCustomModal(true)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Add your own card">
+        </Text>}
+        {!readOnly && <TouchableOpacity onPress={() => setShowCustomModal(true)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Add your own card">
           <Text style={[styles.deckModeText, { color: Colors.burgundy, fontFamily: Fonts.bodyBold }]}>
             {customCards.length === 0
               ? '+ Add your own card'
               : `+ Add your own · ${customCards.length} of yours in the pool`}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
 
         {/* Progress + passes */}
         <Text style={styles.progressText}>{revealed.length} of 25 flipped · {remaining} remaining</Text>
-        {isMyTurn && (
+        {isMyTurn && !readOnly && (
           <Text style={styles.passesText}>
             {passesLeft > 0 ? `${passesLeft} pass${passesLeft !== 1 ? 'es' : ''} left` : 'No passes left, must accept next card'}
           </Text>
@@ -254,7 +250,7 @@ export default function ActivityCardsScreen() {
             const isDone = completedSet.has(index);
             const isPending = session.pendingCard === index;
             const isRevealed = revealedSet.has(index);
-            const canTap = isMyTurn && !isRevealed && !isReceiver;
+            const canTap = isMyTurn && !isRevealed && !isReceiver && !readOnly;
 
             return (
               <TouchableOpacity
@@ -267,7 +263,7 @@ export default function ActivityCardsScreen() {
                   canTap && styles.cardCanTap,
                 ]}
                 onPress={() => handleCardTap(index)}
-                onLongPress={isDone ? () => setUndoCard({ index, text: activity }) : undefined}
+                onLongPress={isDone && !readOnly ? () => setUndoCard({ index, text: activity }) : undefined}
                 disabled={!canTap && !isDone}
                 activeOpacity={canTap ? 0.75 : 1}
                accessibilityRole="button">

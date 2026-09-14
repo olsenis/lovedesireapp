@@ -4596,6 +4596,37 @@ Gaps surfaced by walking the app end-to-end as a real two-phone tester.
 
 ## Tally
 
+## 13. Lapsed Premium: read views (Sep 2026, USER_VOICE A2)
+Paid screens gate writes, never the couple's own data. QA couple with data in all four features; toggle `isPremium` on the couple doc (admin dashboard Grant / Revoke).
+
+- [ ] **Intimacy Log read-only** 💰
+  1. Revoke premium; Us → Intimacy Log
+  - **Expected:** Opens (no /upgrade bounce). "Premium has ended…" line on top, no "We were intimate" button, entries list and Stats tab work, long-press on an entry does nothing, entry detail has no "Delete entry". A `?prefill=` deep link does not open the composer.
+
+- [ ] **Fantasy Wishes read-only** 💰
+  1. Revoke premium; Discover → Fantasy Wishes (🔒 still shown on the card)
+  - **Expected:** Spicy consent card first (once a day), then the Matches list with the banner; no Explore tab, no deck, no "+ Add", no "↺". "+ Add to Together List" on a match still works.
+
+- [ ] **The Lovers read-only** 💰
+  1. Revoke premium; Us → The Lovers
+  - **Expected:** Own result, turn-ons/offs, partner result + compatibility card, "+ Together List" works, no "Retake quiz". A user with NO own result is sent to /upgrade.
+
+- [ ] **Activity Cards read-only** 💰
+  1. Revoke premium; Discover → Activity Cards
+  - **Expected:** Board with done (✓ text) and revealed cards; unflipped cards do nothing; no turn badge, no ↺ New, no "+ Add your own card", no passes line, no receiver modal even if a card is pending; long-press on a done card does nothing.
+
+- [ ] **Nothing to read → /upgrade** ⚠️
+  1. Fresh unpaid couple with no data; tap each of the four cards
+  - **Expected:** Lands on /upgrade via the screen, no flash of the screen UI. Presence and Tease cards go to /upgrade regardless of data.
+
+- [ ] **Home nudges while lapsed** 📱
+  - **Expected:** No "picked a card for you", "Presence", "Fantasy Wishes, {partner} is exploring", "Closeness dipped", "A hard week", "Intimate moment" or "sent you a tease" cards. "N matches" and "Your {month} in intimacy" still appear when their data conditions hold.
+
+- [ ] **Grant again** 📱
+  - **Expected:** Banner disappears and every write affordance returns on the open screen without a restart.
+
+---
+
 **Coverage summary:**
 
 - Total feature areas: 12 (+ 1 adversarial-review section)

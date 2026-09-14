@@ -5,7 +5,8 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { useSubscription } from '../hooks/useSubscription';
+import { usePaidAccess } from '../hooks/usePaidAccess';
+import { PremiumEndedBanner } from '../components/PremiumEndedBanner';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { saveBlueprintResult, subscribeCoupleBlueprints, CoupleBlueprints } from '../services/blueprintService';
@@ -27,21 +28,12 @@ const OPTION_BG = ['#FFF0F3', '#FFF8F0'];
 export default function BlueprintScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
-  const { isSubscribed, isLoading: subLoading } = useSubscription();
   useTrackScreen('blueprint');
-  // Screen-level paywall gate — Us tab card is gated but keeping the guard
-  // here as defense-in-depth in case a future entry point (deep link, nudge)
-  // routes directly to /blueprint without checking subscription.
-  useEffect(() => {
-    if (!subLoading && !isSubscribed) {
-      trackEvent('upgrade_cta_tapped');
-      router.replace('/upgrade' as any);
-    }
-  }, [subLoading, isSubscribed]);
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<Record<BlueprintType, number>>({ sensual: 0, sexual: 0, energetic: 0, kinky: 0, shapeshifter: 0 });
   const [done, setDone] = useState(false);
   const [coupleResults, setCoupleResults] = useState<CoupleBlueprints>({});
+  const [loaded, setLoaded] = useState(false);
   // Compatibility tips saved to the Together List this visit (index in
   // compatibility.tips). Sep 2026 retention package: the three pair
   // specific tips become dates instead of text nobody reopens.
@@ -57,9 +49,14 @@ export default function BlueprintScreen() {
     if (!coupleId) return;
     return subscribeCoupleBlueprints(coupleId, (results) => {
       setCoupleResults(results);
+      setLoaded(true);
       if (results[uid]) setDone(true);
     });
   }, [coupleId, uid]);
+  // Paid screen with a read view (USER_VOICE A2): a lapsed couple keeps
+  // their result and the compatibility card, loses the quiz and retake.
+  // Own result only: a partner-only result is not the caller's data.
+  const { ready, readOnly } = usePaidAccess(loaded ? !!coupleResults[uid] : null);
 
   const q = BLUEPRINT_QUESTIONS[step];
 
@@ -110,9 +107,8 @@ export default function BlueprintScreen() {
     ? BLUEPRINT_COMPATIBILITY[myType]?.[partnerResult.type] ?? null
     : null;
 
-  // Don't render The Lovers quiz UI while paywall check resolves or during
-  // redirect to /upgrade, otherwise a free user briefly sees the quiz flash.
-  if (subLoading || !isSubscribed) return null;
+  // Nothing until the gate has decided (no UI flash for a redirect).
+  if (!ready) return null;
 
   return (
     <View style={styles.screen}>
@@ -124,7 +120,8 @@ export default function BlueprintScreen() {
         <View style={{ width: 60 }} />
       </View>
 
-      {!done ? (
+      {readOnly && <PremiumEndedBanner />}
+      {!done && !readOnly ? (
         <View style={styles.quizContent}>
           <View style={styles.progressWrap}>
             <View style={styles.progressBar}>
@@ -279,9 +276,9 @@ export default function BlueprintScreen() {
             })}
           </View>
 
-          <TouchableOpacity style={styles.retakeBtn} onPress={retake} accessibilityRole="button">
+          {!readOnly && <TouchableOpacity style={styles.retakeBtn} onPress={retake} accessibilityRole="button">
             <Text style={styles.retakeText}>Retake quiz ↻</Text>
-          </TouchableOpacity>
+          </TouchableOpacity>}
         </ScrollView>
       )}
 

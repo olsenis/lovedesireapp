@@ -32,8 +32,8 @@ const RITUALS = [
 // this is for when they're together, but the feature stays fully
 // accessible (they can plan for the next visit).
 const NURTURE = [
-  { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Your shared story of closeness',                          route: '/intimacy-tracker', bg: '#FFF0F3', paid: true },
-  { emoji: '🧬', title: 'The Lovers',        subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true },
+  { emoji: '🔥', title: 'Intimacy Log',      subtitle: 'Your shared story of closeness',                          route: '/intimacy-tracker', bg: '#FFF0F3', paid: true, readable: true },
+  { emoji: '🧬', title: 'The Lovers',        subtitle: 'Discover your intimacy type & partner compatibility',     route: '/blueprint', bg: '#F3E5F5', paid: true, readable: true },
   { emoji: '🫁', title: 'Presence',           subtitle: 'Slow-touch practice for reconnection and presence',      route: '/sensate',   bg: '#E8F5E9', paid: true, inPerson: true },
 ];
 
@@ -58,16 +58,19 @@ function SectionDivider({ label }: { label: string }) {
 }
 
 function FeatureCard({
-  emoji, title, subtitle, route, bg, paid, isSubscribed, inPerson, isLDR,
+  emoji, title, subtitle, route, bg, paid, isSubscribed, inPerson, isLDR, readable,
 }: {
   emoji: string; title: string; subtitle: string; route: string; bg: string; paid: boolean; isSubscribed: boolean; inPerson?: boolean; isLDR?: boolean;
+  // Paid screen with a read view (USER_VOICE A2): the locked card opens
+  // the screen, which shows the couple's own data or redirects. 🔒 stays.
+  readable?: boolean;
 }) {
   const locked = paid && !isSubscribed;
   const showInPersonPill = !!inPerson && !!isLDR;
   return (
     <TouchableOpacity
       style={[styles.card, { backgroundColor: bg }]}
-      onPress={() => router.push(locked ? '/upgrade' : route as any)}
+      onPress={() => router.push(locked && !readable ? '/upgrade' : route as any)}
       activeOpacity={0.8}
      accessibilityRole="button">
       <Text style={styles.cardEmoji}>{emoji}</Text>
