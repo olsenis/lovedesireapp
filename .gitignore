@@ -68,3 +68,7 @@ functions/node_modules/
 # committed: raw findings, not curated docs. Curated conclusions go into
 # BUG_BASH / POLISH_TODO / POST_LAUNCH.
 reviews/
+
+# Review-mining raw data (USER_VOICE.md); scripts in research/ are committed, data is not
+research/data/
+research/gplay/node_modules/

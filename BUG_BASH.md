@@ -38,6 +38,8 @@ Not in this sprint, on purpose: home-screen widget (native, after the first EAS 
 | P6 | **App lock** (Face ID / passcode, off by default). | Between, Nice, Coral; USER_VOICE §5 | 2 h | ⬜ |
 | P7 | **Store copy**: no ads / no AI / no streaks / one sub / most of it free / history never locked / any two people; price stated. | themes 3, 5, 6, 10 | 1 h | ⬜ |
 
+Full detail (where, steps, tests) per item: [USER_VOICE_TODO.md](USER_VOICE_TODO.md) §A (P0 = A1 … P7 = A8, plus A9 help line and A10 tests). Tick there and here together.
+
 ## ⏳ Pending — regression tests for recent commits
 
 - [x] **Together List (todo screen) partner name** — ✅ PASSED. Items saved via Activity Cards "Save to Together List for later" render partner name in the todo screen (d830fed verified in-flow).
