@@ -464,6 +464,37 @@ Calls rateLimitedJoin Cloud Function. Input auto-uppercases and clamps to 8.
   3. Continue through onboarding into the app
   - **Expected:** App allows full usage even without email verification.
 
+### Pairing after a disconnect (Sep 2026, USER_VOICE A1: acceptPairing callable)
+Three accounts: Óli, Eva, and a third test account C. Watch the Firestore console for `archivedAt` / `partnerLeftUid`.
+
+- [ ] **New partner gets a fresh couple, no history** 🔒
+  1. Óli + Eva paired; create one Intimacy Log entry, one Fantasy Wishes vote each, one Love Note, one Moment
+  2. Eva: Profile → Disconnect couple
+  3. Sign in as C on Eva's phone → Profile or pairing screen → enter Óli's code
+  4. Óli: Accept in the modal
+  - **Expected:** Both profiles point at a NEW coupleId; old doc archived with Óli still in slot 1; C sees no Notes, Moments, Intimacy Log entries, FW matches or Our Story milestones. Óli's Home shows C's name.
+
+- [ ] **Same partner back keeps history**
+  1. Óli + Eva paired with one Note; Eva disconnects; Eva enters Óli's code; Óli accepts
+  - **Expected:** Same coupleId, Note intact, `partnerLeftUid` removed.
+
+- [ ] **Joiner's own solo couple is archived**
+  1. C registered and skipped pairing earlier; C enters Óli's code; Óli accepts
+  - **Expected:** C's solo doc gets `archivedAt` + `archivedReplacedBy`; C's coupleId is the target.
+
+- [ ] **Waiting screen still handles decline, cancel and accept**
+  1. Joiner enters a code and stays on the waiting screen; existing member taps Decline → "didn't accept this time"
+  2. Joiner enters again and taps Cancel request → back to code entry
+  3. Joiner enters again; member taps Accept → joiner routes to Home (or the tour) within a few seconds, without a Retry screen
+  - **Expected:** as listed; no permission error surfaces on the joiner's screen after a fresh-couple accept.
+
+- [ ] **Profile "Enter partner's code" only while unpaired**
+  - **Expected:** The row is absent while paired; while unpaired, entering a code shows "Request sent" and closes the modal, and nothing is written to the profile until the partner accepts.
+
+- [ ] **Remaining partner2 sees the unpaired state**
+  1. Óli (partner1) disconnects; Eva (partner2) stays
+  - **Expected:** Eva's Home shows the invite banner with her code; Profile shows the unpaired card.
+
 ---
 
 ## 2. Home tabs (Home / Discover / Us + Together List surfaced on Home)

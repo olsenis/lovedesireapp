@@ -531,7 +531,7 @@ export default function HomeScreen() {
     router.replace('/(auth)/login');
   };
 
-  const isConnected = !!couple?.partner2Uid;
+  const isConnected = !!(couple?.partner1Uid && couple?.partner2Uid);
   const togetherSince = useMemo(() => (couple ? getTogetherSince(couple) : ''), [couple]);
   const anniversary = useMemo(() => (couple ? getAnniversary(couple) : null), [couple]);
   const isLDR = !!couple?.isLongDistance;

@@ -51,6 +51,15 @@ export interface Couple {
   pendingPartner2Uid?: string;
   pendingPartner2Name?: string;
   pendingPartner2At?: number;
+  // Sep 2026 (USER_VOICE A1). Set on disconnect; acceptPairing (callable)
+  // gives a NEW partner a fresh couple doc and clears it when the SAME
+  // partner comes back. archived* are server-written when a doc is
+  // replaced; the remaining partner keeps their slot (and read access).
+  partnerLeftUid?: string;
+  partnerLeftAt?: number;
+  archivedAt?: number;
+  archivedMembers?: string[];
+  archivedReplacedBy?: string;
   // Our Story auto-milestone tracker. Contains autoKey strings for every
   // system-generated milestone that has ever been added for this couple
   // (e.g. 'started-dating', 'first-presence-cycle'). Delete of a milestone
@@ -122,16 +131,6 @@ export async function joinCouple(inviteCode: string, joinerUid: string): Promise
   }
 }
 
-// Generate a fresh invite code (for re-pairing scenarios)
-export async function regenerateInviteCode(coupleId: string): Promise<string> {
-  const code = generateInviteCode();
-  await updateDoc(doc(db, 'couples', coupleId), {
-    inviteCode: code,
-    inviteExpiresAt: Date.now() + INVITE_TTL_MS,
-  });
-  return code;
-}
-
 export async function setCoupleStartDate(coupleId: string, startDate: number): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId), { startDate });
 }
@@ -148,11 +147,6 @@ export async function setNextVisitDate(coupleId: string, date: number | null): P
 
 export async function setPartnerBirthday(coupleId: string, partnerUid: string, birthday: string): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId), { [`partnerBirthdays.${partnerUid}`]: birthday });
-}
-
-export async function getCouple(coupleId: string): Promise<Couple | null> {
-  const snap = await getDoc(doc(db, 'couples', coupleId));
-  return snap.exists() ? (snap.data() as Couple) : null;
 }
 
 // Retention funnel — fires first_ritual_completed exactly once per couple
@@ -184,40 +178,31 @@ export async function markFirstRitualIfUnset(coupleId: string): Promise<void> {
 // pendingPartner2At rather than partner2Uid. These three transitions turn
 // a pending request into a committed / rejected / cancelled outcome.
 
-// Existing member accepts: move pending → whichever partner slot is
-// empty (partner2 in initial pairing, partner1 in re-pair after
-// disconnect), clear pending fields. Role-agnostic so both flows work.
-// Transaction reads live doc so a concurrent Cancel by the pending
-// party is respected (returns { ok: false, reason: 'cancelled' }).
+// Existing member accepts. Server-side since Sep 2026 (USER_VOICE A1):
+// the callable fills the empty slot when this is the first pairing or the
+// SAME former partner coming back, and creates a FRESH couple doc when a
+// new partner joins after a disconnect, so nobody inherits a former
+// partner's history. It writes coupleId onto both profiles in the same
+// transaction; the joiner's waiting screen reacts to that. Reasons mirror
+// the old client transaction: not_found, cancelled, not_owner,
+// already_paired, own, joiner_paired.
 export async function acceptPairing(
   coupleId: string,
-  myUid: string,
-): Promise<{ ok: boolean; reason?: string }> {
-  const ref = doc(db, 'couples', coupleId);
-  return runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) return { ok: false, reason: 'not_found' };
-    const live = snap.data() as Couple;
-    if (!live.pendingPartner2Uid) return { ok: false, reason: 'cancelled' };
-    // Accepter must already be a member (only existing members can
-    // decide who joins the couple). partner1 accepts in the initial-
-    // pairing case; partner2 accepts in the re-pair-after-disconnect
-    // case.
-    const isMember = live.partner1Uid === myUid || live.partner2Uid === myUid;
-    if (!isMember) return { ok: false, reason: 'not_owner' };
-    if (live.partner1Uid && live.partner2Uid) return { ok: false, reason: 'already_paired' };
-    // Fill whichever slot is empty. Initial pairing → partner2Uid is
-    // empty. Re-pair after Óli disconnect → partner1Uid is empty.
-    const targetField = live.partner1Uid ? 'partner2Uid' : 'partner1Uid';
-    tx.update(ref, {
-      [targetField]: live.pendingPartner2Uid,
-      pendingPartner2Uid: deleteField(),
-      pendingPartner2Name: deleteField(),
-      pendingPartner2At: deleteField(),
-    });
-    trackEvent('couple_accepted');
-    return { ok: true };
-  });
+  _myUid: string,
+): Promise<{ ok: boolean; reason?: string; coupleId?: string; fresh?: boolean }> {
+  const fn = httpsCallable<{ coupleId: string }, { ok: boolean; reason?: string; coupleId?: string; fresh?: boolean }>(
+    functions,
+    'acceptPairing'
+  );
+  try {
+    const result = await fn({ coupleId });
+    if (result.data.ok) trackEvent('couple_accepted');
+    return result.data;
+  } catch (e: any) {
+    console.error('[acceptPairing] error:', e);
+    if (e?.code === 'functions/internal' || e?.message === 'internal') return { ok: false, reason: 'no_connection' };
+    return { ok: false, reason: e?.message ?? 'unknown_error' };
+  }
 }
 
 // Existing member declines: clear pending fields, keep the couple doc +

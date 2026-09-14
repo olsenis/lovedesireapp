@@ -75,40 +75,66 @@ service cloud.firestore {
         resource.data.get('pendingPartner2Uid', null) == request.auth.uid
       );
 
-      // Create: user must be setting themselves as partner1Uid
+      // Create: a SOLO couple only (partner1 = you, nothing else). The
+      // client never creates a paired couple; pairing goes through the
+      // acceptPairing callable.
       allow create: if request.auth != null
-        && request.resource.data.partner1Uid == request.auth.uid;
+        && request.resource.data.partner1Uid == request.auth.uid
+        && !request.resource.data.keys().hasAny([
+          'partner2Uid', 'pendingPartner2Uid', 'pendingPartner2Name', 'pendingPartner2At',
+          'partnerLeftUid', 'partnerLeftAt', 'archivedAt', 'archivedMembers', 'archivedReplacedBy'
+        ]);
 
-      // Update — Aug 2026 H22 pairing accept flow. Three client-side
-      // paths are allowed; server (admin SDK) bypasses rules for the
-      // pending-write that happens in `rateLimitedJoin`.
+      function slot(d, k) { return d.get(k, null); }
+      // Partner slots untouched, and the who-left stamp untouched.
+      function slotsUnchanged() {
+        return slot(request.resource.data, 'partner1Uid') == slot(resource.data, 'partner1Uid')
+          && slot(request.resource.data, 'partner2Uid') == slot(resource.data, 'partner2Uid')
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['partnerLeftUid', 'partnerLeftAt']);
+      }
+      // Disconnect: the ONLY client-side slot change. Your own slot goes
+      // from you to empty, the other slot is unchanged, and partnerLeftUid
+      // is stamped with your uid so acceptPairing can tell "same partner
+      // back" from "new partner".
+      function leavingOwnSlot() {
+        return request.resource.data.get('partnerLeftUid', null) == request.auth.uid
+          && (
+            (
+              slot(resource.data, 'partner1Uid') == request.auth.uid
+              && slot(request.resource.data, 'partner1Uid') == null
+              && slot(request.resource.data, 'partner2Uid') == slot(resource.data, 'partner2Uid')
+            ) || (
+              slot(resource.data, 'partner2Uid') == request.auth.uid
+              && slot(request.resource.data, 'partner2Uid') == null
+              && slot(request.resource.data, 'partner1Uid') == slot(resource.data, 'partner1Uid')
+            )
+          );
+      }
+
+      // Update (Aug 2026 H22, tightened Sep 2026 USER_VOICE A1). Two
+      // client-side paths:
       //
-      //   1. Existing member (partner1 or partner2) updates couple state
-      //      as before (settings, LDR toggle, etc.). The isPremium diff
-      //      guard still blocks the two subscription fields — those are
-      //      RevenueCat-webhook-only.
-      //   2. Existing member ACCEPTS a pending pair request — moves
-      //      `pendingPartner2Uid` into whichever slot is empty and
-      //      clears the pending fields.
-      //   3. Existing member DECLINES a pending pair request — just
-      //      clears the pending fields.
-      //   4. Pending party CANCELS their own request — clears the
-      //      pending fields; only the pendingPartner2Uid uid can do
-      //      this.
+      //   1. Existing member updates couple state (settings, LDR toggle,
+      //      dates, declining a pending request, disconnecting). The
+      //      partner slots are IMMUTABLE from the client except for the
+      //      disconnect move above. FILLING a slot is server-only
+      //      (acceptPairing callable), which is what keeps a new partner
+      //      out of an old couple's history.
+      //   2. Pending party CANCELS their own request: only the three
+      //      pending-* fields, so a pending uid can never self-assign a
+      //      slot in the same update.
       //
-      // The old "non-member fills empty slot" path is removed — every
-      // client-side slot fill now goes through the accept flow.
+      // Nobody on the client writes isPremium / premiumSince (RevenueCat
+      // webhook) or the archived* fields (acceptPairing).
       allow update: if request.auth != null
         && (
-          // (1) Existing member — general update
-          isMemberOfCouple(coupleId)
+          // (1) Existing member
+          (
+            isMemberOfCouple(coupleId)
+            && (slotsUnchanged() || leavingOwnSlot())
+          )
           ||
-          // (4) Pending party clearing their own request (cancel).
-          // Restricted to ONLY the three pending-* fields so an attacker
-          // who has become pendingPartner2Uid cannot self-assign
-          // partner2Uid in the same update — the H22 accept flow is
-          // supposed to require the existing member's explicit accept.
-          // Without hasOnly the pending party could bypass H22 entirely.
+          // (2) Pending party clearing their own request (cancel)
           (
             resource.data.get('pendingPartner2Uid', null) == request.auth.uid
             && !request.resource.data.keys().hasAny(['pendingPartner2Uid'])
@@ -117,7 +143,7 @@ service cloud.firestore {
           )
         )
         && !request.resource.data.diff(resource.data).affectedKeys()
-             .hasAny(['isPremium', 'premiumSince']);
+             .hasAny(['isPremium', 'premiumSince', 'archivedAt', 'archivedMembers', 'archivedReplacedBy']);
 
       // ── Blueprint results: both partners can READ, only owner can WRITE ─────
       match /blueprints/{userId} {

@@ -2,6 +2,8 @@
  * Desire — Cloud Functions
  *
  * - rateLimitedJoin: server-side rate limiter for couple invite joins (Tier 1.2)
+ * - acceptPairing: existing member accepts a pending request; fresh couple doc for a
+ *   new partner after a disconnect, same doc for the same partner (Sep 2026, USER_VOICE A1)
  * - deleteUserCascade: full GDPR delete when user account is removed (Tier 1.6)
  * - cleanupExpiredFlashes: scheduled deletion of flashes past 24h (Tier 1.7)
  * - cleanupOldTruthDareAudio: scheduled deletion of old audio (Tier 1.8)
@@ -16,7 +18,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { auth } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 // Identifiers in logs are one-way hashed (Sep 2026, POST_LAUNCH "Cloud Logging
 // PII scrub"): the same input always gives the same 12 hex chars, so an
@@ -192,6 +194,121 @@ export const rateLimitedJoin = onCall({ invoker: 'public' }, async (req) => {
   return { joined: txResult.joined, coupleId: txResult.coupleId, reason: txResult.reason };
 });
 
+// ─── Pairing accept (Sep 2026, USER_VOICE A1) ───────────────────────────────
+// The existing member accepts a pending pair request. Server-side so the
+// couple doc's partner slots are immutable from the client (firestore.rules)
+// and the "which doc does the joiner land in" decision cannot be bypassed:
+//   - first pairing, or the SAME former partner coming back (joiner ==
+//     partnerLeftUid): fill the empty slot on this doc, history kept;
+//   - a NEW partner after a disconnect (partnerLeftUid set, joiner differs):
+//     a fresh couple doc for the two of them. The old doc is archived and
+//     the remaining partner stays in its slot so they keep read access to
+//     their own history. Nothing from the old doc is copied. Before this,
+//     a new partner inherited the former partner's Intimacy Log, Fantasy
+//     Wishes votes, Sunday answers, Notes and Moments (USER_VOICE.md §2.1).
+// If the joiner owned a solo couple doc (created on first login) it is
+// archived too. Both profiles get coupleId in the same transaction; the
+// joiner's waiting screen reacts to its own profile, not to the couple doc.
+const INVITE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function newInviteCode(): string {
+  const bytes = randomBytes(8);
+  let code = '';
+  for (let i = 0; i < 8; i++) code += INVITE_ALPHABET[bytes[i] % INVITE_ALPHABET.length];
+  return code;
+}
+
+export const acceptPairing = onCall({ invoker: 'public' }, async (req) => {
+  if (!req.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in first.');
+  }
+  const uid = req.auth.uid;
+  const coupleId = String(req.data?.coupleId ?? '');
+  if (!coupleId || coupleId.length > 64) {
+    throw new HttpsError('invalid-argument', 'coupleId required.');
+  }
+  const coupleRef = db.collection('couples').doc(coupleId);
+  const now = Date.now();
+  const del = admin.firestore.FieldValue.delete();
+
+  const result = await db.runTransaction(async (tx) => {
+    // All reads first (Firestore transactions reject reads after writes).
+    const snap = await tx.get(coupleRef);
+    if (!snap.exists) return { ok: false, reason: 'not_found' };
+    const couple = snap.data()!;
+    const isMember = couple.partner1Uid === uid || couple.partner2Uid === uid;
+    if (!isMember) return { ok: false, reason: 'not_owner' };
+    const joiner = couple.pendingPartner2Uid as string | undefined;
+    if (!joiner) return { ok: false, reason: 'cancelled' };
+    if (joiner === uid) return { ok: false, reason: 'own' };
+    if (couple.partner1Uid && couple.partner2Uid) return { ok: false, reason: 'already_paired' };
+
+    const joinerRef = db.collection('users').doc(joiner);
+    const joinerSnap = await tx.get(joinerRef);
+    const joinerCoupleId = joinerSnap.exists ? (joinerSnap.data()?.coupleId as string | undefined) : undefined;
+    let soloRef: FirebaseFirestore.DocumentReference | null = null;
+    if (joinerCoupleId && joinerCoupleId !== coupleId) {
+      soloRef = db.collection('couples').doc(joinerCoupleId);
+      const soloSnap = await tx.get(soloRef);
+      if (soloSnap.exists) {
+        const solo = soloSnap.data()!;
+        const soloMember = solo.partner1Uid === joiner || solo.partner2Uid === joiner;
+        if (soloMember && solo.partner1Uid && solo.partner2Uid && !solo.archivedAt) {
+          // Still paired elsewhere: disconnect there first.
+          return { ok: false, reason: 'joiner_paired' };
+        }
+        if (!soloMember || solo.archivedAt) soloRef = null;
+      } else {
+        soloRef = null;
+      }
+    }
+
+    const left = couple.partnerLeftUid as string | undefined;
+    const fresh = !!left && left !== joiner;
+    const clearPending = { pendingPartner2Uid: del, pendingPartner2Name: del, pendingPartner2At: del };
+
+    let targetId = coupleId;
+    let targetCode = String(couple.inviteCode ?? '');
+    if (fresh) {
+      const newRef = db.collection('couples').doc();
+      targetId = newRef.id;
+      targetCode = newInviteCode();
+      tx.set(newRef, {
+        id: newRef.id,
+        partner1Uid: uid,
+        partner2Uid: joiner,
+        inviteCode: targetCode,
+        inviteExpiresAt: now + 7 * 24 * 3600_000,
+        createdAt: now,
+      });
+      tx.update(coupleRef, {
+        ...clearPending,
+        archivedAt: now,
+        archivedMembers: [uid, left],
+        archivedReplacedBy: targetId,
+      });
+      tx.update(db.collection('users').doc(uid), { coupleId: targetId, inviteCode: targetCode });
+    } else {
+      const targetField = couple.partner1Uid ? 'partner2Uid' : 'partner1Uid';
+      tx.update(coupleRef, {
+        ...clearPending,
+        [targetField]: joiner,
+        partnerLeftUid: del,
+        partnerLeftAt: del,
+      });
+    }
+    if (soloRef) {
+      tx.update(soloRef, { archivedAt: now, archivedMembers: [joiner], archivedReplacedBy: targetId });
+    }
+    tx.update(joinerRef, { coupleId: targetId, inviteCode: targetCode, pendingCoupleId: del });
+    return { ok: true, coupleId: targetId, fresh };
+  });
+
+  if (result.ok) {
+    console.log(`acceptPairing ${hid(uid)} accepted ${hid(String(coupleId))} fresh=${result.fresh}`);
+  }
+  return result;
+});
+
 // ─── Tier 1.6: GDPR delete-user cascade ─────────────────────────────────────
 // Triggered automatically when Firebase Auth user is deleted.
 //
@@ -203,7 +320,8 @@ export const rateLimitedJoin = onCall({ invoker: 'public' }, async (req) => {
 // Behaviour:
 // 1. If the user is in a couple AND the partner is still present:
 //    - Scrub the leaving user's uid from the couple doc (set their slot to null)
-//    - Mark `partnerLeftAt` so the remaining partner can be informed
+//    - Mark `partnerLeftUid` + `partnerLeftAt`; acceptPairing uses partnerLeftUid to
+//      give a NEW partner a fresh couple doc (only the same partner re-joins this one)
 //    - Keep all couple subcollections + storage (shared history)
 // 2. If the user is in a couple AND the partner is also already gone (or never
 //    joined), it is safe to delete the entire couple + subcollections + storage.
@@ -1028,6 +1146,11 @@ async function disconnectCoupleAdmin(coupleId: string, leavingUid: string): Prom
     const update: Record<string, unknown> = {
       inviteCode: newCode,
       inviteExpiresAt: Date.now() + 7 * 24 * 3600_000,
+      partnerLeftUid: leavingUid,
+      partnerLeftAt: Date.now(),
+      pendingPartner2Uid: admin.firestore.FieldValue.delete(),
+      pendingPartner2Name: admin.firestore.FieldValue.delete(),
+      pendingPartner2At: admin.firestore.FieldValue.delete(),
     };
     if (couple.partner2Uid === leavingUid) {
       update.partner2Uid = admin.firestore.FieldValue.delete();

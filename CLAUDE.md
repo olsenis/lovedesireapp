@@ -176,7 +176,7 @@ users/{uid}/private/features         FeatureUnlockState — sticky per-user data
 users/{uid}/private/consent          ConsentState — confirmed, confirmedAt (age + explicit-content attestation)
 users/{uid}/private/photoConsent     PhotoConsentState — confirmed, confirmedAt (H42 first-photo re-attestation)
 
-couples/{coupleId}                   Couple — partner1Uid, partner2Uid, inviteCode, createdAt, startDate?
+couples/{coupleId}                   Couple — partner1Uid, partner2Uid, inviteCode, createdAt, startDate?, pendingPartner2Uid/Name/At (H22 request), partnerLeftUid/partnerLeftAt (set on disconnect), archivedAt/archivedMembers/archivedReplacedBy (server-set when a NEW partner gets a fresh doc; the remaining partner keeps their slot here for read access)
 couples/{coupleId}/todos/{id}        Todo — text, category, completed, createdBy, createdAt
 couples/{coupleId}/moods/{id}        MoodEntry — uid, emoji, note, createdAt
 couples/{coupleId}/memories/{id}     Memory — photoURL (Firebase Storage URL), caption, createdBy, createdAt
@@ -208,7 +208,7 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 |------|---------|
 | `firebase.ts` | `auth`, `db`, `storage` |
 | `authService.ts` | `register`, `login`, `logout`, `getUserProfile`, `createUserProfile`, `disconnectFromCouple` |
-| `coupleService.ts` | `createCouple`, `joinCouple`, `getCouple`, `setCoupleStartDate`, `acceptPairing`, `declinePairing`, `cancelPairingRequest` |
+| `coupleService.ts` | `createCouple`, `joinCouple` (→ `rateLimitedJoin` callable, writes a pending request), `acceptPairing` (→ `acceptPairing` callable, Sep 2026), `declinePairing`, `cancelPairingRequest`, `setCoupleStartDate`, `setLongDistance`, `setNextVisitDate`, `setPartnerBirthday`, `markFirstRitualIfUnset` |
 | `todoService.ts` | `subscribeTodos`, `addTodo`, `toggleTodo`, `deleteTodo` — category: daily/dates/intimacy/goals (legacy `fantasy` category from before July 2026 is normalised to `intimacy` at read time) |
 | `moodService.ts` | `setMood`, `getTodaysMood`, `subscribeToMoods` |
 | `noteService.ts` | `subscribeNotes`, `createNote`, `openNote` |
@@ -300,6 +300,8 @@ Three prompts for expanding content — always use the right one for the categor
 **30-Day Challenge:** Setup phase allows 2 edits + 2 vetoes per partner before activating. `completedBy: {day: [uid]}` syncs across phones.
 
 **Help system:** `useHelp(key)` hook checks `users/{uid}/private/help` — shows HelpModal once per feature. Toggle in Profile.
+
+**Pairing (H22 Aug 2026, A1 Sep 2026):** a code entry writes a pending request (`rateLimitedJoin` callable); the existing member accepts through the `acceptPairing` callable, never on the client. The callable fills the empty slot when it is the first pairing or the SAME former partner (`partnerLeftUid`) coming back, and creates a FRESH couple doc when a new partner joins after a disconnect: the old doc gets `archivedAt` / `archivedMembers` / `archivedReplacedBy`, the remaining partner stays in its slot (read access to their own history), nothing is copied, and a solo doc the joiner owned is archived too. Both profiles get `coupleId` in the same transaction; `pairing.tsx` detects acceptance from its own profile (`pendingCoupleId` seen, then gone, with `coupleId` set), not from the couple doc. `firestore.rules` make the partner slots immutable from the client except for the disconnect move (own slot → empty while stamping `partnerLeftUid = me`); `archived*` and `isPremium` are never client-writable. Every disconnect path (client `disconnectFromCouple`, `disconnectCoupleAdmin`, the delete cascade) stamps `partnerLeftUid`. New callables need the Cloud Run invoker IAM fix (memory `firebase_functions_v2_iam`). Rationale: USER_VOICE.md §2.1 (a new partner used to inherit the former partner's Intimacy Log, FW votes, Sunday answers, Notes, Moments).
 
 **Push notifications:** Expo Push tokens registered on startup. `notifyPartner()` POSTs to Expo Push API. Only works on real devices. Used in: mood, WYR answers, Questions Game answers, Truth or Dare answers.
 

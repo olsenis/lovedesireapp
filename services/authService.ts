@@ -99,6 +99,15 @@ export async function disconnectFromCouple(uid: string): Promise<void> {
         const baseUpdate: Record<string, unknown> = {
           inviteCode: newCode,
           inviteExpiresAt: Date.now() + INVITE_TTL_MS,
+          // Who left and when. acceptPairing (callable) reads partnerLeftUid:
+          // the same person coming back fills this doc again, anyone else
+          // gets a fresh couple doc (USER_VOICE A1). Rules only let a member
+          // set partnerLeftUid to their own uid, alongside clearing their slot.
+          partnerLeftUid: uid,
+          partnerLeftAt: Date.now(),
+          pendingPartner2Uid: deleteField(),
+          pendingPartner2Name: deleteField(),
+          pendingPartner2At: deleteField(),
         };
         // Slot match. If the user's uid doesn't match either partner slot,
         // the doc is out of sync with the user profile (left over from an

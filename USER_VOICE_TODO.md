@@ -8,7 +8,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
 
 ## A. Before the first store build (code)
 
-### A1. A new partner never inherits the old partner's data  `L`  ⬜
+### A1. A new partner never inherits the old partner's data  `L`  ✅ Sep 14 2026 (callable + rules; device test pending in TEST_CHECKLIST §1)
 - **Why.** USER_VOICE theme 1, P0. Lasting's 2-star review "UNPAIRED my account and somehow all of my OLD responses w my FORMER partner came up and he saw" is our current behaviour. Also a GDPR exposure (partner A's special-category data readable by stranger C).
 - **Where.** `functions/src/index.ts` (cascade delete keeps the couple doc with `partnerLeftUid` / `partnerLeftAt` when one partner remains); `services/coupleService.ts` `acceptPairing` (comment: "Re-pair after Óli disconnect → partner1Uid is empty", fills the empty slot); `services/authService.ts` `disconnectFromCouple` (rotates the invite code, clears the slot); `firestore.rules` `isMemberOfCouple`.
 - **Steps.**
@@ -123,7 +123,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
 | C8 | Intensity control on random draws | Lovewick "sometimes we get a deep question in public"; Spicer/Coral "too explicit too early" | per-user "max level" for Truth or Dare Together Right Here spins and Daily category visibility; respects the Spicy consent | S | ⬜ |
 | C9 | "Who initiates this week" in the Sunday predictions step | r/sexover30 2024: "deciding who will initiate or 'own'", "opt in / opt out sessions"; scheduling beats spontaneous initiation for busy couples | `app/state-union.tsx` predictions step: one optional line, revealed with the rest; feeds Tonight | S | ⬜ |
 | C10 | Life-stage tags (LDR, parenting, reconnecting, engaged, 20+ years) on question pools; per-partner body configuration for explicit content; LDR question category toggle | Theme 9 ("for new couples"), §5 (koopla body config), Cozy's "long distance category" wish | content tagging pass in `constants/content.ts`; filter in Daily and Truth or Dare; Profile fields | M content, S code | ⬜ |
-| C11 | Google Play listing (decide after sideload numbers) | Cross-platform is praised at SumOne and Couple Joy; "all the decent couple apps are always Apple only"; Play bans explicit content, so it would need a split build | decision D4 | L | ⬜ |
+| ~~C11~~ | ~~Google Play listing~~ Struck Sep 14 (D4: no Play, explicit content). The answer to "Apple only" complaints is the APK with the parity promise (B4). | | | | 🚫 |
 | C12 | "Draw one of our matches": a random pick from Fantasy Wishes matches | r/sexover30 wish; turns the match list into a Tonight suggestion | `app/fantasy-wishes.tsx` Matches tab button | S | ⬜ |
 | C13 | Reply to every review for 90 days | Candle, Couple Joy and Desire earn five-star reviews by answering | App Store Connect + Play console routine (B2) | S weekly | ⬜ |
 
@@ -133,11 +133,11 @@ Kept from POST_LAUNCH C1 and still valid: one-year-ago card, post-date sealed li
 
 ## D. Decisions for Óli (not code)
 
-- **D1. App name (H43).** New input: the higher-desire partner proposes the app and gets "one shot"; a name that reads as a sex app makes the first ask harder ("the name of the app alone would prove to be a deterrent", r/sexover30). NAMING.md next steps.
-- **D2. Free tier permanence.** Say "what is free stays free" (B3) or keep the option to move things behind Premium later. The reviews say withdrawing is far more expensive than never giving.
-- **D3. Lifetime SKU price.** If C5: the indie range is $20 (Between) to $60; Nice sells one-time only. Suggest $79.99 lifetime next to $39.99 a year, decide after the first 200 ratings.
-- **D4. Google Play.** Stay sideload-only (uncompromised content, parity promise B4) or add a Play build without the explicit tier. Decide on sideload numbers after month one.
-- **D5. Review replies.** Who answers, how fast, in what voice (B2 templates).
+- **D1. App name (H43).** Still open (Sep 14). New input: the higher-desire partner proposes the app and gets "one shot"; a name that reads as a sex app makes the first ask harder ("the name of the app alone would prove to be a deterrent", r/sexover30). NAMING.md next steps.
+- **D2. Free tier permanence.** Decided Sep 14: what is free at launch stays free after launch. Features added post-launch may be free or Premium, decided per feature. B3 goes ahead with that wording.
+- **D3. Lifetime SKU.** Decided Sep 14: yes, do it (C5). Price still open; suggestion $79.99 next to $39.99 a year, revisit after the first 200 ratings.
+- **D4. Google Play.** Decided Sep 14: no. Play bans the explicit tier and a split build is not worth it. Sideload APK with the parity promise (B4). C11 struck.
+- **D5. Review replies.** Decided Sep 14: Óli answers, Claude drafts; everything goes out under Óli's name. Cadence and templates in B2.
 
 ---
 

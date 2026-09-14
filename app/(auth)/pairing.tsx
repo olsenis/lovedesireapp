@@ -67,15 +67,15 @@ export default function PairingScreen() {
   // coupleId was set by createCouple" (creator must NOT route away —
   // they need to stay on /pairing to see their code).
   const [justAccepted, setJustAccepted] = useState(false);
-  // Post-accept profile-write state. Retries with exponential backoff.
-  // If all retries fail we DO NOT advance state (previously the catch
-  // silently swallowed, then setJustAccepted + clear pendingCoupleId
-  // → next mount saw no coupleId, ran createCouple, ghost couple).
-  const [acceptRetrying, setAcceptRetrying] = useState(false);
-  const [acceptError, setAcceptError] = useState<string | null>(null);
-  // Kept around so the Retry button knows which couple to write to
-  // after the snapshot listener has cleared its snapshot data.
-  const [pendingFinalize, setPendingFinalize] = useState<{ coupleId: string; inviteCode: string } | null>(null);
+  // True once our profile has shown pendingCoupleId for this request.
+  // Acceptance is detected as "profile.coupleId set AND pendingCoupleId
+  // gone AFTER we saw it": the acceptPairing callable writes both in one
+  // transaction. Without the "saw it" flag a joiner who owns a solo
+  // couple (coupleId already set) would look accepted the instant they
+  // submitted a code.
+  const sawPendingOnProfileRef = useRef(false);
+  const profileRef = useRef(profile);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
 
   // Retention funnel — record that the pairing screen was viewed. Fires
   // once per mount, before the couple/profile logic below runs.
@@ -217,99 +217,53 @@ export default function PairingScreen() {
     })();
   }, [profile?.pendingCoupleId, pendingCoupleId]);
 
-  // Writes the paired coupleId + clears pendingCoupleId with 3 retries at
-  // 0/500/1500ms. Returns true on success. Used by both the snapshot
-  // handler on first acceptance AND the Retry button after a failed
-  // finalize. Both writes are idempotent (createUserProfile is a merge,
-  // deleteField is a no-op if the field is already gone).
-  const finalizeAccept = async (coupleId: string, inviteCode: string): Promise<boolean> => {
-    if (!user) return false;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        await createUserProfile(user.uid, {
-          name: profile?.name ?? '',
-          photoURL: profile?.photoURL,
-          coupleId,
-          inviteCode,
-        });
-        await updateDoc(doc(db, 'users', user.uid), { pendingCoupleId: deleteField() });
-        return true;
-      } catch (e) {
-        console.warn('[pairing] finalize attempt', attempt + 1, 'failed', e);
-        if (attempt < 2) await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt)));
-      }
-    }
-    return false;
-  };
-
-  const handleRetryFinalize = async () => {
-    if (!pendingFinalize) return;
-    setAcceptRetrying(true);
-    setAcceptError(null);
-    const ok = await finalizeAccept(pendingFinalize.coupleId, pendingFinalize.inviteCode);
-    setAcceptRetrying(false);
-    if (!ok) {
-      setAcceptError("Still can't finish pairing. Check your connection and try again in a moment.");
-      return;
-    }
-    setPendingFinalize(null);
-    setPendingCoupleId(null);
-    setJustAccepted(true);
-  };
-
-  // Subscribe to the pending couple doc to detect accept / decline /
-  // remote-cancel. Snapshot handler resolves the wait state.
+  // Subscribe to the pending couple doc to detect decline / remote cancel.
+  // Acceptance is NOT read from here any more (Sep 2026, USER_VOICE A1):
+  // the acceptPairing callable writes coupleId onto our profile in the
+  // same transaction, and when it created a fresh couple this old doc
+  // stops being readable for us the moment pending is cleared, so the
+  // error callback is expected in that case and ignored.
   useEffect(() => {
     if (!pendingCoupleId || !user) return;
-    const unsub = onSnapshot(doc(db, 'couples', pendingCoupleId), async (snap) => {
-      if (!snap.exists()) {
-        setWaitingDeclined(true);
-        return;
-      }
-      const couple = snap.data() as Couple;
-      const iAmAccepted = couple.partner1Uid === user.uid || couple.partner2Uid === user.uid;
-      if (iAmAccepted) {
-        // Existing member tapped Accept — write coupleId onto our
-        // profile and clear pendingCoupleId (createUserProfile merges
-        // rather than touching that field, so needs an explicit
-        // deleteField). DON'T route here — routing before the useAuth
-        // profile subscription has received the coupleId update causes
-        // _layout's routeAfterConsent to bounce us back to /pairing on
-        // stale profile.coupleId=undefined. Instead, the useEffect
-        // below watches profile.coupleId and routes once it lands.
-        //
-        // Previously the catch silently swallowed a failed profile
-        // write, then setJustAccepted + clear pendingCoupleId → ghost
-        // dual-couple state on next mount (createCouple fires because
-        // profile.coupleId still undefined). Now: retry with exponential
-        // backoff, and if all retries fail, surface a Retry UI and
-        // keep pendingCoupleId set so the user isn't dropped into limbo.
-        setPendingFinalize({ coupleId: couple.id, inviteCode: couple.inviteCode ?? '' });
-        setAcceptRetrying(true);
-        const ok = await finalizeAccept(couple.id, couple.inviteCode ?? '');
-        setAcceptRetrying(false);
-        if (!ok) {
-          setAcceptError("Couldn't finish pairing. Check your connection and retry.");
+    const unsub = onSnapshot(
+      doc(db, 'couples', pendingCoupleId),
+      (snap) => {
+        if (sawPendingOnProfileRef.current && !profileRef.current?.pendingCoupleId) return; // accepted, profile effect routes
+        if (!snap.exists()) {
+          setWaitingDeclined(true);
           return;
         }
-        setAcceptError(null);
-        setPendingFinalize(null);
-        setPendingCoupleId(null);
-        setJustAccepted(true);
-        return;
-      }
-      // Not accepted yet — declined when pending fields cleared AND
-      // at least one slot is still empty (paired-with-someone-else
-      // shouldn't trigger the decline branch).
-      const declined =
-        !couple.pendingPartner2Uid &&
-        (!couple.partner1Uid || !couple.partner2Uid);
-      if (declined) {
-        setWaitingDeclined(true);
-      }
-    });
+        const couple = snap.data() as Couple;
+        const iAmAccepted = couple.partner1Uid === user.uid || couple.partner2Uid === user.uid;
+        if (iAmAccepted) return;
+        // Declined when pending fields cleared AND at least one slot is
+        // still empty (paired-with-someone-else shouldn't trigger it).
+        const declined =
+          !couple.pendingPartner2Uid &&
+          (!couple.partner1Uid || !couple.partner2Uid);
+        if (declined) setWaitingDeclined(true);
+      },
+      () => { /* permission lost after a fresh-couple accept, or transient; the profile effect decides */ },
+    );
     return unsub;
-  }, [pendingCoupleId, user, profile?.name, profile?.photoURL]);
+  }, [pendingCoupleId, user]);
+
+  // Accepted: the server wrote coupleId onto our profile and cleared
+  // pendingCoupleId. Flip to justAccepted; the effect below routes once
+  // the profile subscription has the new coupleId.
+  useEffect(() => {
+    if (!pendingCoupleId || !user) return;
+    if (profile?.pendingCoupleId === pendingCoupleId) {
+      sawPendingOnProfileRef.current = true;
+      return;
+    }
+    if (sawPendingOnProfileRef.current && !profile?.pendingCoupleId && profile?.coupleId) {
+      sawPendingOnProfileRef.current = false;
+      setPendingCoupleId(null);
+      setWaitingDeclined(false);
+      setJustAccepted(true);
+    }
+  }, [pendingCoupleId, user, profile?.coupleId, profile?.pendingCoupleId]);
 
   // Route to Home / onboarding-tour only after a fresh accept. Guarded
   // by `justAccepted` so the creator role (whose coupleId is set by
@@ -334,6 +288,7 @@ export default function PairingScreen() {
     } catch (e) {
       console.warn('[pairing] cancel failed', e);
     } finally {
+      sawPendingOnProfileRef.current = false;
       setPendingCoupleId(null);
       setWaitingDeclined(false);
       setCancelling(false);
@@ -394,22 +349,7 @@ export default function PairingScreen() {
   if (pendingCoupleId) {
     return (
       <View style={[styles.container, { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.cream }]}>
-        {acceptError && pendingFinalize ? (
-          <>
-            <Text style={styles.waitEmoji}>⚠️</Text>
-            <Text style={styles.waitTitle}>Almost there</Text>
-            <Text style={styles.waitBody}>{acceptError}</Text>
-            <TouchableOpacity
-              style={[styles.waitPrimaryBtn, acceptRetrying && { opacity: 0.5 }]}
-              onPress={handleRetryFinalize}
-              disabled={acceptRetrying}
-              accessibilityRole="button">
-              {acceptRetrying
-                ? <ActivityIndicator color={Colors.cream} />
-                : <Text style={styles.waitPrimaryBtnText}>Retry</Text>}
-            </TouchableOpacity>
-          </>
-        ) : waitingDeclined ? (
+        {waitingDeclined ? (
           <>
             <Text style={styles.waitEmoji}>🌱</Text>
             <Text style={styles.waitTitle}>{pendingInviterName} didn't accept this time</Text>

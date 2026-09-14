@@ -144,7 +144,7 @@ export default function ProfileScreen() {
     Alert.alert('Help reset', 'All feature hints will show again.');
   };
 
-  const isConnected = !!couple?.partner2Uid;
+  const isConnected = !!(couple?.partner1Uid && couple?.partner2Uid);
   const daysStr = couple
     ? `${Math.floor((Date.now() - (couple.startDate ?? couple.createdAt)) / 86400000)} days`
     : '-';
@@ -207,7 +207,9 @@ export default function ProfileScreen() {
     setPairError('');
     setPairLoading(true);
     try {
-      if (profile?.coupleId) await disconnectFromCouple(user.uid);
+      // No disconnect here (it used to orphan the caller's own history).
+      // The row is only shown while unpaired; the acceptPairing callable
+      // archives a solo couple doc when the request is accepted.
       const result = await joinCouple(code.trim().toUpperCase(), user.uid);
       if (!result.couple) {
         const msg =
@@ -219,13 +221,11 @@ export default function ProfileScreen() {
         setPairError(msg);
         return;
       }
-      await createUserProfile(user.uid, {
-        name: profile?.name ?? '',
-        coupleId: result.couple.id,
-        inviteCode: result.couple.inviteCode,
-      } as any);
+      // Pending until the partner accepts; the server writes coupleId
+      // onto this profile then (H22 + USER_VOICE A1).
       setPairModal(false);
       setPartnerCode('');
+      Alert.alert('Request sent', 'You will be paired as soon as your partner accepts.');
     } catch (e: any) {
       setPairError(e?.message ?? 'Something went wrong. Try again.');
     } finally {
@@ -435,11 +435,6 @@ export default function ProfileScreen() {
                   <Text style={styles.inviteCode}>{couple?.inviteCode ?? '-'}</Text>
                   {couple?.inviteCode ? <Text style={styles.rowChevron}>📷</Text> : null}
                 </View>
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity style={styles.row} onPress={() => { setPairError(''); setPairModal(true); }} accessibilityRole="button">
-                <Text style={styles.rowLabel}>Enter partner's code</Text>
-                <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row} onPress={handleDisconnect} accessibilityRole="button" accessibilityHint="Cannot be undone">

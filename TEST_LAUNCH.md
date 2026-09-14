@@ -233,6 +233,24 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
   2. Confirm in modal
   - **Expected:** Phone A returns to pairing screen. Phone B's home shows "Connect with partner" prompt within 10s.
 
+- [ ] **A new partner never sees the old partner's history** 📱 🔒 (Sep 2026, USER_VOICE A1)
+  1. Phones A + B paired with history: one Intimacy Log entry, one Fantasy Wishes vote each, one Love Note, one Moment
+  2. Phone B: Profile → Disconnect couple → confirm
+  3. Third test account C on Phone B: enter Phone A's invite code
+  4. Phone A: Accept in the pair modal
+  - **Expected:** Phone A's couple card shows C. Firebase Console: both profiles' `coupleId` is a NEW couple id; the old doc has `archivedAt`, `archivedReplacedBy`, `partnerLeftUid` = B's uid, A still in slot 1, B's slot empty. On Phone B (as C): Notes empty, Moments empty, Intimacy Log empty, Fantasy Wishes has no matches, Our Story starts fresh. `isPremium` does NOT carry over (QA flips it on the new doc by hand).
+
+- [ ] **The same partner coming back keeps everything** 📱
+  1. Fresh pair A + B with one Love Note
+  2. Phone B: Disconnect couple
+  3. Phone B (still B): enter A's code; Phone A: Accept
+  - **Expected:** Same `coupleId` on both profiles, the Note is still there, `partnerLeftUid` gone from the doc.
+
+- [ ] **Joiner who owned a solo couple** 📱
+  1. Account C registered earlier, skipped pairing (owns a solo couple doc)
+  2. C enters A's code, A accepts
+  - **Expected:** C's `coupleId` points at the target couple; C's old solo doc has `archivedAt` + `archivedReplacedBy`. Decline and Cancel still behave as before (waiting screen shows "didn't accept this time" / returns to code entry).
+
 ---
 
 ## 2. Core daily features (10 tests)
