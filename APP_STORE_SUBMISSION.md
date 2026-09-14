@@ -110,7 +110,7 @@ Based on [BRAND_RESEARCH.md](BRAND_RESEARCH.md) — "Love Desire" is clear of tr
 - [ ] Age rating questionnaire completed (see this doc)
 - [ ] Reviewer notes pasted from this doc
 - [ ] Keywords set from MARKETING.md §2.4 (all four locales)
-- [ ] Description + promo text pasted from MARKETING.md §2.10
+- [ ] Description + promo text pasted from MARKETING.md §2.10 (the description states the price and the 7-day trial, USER_VOICE A3)
 - [ ] EAS build submitted via `npx eas build --platform ios --profile production`
 - [ ] Build uploaded to App Store Connect
 - [ ] Final review of everything above before hitting "Submit for Review"

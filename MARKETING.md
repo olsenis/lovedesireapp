@@ -177,6 +177,9 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 > **Near or far**
 > Your partner's local time on Home, a visit countdown, and questions and dates that work over distance.
 >
+> **Premium is optional**
+> 7 days free, then $9.99 a month or $39.99 a year (US prices). One subscription covers both of you. Cancel any time in your App Store settings.
+>
 > **What we don't do**
 > No feed, no strangers, no ads, no streaks. Pairing needs a code you share yourselves. Explicit content is text only, behind an 18+ attestation and the paid tier. One subscription covers both of you.
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Modal, Alert, Platform, Switch, KeyboardAvoidingView,
+  TextInput, Modal, Alert, Platform, Switch, KeyboardAvoidingView, Linking,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -380,6 +380,29 @@ export default function ProfileScreen() {
             <Text style={styles.rowLabel}>Email</Text>
             <Text style={styles.rowValue}>{user?.email ?? '-'}</Text>
           </View>
+          {/* Billing honesty (USER_VOICE A3): the store owns cancellation,
+              but people must find the way from inside the app. "The app
+              sends you to the website. The website sends you to the app"
+              is a one-star review in the mining. Premium couples only. */}
+          {isSubscribed && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => Linking.openURL(Platform.OS === 'ios'
+                  ? 'https://apps.apple.com/account/subscriptions'
+                  : 'https://play.google.com/store/account/subscriptions').catch(() => {})}
+                accessibilityRole="link"
+                accessibilityLabel="Manage subscription in the store"
+              >
+                <View style={styles.rowTextStack}>
+                  <Text style={styles.rowLabel}>Manage subscription</Text>
+                  <Text style={styles.rowHint}>Cancel or change your plan in the store. Premium stays on until the period ends.</Text>
+                </View>
+                <Text style={styles.rowChevron}>›</Text>
+              </TouchableOpacity>
+            </>
+          )}
           <View style={styles.divider} />
           <TouchableOpacity style={styles.row} onPress={() => {
             // Pre-fill picker from saved 'DD.MM.YYYY' if present

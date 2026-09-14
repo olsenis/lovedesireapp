@@ -30,7 +30,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
   4. Rewrite the CLAUDE.md pattern: "paid screens gate writes; data the couple created is always readable".
 - **Test.** Flip `isPremium` off on the QA couple in the console: Intimacy Log opens read-only with entries and stats, "We were intimate" hidden; Fantasy Wishes shows Matches, deck hidden; Lovers result visible, retake hidden. Flip back, everything returns. Add to TEST_LAUNCH "Dev flags and gate decisions".
 
-### A3. Billing honesty on the paywall and in the store  `S`  ⬜
+### A3. Billing honesty on the paywall and in the store  `S`  ✅ Sep 14 2026 (paywall plan rows + trial-end line, Profile Manage subscription, description paragraph; RevenueCat hook-up point left in `handleStart`)
 - **Why.** Theme 2, P2. 448 negative reviews across 13 apps; the angriest single cluster. Specific asks: price before download, trial end date, monthly vs yearly clarity, where to cancel.
 - **Where.** `app/upgrade.tsx` (notes at the bottom: "One subscription covers both partners", "No streaks, no ads, no per-partner pricing. Cancel any time."); `constants/pricing.ts`; `app/profile.tsx`; MARKETING §2.10; `web/src/pages/pricing.astro`.
 - **Steps.**

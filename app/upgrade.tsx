@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
+import { PRICING, fmtUsd, annualPerMonthUsd, annualDiscountPct, trialEndLabel } from '../constants/pricing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
+import { useToast } from '../components/Toast';
 
 // Two-tier framing (Aug 2026 review): three deep features earn a
 // subscription on their own — surfaced up top with prominent styling.
@@ -23,8 +26,29 @@ const ACCESSORY_FEATURES = [
   { emoji: '🧬', title: 'The Lovers quiz', desc: 'Find out how you each experience pleasure, and what to reach for when you drift apart' },
 ];
 
+// Billing honesty (Sep 2026, USER_VOICE A3): the price, the trial end date
+// and the renewal are written out before the button, and the button says
+// what happens. Trial and billing anger is the angriest cluster in the
+// review mining (448 negative reviews across 13 apps): price not shown,
+// yearly charged when monthly was meant, no warning before the trial ends.
+// Prices come from constants/pricing.ts until RevenueCat is wired; the live
+// StoreKit price then slots into the same sentences.
+type Plan = 'yearly' | 'monthly';
+
 export default function UpgradeScreen() {
   useTrackScreen('upgrade');
+  const [plan, setPlan] = useState<Plan>('yearly');
+  const { toast, showToast } = useToast();
+  const renewal = plan === 'yearly'
+    ? `${fmtUsd(PRICING.annualUsd)} a year`
+    : `${fmtUsd(PRICING.introFirstMonthUsd)} for the first month, then ${fmtUsd(PRICING.monthlyUsd)} a month`;
+
+  const handleStart = () => {
+    // RevenueCat: purchase the package for `plan` here (launch blocker in
+    // LAUNCH_STATUS). Until then the button is honest about the state.
+    showToast('Subscriptions open at launch. Everything free stays free.');
+  };
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -73,19 +97,49 @@ export default function UpgradeScreen() {
         </View>
 
         <View style={styles.pricingCard}>
-          <Text style={styles.pricingTitle}>Coming soon</Text>
-          <Text style={styles.pricingDesc}>
-            Subscriptions are being set up. Premium features will be available shortly.
+          <TouchableOpacity
+            style={[styles.planRow, plan === 'yearly' && styles.planRowSelected]}
+            onPress={() => setPlan('yearly')}
+            activeOpacity={0.85}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: plan === 'yearly' }}
+          >
+            <View style={styles.planText}>
+              <Text style={styles.planTitle}>Yearly</Text>
+              <Text style={styles.planSub}>{fmtUsd(annualPerMonthUsd)} a month, save {annualDiscountPct}%</Text>
+            </View>
+            <Text style={styles.planPrice}>{fmtUsd(PRICING.annualUsd)} / year</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.planRow, plan === 'monthly' && styles.planRowSelected]}
+            onPress={() => setPlan('monthly')}
+            activeOpacity={0.85}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: plan === 'monthly' }}
+          >
+            <View style={styles.planText}>
+              <Text style={styles.planTitle}>Monthly</Text>
+              <Text style={styles.planSub}>First month {fmtUsd(PRICING.introFirstMonthUsd)}</Text>
+            </View>
+            <Text style={styles.planPrice}>{fmtUsd(PRICING.monthlyUsd)} / month</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.honestyLine}>
+            Free until {trialEndLabel(PRICING.trialDays)}, then {renewal}. Cancel before then and you pay nothing.
+          </Text>
+          <Text style={styles.honestySub}>
+            Renews automatically until you cancel in your App Store or Google Play settings. One subscription covers both of you.
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.upgradeBtn} activeOpacity={0.85} onPress={() => router.back()} accessibilityRole="button">
-          <Text style={styles.upgradeBtnText}>Got it →</Text>
+        <TouchableOpacity style={styles.upgradeBtn} activeOpacity={0.85} onPress={handleStart} accessibilityRole="button">
+          <Text style={styles.upgradeBtnText}>Start {PRICING.trialDays} days free</Text>
         </TouchableOpacity>
 
         <Text style={styles.note}>One subscription covers both partners</Text>
         <Text style={styles.note}>No streaks, no ads, no per-partner pricing. Cancel any time.</Text>
       </ScrollView>
+      {toast}
     </View>
   );
 }
@@ -125,10 +179,20 @@ const styles = StyleSheet.create({
 
   pricingCard: {
     backgroundColor: Colors.blush, borderRadius: Radius.xl,
-    padding: Spacing.lg, alignItems: 'center', gap: Spacing.sm,
+    padding: Spacing.md, gap: Spacing.sm,
   },
-  pricingTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
-  pricingDesc: { fontFamily: Fonts.body, fontSize: 14, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
+  planRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md,
+    backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md,
+    borderWidth: 1.5, borderColor: Colors.border,
+  },
+  planRowSelected: { borderColor: Colors.burgundy },
+  planText: { flex: 1 },
+  planTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  planSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  planPrice: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
+  honestyLine: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, textAlign: 'center', marginTop: Spacing.xs, lineHeight: 19 },
+  honestySub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, textAlign: 'center', lineHeight: 18 },
 
   upgradeBtn: {
     backgroundColor: Colors.burgundy, paddingVertical: Spacing.lg,

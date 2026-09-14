@@ -17,3 +17,12 @@ export const fmtUsd = (n: number): string => `$${n.toFixed(2)}`;
 export const annualPerMonthUsd = PRICING.annualUsd / 12;
 export const annualSavingsUsd = Math.round(PRICING.monthlyUsd * 12 - PRICING.annualUsd);
 export const annualDiscountPct = Math.round((1 - annualPerMonthUsd / PRICING.monthlyUsd) * 100);
+
+// "Free until 21 September": the trial end date the paywall and the site
+// print next to the price (USER_VOICE A3). Day and month only; the year is
+// implied and a wrong year would look like a bug.
+export const trialEndLabel = (days: number = PRICING.trialDays, from: Date = new Date()): string => {
+  const d = new Date(from);
+  d.setDate(d.getDate() + days);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' });
+};

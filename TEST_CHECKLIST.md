@@ -3897,6 +3897,21 @@ Profile screen controls, payment paywall, help system, legal viewers.
 
 ---
 
+### Billing honesty on the paywall and in Profile (Sep 2026, USER_VOICE A3)
+
+- [ ] **Paywall states price, trial end date and renewal**
+  1. Open /upgrade (any locked card)
+  - **Expected:** Yearly row selected by default, "$39.99 / year" and "$3.33 a month, save 67%"; line reads "Free until {today + 7 days}, then $39.99 a year. Cancel before then and you pay nothing." plus the renews-automatically line. Tap Monthly → "$9.99 / month", "First month $4.99", the line switches to the monthly renewal. Button reads "Start 7 days free"; until RevenueCat is wired it shows the toast "Subscriptions open at launch".
+
+- [ ] **Manage subscription from Profile** 💰
+  1. Premium couple: Profile → Account card
+  - **Expected:** "Manage subscription" row with the hint; tap opens the App Store subscriptions page (iOS) or Play subscriptions (Android). Free couple: row absent.
+
+- [ ] **Numbers agree everywhere** ⚠️
+  - **Expected:** Paywall, `/pricing` on the site, MARKETING §2.10 description and APP_STORE_SUBMISSION all show $9.99 / $39.99 / 7 days / $4.99 first month (source: `constants/pricing.ts` and `web/src/data/pricing.ts`).
+
+---
+
 ## 12. Cross-cutting: push notifications, image upload, security, GDPR
 System-level behaviors that span multiple features.
 
