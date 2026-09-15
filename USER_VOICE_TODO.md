@@ -80,9 +80,9 @@ Effort key: S under 1 h · M half a day · L a day or more.
 - **Test.** iOS and Android: enable, background 60 s, foreground → prompt; cancel → still locked; disable → no prompt.
 
 ### A8. Say it in the store and on the paywall  `S`  ✅ Sep 15 2026 (description anti-list block + "any two people" + "history never locked", captions 2 and 6, long-distance subtitle candidate, site hero and About; AI is not mentioned either way, decided Sep 15: the pools were drafted with AI help and curated by hand)
-- **Why.** Themes 3, 5, 6, 10 and §9b, P7. Users search for and reward "no ads", "no AI", "no streaks", "one subscription", "free"; even Paired's one-sub-covers-both is misread as "7.50/person".
+- **Why.** Themes 3, 5, 6, 10 and §9b, P7. Users search for and reward "no ads", "no streaks", "one subscription", "free" (and punish AI slop, which we answer by not shipping any, not by claiming it); even Paired's one-sub-covers-both is misread as "7.50/person".
 - **Where.** MARKETING §2.8 (screenshot captions), §2.10 (description + promo text), APP_STORE_SUBMISSION, `web/src/pages/index.astro` and `pricing.astro`, `app/upgrade.tsx` (keep both notes).
-- **Steps.** Description opens with the anti-list in one line: "No ads. No AI-written questions. No streaks. One subscription covers both of you, and most of the app is free." Add "Works for any two people." and "Your history is never locked." Screenshot caption: "Most of the app is free." Subtitle A/B list adds a "long distance" variant. Price and trial length stated once in the description.
+- **Steps.** Description opens with the anti-list in one line: "No ads. No streaks. One subscription covers both of you, and most of the app is free." (AI not mentioned, decided Sep 15.) Add "Works for any two people." and "Your history is never locked." Screenshot caption: "Most of the app is free." Subtitle A/B list adds a "long distance" variant. Price and trial length stated once in the description.
 - **Test.** Copy review against VOICE.md; the description under 4,000 chars.
 
 ### A9. Fantasy Wishes help card: the honest line about inference  `S`  ✅ Sep 15 2026 (HelpModal description + tip)
