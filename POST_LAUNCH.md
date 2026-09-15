@@ -358,7 +358,9 @@ Real users may or may not perceive the "wall of cards" feel. Wait for signal bef
 
 ---
 
-## Grow content pools (raised August 2026)
+## Grow content pools (raised August 2026; confirmed as a post-launch todo Sep 15 2026)
+
+**Sep 15 2026 note (USER_VOICE A5):** the Daily no-repeat window is 56 days, but it shrinks to what the pool allows: Playful questions (87 at 3 a day) keep about 25 days clean, Sweet picks (60 at 5 a day) about 11 days, before older items return. Deep (241) and Spicy (146) hold the full window. So the free tier is where new questions matter first: Playful questions to 150+ and Sweet picks to 100 are the two rows to do first. Repetition was the decay complaint at ten apps in the review mining (USER_VOICE §2.4); Memory Lane is the only pool that grows on its own.
 
 ### What
 

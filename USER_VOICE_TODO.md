@@ -126,6 +126,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
 | ~~C11~~ | ~~Google Play listing~~ Struck Sep 14 (D4: no Play, explicit content). The answer to "Apple only" complaints is the APK with the parity promise (B4). | | | | 🚫 |
 | C12 | "Draw one of our matches": a random pick from Fantasy Wishes matches | r/sexover30 wish; turns the match list into a Tonight suggestion | `app/fantasy-wishes.tsx` Matches tab button | S | ⬜ |
 | C13 | Reply to every review for 90 days | Candle, Couple Joy and Desire earn five-star reviews by answering | App Store Connect + Play console routine (B2) | S weekly | ⬜ |
+| C14 | Add questions and picks, free tier first: Playful questions 87 → 150+, Sweet picks 60 → 100, then WYR Playful / Romantic (added Sep 15 by Óli) | A5 gives 56 days without repeats only when the pool allows it; Playful keeps ~25 days, Sweet picks ~11. Repetition was the decay complaint at ten apps (§2.4) | `constants/content.ts` with `memory/question_writer_prompt.md`; POST_LAUNCH "Grow content pools" has the per-pool targets | M content | ⬜ |
 
 Kept from POST_LAUNCH C1 and still valid: one-year-ago card, post-date sealed line, "how do you think {partner} felt", props filter on Spicy dares.
 
