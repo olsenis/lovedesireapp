@@ -185,7 +185,7 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
 
 - [ ] **`MEMORY_LANE_DEV_UNLOCK` back to `__DEV__ && false`** (`services/featureUnlockService.ts`). Set to `__DEV__ && true` on Sep 9 2026 for the test period. Harmless in release builds, but reset it so dev and prod behave the same before TestFlight.
 - [ ] **Decide `MEMORY_LANE_UNLOCK_DAYS`: 14 or 30.** Currently 30. Recommendation on file (Sep 8): 14, because the churn cliff is weeks 2 to 4 and the thin-week guard already protects an empty quiz. Anchor is max(couple.createdAt, couple.firstRitualCompletedAt).
-- [ ] **`DEV_IGNORE_WEEKDAY_GATES` is `__DEV__ && false`** (`constants/devFlags.ts`).
+- [ ] **`DEV_IGNORE_WEEKDAY_GATES` and `DEV_SHORT_DAILY_NO_REPEAT` are `__DEV__ && false`** (`constants/devFlags.ts`).
 - [ ] **Lapsed-Premium read views** (USER_VOICE A2): revoke premium on the QA couple (admin dashboard → Revoke, or `isPremium: false` in the console) and walk Intimacy Log, Fantasy Wishes, The Lovers, Activity Cards: each opens read-only with the "Premium has ended" line, no write buttons; Presence and Tease still go to /upgrade; Home shows no "your turn" / "log it" nudges. Grant again: everything returns without a restart. Full steps in TEST_CHECKLIST §13.
 
 ---

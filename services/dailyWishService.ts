@@ -1,6 +1,8 @@
-import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, getDocs, collection, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, getDocs, collection, query, where, orderBy, limit, documentId, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DAILY_WISH_ITEMS, DailyWishItem, DailyWishCategory } from '../constants/content';
+import { excludeRecent, DAILY_NO_REPEAT_DAYS } from './seed';
+import { DEV_SHORT_DAILY_NO_REPEAT } from '../constants/devFlags';
 import { trackEvent } from './statsService';
 
 export type DailyVote = 'yes' | 'no';
@@ -18,6 +20,24 @@ export interface DailyWishDoc {
 const BASE_PER_CAT = 5;
 const BONUS_PER_CAT = 2;
 export const MAX_BONUS_DRAWS = 3;
+// See dailyQuestionsService: no-repeat window (USER_VOICE A5), keyed on
+// item id here. Same shrinking rule from services/seed.ts excludeRecent.
+const NEEDED_PER_CAT = BASE_PER_CAT + MAX_BONUS_DRAWS * BONUS_PER_CAT;
+const noRepeatDays = () => (DEV_SHORT_DAILY_NO_REPEAT ? 3 : DAILY_NO_REPEAT_DAYS);
+
+async function recentItemIds(coupleId: string, date: string): Promise<string[][]> {
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'couples', coupleId, 'dailyWishes'),
+      where(documentId(), '<', date),
+      orderBy(documentId(), 'desc'),
+      limit(noRepeatDays()),
+    ));
+    return snap.docs.map((d) => ((d.data() as DailyWishDoc).items ?? []).map((i) => i.id));
+  } catch {
+    return [];
+  }
+}
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -57,19 +77,21 @@ function expectedItemCount(bonusDraws: number): number {
 //   [sweet_0..4, flirty_0..4, spicy_0..4, deep_0..4,     // base, 20 items
 //    sweet_5..6, flirty_5..6, spicy_5..6, deep_5..6,     // draw 1, +8
 //    sweet_7..8, flirty_7..8, spicy_7..8, deep_7..8]     // draw 2, +8
-function pickDailyItems(date: string, coupleId: string, bonusDraws = 0): DailyWishItem[] {
+function pickDailyItems(date: string, coupleId: string, bonusDraws = 0, recent: string[][] = []): DailyWishItem[] {
   const draws = Math.max(0, Math.min(bonusDraws, MAX_BONUS_DRAWS));
   const result: DailyWishItem[] = [];
+  const poolFor = (cat: DailyWishCategory) =>
+    excludeRecent(DAILY_WISH_ITEMS.filter((i) => i.category === cat), (i) => i.id, recent, NEEDED_PER_CAT);
   // Base pass
   for (const cat of CATEGORIES) {
-    const pool = DAILY_WISH_ITEMS.filter((i) => i.category === cat);
+    const pool = poolFor(cat);
     const shuffled = deterministicShuffle(pool, date + coupleId + cat);
     result.push(...shuffled.slice(0, BASE_PER_CAT));
   }
   // Bonus passes appended at end, preserving base indices
   for (let d = 1; d <= draws; d++) {
     for (const cat of CATEGORIES) {
-      const pool = DAILY_WISH_ITEMS.filter((i) => i.category === cat);
+      const pool = poolFor(cat);
       const shuffled = deterministicShuffle(pool, date + coupleId + cat);
       const startAt = BASE_PER_CAT + (d - 1) * BONUS_PER_CAT;
       result.push(...shuffled.slice(startAt, startAt + BONUS_PER_CAT));
@@ -105,7 +127,8 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
         // happens is a "you voted yes" showing for an item that changed —
         // user can override with a fresh vote. Wiping meant total data loss
         // for both partners on the migration day.
-        const items = pickDailyItems(date, coupleId, bonus);
+        const recent = await recentItemIds(coupleId, date);
+        const items = pickDailyItems(date, coupleId, bonus, recent);
         const migrated: DailyWishDoc = {
           date,
           items,
@@ -119,10 +142,18 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
         onChange(existing);
       }
     } else {
-      const items = pickDailyItems(date, coupleId);
+      // Create-if-missing in a transaction (see dailyQuestionsService).
+      const recent = await recentItemIds(coupleId, date);
+      const items = pickDailyItems(date, coupleId, 0, recent);
       const newDoc: DailyWishDoc = { date, items, votes: {}, addToList: {}, bonusDraws: 0 };
-      await setDoc(ref, newDoc);
-      onChange(newDoc);
+      try {
+        await runTransaction(db, async (tx) => {
+          const live = await tx.get(ref);
+          if (!live.exists()) tx.set(ref, newDoc);
+        });
+      } catch {
+        // Listener will retry on the next snapshot.
+      }
     }
   });
 }
@@ -135,12 +166,13 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
 export async function drawMoreActions(coupleId: string): Promise<{ bonusDraws: number; capped: boolean }> {
   const date = todayKey();
   const ref = doc(db, 'couples', coupleId, 'dailyWishes', date);
+  const recent = await recentItemIds(coupleId, date);
   return runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     const current = snap.exists() ? (snap.data() as DailyWishDoc).bonusDraws ?? 0 : 0;
     if (current >= MAX_BONUS_DRAWS) return { bonusDraws: current, capped: true };
     const next = current + 1;
-    const items = pickDailyItems(date, coupleId, next);
+    const items = pickDailyItems(date, coupleId, next, recent);
     if (snap.exists()) {
       const data = snap.data() as DailyWishDoc;
       tx.update(ref, { items, bonusDraws: next, votes: data.votes ?? {}, addToList: data.addToList ?? {} });

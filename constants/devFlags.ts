@@ -15,3 +15,9 @@
 // not ready). With this on, both render on any day, so a single test
 // session can cover all of them.
 export const DEV_IGNORE_WEEKDAY_GATES = __DEV__ && false;
+
+// Daily questions and picks skip anything the couple got in the last 56
+// days (services/seed.ts excludeRecent, USER_VOICE A5). With this on the
+// window is 3 days, so a two-phone test over a few day docs can see the
+// rule work without waiting weeks.
+export const DEV_SHORT_DAILY_NO_REPEAT = __DEV__ && false;

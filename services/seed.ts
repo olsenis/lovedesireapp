@@ -46,3 +46,32 @@ export function seededShuffle<T>(arr: T[], seed: string): T[] {
 export function seededPick<T>(arr: T[], n: number, seed: string): T[] {
   return seededShuffle(arr, seed).slice(0, Math.max(0, Math.min(n, arr.length)));
 }
+
+// ── No-repeat window for daily content (Sep 2026, USER_VOICE A5) ──────────
+// Daily questions and picks are drawn per day from a seeded shuffle of the
+// whole pool, so without memory the free Playful pool (87 at 3 a day)
+// repeats inside two weeks. `excludeRecent` removes what the couple got in
+// the last DAILY_NO_REPEAT_DAYS days, but SHRINKS the window instead of
+// failing: `recentDays` is newest-first, and days are excluded one at a
+// time only while at least `needed` items remain in the pool. Older
+// repeats therefore come back before newer ones, and a small pool never
+// produces an empty day. The caller still seeds its own shuffle, so both
+// phones agree and bonus draws keep extending the same order.
+export const DAILY_NO_REPEAT_DAYS = 56;
+
+export function excludeRecent<T>(
+  pool: T[],
+  keyOf: (item: T) => string,
+  recentDays: string[][],
+  needed: number,
+): T[] {
+  const poolKeys = new Set(pool.map(keyOf));
+  const excluded = new Set<string>();
+  for (const day of recentDays) {
+    const add = day.filter((k) => poolKeys.has(k) && !excluded.has(k));
+    if (pool.length - excluded.size - add.length < needed) break;
+    for (const k of add) excluded.add(k);
+  }
+  if (excluded.size === 0) return pool;
+  return pool.filter((item) => !excluded.has(keyOf(item)));
+}

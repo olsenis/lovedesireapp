@@ -1821,6 +1821,18 @@ Multiplayer Truth or Dare, the merged Daily feature (actions + questions in one 
   1. ‹ Back → re-enter
   - **Expected:** Returns into active session at same phase.
 
+### Daily no-repeat window (Sep 2026, USER_VOICE A5)
+Questions and picks skip what the couple got in the last 56 days. Test with `DEV_SHORT_DAILY_NO_REPEAT = __DEV__ && true` (window 3 days), `--clear`, then flip back.
+
+- [ ] **Three consecutive days, no repeats** 📱 ⚠️
+  1. Day 1: both phones open Daily, note the 3 Playful questions and the 5 Sweet picks (screenshot)
+  2. Day 2 and Day 3: same (real days, or advance the phone clock and reopen)
+  - **Expected:** No question text and no pick repeats within a category across the three days; both phones show identical items each day. Firestore: one `dailyQuestions/{date}` per day, no duplicate writes.
+
+- [ ] **Bonus draw keeps the base items** 💰 📱
+  1. Day 3, premium: answer one question, then "Draw more"
+  - **Expected:** The first 9 questions stay exactly as they were (answer still attached to the same question), 9 more are appended, none of them from the last 3 days.
+
 ### Daily — merged Picks + Questions (app/daily.tsx)
 
 The Daily screen was created July 2026 by merging the old Daily Picks (`/daily-wishes`) and Questions Game (`/questions-game`) features into a single surface. Backend is unchanged — the screen subscribes to both `couples/{coupleId}/dailyWishes/{date}` and `couples/{coupleId}/dailyQuestions/{date}` and interleaves in memory. Old routes are redirect stubs.

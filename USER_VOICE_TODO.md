@@ -50,7 +50,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
   4. Audit table of every push body in TEST_CHECKLIST §2.
 - **Test.** Two phones, lock screen on the receiver, trigger each push with the toggle on and off.
 
-### A5. Daily questions do not repeat  `M`  ⬜
+### A5. Daily questions do not repeat  `M`  ✅ Sep 15 2026 (`excludeRecent` in seed.ts, 56-day window that shrinks per category, questions by text and picks by id, day docs created in a transaction; dev flag `DEV_SHORT_DAILY_NO_REPEAT`)
 - **Why.** Theme 4, P4. Repetition is the decay complaint at 10 apps; our free Playful pool is 87 questions at 3 a day and `pickDailyQuestions` has no memory.
 - **Where.** `services/dailyQuestionsService.ts` `pickDailyQuestions(date, coupleId, isLDR, bonusDraws)` and the code that creates `dailyQuestions/{date}` (transaction create-if-missing); `services/memoryLaneService.ts` `recentQuestionIds` as the pattern.
 - **Steps.**

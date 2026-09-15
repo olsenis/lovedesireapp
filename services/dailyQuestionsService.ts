@@ -1,8 +1,10 @@
-import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, runTransaction, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, runTransaction, getDocs, collection, query, where, orderBy, limit, documentId, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 import { trackEvent } from './statsService';
 import { markFirstRitualIfUnset } from './coupleService';
+import { excludeRecent, DAILY_NO_REPEAT_DAYS } from './seed';
+import { DEV_SHORT_DAILY_NO_REPEAT } from '../constants/devFlags';
 
 export interface DailyQuestionDoc {
   date: string;
@@ -26,6 +28,30 @@ export interface DailyQuestionDoc {
 const BASE_PER_CAT = 3;
 const BONUS_PER_CAT = 3;
 export const MAX_BONUS_DRAWS = 3;
+// Items a category must still be able to supply after the no-repeat
+// exclusion (base + every bonus draw), see excludeRecent.
+const NEEDED_PER_CAT = BASE_PER_CAT + MAX_BONUS_DRAWS * BONUS_PER_CAT;
+const noRepeatDays = () => (DEV_SHORT_DAILY_NO_REPEAT ? 3 : DAILY_NO_REPEAT_DAYS);
+
+// Question texts the couple was served on earlier days, newest day first
+// (USER_VOICE A5). Questions have no id, so the text is the key. Read once
+// per generation (first open of the day, a bonus draw, a schema
+// migration); history before today does not change during the day, so
+// every caller reproduces the same base items. Errors → [] (today's
+// behaviour, no exclusion).
+async function recentQuestionTexts(coupleId: string, date: string): Promise<string[][]> {
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'couples', coupleId, 'dailyQuestions'),
+      where(documentId(), '<', date),
+      orderBy(documentId(), 'desc'),
+      limit(noRepeatDays()),
+    ));
+    return snap.docs.map((d) => ((d.data() as DailyQuestionDoc).items ?? []).map((q) => q.text));
+  } catch {
+    return [];
+  }
+}
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -50,14 +76,16 @@ const CATEGORIES: QuestionCategory[] = ['playful', 'deep', 'spicy'];
 // Base pass fills known indices (playful 0-2, deep 3-5, spicy 6-8). Bonus
 // draws APPEND items grouped by category so existing answer indices never
 // shift when a partner draws more mid-day.
-function pickDailyQuestions(date: string, coupleId: string, isLDR: boolean, bonusDraws = 0): Question[] {
+function pickDailyQuestions(date: string, coupleId: string, isLDR: boolean, bonusDraws = 0, recent: string[][] = []): Question[] {
   const draws = Math.max(0, Math.min(bonusDraws, MAX_BONUS_DRAWS));
   const result: Question[] = [];
-  const poolFor = (cat: QuestionCategory) => QUESTIONS.filter((q) => {
+  // No-repeat window applied BEFORE the seeded shuffle, so the seed and
+  // the slice layout (base head, bonus slices appended) are unchanged.
+  const poolFor = (cat: QuestionCategory) => excludeRecent(QUESTIONS.filter((q) => {
     if (q.category !== cat) return false;
     if (!isLDR && q.tags?.includes('ldr')) return false;
     return true;
-  });
+  }), (q) => q.text, recent, NEEDED_PER_CAT);
   for (const cat of CATEGORIES) {
     const shuffled = deterministicShuffle(poolFor(cat), date + coupleId + cat);
     result.push(...shuffled.slice(0, BASE_PER_CAT));
@@ -94,7 +122,8 @@ export function subscribeDailyQuestions(
         // Regenerate with current schema. Keep existing answers/discussed so
         // any progress today isn't lost. Preserve bonusDraws so a paid user
         // who drew more today doesn't lose their extra cards on a hot migration.
-        const items = pickDailyQuestions(date, coupleId, isLDR, data.bonusDraws ?? 0);
+        const recent = await recentQuestionTexts(coupleId, date);
+        const items = pickDailyQuestions(date, coupleId, isLDR, data.bonusDraws ?? 0, recent);
         const migrated: DailyQuestionDoc = {
           date,
           items,
@@ -108,10 +137,21 @@ export function subscribeDailyQuestions(
       }
       onChange(data);
     } else {
-      const items = pickDailyQuestions(date, coupleId, isLDR);
+      // Create-if-missing in a transaction: two phones opening at once
+      // must not both write (the second would clobber the first's
+      // answers if it arrived late). The snapshot listener delivers the
+      // committed doc to both.
+      const recent = await recentQuestionTexts(coupleId, date);
+      const items = pickDailyQuestions(date, coupleId, isLDR, 0, recent);
       const newDoc: DailyQuestionDoc = { date, items, discussed: {}, answers: {}, bonusDraws: 0 };
-      await setDoc(ref, newDoc);
-      onChange(newDoc);
+      try {
+        await runTransaction(db, async (tx) => {
+          const live = await tx.get(ref);
+          if (!live.exists()) tx.set(ref, newDoc);
+        });
+      } catch {
+        // Listener will retry on the next snapshot.
+      }
     }
   });
 }
@@ -127,12 +167,13 @@ export async function drawMoreQuestions(
 ): Promise<{ bonusDraws: number; capped: boolean }> {
   const date = todayKey();
   const ref = doc(db, 'couples', coupleId, 'dailyQuestions', date);
+  const recent = await recentQuestionTexts(coupleId, date);
   return runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     const current = snap.exists() ? (snap.data() as DailyQuestionDoc).bonusDraws ?? 0 : 0;
     if (current >= MAX_BONUS_DRAWS) return { bonusDraws: current, capped: true };
     const next = current + 1;
-    const items = pickDailyQuestions(date, coupleId, isLDR, next);
+    const items = pickDailyQuestions(date, coupleId, isLDR, next, recent);
     if (snap.exists()) {
       tx.update(ref, { items, bonusDraws: next });
     } else {
