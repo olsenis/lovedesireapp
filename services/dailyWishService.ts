@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, getDocs, collection, query, where, orderBy, limit, documentId, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, onSnapshot, runTransaction, getDocs, collection, query, where, orderBy, limit, documentId, deleteField, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { DAILY_WISH_ITEMS, DailyWishItem, DailyWishCategory } from '../constants/content';
 import { excludeRecent, DAILY_NO_REPEAT_DAYS } from './seed';
@@ -12,6 +12,9 @@ export interface DailyWishDoc {
   items: DailyWishItem[];
   votes: Record<string, Record<number, DailyVote>>;
   addToList?: Record<number, string[]>; // globalIndex -> [uid, ...] who pressed "Add to List"
+  // Reactions and replies on mutual-yes picks (Sep 2026, USER_VOICE C2): uid -> gi -> true / text.
+  reactions?: Record<string, Record<string, true>>;
+  replies?: Record<string, Record<string, string>>;
   // Paid-only bonus draws stacked on top of base daily set. Each draw
   // extends items by 2 per category. Capped at 3 to keep total pool sane.
   bonusDraws?: number;
@@ -135,6 +138,8 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
           votes: existing.votes ?? {},
           addToList: existing.addToList ?? {},
           bonusDraws: bonus,
+          ...(existing.reactions ? { reactions: existing.reactions } : {}),
+          ...(existing.replies ? { replies: existing.replies } : {}),
         };
         await setDoc(ref, migrated);
         onChange(migrated);
@@ -222,6 +227,22 @@ export async function markAddToListAtomic(
   });
   if (result.completedNow) trackEvent('daily_wish_match');
   return result;
+}
+
+// A heart and one line on a matched pick (USER_VOICE C2).
+export async function reactToDailyPick(coupleId: string, uid: string, globalIndex: number, on: boolean): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', todayKey()), {
+    [`reactions.${uid}.${globalIndex}`]: on ? true : deleteField(),
+  });
+  if (on) trackEvent('reaction_sent');
+}
+
+export async function replyToDailyPick(coupleId: string, uid: string, globalIndex: number, text: string): Promise<void> {
+  const clean = text.trim().slice(0, 200);
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', todayKey()), {
+    [`replies.${uid}.${globalIndex}`]: clean ? clean : deleteField(),
+  });
+  if (clean) trackEvent('reply_sent');
 }
 
 export function isMatch(doc: DailyWishDoc, index: number, uid1: string, uid2: string): boolean {

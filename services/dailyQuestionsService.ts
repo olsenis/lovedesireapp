@@ -1,4 +1,4 @@
-import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, runTransaction, getDocs, collection, query, where, orderBy, limit, documentId, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, onSnapshot, arrayUnion, runTransaction, getDocs, collection, query, where, orderBy, limit, documentId, deleteField, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { QUESTIONS, Question, QuestionCategory } from '../constants/content';
 import { trackEvent } from './statsService';
@@ -17,6 +17,11 @@ export interface DailyQuestionDoc {
   // the guess step (no negative score signal). Compare with
   // answers[partnerUid][gi] for correct/wrong evaluation.
   guesses?: Record<string, Record<string, string>>;
+  // Reactions and replies on revealed questions (Sep 2026, USER_VOICE C2):
+  // uid -> gi -> true / text. One each per person per question; rendered
+  // only once both answered. Same per-uid guard in rules as answers.
+  reactions?: Record<string, Record<string, true>>;
+  replies?: Record<string, Record<string, string>>;
   // Paid-only bonus draws stacked on top of the base daily set. Each draw
   // extends items by 3 per category (playful/deep/spicy). Capped at 3.
   bonusDraws?: number;
@@ -130,6 +135,9 @@ export function subscribeDailyQuestions(
           discussed: data.discussed ?? {},
           answers: data.answers ?? {},
           bonusDraws: data.bonusDraws ?? 0,
+          ...(data.guesses ? { guesses: data.guesses } : {}),
+          ...(data.reactions ? { reactions: data.reactions } : {}),
+          ...(data.replies ? { replies: data.replies } : {}),
         };
         await setDoc(ref, migrated);
         onChange(migrated);
@@ -196,6 +204,23 @@ export async function submitAnswer(
   });
   trackEvent('daily_question_answered');
   markFirstRitualIfUnset(coupleId);
+}
+
+// A heart and one line on a revealed question (USER_VOICE C2). Empty
+// text removes the reply; `on` false removes the heart.
+export async function reactToDailyQuestion(coupleId: string, uid: string, globalIndex: number, on: boolean): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
+    [`reactions.${uid}.${globalIndex}`]: on ? true : deleteField(),
+  });
+  if (on) trackEvent('reaction_sent');
+}
+
+export async function replyToDailyQuestion(coupleId: string, uid: string, globalIndex: number, text: string): Promise<void> {
+  const clean = text.trim().slice(0, 200);
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
+    [`replies.${uid}.${globalIndex}`]: clean ? clean : deleteField(),
+  });
+  if (clean) trackEvent('reply_sent');
 }
 
 export function bothAnswered(

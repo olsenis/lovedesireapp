@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
 import { FantasyWishesCategory } from '../constants/content';
@@ -20,6 +20,9 @@ export interface FantasyWishesItem {
   // wishes and on items loaded before categories existed: those are
   // always shown, never filtered.
   category?: FantasyWishesCategory;
+  // Reactions and replies on a match (Sep 2026, USER_VOICE C2): uid -> true / text.
+  reactions?: Record<string, true>;
+  replies?: Record<string, string>;
 }
 
 export function subscribeFantasyWishes(coupleId: string, onChange: (items: FantasyWishesItem[]) => void): Unsubscribe {
@@ -81,6 +84,22 @@ export async function voteOnFantasyWish(
     });
   });
   trackEvent('fantasy_wish_voted');
+}
+
+// A heart and one line on a match (USER_VOICE C2).
+export async function reactToFantasyWish(coupleId: string, uid: string, itemId: string, on: boolean): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
+    [`reactions.${uid}`]: on ? true : deleteField(),
+  });
+  if (on) trackEvent('reaction_sent');
+}
+
+export async function replyToFantasyWish(coupleId: string, uid: string, itemId: string, text: string): Promise<void> {
+  const clean = text.trim().slice(0, 200);
+  await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
+    [`replies.${uid}`]: clean ? clean : deleteField(),
+  });
+  if (clean) trackEvent('reply_sent');
 }
 
 export function isFWMatch(item: FantasyWishesItem, uid1: string, uid2: string): boolean {

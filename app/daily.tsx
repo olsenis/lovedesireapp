@@ -9,15 +9,16 @@ import { useSubscription } from '../hooks/useSubscription';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
+import { ReactionRow, ReactionSide } from '../components/ReactionRow';
 import {
   DailyWishDoc, DailyVote,
   subscribeDailyWishes, voteDailyWish, isMatch, markAddToListAtomic, bothWantToAdd,
-  drawMoreActions, MAX_BONUS_DRAWS as MAX_ACTION_DRAWS,
+  drawMoreActions, MAX_BONUS_DRAWS as MAX_ACTION_DRAWS, reactToDailyPick, replyToDailyPick,
 } from '../services/dailyWishService';
 import {
   DailyQuestionDoc,
   subscribeDailyQuestions, submitAnswer, submitGuess, skipGuess, GUESS_SKIPPED, bothAnswered,
-  drawMoreQuestions, MAX_BONUS_DRAWS as MAX_QUESTION_DRAWS,
+  drawMoreQuestions, MAX_BONUS_DRAWS as MAX_QUESTION_DRAWS, reactToDailyQuestion, replyToDailyQuestion,
 } from '../services/dailyQuestionsService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
@@ -454,6 +455,27 @@ export default function DailyScreen() {
   const doneCount = votedCount + answeredCount;
   const totalCount = actionCount + questionCount;
 
+  // Reactions and replies on revealed items (USER_VOICE C2). Read from the
+  // day docs; written to my own uid key only (rules). A reply pushes the
+  // partner with a discreet variant; a heart is silent.
+  const qSides = (gi: number): { mine: ReactionSide; theirs: ReactionSide } => ({
+    mine: { reaction: !!qDoc?.reactions?.[uid]?.[String(gi)], reply: qDoc?.replies?.[uid]?.[String(gi)] },
+    theirs: { reaction: !!(partnerId && qDoc?.reactions?.[partnerId]?.[String(gi)]), reply: partnerId ? qDoc?.replies?.[partnerId]?.[String(gi)] : undefined },
+  });
+  const pSides = (gi: number): { mine: ReactionSide; theirs: ReactionSide } => ({
+    mine: { reaction: !!wishDoc?.reactions?.[uid]?.[String(gi)], reply: wishDoc?.replies?.[uid]?.[String(gi)] },
+    theirs: { reaction: !!(partnerId && wishDoc?.reactions?.[partnerId]?.[String(gi)]), reply: partnerId ? wishDoc?.replies?.[partnerId]?.[String(gi)] : undefined },
+  });
+  const pushReply = (text: string) => {
+    if (!coupleId || !text) return;
+    const title = `${profile?.name ?? 'Your partner'} replied 💬`;
+    notifyPartner(coupleId, uid, title, text.slice(0, 80), { title, body: 'Open to read it.' }).catch(() => {});
+  };
+  const reactQ = (gi: number, on: boolean) => { if (coupleId) reactToDailyQuestion(coupleId, uid, gi, on).catch(() => {}); };
+  const replyQ = async (gi: number, text: string) => { if (!coupleId) return; await replyToDailyQuestion(coupleId, uid, gi, text); pushReply(text.trim()); };
+  const reactP = (gi: number, on: boolean) => { if (coupleId) reactToDailyPick(coupleId, uid, gi, on).catch(() => {}); };
+  const replyP = async (gi: number, text: string) => { if (!coupleId) return; await replyToDailyPick(coupleId, uid, gi, text); pushReply(text.trim()); };
+
   const allMatches = (wishDoc?.items ?? [])
     .map((item, gi) => ({ item, gi }))
     .filter(({ gi }) => matched(gi));
@@ -611,6 +633,9 @@ export default function DailyScreen() {
                 onVote={handleVote}
                 onAdd={handleAddToList}
                 showInPersonPill={!!couple?.isLongDistance && !!currentCard.inPerson}
+                sides={pSides(currentCard.gi)}
+                onReact={(on) => reactP(currentCard.gi, on)}
+                onReply={(t) => replyP(currentCard.gi, t)}
               />
             ) : (
               <QuestionCard
@@ -629,6 +654,9 @@ export default function DailyScreen() {
                 onSubmit={() => handleSubmit(currentCard.gi)}
                 onQuickSubmit={(value) => submitValue(currentCard.gi, value)}
                 cardBg={cfg.color}
+                sides={qSides(currentCard.gi)}
+                onReact={(on) => reactQ(currentCard.gi, on)}
+                onReply={(t) => replyQ(currentCard.gi, t)}
               />
             )}
 
@@ -727,6 +755,7 @@ export default function DailyScreen() {
                         </Text>
                       </TouchableOpacity>
                     )}
+                    <ReactionRow compact {...pSides(gi)} partnerName={partnerName} onReact={(on) => reactP(gi, on)} onReply={(t) => replyP(gi, t)} />
                   </View>
                 );
               })}
@@ -750,6 +779,7 @@ export default function DailyScreen() {
                         <Text style={styles.matchAnswerText}>{theirs === GUESS_SKIPPED ? '—' : theirs ?? '—'}</Text>
                       </View>
                     </View>
+                    <ReactionRow compact {...qSides(gi)} partnerName={partnerName} onReact={(on) => reactQ(gi, on)} onReply={(t) => replyQ(gi, t)} />
                   </View>
                 );
               })}
@@ -959,7 +989,7 @@ function DoneState({
 }
 
 function ActionCard({
-  gi, text, partnerName, vote, theyVoted, didMatch, iAdded, theyAdded, bothAddedToList, onVote, onAdd, showInPersonPill,
+  gi, text, partnerName, vote, theyVoted, didMatch, iAdded, theyAdded, bothAddedToList, onVote, onAdd, showInPersonPill, sides, onReact, onReply,
 }: {
   gi: number;
   text: string;
@@ -973,6 +1003,9 @@ function ActionCard({
   onVote: (gi: number, v: DailyVote) => void;
   onAdd: (gi: number) => void;
   showInPersonPill?: boolean;
+  sides?: { mine: ReactionSide; theirs: ReactionSide };
+  onReact?: (on: boolean) => void;
+  onReply?: (text: string) => Promise<void>;
 }) {
   return (
     <View style={[styles.card, styles.actionCard, didMatch && styles.cardMatched]}>
@@ -1011,6 +1044,7 @@ function ActionCard({
               </Text>
             </TouchableOpacity>
           )}
+          {sides && <ReactionRow {...sides} partnerName={partnerName} onReact={onReact} onReply={onReply} />}
         </View>
       ) : (
         <>
@@ -1044,7 +1078,7 @@ function ActionCard({
 }
 
 function QuestionCard({
-  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg,
+  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg, sides, onReact, onReply,
 }: {
   gi: number;
   q: Question;
@@ -1068,6 +1102,9 @@ function QuestionCard({
   onSubmit: () => void;
   onQuickSubmit: (value: string) => void;
   cardBg: string;
+  sides?: { mine: ReactionSide; theirs: ReactionSide };
+  onReact?: (on: boolean) => void;
+  onReply?: (text: string) => Promise<void>;
 }) {
   // Guess feedback state — only for binary Qs where user made a REAL
   // guess (not the H28 GUESS_SKIPPED sentinel).
@@ -1113,6 +1150,7 @@ function QuestionCard({
           <Text style={styles.askWhyText}>💬 Ask {partnerName} why</Text>
         </TouchableOpacity>
       )}
+      {both && sides && <ReactionRow {...sides} partnerName={partnerName} onReact={onReact} onReply={onReply} />}
 
       {mine && !both && !revealBlockedByGuess && (
         <>

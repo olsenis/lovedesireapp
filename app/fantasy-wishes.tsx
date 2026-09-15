@@ -7,12 +7,13 @@ import { useSpicyConsent } from '../hooks/useSpicyConsent';
 import { useCouple } from '../hooks/useCouple';
 import { usePaidAccess } from '../hooks/usePaidAccess';
 import { PremiumEndedBanner } from '../components/PremiumEndedBanner';
+import { ReactionRow } from '../components/ReactionRow';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory } from '../services/fantasyWishesService';
+import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_PRESETS, FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
@@ -476,6 +477,22 @@ export default function FantasyWishesScreen() {
                       </Text>
                     </TouchableOpacity>
                   )}
+                  {/* A heart and one line on the match (USER_VOICE C2); works in the read view too, the match is the couple's own data. */}
+                  <ReactionRow
+                    mine={{ reaction: !!item.reactions?.[uid], reply: item.replies?.[uid] }}
+                    theirs={{ reaction: !!(partnerId && item.reactions?.[partnerId]), reply: partnerId ? item.replies?.[partnerId] : undefined }}
+                    partnerName={partner?.name ?? 'Partner'}
+                    onReact={(on) => { if (coupleId) reactToFantasyWish(coupleId, uid, item.id, on).catch(() => {}); }}
+                    onReply={async (t) => {
+                      if (!coupleId) return;
+                      await replyToFantasyWish(coupleId, uid, item.id, t);
+                      const clean = t.trim();
+                      if (clean) {
+                        const title = `${profile?.name ?? 'Your partner'} replied 💬`;
+                        notifyPartner(coupleId, uid, title, clean.slice(0, 80), { title, body: 'Open to read it.' }).catch(() => {});
+                      }
+                    }}
+                  />
                 </View>
               </View>
             );

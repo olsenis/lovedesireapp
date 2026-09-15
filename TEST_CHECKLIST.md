@@ -1821,6 +1821,18 @@ Multiplayer Truth or Dare, the merged Daily feature (actions + questions in one 
   1. ‹ Back → re-enter
   - **Expected:** Returns into active session at same phase.
 
+### Daily: heart and one line on revealed items (Sep 2026, USER_VOICE C2)
+- [ ] **Heart and reply on a revealed question** 📱
+  1. Both answer a question → reveal. Phone A taps ♡ under the answers
+  2. Phone B taps Reply, writes one line, Send
+  - **Expected:** Phone B sees "Oli ❤️" within a snapshot; Phone A gets the push "Eva replied 💬 / Open to read it." (discreet) and the line "Eva: …" under the answers; A taps its own line to edit; clearing it and tapping Remove deletes it. Before reveal: no row at all.
+
+- [ ] **Heart and reply on a mutual-yes pick and in Today's Reveals** 📱
+  - **Expected:** Same row under the "✓ You both want this!" section on the card and, compact, under each item in the Reveals modal; the two stay in sync (same doc fields).
+
+- [ ] **Own key only** 🔒
+  - **Expected:** Firestore: `reactions.{myUid}.{gi}` and `replies.{myUid}.{gi}`; a dev-only write to the partner's key is denied by rules.
+
 ### Daily no-repeat window (Sep 2026, USER_VOICE A5)
 Questions and picks skip what the couple got in the last 56 days. Test with `DEV_SHORT_DAILY_NO_REPEAT = __DEV__ && true` (window 3 days), `--clear`, then flip back.
 
@@ -2274,6 +2286,11 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 - [ ] **Simultaneous taps — both phones tap on the same turn** ⚠️ 📱 💰
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
+
+### Fantasy Wishes: heart and one line on a match (Sep 2026, USER_VOICE C2)
+- [ ] **Match card row** 📱 💰
+  1. On a match, Phone A ♡; Phone B Reply one line
+  - **Expected:** heart chip and line appear on both phones; push to A with the discreet body; works in the read view after Premium ended.
 
 ### Fantasy Wishes: categories and deck order (Sep 2026, USER_VOICE A6)
 - [ ] **Sensual comes first on a fresh deck** 💰
@@ -2772,6 +2789,11 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
 - [ ] **History is private per user** 📱
   1. Phone A submits 3; Phone B submits 1; B opens History
   - **Expected:** Phone B sees only own 1.
+
+### Sunday Check-in: heart and one line on each other's answers (Sep 2026, USER_VOICE C2)
+- [ ] **After both finish** 📱
+  1. Both complete the check-in; Phone A ♡ under question 2, Phone B replies one line under question 4
+  - **Expected:** Each sees the other's heart chip / line under the right question; push with the discreet body; Firestore: `entries/{uid}.reactionsOnPartner` / `repliesOnPartner`. Last week's history block shows them read-only, no input. Before both finish: no row.
 
 ### Sunday Check-in answering (app/state-union.tsx)
 

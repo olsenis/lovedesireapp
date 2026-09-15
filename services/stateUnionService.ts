@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   limit,
+  deleteField,
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -300,6 +301,12 @@ export interface StateUnionEntry {
   // earlier one.
   predictions?: string[];
   verdictsOnPartner?: Record<string, boolean>;
+  // My heart / one line on the PARTNER's answer to question qi (Sep 2026,
+  // USER_VOICE C2). On my entry, so it inherits owner-write and the
+  // read-after-both-complete gate: the partner sees it exactly when the
+  // reveal is open. Never on the parent doc.
+  reactionsOnPartner?: Record<string, true>;
+  repliesOnPartner?: Record<string, string>;
   updatedAt: number;
 }
 
@@ -450,6 +457,22 @@ export async function markStateUnionCompleted(
 // year boundary, so this is safe on week 1.
 export function getPreviousWeekId(d: Date = new Date(), weeksBack = 1): string {
   return getCurrentWeekId(new Date(d.getTime() - weeksBack * 7 * 86400000));
+}
+
+// A heart / one line on the partner's answer (USER_VOICE C2). Nested
+// merge so other keys of the map survive; deleteField inside a merge
+// removes just this qi.
+export async function reactOnPartnerAnswer(coupleId: string, weekId: string, uid: string, qi: number, on: boolean): Promise<void> {
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  await setDoc(entryRef, { reactionsOnPartner: { [String(qi)]: on ? true : deleteField() }, updatedAt: Date.now() }, { merge: true });
+  if (on) trackEvent('reaction_sent');
+}
+
+export async function replyOnPartnerAnswer(coupleId: string, weekId: string, uid: string, qi: number, text: string): Promise<void> {
+  const clean = text.trim().slice(0, 200);
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  await setDoc(entryRef, { repliesOnPartner: { [String(qi)]: clean ? clean : deleteField() }, updatedAt: Date.now() }, { merge: true });
+  if (clean) trackEvent('reply_sent');
 }
 
 // How far back the grading screen looks for ungraded partner predictions.
