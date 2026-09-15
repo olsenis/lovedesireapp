@@ -60,7 +60,7 @@ Two different complaints. The first is a thin free tier: Paired "we only get one
 
 Paired: "Don't plan to use this app for more than 18 months. After that they run out of content" (iOS, Jun 2026) and "The same context of questions keep appearing super close to one another" (Cozy Couples, iOS Jul 2026). Spicer: "questions she had no interest in or that kept repeating" (iOS, May 2026). Agapé, Candle, Lovify, Evergreen and Lovewick all carry it. The praise side is the mirror image: Lovewick users loved "10 questions a day" until it was cut.
 
-**Where we stand.** Pools are large (474 questions, 274 dares, 310 truths, 191 WYR, 294 Fantasy Wishes) and Memory Lane grows with use. But `pickDailyQuestions` in `services/dailyQuestionsService.ts` shuffles per date with no memory of what the couple has answered, and the free Playful pool is 87 questions at 3 a day, so repeats start inside the first month. Memory Lane already has the no-repeat pattern (`recentQuestionIds`); Daily needs the same (§7, P4).
+**Where we stand.** Pools are large (474 questions, 274 dares, 310 truths, 191 WYR, 394 Fantasy Wishes) and Memory Lane grows with use. But `pickDailyQuestions` in `services/dailyQuestionsService.ts` shuffles per date with no memory of what the couple has answered, and the free Playful pool is 87 questions at 3 a day, so repeats start inside the first month. Memory Lane already has the no-repeat pattern (`recentQuestionIds`); Daily needs the same (§7, P4).
 
 ### 5. "Ads" (15 apps, 232 negative reviews) and "it's AI now" (26 reviews, 20 negative)
 

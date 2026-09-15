@@ -24,7 +24,7 @@ Related: [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md) (submission checklis
 |---|---|
 | Conversation questions across Playful / Deep / Spicy | 474 |
 | Truths + dares across Sweet / Flirty / Spicy | 310 + 274 |
-| Fantasy Wishes scenarios (paid) | 294 |
+| Fantasy Wishes scenarios (paid) | 394 |
 | Date ideas incl. virtual for long distance | 130 |
 | Would You Rather questions + themed packs | 191 + 6 packs |
 | 30-day programs | 4 x 30 days |
@@ -169,7 +169,7 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 > Daily questions and picks in three registers, Playful, Deep and Spicy. Moments, one photo a day, side by side. Mood your partner can see. Love Notes that open at the right time.
 >
 > **When you have an evening**
-> Truth or Dare and Would You Rather across two phones. Tonight's Date, one spin. Activity Cards, 25 face-down cards a month. Fantasy Wishes, a private yes/no list where only mutual yes is ever revealed.
+> Truth or Dare and Would You Rather across two phones. Tonight's Date, one spin. Activity Cards, 25 face-down cards a month. Fantasy Wishes, a private yes/no list where only mutual yes is ever revealed, every scenario written for the two of you, and you choose which categories are in play.
 >
 > **When you want to understand each other**
 > The Lovers, an intimacy-style quiz for both of you. Presence, guided slow touch. Our Story, your milestones on one timeline.

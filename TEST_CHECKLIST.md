@@ -2275,6 +2275,21 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
+### Fantasy Wishes: categories and deck order (Sep 2026, USER_VOICE A6)
+- [ ] **Sensual comes first on a fresh deck** 💰
+  1. Premium couple, Fantasy Wishes → ↺ New (or first load)
+  - **Expected:** The first cards are Sensual (candlelight massage, bath), then Roleplay, Explicit, BDSM. A hint line "Sensual comes first. Choose what is for the two of you ›" shows under the banner until a category is changed or the hint is tapped.
+
+- [ ] **Turning a category off filters both phones** 📱 💰
+  1. Phone A: ☰ in the header → Explicit off
+  2. Phone B: watch the deck and the progress bar
+  - **Expected:** Explicit cards leave both decks on the next snapshot; the batch bar and DoneState counts shrink; the Matches tab is unchanged. Firestore: `couples/{id}.fwCategories.explicit = false`. Turn it back on: cards return in gentle-first order.
+
+- [ ] **All off, custom wishes, legacy items** ⚠️
+  1. Turn all four categories off
+  2. + Add a custom wish
+  - **Expected:** "Every category is off" card with a tap into the sheet; the custom wish still plays (no category); items loaded before Sep 2026 (no category) still play. DoneState with some categories off shows "Turn it on to keep going ›". Read-only (premium ended): no ☰, Matches only.
+
 ### Fantasy Wishes — paid gate + load presets (app/fantasy-wishes.tsx)
 
 - [ ] **Paid gate — free user redirected to /upgrade** 💰

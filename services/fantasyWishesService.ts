@@ -1,6 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
+import { FantasyWishesCategory } from '../constants/content';
 
 export type FWVote = 'yes' | 'maybe' | 'no';
 
@@ -15,6 +16,10 @@ export interface FantasyWishesItem {
   // introduced — the Matches list sort falls back to createdAt for
   // those so the ordering degrades gracefully instead of crashing.
   matchedAt?: number;
+  // Preset category (Sep 2026, USER_VOICE A6). Absent on couple-written
+  // wishes and on items loaded before categories existed: those are
+  // always shown, never filtered.
+  category?: FantasyWishesCategory;
 }
 
 export function subscribeFantasyWishes(coupleId: string, onChange: (items: FantasyWishesItem[]) => void): Unsubscribe {
@@ -28,13 +33,22 @@ export function subscribeFantasyWishes(coupleId: string, onChange: (items: Fanta
 // active view immediately (e.g. Fantasy Wishes' locked-5 batch bumps to 6
 // when the user adds a custom wish, so it's visible without waiting for
 // Load 5 more).
-export async function addFantasyWishesItem(coupleId: string, text: string): Promise<string> {
+export async function addFantasyWishesItem(coupleId: string, text: string, category?: FantasyWishesCategory): Promise<string> {
   const ref = await addDoc(collection(db, 'couples', coupleId, 'fantasyWishes'), {
     text,
     votes: {},
     createdAt: Date.now(),
+    ...(category ? { category } : {}),
   });
   return ref.id;
+}
+
+// Per-couple category choice lives on the couple doc (couples/{id}.fwCategories,
+// absent = on) so both phones filter on the same value through the couple
+// subscription they already hold. Either partner may change it.
+export async function setFWCategory(coupleId: string, category: FantasyWishesCategory, on: boolean): Promise<void> {
+  await updateDoc(doc(db, 'couples', coupleId), { [`fwCategories.${category}`]: on });
+  trackEvent(on ? 'fw_category_on' : 'fw_category_off');
 }
 
 // Vote and, if this YES completes the mutual match, stamp matchedAt in the
@@ -106,13 +120,13 @@ export function fwBothWantToAdd(item: FantasyWishesItem, uid1: string, uid2: str
 
 export async function clearAndReloadFantasyWishes(
   coupleId: string,
-  presets: { text: string }[]
+  presets: { text: string; category?: FantasyWishesCategory }[]
 ): Promise<void> {
   // Delete all existing items
   const snap = await getDocs(collection(db, 'couples', coupleId, 'fantasyWishes'));
   await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
   // Load new presets
   await Promise.all(presets.map((p) => addDoc(collection(db, 'couples', coupleId, 'fantasyWishes'), {
-    text: p.text, votes: {}, createdAt: Date.now(),
+    text: p.text, votes: {}, createdAt: Date.now(), ...(p.category ? { category: p.category } : {}),
   })));
 }

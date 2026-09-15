@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, KeyboardAvoidingView, Platform, Switch } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
@@ -12,8 +12,8 @@ import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd } from '../services/fantasyWishesService';
-import { FANTASY_WISHES_PRESETS } from '../constants/content';
+import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory } from '../services/fantasyWishesService';
+import { FANTASY_WISHES_PRESETS, FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -44,6 +44,10 @@ export default function FantasyWishesScreen() {
   const [activeTab, setActiveTab] = useState<'explore' | 'matches'>('explore');
   useEffect(() => { if (readOnly) setActiveTab('matches'); }, [readOnly]);
   const [showAdd, setShowAdd] = useState(false);
+  // Category choice sheet (USER_VOICE A6). The choice itself lives on the
+  // couple doc; this is only the sheet's visibility plus a one-time hint.
+  const [showCategories, setShowCategories] = useState(false);
+  const [hintDismissed, setHintDismissed] = useState(false);
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -219,7 +223,7 @@ export default function FantasyWishesScreen() {
     if (!id || loadingPresets) return;
     setLoadingPresets(true);
     try {
-      await Promise.all(FANTASY_WISHES_PRESETS.map((p) => addFantasyWishesItem(id, p.text)));
+      await Promise.all(FANTASY_WISHES_PRESETS.map((p) => addFantasyWishesItem(id, p.text, p.category)));
     } finally {
       setLoadingPresets(false);
     }
@@ -270,19 +274,30 @@ export default function FantasyWishesScreen() {
       .sort((a, b) => (b.matchedAt ?? b.createdAt) - (a.matchedAt ?? a.createdAt)),
     [items, partnerId, uid],
   );
-  const votedCount = useMemo(() => items.filter((i) => myVote(i) !== null).length, [items, uid]);
-  const totalCount = items.length;
+  // Category choice (USER_VOICE A6): couples/{id}.fwCategories, absent = on.
+  // Items without a category (couple-written, or loaded before categories
+  // existed) are always in play. Matches are never filtered.
+  const fwCats = couple?.fwCategories ?? {};
+  const catOn = (c?: FantasyWishesCategory) => !c || fwCats[c] !== false;
+  const categoriesOff = FW_CATEGORY_ORDER.filter((c) => fwCats[c] === false);
+  const playable = useMemo(() => items.filter((i) => catOn(i.category)), [items, couple?.fwCategories]);
+  const votedCount = useMemo(() => playable.filter((i) => myVote(i) !== null).length, [playable, uid]);
+  const totalCount = playable.length;
+  const nothingOn = items.length > 0 && playable.length === 0;
 
-  // Deck order: unvoted items in createdAt order, but any id in `skipped`
-  // moves to the back so the user's Skip actions defer without dropping the
-  // card entirely. Voting removes items from this list (they're no longer
-  // unvoted); Skip just re-sorts to move them out of the front.
+  // Deck order: unvoted playable items, gentle categories first (sensual,
+  // roleplay, explicit, bdsm, then uncategorised), createdAt within a
+  // category, and any id in `skipped` moves to the back so Skip defers
+  // without dropping the card. Voting removes items (no longer unvoted).
   const deck = useMemo(() => {
-    const unvoted = items.filter((i) => myVote(i) === null);
+    const rank = (c?: FantasyWishesCategory) => (c ? FW_CATEGORY_ORDER.indexOf(c) : FW_CATEGORY_ORDER.length);
+    const unvoted = playable
+      .filter((i) => myVote(i) === null)
+      .sort((a, b) => rank(a.category) - rank(b.category) || a.createdAt - b.createdAt);
     const front = unvoted.filter((i) => !skipped.has(i.id));
     const back = unvoted.filter((i) => skipped.has(i.id));
     return [...front, ...back];
-  }, [items, skipped, uid]);
+  }, [playable, skipped, uid]);
   const currentItem = deck[0] ?? null;
   const allDone = totalCount > 0 && deck.length === 0;
   // Show pacing prompt when session votes have crossed the current
@@ -294,8 +309,8 @@ export default function FantasyWishesScreen() {
   // Used in the DoneState to show whether they're behind us or caught up.
   const partnerLeft = useMemo(() => {
     if (!partnerId) return 0;
-    return items.filter((i) => !i.votes[partnerId]).length;
-  }, [items, partnerId]);
+    return playable.filter((i) => !i.votes[partnerId]).length;
+  }, [playable, partnerId]);
 
   // Nothing until the gate has decided (no UI flash for a redirect).
   if (!ready) return null;
@@ -310,7 +325,12 @@ export default function FantasyWishesScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Fantasy Wishes</Text>
-        {readOnly ? <View style={{ width: 60 }} /> : <View style={{ flexDirection: 'row', gap: Spacing.md }}>
+        {readOnly ? <View style={{ width: 60 }} /> : <View style={{ flexDirection: 'row', gap: Spacing.md, alignItems: 'center' }}>
+          {items.length > 0 && (
+            <TouchableOpacity onPress={() => setShowCategories(true)} accessibilityRole="button" accessibilityLabel="Choose categories">
+              <Text style={styles.resetBtn}>☰</Text>
+            </TouchableOpacity>
+          )}
           {items.length > 0 && (
             <TouchableOpacity onPress={handleReset} disabled={resetting} accessibilityRole="button" accessibilityLabel="Reset wishes" accessibilityHint="Cannot be undone">
               <Text style={styles.resetBtn}>{resetting ? '…' : '↺'}</Text>
@@ -325,6 +345,11 @@ export default function FantasyWishesScreen() {
       {readOnly ? <PremiumEndedBanner /> : <View style={styles.infoBanner}>
         <Text style={styles.infoText}>✨ Vote privately, only mutual Yes matches are ever revealed</Text>
       </View>}
+      {!readOnly && items.length > 0 && Object.keys(fwCats).length === 0 && !hintDismissed && (
+        <TouchableOpacity style={styles.catHint} onPress={() => { setHintDismissed(true); setShowCategories(true); }} activeOpacity={0.7} accessibilityRole="button">
+          <Text style={styles.catHintText}>Sensual comes first. Choose what is for the two of you ›</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Shared toast (components/Toast.tsx) — fires on new match
           (emphasis + onTap→Matches tab) and on +Add / partner add
@@ -356,6 +381,12 @@ export default function FantasyWishesScreen() {
                   : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
               </Text>
             </TouchableOpacity>
+          ) : nothingOn ? (
+            <TouchableOpacity style={styles.emptyCard} onPress={() => setShowCategories(true)} activeOpacity={0.7} accessibilityRole="button">
+              <Text style={styles.emptyEmoji}>☰</Text>
+              <Text style={styles.emptyTitle}>Every category is off</Text>
+              <Text style={styles.emptyText}>Turn one back on to keep exploring. Your matches are still in the Matches tab.</Text>
+            </TouchableOpacity>
           ) : allDone ? (
             <DoneState
               votedCount={votedCount}
@@ -364,6 +395,8 @@ export default function FantasyWishesScreen() {
               partnerLeft={partnerLeft}
               partnerName={partner?.name ?? 'partner'}
               onViewMatches={() => setActiveTab('matches')}
+              categoriesOff={categoriesOff.length}
+              onOpenCategories={() => setShowCategories(true)}
             />
           ) : pausedForLater ? (
             <SessionPausedState
@@ -475,6 +508,40 @@ export default function FantasyWishesScreen() {
         </View>
       </Modal>
 
+      {/* Category choice sheet (USER_VOICE A6). Both partners see the
+          same deck because the choice lives on the couple doc. */}
+      <Modal visible={showCategories} transparent animationType="slide" onRequestClose={() => setShowCategories(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Categories</Text>
+            <Text style={styles.catNote}>Turn off anything that is not for the two of you. Nothing is deleted; turned-off cards just stay out of the deck. Either of you can change this.</Text>
+            {FW_CATEGORY_ORDER.map((c) => {
+              const cfg = FANTASY_WISHES_CATEGORY_CONFIG[c];
+              const on = fwCats[c] !== false;
+              return (
+                <View key={c} style={styles.catRow}>
+                  <Text style={styles.catEmoji}>{cfg.emoji}</Text>
+                  <View style={styles.catText}>
+                    <Text style={styles.catLabel}>{cfg.label}</Text>
+                    <Text style={styles.catDesc}>{cfg.description}</Text>
+                  </View>
+                  <Switch
+                    value={on}
+                    onValueChange={(next) => { if (coupleId) setFWCategory(coupleId, c, next).catch(() => {}); }}
+                    trackColor={{ false: Colors.border, true: Colors.rose }}
+                    thumbColor={on ? Colors.burgundy : Colors.muted}
+                    accessibilityLabel={`${cfg.label} ${on ? 'on' : 'off'}`}
+                  />
+                </View>
+              );
+            })}
+            <TouchableOpacity style={styles.saveBtn} onPress={() => setShowCategories(false)} accessibilityRole="button">
+              <Text style={styles.saveBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <HelpModal
         visible={help.visible}
         title="Fantasy Wishes"
@@ -531,9 +598,10 @@ function WishDeckCard({ item, onVote, partnerName }: {
   );
 }
 
-function DoneState({ votedCount, totalCount, matchesCount, partnerLeft, partnerName, onViewMatches }: {
+function DoneState({ votedCount, totalCount, matchesCount, partnerLeft, partnerName, onViewMatches, categoriesOff, onOpenCategories }: {
   votedCount: number; totalCount: number; matchesCount: number;
   partnerLeft: number; partnerName: string; onViewMatches: () => void;
+  categoriesOff: number; onOpenCategories: () => void;
 }) {
   return (
     <View style={styles.doneWrap}>
@@ -561,6 +629,13 @@ function DoneState({ votedCount, totalCount, matchesCount, partnerLeft, partnerN
       <Text style={styles.doneComeBack}>
         New wishes appear when either of you adds one, or use ↺ to reload the deck.
       </Text>
+      {categoriesOff > 0 && (
+        <TouchableOpacity onPress={onOpenCategories} activeOpacity={0.7} accessibilityRole="button">
+          <Text style={styles.doneCategoriesLink}>
+            {categoriesOff === 1 ? 'One category is off. Turn it on to keep going ›' : `${categoriesOff} categories are off. Turn one on to keep going ›`}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -643,6 +718,15 @@ const styles = StyleSheet.create({
 
   infoBanner: { marginHorizontal: Spacing.lg, marginTop: Spacing.sm, backgroundColor: '#F3E5F5', borderRadius: Radius.md, padding: Spacing.sm, marginBottom: Spacing.sm },
   infoText: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: '#6A1B9A', textAlign: 'center' },
+  catHint: { marginHorizontal: Spacing.lg, marginBottom: Spacing.sm },
+  catHintText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.burgundy, textAlign: 'center' },
+  catNote: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted, lineHeight: 19, marginBottom: Spacing.sm },
+  catRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  catEmoji: { fontSize: 22, width: 30, textAlign: 'center' },
+  catText: { flex: 1 },
+  catLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  catDesc: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  doneCategoriesLink: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, textAlign: 'center', marginTop: Spacing.sm },
 
   tabRow: { flexDirection: 'row', marginHorizontal: Spacing.lg, marginBottom: Spacing.md, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },

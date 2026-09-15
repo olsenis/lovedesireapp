@@ -67,6 +67,8 @@ export interface Couple {
   // permanent, no re-add on next scan. See ensureAutoMilestone in
   // services/milestoneService.ts for the transaction that maintains this.
   autoMilestonesCreated?: string[];
+  // Fantasy Wishes category choice (Sep 2026, USER_VOICE A6): absent = on.
+  fwCategories?: Partial<Record<'sensual' | 'roleplay' | 'explicit' | 'bdsm', boolean>>;
 }
 
 // Exclude visually ambiguous characters (0/O, 1/I/L) for easier sharing verbally

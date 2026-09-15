@@ -60,7 +60,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
   4. Same treatment for Daily Picks (`dailyWishService`) if the picks pool shows repeats in testing (Sweet 60 at 5 a day repeats inside two weeks).
 - **Test.** Dev flag to shrink the window to 3 days; play four days on two phones; no id repeats across the four docs; a category with a tiny pool still fills.
 
-### A6. Fantasy Wishes: category chips and "skip scenarios that involve other people"  `M`  ⬜
+### A6. Fantasy Wishes: category chips and "skip scenarios that involve other people"  `M`  ✅ Sep 15 2026 (categories as data on all 394 presets, per-couple choice on the couple doc, gentle-first deck order, ☰ sheet; the "other people" switch turned out unnecessary: the pool has no third-party scenarios, which is now a store-copy line)
 - **Why.** §5 and §9a, P5. Spicer's most-cited 2026 one-star reason ("90% of the questions are not for couples that are happily married to each other"), Lovify's "skip topic", the DeadBedrooms fear of "polyamory and BDSM before we even got through the basics".
 - **Where.** `app/fantasy-wishes.tsx` derived deck (`unvoted` → `front` minus `skipped`); `constants/content.ts` `FANTASY_WISHES_PRESETS` (4 categories; about 15 items mention a third person, stranger, swinging, threesome); `services/fantasyWishesService.ts`.
 - **Steps.**

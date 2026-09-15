@@ -14,7 +14,7 @@ import { useToast } from '../components/Toast';
 // paywall reads as "buying 3 flagship depth features + 4 more" instead
 // of "buying 7 equivalent items". Same 7 items, cleaner mental model.
 const FLAGSHIP_FEATURES = [
-  { emoji: '✨', title: 'Fantasy Wishes', desc: '290+ scenarios, revealed only when you both say yes to the same one' },
+  { emoji: '✨', title: 'Fantasy Wishes', desc: '390+ scenarios for the two of you, revealed only when you both say yes to the same one' },
   { emoji: '🫁', title: 'Sensate Focus', desc: 'Guided 3-stage sessions from sex therapy practice, at your own pace' },
   { emoji: '🎲', title: 'Fire & Desire challenges', desc: '30 days of committed prompts to reignite what habit has softened' },
 ];
