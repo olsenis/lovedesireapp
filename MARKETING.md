@@ -155,15 +155,15 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 
 **Promotional text** (170 chars max, editable without a new build, shows above the description):
 
-> Weekly rituals, nightly questions, weekend games. No streaks, no ads, no AI. Only the two of you see any of it. One subscription covers you both, 7 days free.
+> Weekly rituals, nightly questions, weekend games. No streaks, no ads. Only the two of you see any of it. One subscription covers you both, 7 days free.
 
-(158 chars.)
+(151 chars.)
 
 **Description** (first three lines show before "more"): the version in APP_STORE_SUBMISSION was written before several renames. Corrected feature names: **Presence** (was Sensate Focus), **The Lovers** (unchanged), **Our Story** (milestones timeline), **Memory Lane** (new, Sep 2026), **Activity Cards** (was Bingo). Draft:
 
 > {APP_NAME} is a private space for two people who want to keep choosing each other.
 >
-> No ads. No AI-written questions. No streaks. One subscription covers both of you, and most of the app is free.
+> No ads. No streaks. One subscription covers both of you, and most of the app is free.
 >
 > **Every week**
 > Sunday Check-in: five questions, answered alone, revealed together. A love-language nudge on Monday. Memory Lane, a quiz about your own story, once the two of you have one.

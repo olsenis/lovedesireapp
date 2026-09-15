@@ -43,7 +43,7 @@ A friend who has been together a long time and is glad you asked. Plain, warm, a
 
 ## Store and website register
 
-Same voice, one step more formal. "A private app for two." "Weekly rituals, nightly questions, weekend games." Say the anti-list plainly; the canonical sentence is "No ads. No AI-written questions. No streaks. One subscription covers both of you, and most of the app is free." plus, where there is room, "Works for any two people." and "Your history is never locked." Never promise outcomes ("stronger relationship in 30 days"); describe what happens. The About page's "Not for everyone" paragraph is the tone reference.
+Same voice, one step more formal. "A private app for two." "Weekly rituals, nightly questions, weekend games." Say the anti-list plainly; the canonical sentence is "No ads. No streaks. One subscription covers both of you, and most of the app is free." Do not mention AI either way: the pools were drafted with AI help and curated by hand, and a claim in either direction invites the argument. plus, where there is room, "Works for any two people." and "Your history is never locked." Never promise outcomes ("stronger relationship in 30 days"); describe what happens. The About page's "Not for everyone" paragraph is the tone reference.
 
 ## Words we never use
 
