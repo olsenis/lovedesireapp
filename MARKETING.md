@@ -37,7 +37,7 @@ Related: [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md) (submission checklis
 
 **Privacy angle (from `memory/launch_todo.md`):** say "private", "only the two of you", "encrypted in transit and at rest". **Never** say "end-to-end encrypted" or "zero-knowledge"; neither is true (Firebase, server-readable).
 
-**Competitors:** profiles, store numbers, what each does well and badly, and what we take from them are in [COMPETITORS.md](COMPETITORS.md) (Sep 13 2026, 14 new-wave apps + the incumbents + a Reddit voice-of-customer sample). The short version: Paired owns the category's trust (207k ratings) and its complaints are "pay twice", "routine pressure", "childish"; the blind mutual reveal is in every app and no longer differentiates; per-couple pricing is now table stakes; "no streaks" is a real differentiator only if we say it; nobody combines an 18+ layer with a two-phone weekly ritual loop. The review-mining pass in [USER_VOICE.md](USER_VOICE.md) (18,320 reviews, Sep 13 2026) adds the things to say out loud because users punish their absence: no ads, no AI-written questions, no streaks, most of the app free, your history is never locked, works for any two people, and the price stated in the description. Decided Sep 14 2026 (USER_VOICE_TODO D2): what is free at launch stays free; features added later may be free or Premium, decided per feature. Say it on `/pricing` and in the description (B3).
+**Competitors:** profiles, store numbers, what each does well and badly, and what we take from them are in [COMPETITORS.md](COMPETITORS.md) (Sep 13 2026, 14 new-wave apps + the incumbents + a Reddit voice-of-customer sample). The short version: Paired owns the category's trust (207k ratings) and its complaints are "pay twice", "routine pressure", "childish"; the blind mutual reveal is in every app and no longer differentiates; per-couple pricing is now table stakes; "no streaks" is a real differentiator only if we say it; nobody combines an 18+ layer with a two-phone weekly ritual loop. The review-mining pass in [USER_VOICE.md](USER_VOICE.md) (18,320 reviews, Sep 13 2026) adds the things to say out loud because users punish their absence: no ads, no AI-written questions, no streaks, most of the app free, your history is never locked, works for any two people, and the price stated in the description. Decided Sep 14 2026 (USER_VOICE_TODO D2): what is free at launch stays free; features added later may be free or Premium, decided per feature. Said on `/pricing` and in the description since Sep 15 (B3 done).
 
 Our slot: **rituals + play + quiet insight, in one private space, near or far.** LDR is a distinctive feature (about a quarter of the app), not the niche (decided May 2026).
 
@@ -75,6 +75,7 @@ Format: `{APP_NAME}: <two keywords>`. The brand stays one unit so the exact phra
 | `Check-ins, games & date nights` | 30 | "date night" is a searched phrase, fills the field |
 | `Weekly rituals, nightly games` | 29 | reads well, fewer distinct keywords |
 | `A private app for two` | 21 | the tagline, zero keyword value; keep it for the website, not here |
+| `Rituals, games, long distance` | 29 | long distance is the largest praise context in the review mining (946 reviews, USER_VOICE §3); test against the draft |
 
 **Draft:** `Rituals, games & check-ins` (26). Retires `For couples who want more` from APP_STORE_SUBMISSION.
 
@@ -134,11 +135,11 @@ Six, free-tier surfaces only, taken from a premium admin account so nothing is l
 | # | Screen | Caption |
 |---|---|---|
 | 1 | Sunday Check-in reveal, both answers side by side | Five questions. Answered alone, read together. |
-| 2 | Home with couple card + "Waiting for you" nudge | One private space for two. No streaks. |
+| 2 | Home with couple card + "Waiting for you" nudge | One private space for two. No streaks, most of it free. |
 | 3 | Tonight's Date spin + result card | Tonight decided in one spin. |
 | 4 | Love Language result | Learn how your partner hears love. |
 | 5 | Moments grid, past photo pairs | One photo a day, side by side. |
-| 6 | Together List with tame presets | Things you both said yes to. |
+| 6 | Together List with tame presets | Things you both said yes to. Yours to keep. |
 
 Sizes: 6.7" and 6.5" (Pro Max), 5.5" (older). Also one 1024x1024 icon without alpha. **None taken yet.**
 
@@ -154,13 +155,15 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 
 **Promotional text** (170 chars max, editable without a new build, shows above the description):
 
-> Weekly rituals, nightly questions, weekend games. No streaks, no ads. Only the two of you see any of it. One subscription covers you both, 7 days free.
+> Weekly rituals, nightly questions, weekend games. No streaks, no ads, no AI. Only the two of you see any of it. One subscription covers you both, 7 days free.
 
-(151 chars.)
+(158 chars.)
 
 **Description** (first three lines show before "more"): the version in APP_STORE_SUBMISSION was written before several renames. Corrected feature names: **Presence** (was Sensate Focus), **The Lovers** (unchanged), **Our Story** (milestones timeline), **Memory Lane** (new, Sep 2026), **Activity Cards** (was Bingo). Draft:
 
 > {APP_NAME} is a private space for two people who want to keep choosing each other.
+>
+> No ads. No AI-written questions. No streaks. One subscription covers both of you, and most of the app is free.
 >
 > **Every week**
 > Sunday Check-in: five questions, answered alone, revealed together. A love-language nudge on Monday. Memory Lane, a quiz about your own story, once the two of you have one.
@@ -181,7 +184,7 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 > 7 days free, then $9.99 a month or $39.99 a year (US prices). One subscription covers both of you. Cancel any time in your App Store settings.
 >
 > **What we don't do**
-> No feed, no strangers, no ads, no streaks. Pairing needs a code you share yourselves. Explicit content is text only, behind an 18+ attestation and the paid tier. One subscription covers both of you.
+> No feed, no strangers, no ads, no streaks. Pairing needs a code you share yourselves. Works for any two people, no gender questions asked. Your history is never locked, not even if Premium ends. Explicit content is text only, behind an 18+ attestation and the paid tier. One subscription covers both of you.
 
 ### 2.11 Measurement and monthly review
 

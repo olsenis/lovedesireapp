@@ -79,13 +79,13 @@ Effort key: S under 1 h · M half a day · L a day or more.
   3. Profile copy: "Lock the app. Face ID or your phone passcode every time the app opens."
 - **Test.** iOS and Android: enable, background 60 s, foreground → prompt; cancel → still locked; disable → no prompt.
 
-### A8. Say it in the store and on the paywall  `S`  ⬜
+### A8. Say it in the store and on the paywall  `S`  ✅ Sep 15 2026 (description anti-list block + "any two people" + "history never locked", promo text, captions 2 and 6, long-distance subtitle candidate, site hero and About, paywall note)
 - **Why.** Themes 3, 5, 6, 10 and §9b, P7. Users search for and reward "no ads", "no AI", "no streaks", "one subscription", "free"; even Paired's one-sub-covers-both is misread as "7.50/person".
 - **Where.** MARKETING §2.8 (screenshot captions), §2.10 (description + promo text), APP_STORE_SUBMISSION, `web/src/pages/index.astro` and `pricing.astro`, `app/upgrade.tsx` (keep both notes).
 - **Steps.** Description opens with the anti-list in one line: "No ads. No AI-written questions. No streaks. One subscription covers both of you, and most of the app is free." Add "Works for any two people." and "Your history is never locked." Screenshot caption: "Most of the app is free." Subtitle A/B list adds a "long distance" variant. Price and trial length stated once in the description.
 - **Test.** Copy review against VOICE.md; the description under 4,000 chars.
 
-### A9. Fantasy Wishes help card: the honest line about inference  `S`  ⬜
+### A9. Fantasy Wishes help card: the honest line about inference  `S`  ✅ Sep 15 2026 (HelpModal description + tip)
 - **Why.** §9a point 3: users ask "will they be able to see EVERYTHING I answered 'no' to?" and know a yes-to-everything partner can infer answers. Saying it plainly is a trust move.
 - **Where.** `app/fantasy-wishes.tsx` HelpModal copy (`useHelp('fantasy-wishes')`), plus the on-entry consent copy in `services/spicyConsentService.ts` if it fits.
 - **Steps.** Add one sentence: "A No is never shown. A match only appears when you both say Yes, which also means a partner who says Yes to everything would learn your Yeses. Play it straight." Plus "Only the two of you can see matches."
@@ -102,7 +102,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
 
 - **B1. VOICE.md**  `S`  ⬜ Add to "words we never use": homework, task, routine (as a noun for the app), "work on your relationship" (already), "check in" as a verb outside the Sunday ritual. Add a "words users use when it works" list from USER_VOICE §8 (five minutes a day, brought us closer, things we never knew, just for the two of us, feels like flirting not therapy).
 - **B2. MARKETING §6 and §2.9**  `S`  ⬜ Astroturf note: half of the Sep 2026 r/apps thread is founders; real users name Cozy Couples, SumOne, Couple Joy, Paired, Agapé. Review-reply routine: every review answered within 48 h for the first 90 days, three template openings (thanks + specific; sorry + what we changed + version; question + how to reach us), never argue, never ask for a re-rating.
-- **B3. Free tier declared permanent**  `S`  ⬜ One sentence in MARKETING §1 and on `/pricing`: "What is free today stays free." Paired, Lovewick and Cozy Couples each lost their best reviews by withdrawing free features (§9b point 1). This is a promise, so it needs D2 first.
+- **B3. Free tier declared permanent**  `S`  ✅ Sep 15 2026 (/pricing free column + MARKETING §1). One sentence in MARKETING §1 and on `/pricing`: "What is free today stays free." Paired, Lovewick and Cozy Couples each lost their best reviews by withdrawing free features (§9b point 1). This is a promise, so it needs D2 first.
 - **B4. Android parity line**  `S`  ⬜ MARKETING §3: the APK ships the same build number as the App Store version in the same week; the site's manifest shows both. "it sometimes lags behind in features from the Apple version" is the sideload complaint.
 - **B5. APP_STORE_SUBMISSION**  `S`  ⬜ Price and trial in the description field; subtitle candidates with "long distance"; the review-reply routine linked.
 - **B6. NAMING / H43**  `S`  ⬜ Already added: the "name alone would prove to be a deterrent" quote under next step 4. Decision still Óli's (D1).
