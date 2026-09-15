@@ -70,7 +70,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
   4. Deck order for a couple with no votes yet: Sensual first, then Roleplay, Explicit, BDSM (today: createdAt order).
 - **Test.** Two phones: turn Explicit off on one, the other's deck drops those cards on the next snapshot; matches already made stay visible; `includeOthers` off hides every tagged item.
 
-### A7. App lock  `S`  ⬜
+### A7. App lock  `S`  ✅ Sep 15 2026 (`expo-local-authentication`, device-local switch in Profile → Privacy, lock on cold start and after 60 s, blank cover in the app switcher, on/off both authenticate)
 - **Why.** §5 and §9a, P6. Between's privacy praise ("You can add a privacy code so kids won't read the messages"), Nice's "no passcode" complaint, kids-on-the-phone in three threads.
 - **Where.** New `hooks/useAppLock.tsx` + a full-screen overlay in `app/_layout.tsx`; Profile switch `profile.appLock` (device-local in AsyncStorage, not Firestore, so a partner cannot toggle it remotely); `expo-local-authentication` (`npm install expo-local-authentication --legacy-peer-deps`; works in Expo Go).
 - **Steps.**

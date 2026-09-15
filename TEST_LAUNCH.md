@@ -613,7 +613,11 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
 
 ---
 
-## 8. iOS permissions (4 tests)
+## 8. iOS permissions (5 tests)
+
+- [ ] **Face ID prompt text** 📱
+  1. Profile → Privacy → Lock the app ON on a Face ID phone
+  - **Expected:** The system sheet shows "Love Desire uses Face ID to unlock the app when you turn on the app lock." (`NSFaceIDUsageDescription` in app.json). Denying keeps the switch off.
 
 - [ ] **First camera use shows description string** ⚠️
   1. Fresh install on Phone A

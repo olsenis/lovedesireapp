@@ -21,6 +21,8 @@ import {
 import { Modal, ActivityIndicator } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
+import { useAppLock } from '../hooks/useAppLock';
+import { AppLockOverlay } from '../components/AppLockOverlay';
 import { createUserProfile } from '../services/authService';
 import { acceptPairing, declinePairing } from '../services/coupleService';
 import { getConsent, confirmConsent } from '../services/consentService';
@@ -59,6 +61,9 @@ if (Notifications) {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // App lock (USER_VOICE A7): device-local, off by default, rendered above
+  // the Stack and the pairing modal, below the splash.
+  const appLock = useAppLock();
   const [fontsLoaded, fontError] = useFonts({
     CormorantGaramond_400Regular,
     CormorantGaramond_600SemiBold,
@@ -446,6 +451,8 @@ export default function RootLayout() {
           </View>
         </View>
       </Modal>
+
+      <AppLockOverlay locked={appLock.locked} covered={appLock.covered} onUnlock={() => { appLock.unlock().catch(() => {}); }} />
 
       {/* Menu flicker v3 — full-screen splash overlay. Renders on top
           of Stack + all modals from the very first paint (opacity 1 =

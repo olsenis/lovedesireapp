@@ -3934,6 +3934,19 @@ Profile screen controls, payment paywall, help system, legal viewers.
 
 ---
 
+### App lock (Sep 2026, USER_VOICE A7)
+- [ ] **Turn on requires Face ID and locks after a minute** 📱
+  1. Profile → Privacy → "Lock the app" ON → Face ID / passcode prompt → confirm
+  2. Background the app for 70 s → foreground
+  - **Expected:** Cream screen with the wordmark and "Unlock", Face ID prompt appears on its own; cancel keeps it locked with the Unlock button; Unlock → prompt → app. Kill and relaunch → prompt on cold start. Background for 10 s → no prompt.
+
+- [ ] **App switcher shows nothing** 📱 🔒
+  1. Lock on; open Fantasy Wishes; swipe up to the app switcher
+  - **Expected:** The preview card is a blank cream screen with the wordmark, not the wish text.
+
+- [ ] **Turn off requires Face ID; no passcode on the phone blocks turning on** ⚠️
+  - **Expected:** Switch OFF → prompt → off, no more prompts. On a phone with no passcode or biometrics the switch stays off with "Set a passcode first". The setting is per phone: the partner's phone is unaffected.
+
 ### Billing honesty on the paywall and in Profile (Sep 2026, USER_VOICE A3)
 
 - [ ] **Paywall states price, trial end date and renewal**

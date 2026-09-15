@@ -15,6 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { createUserProfile, logout, disconnectFromCouple } from '../services/authService';
+import { isAppLockEnabled, setAppLockEnabled, canUseAppLock, authenticate } from '../services/appLockService';
 import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
 import { uploadProfilePhoto, UploadTooLargeError } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
@@ -145,6 +146,28 @@ export default function ProfileScreen() {
   };
 
   const isConnected = !!(couple?.partner1Uid && couple?.partner2Uid);
+
+  // App lock switch (USER_VOICE A7). Device-local flag; both turning it on
+  // and off authenticate first, so it cannot be enabled on a phone that
+  // has nothing to unlock with, nor disabled by whoever is holding it.
+  const [appLockOn, setAppLockOn] = useState(false);
+  useEffect(() => { isAppLockEnabled().then(setAppLockOn); }, []);
+  const handleAppLockToggle = async (next: boolean) => {
+    if (next) {
+      if (!(await canUseAppLock())) {
+        Alert.alert('Set a passcode first', 'Add a passcode, Face ID or a fingerprint to your phone, then turn this on.');
+        return;
+      }
+      if (!(await authenticate('Turn on the app lock'))) return;
+    } else if (!(await authenticate('Turn off the app lock'))) {
+      return;
+    }
+    await setAppLockEnabled(next);
+    setAppLockOn(next);
+    // The root hook reads the flag on next launch; until then the current
+    // session stays as it is (turning on locks from the next cold start or
+    // the next minute in the background).
+  };
   const daysStr = couple
     ? `${Math.floor((Date.now() - (couple.startDate ?? couple.createdAt)) / 86400000)} days`
     : '-';
@@ -538,6 +561,28 @@ export default function ProfileScreen() {
               </Text>
             </>
           )}
+        </View>
+
+        {/* Privacy */}
+        <Text style={styles.sectionLabel}>Privacy</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <View style={styles.rowTextStack}>
+              <Text style={styles.rowLabel}>Lock the app</Text>
+              <Text style={styles.rowHint}>Face ID or your phone passcode every time the app opens, and after a minute in the background. This phone only.</Text>
+            </View>
+            {Platform.OS === 'web' ? (
+              <Text style={styles.notifOff}>Phone only</Text>
+            ) : (
+              <Switch
+                value={appLockOn}
+                onValueChange={handleAppLockToggle}
+                trackColor={{ false: Colors.border, true: Colors.rose }}
+                thumbColor={appLockOn ? Colors.burgundy : Colors.muted}
+                accessibilityLabel="Lock the app"
+              />
+            )}
+          </View>
         </View>
 
         {/* Features */}

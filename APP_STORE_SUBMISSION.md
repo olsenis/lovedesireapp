@@ -111,6 +111,7 @@ Based on [BRAND_RESEARCH.md](BRAND_RESEARCH.md) — "Love Desire" is clear of tr
 - [ ] Reviewer notes pasted from this doc
 - [ ] Keywords set from MARKETING.md §2.4 (all four locales)
 - [ ] Description + promo text pasted from MARKETING.md §2.10 (the description states the price and the 7-day trial, USER_VOICE A3)
+- [ ] Permission strings present in the build: camera, microphone, photo library (read + add), Face ID (`NSFaceIDUsageDescription`, app lock, Sep 2026)
 - [ ] EAS build submitted via `npx eas build --platform ios --profile production`
 - [ ] Build uploaded to App Store Connect
 - [ ] Final review of everything above before hitting "Submit for Review"

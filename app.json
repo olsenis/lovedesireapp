@@ -15,6 +15,7 @@
         "NSMicrophoneUsageDescription": "Love Desire uses the microphone so you can record voice notes in Tease and audio answers in Truth or Dare.",
         "NSPhotoLibraryUsageDescription": "Love Desire needs access to your photo library so you can pick photos for your profile, Moments, Tease, and Time Capsules.",
         "NSPhotoLibraryAddUsageDescription": "Love Desire can save photos to your library when you choose to export a Moment or Time Capsule.",
+        "NSFaceIDUsageDescription": "Love Desire uses Face ID to unlock the app when you turn on the app lock.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -43,6 +44,12 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Love Desire uses Face ID to unlock the app when you turn on the app lock."
+        }
+      ],
       [
         "expo-splash-screen",
         {
