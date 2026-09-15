@@ -420,7 +420,11 @@ export default function HomeScreen() {
     tonightPushedRef.current = tonightMatch.key;
     if (myTonight.setAt >= partnerTonight.setAt) {
       trackEvent('tonight_matched');
-      notifyPartner(coupleId, uid, "You're both in the mood 🔥", `${profile?.name ?? 'Your partner'} said tonight too.`).catch(() => {});
+      notifyPartner(
+        coupleId, uid,
+        "You're both in the mood 🔥", `${profile?.name ?? 'Your partner'} said tonight too.`,
+        { title: 'Tonight ✓', body: `You and ${profile?.name ?? 'your partner'} are on the same page.` },
+      ).catch(() => {});
     }
   }, [tonightMatch?.key, coupleId, uid, myTonight, partnerTonight, profile?.name]);
 
@@ -501,7 +505,11 @@ export default function HomeScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSparkSent(true);
     await sendSpark(coupleId, uid, emoji, message);
-    notifyPartner(coupleId, uid, `${profile?.name ?? 'Your partner'} sent you love ❤️`, `${emoji} ${message}`).catch(() => {});
+    notifyPartner(
+      coupleId, uid,
+      `${profile?.name ?? 'Your partner'} sent you love ❤️`, `${emoji} ${message}`,
+      { title: `${profile?.name ?? 'Your partner'} sent you love ❤️`, body: 'Open to read it.' },
+    ).catch(() => {});
     setTimeout(() => setSparkSent(false), 3000);
   };
 
@@ -519,7 +527,11 @@ export default function HomeScreen() {
       await setMood(coupleId, user.uid, emoji);
       trackEvent('mood_set');
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
-      notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
+      notifyPartner(
+        coupleId, user.uid,
+        'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`,
+        { title: 'New mood 💫', body: `${profile?.name ?? 'Your partner'} updated a mood` },
+      ).catch(() => {});
       unlockMoodNotes(coupleId, user.uid, emoji).catch(() => {});
     } catch (e) {
       console.error('setMood failed:', e);

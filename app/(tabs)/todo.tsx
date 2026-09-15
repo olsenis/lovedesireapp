@@ -98,7 +98,8 @@ export default function TogetherScreen() {
       notifyPartner(
         coupleId, user.uid,
         `${profile?.name ?? 'Partner'} suggested an item ✨`,
-        `"${newText.trim().slice(0, 60)}"`
+        `"${newText.trim().slice(0, 60)}"`,
+        { title: `${profile?.name ?? 'Partner'} suggested an item ✨`, body: 'Open the list to see it.' },
       ).catch(() => {});
     }
     setNewText('');

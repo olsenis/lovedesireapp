@@ -507,6 +507,29 @@ export default function ProfileScreen() {
               <Text style={styles.notifOff}>Off</Text>
             )}
           </View>
+          {/* Discreet lock-screen wording (Sep 2026, USER_VOICE A4). The
+              recipient decides; notifyPartner on the sender's phone reads
+              this flag. Default on; absent means on. */}
+          {Platform.OS !== 'web' && osNotifGranted && profile?.notificationsEnabled !== false && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.row}>
+                <View style={styles.rowTextStack}>
+                  <Text style={styles.rowLabel}>Discreet on the lock screen</Text>
+                  <Text style={styles.rowHint}>Names and the app, never the words. Turn off to see full previews.</Text>
+                </View>
+                <Switch
+                  value={profile?.discreetNotifications !== false}
+                  onValueChange={async (next) => {
+                    if (!user) return;
+                    await createUserProfile(user.uid, { discreetNotifications: next } as any);
+                  }}
+                  trackColor={{ false: Colors.border, true: Colors.rose }}
+                  thumbColor={profile?.discreetNotifications !== false ? Colors.burgundy : Colors.muted}
+                />
+              </View>
+            </>
+          )}
           {osNotifGranted === false && Platform.OS !== 'web' && (
             <>
               <View style={styles.divider} />

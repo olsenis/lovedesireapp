@@ -40,7 +40,7 @@ Effort key: S under 1 h · M half a day · L a day or more.
   4. `/pricing` already says "Cancel during the trial and you pay nothing"; add the same trial-end sentence shape.
 - **Test.** Paywall date is tomorrow + 6 in the trial copy on a fresh account; Manage link opens the store subscriptions page on a device.
 
-### A4. Discreet notifications  `S`  ⬜
+### A4. Discreet notifications  `S`  ✅ Sep 15 2026 (`notifyPartner` discreet variant chosen by the recipient's `discreetNotifications`, default on; eight sites; Profile switch; TEST_LAUNCH §7 both wordings)
 - **Why.** Theme 11, P3. "REALLY isn't something you want on your notifications at work" (Paired, Aug 2026). Two of our push bodies are explicit on a lock screen.
 - **Where.** `app/(tabs)/index.tsx` line with `"You're both in the mood 🔥"`; `app/fantasy-wishes.tsx` `'New match ✨', 'You have a shared fantasy wish'`; every other `notifyPartner(` call (mood, WYR, Daily, Truth or Dare, Notes, Moments, Sunday, Memory Lane, Tease); `app/profile.tsx` notifications switch (`profile.notificationsEnabled`).
 - **Steps.**

@@ -210,7 +210,8 @@ export default function FlashesScreen() {
       notifyPartner(
         coupleId, uid,
         `${profile?.name ?? 'Partner'} sent you a ${typeWord} ${typeIcon}`,
-        caption.trim() || 'Tap to listen before it disappears'
+        caption.trim() || 'Tap to listen before it disappears',
+        { title: `${profile?.name ?? 'Partner'} sent you a ${typeWord} ${typeIcon}`, body: 'Tap to see before it disappears.' },
       ).catch(() => {});
       setShowCompose(false);
       setSelectedUri(null);

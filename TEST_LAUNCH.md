@@ -511,18 +511,20 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
   2. Check Firebase console: `users/{A_uid}.pushToken` and `users/{B_uid}.pushToken` both exist and start with `ExponentPushToken[...]`
   - **Expected:** Both tokens present. Without this, every test below silently no-ops.
 
-### One test per trigger site (all 16 `notifyPartner` calls)
+### One test per trigger site (all 18 `notifyPartner` calls)
+
+> Discreet notifications (Sep 2026, USER_VOICE A4): the recipient's Profile → "Discreet on the lock screen" is ON by default. Expectations below marked *discreet* are what a default phone shows; turn the switch OFF on Phone B to see the full text in brackets.
 - [ ] **Spark push** 📡 📱
   1. Phone B: lock screen. Phone A: Home → ❤️ Love pill → send.
-  - **Expected:** Phone B lock-screen banner "Oli sent you love ❤️" + emoji/message within 30s.
+  - **Expected:** Phone B lock-screen banner "Oli sent you love ❤️" + *discreet* "Open to read it." within 30s [full: the emoji + message].
 
 - [ ] **Mood push (Home)** 📡 📱
   1. Phone B: lock screen. Phone A: Home → tap 😍 mood.
-  - **Expected:** Phone B push "New mood 💫" + "Oli is feeling 😍 In love".
+  - **Expected:** Phone B push "New mood 💫" + *discreet* "Oli updated a mood" [full: "Oli is feeling 😍 In love"].
 
 - [ ] **Mood push (Mood History)** 📡 📱
   1. Phone B: lock screen. Phone A: Mood History → tap 🥰.
-  - **Expected:** Phone B push "New mood 💫" + label matches picked emoji.
+  - **Expected:** Phone B push "New mood 💫" + *discreet* "Oli updated a mood" [full: label matches picked emoji].
 
 - [ ] **Love Note push** 📡 📱
   1. Phone B: lock screen. Phone A: Notes → New → "Right now" → send.
@@ -542,7 +544,7 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
 
 - [ ] **Activity Cards flip push** 📡 📱 💰
   1. Both premium. Phone B: lock screen. Phone A: Activity Cards → flip a card → send.
-  - **Expected:** Phone B push "Activity Cards 🃏" + activity name + "your turn!".
+  - **Expected:** Phone B push "Activity Cards 🃏" + *discreet* "Oli picked a card for you, your turn." [full: the card text + "your turn!"].
 
 - [ ] **Activity Cards marked-done push** 📡 📱 💰
   1. Phone B: lock screen after A sent a card. Phone A: mark it done.
@@ -558,15 +560,15 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
 
 - [ ] **Fantasy Wishes mutual match push** 📡 📱 💰
   1. Both premium, at least one item already yes-voted by B. Phone B: lock screen. Phone A: vote yes on same item.
-  - **Expected:** Phone B push "New match ✨" + "shared fantasy wish".
+  - **Expected:** *discreet* "Fantasy Wishes" + "Something new for the two of you." [full: "New match ✨" + "You have a shared fantasy wish"].
 
 - [ ] **Tease (Flash) push** 📡 📱
   1. Phone B: lock screen. Phone A: Tease → send a flash.
-  - **Expected:** Phone B push (title/body per flash type).
+  - **Expected:** "Oli sent you a tease 📸" + *discreet* "Tap to see before it disappears." [full: the caption].
 
 - [ ] **Intimacy Log push** 📡 📱 💰
   1. Both premium. Phone B: lock screen. Phone A: log an intimate moment.
-  - **Expected:** Phone B push "Intimacy Log 💝" + "logged an intimate moment".
+  - **Expected:** *discreet* "Intimacy Log" + "Oli added to your story." [full: "Intimacy Log 💝" + "logged an intimate moment"].
 
 - [ ] **Journal entry push** 📡 📱
   1. Phone B: lock screen. Phone A: Journal → write + share.
@@ -574,16 +576,24 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
 
 - [ ] **Together List add push** 📡 📱
   1. Phone B: lock screen. Phone A: Together List → add new item.
-  - **Expected:** Phone B push per todo service.
+  - **Expected:** Only when added as a suggestion: "Oli suggested an item ✨" + *discreet* "Open the list to see it." [full: the item text in quotes].
 
 - [ ] **Sunday Check-in (State Union) push** 📡 📱
   1. Phone B: lock screen. Phone A: Sunday Check-in → complete a session.
-  - **Expected:** Phone B push per state-union service.
+  - **Expected:** "Oli finished the Sunday check-in 💗" + "Your turn to answer the 5 questions" (neutral, no discreet variant).
+
+- [ ] **Tonight match push** 📡 📱
+  1. Phone B: tap "Tonight? 🔥" on Home, then lock. Phone A: tap "Tonight? 🔥".
+  - **Expected:** Phone B push *discreet* "Tonight ✓" + "You and Oli are on the same page." [full: "You're both in the mood 🔥" + "Oli said tonight too."]. One push only, to the one who tapped first.
 
 ### System behaviour
 - [ ] **Deep link from push opens correct screen** 📡 📱 ⚠️
   1. Phone B: locked → receive Love Note push → tap notification.
   - **Expected:** App opens directly to /notes (not just Home).
+
+- [ ] **Discreet switch OFF shows the full text** 📡 ⚠️
+  1. Phone B: Profile → "Discreet on the lock screen" OFF. Phone A: set a mood, then send a love tap with a message.
+  - **Expected:** Phone B sees "Oli is feeling 😍 In love" and the love-tap message itself. Switch back ON → the next mood push reads "Oli updated a mood". Neutral pushes (Daily, WYR, Sunday, Notes) read the same either way.
 
 - [ ] **Notification toggle OFF stops pushes** 📡 ⚠️
   1. Phone B: Profile → toggle Push notifications OFF. Phone A: send a Spark.

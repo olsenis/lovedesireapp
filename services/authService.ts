@@ -28,6 +28,7 @@ export interface UserProfile {
   inviteCode?: string;
   pushToken?: string;
   notificationsEnabled?: boolean; // user's in-app toggle, separate from OS-level permission. Defaults to true when token is first registered.
+  discreetNotifications?: boolean; // Sep 2026 (USER_VOICE A4): keep words off MY lock screen; absent = true. Read by the SENDER's notifyPartner.
   createdAt: number;
   birthday?: string; // DD.MM format, no year
   timezone?: string; // IANA tz like "Europe/Reykjavik" — used for LDR partner clock

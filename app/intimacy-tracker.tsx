@@ -366,7 +366,11 @@ export default function IntimacyTrackerScreen() {
           const createdAt = Math.min(when, Date.now());
           await addIntimacyEntry(coupleId, uid, data, createdAt);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          notifyPartner(coupleId, uid, 'Intimacy Log 💝', `${profile?.name ?? 'Your partner'} logged an intimate moment`).catch(() => {});
+          notifyPartner(
+            coupleId, uid,
+            'Intimacy Log 💝', `${profile?.name ?? 'Your partner'} logged an intimate moment`,
+            { title: 'Intimacy Log', body: `${profile?.name ?? 'Your partner'} added to your story.` },
+          ).catch(() => {});
           setShowSheet(false);
         }}
       />

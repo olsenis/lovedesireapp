@@ -75,7 +75,11 @@ export default function MoodHistoryScreen() {
     try {
       await setMood(coupleId, user.uid, emoji);
       setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
-      notifyPartner(coupleId, user.uid, 'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`).catch(() => {});
+      notifyPartner(
+        coupleId, user.uid,
+        'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`,
+        { title: 'New mood 💫', body: `${profile?.name ?? 'Your partner'} updated a mood` },
+      ).catch(() => {});
       unlockMoodNotes(coupleId, user.uid, emoji).catch(() => {});
     } catch (e) {
       console.error('setMood failed:', e);

@@ -3,7 +3,7 @@ import { db } from './firebase';
 import { Couple } from './coupleService';
 import { UserProfile } from './authService';
 
-async function getPartnerToken(coupleId: string, myUid: string): Promise<{ token: string; partnerUid: string } | null> {
+async function getPartnerToken(coupleId: string, myUid: string): Promise<{ token: string; partnerUid: string; discreet: boolean } | null> {
   const coupleSnap = await getDoc(doc(db, 'couples', coupleId));
   if (!coupleSnap.exists()) return null;
   const couple = coupleSnap.data() as Couple;
@@ -17,7 +17,8 @@ async function getPartnerToken(coupleId: string, myUid: string): Promise<{ token
   if (profile.notificationsEnabled === false) return null;
   const token = profile.pushToken;
   if (!token) return null;
-  return { token, partnerUid: partnerId };
+  // Discreet lock-screen wording is the RECIPIENT's choice; absent means on.
+  return { token, partnerUid: partnerId, discreet: profile.discreetNotifications !== false };
 }
 
 // Per-partner-per-title cooldown so a user rapidly flipping cards / accepting
@@ -27,11 +28,20 @@ async function getPartnerToken(coupleId: string, myUid: string): Promise<{ token
 const COOLDOWN_MS = 10_000;
 const lastSent = new Map<string, number>();
 
+// Discreet notifications (Sep 2026, USER_VOICE A4). A call site whose full
+// text carries words that do not belong on a lock screen at work (Tonight,
+// Fantasy Wishes, Intimacy Log, mood labels, card text, Tease captions,
+// love-tap messages, list suggestions) passes a `discreet` variant: the
+// app and a name, never the words. The recipient's profile decides
+// (`discreetNotifications`, default on); the ten neutral pushes pass no
+// variant and are unchanged. Cooldown is keyed on the full title so both
+// variants share it.
 export async function notifyPartner(
   coupleId: string,
   myUid: string,
   title: string,
-  body: string
+  body: string,
+  discreet?: { title: string; body: string },
 ): Promise<void> {
   try {
     const result = await getPartnerToken(coupleId, myUid);
@@ -41,10 +51,11 @@ export async function notifyPartner(
     const now = Date.now();
     if (now - last < COOLDOWN_MS) return; // silently swallow, don't spam
     lastSent.set(key, now);
+    const sent = discreet && result.discreet ? discreet : { title, body };
     await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ to: result.token, title, body, sound: 'default' }),
+      body: JSON.stringify({ to: result.token, title: sent.title, body: sent.body, sound: 'default' }),
     });
   } catch {
     // Notification failure should never break the main action

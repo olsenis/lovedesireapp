@@ -30,6 +30,7 @@ A friend who has been together a long time and is glad you asked. Plain, warm, a
 | Privacy | "Only the two of you can see this." "Encrypted in transit and at rest." | "End-to-end encrypted", "zero-knowledge" (both untrue) |
 | A ritual is done | The result itself, then quiet. "You called 2 of 3." | Confetti, "Amazing!!!", "Streak: 4" |
 | Asking for a rating | Only the native sheet, only after a happy moment, never a pre-ask | "Enjoying the app? Rate us!" |
+| On a lock screen (push) | The app and a name, never the words: "Tonight ✓ / You and Eva are on the same page.", "Eva updated a mood". Full wording only if the recipient turned Discreet off. | "You're both in the mood 🔥", "Eva is feeling 🥵 Horny", a card's text, a Tease caption |
 
 ## Small mechanics
 

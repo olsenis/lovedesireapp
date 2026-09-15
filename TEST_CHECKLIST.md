@@ -500,6 +500,16 @@ Three accounts: Óli, Eva, and a third test account C. Watch the Firestore conso
 ## 2. Home tabs (Home / Discover / Us + Together List surfaced on Home)
 Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). Together List `href: null` in _layout, surfaced as a Home card.
 
+### Discreet notifications (Sep 2026, USER_VOICE A4)
+- [ ] **Switch exists and defaults on**
+  1. Profile → Notifications card, push notifications on, OS permission granted
+  - **Expected:** Second row "Discreet on the lock screen" with the hint, switch ON on a fresh account. Row hidden when push notifications are off or permission denied.
+
+- [ ] **Recipient decides** 📡 📱
+  1. Phone B discreet ON, Phone A sets 🥵 Horny
+  2. Phone B discreet OFF, Phone A sets it again
+  - **Expected:** first push "Oli updated a mood", second "Oli is feeling 🥵 Horny". Phone A's own setting changes nothing about what B sees. Full list of the 18 pushes and both wordings: TEST_LAUNCH §7.
+
 ### Tab navigation bar (app/(tabs)/_layout.tsx)
 
 - [ ] **Three tabs render with icons and labels**

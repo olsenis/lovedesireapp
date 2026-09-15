@@ -96,7 +96,11 @@ export default function ActivityCardsScreen() {
     // Push notification lands on partner's device — substitute {partner}
     // with THEIR partner's name (which is me, the sender). Use profile.name.
     const partnerFacingText = personalise(activity, profile?.name);
-    notifyPartner(coupleId, uid, 'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${partnerFacingText}", your turn!`).catch(() => {});
+    notifyPartner(
+      coupleId, uid,
+      'Activity Cards 🃏', `${profile?.name ?? 'Your partner'} picked "${partnerFacingText}", your turn!`,
+      { title: 'Activity Cards 🃏', body: `${profile?.name ?? 'Your partner'} picked a card for you, your turn.` },
+    ).catch(() => {});
     setRevealIndex(null);
   };
 

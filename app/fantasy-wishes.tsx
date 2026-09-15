@@ -159,7 +159,11 @@ export default function FantasyWishesScreen() {
     if (vote === 'yes' && partnerId) {
       const updated = { ...item, votes: { ...item.votes, [uid]: 'yes' as const } };
       if (isFWMatch(updated, uid, partnerId)) {
-        notifyPartner(coupleId, uid, 'New match ✨', 'You have a shared fantasy wish').catch(() => {});
+        notifyPartner(
+          coupleId, uid,
+          'New match ✨', 'You have a shared fantasy wish',
+          { title: 'Fantasy Wishes', body: 'Something new for the two of you.' },
+        ).catch(() => {});
         noteHappyMoment('fw_match');
       }
     }
