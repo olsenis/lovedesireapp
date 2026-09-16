@@ -43,8 +43,23 @@ A friend who has been together a long time and is glad you asked. Plain, warm, a
 
 ## Store and website register
 
-Same voice, one step more formal. "A private app for two." "Weekly rituals, nightly questions, weekend games." Say the anti-list plainly; the canonical sentence is "No ads. No streaks. One subscription covers both of you, and most of the app is free." Do not mention AI either way: the pools were drafted with AI help and curated by hand, and a claim in either direction invites the argument. plus, where there is room, "Works for any two people." and "Your history is never locked." Never promise outcomes ("stronger relationship in 30 days"); describe what happens. The About page's "Not for everyone" paragraph is the tone reference.
+Same voice, one step more formal. "A private app for two." "Weekly rituals, nightly questions, weekend games." Say the anti-list plainly; the canonical sentence is "No ads. No streaks. One subscription covers both of you, and most of the app is free." Do not mention AI either way: the pools were drafted with AI help and curated by hand, and a claim in either direction invites the argument. plus, where there is room, "Works for any two people." and "Your history is never locked." Never promise outcomes ("stronger relationship in 30 days"); describe what happens. The About page's "Not for everyone" paragraph is the tone reference. Reach for the "Words users use when it works" list below before writing a new store or paywall line.
 
 ## Words we never use
 
-streak · score (outside games) · unlock (for progress) · reward · badge · level up · journey · toxic · heal · fix · perfect · soulmate · spice up (as a verb) · naughty · dirty · miss you (from the app) · don't miss · last chance · hurry · today only · hack · grow together (as a slogan) · E2E · zero-knowledge · they/them for the partner · em dashes
+streak · score (outside games) · unlock (for progress) · reward · badge · level up · journey · toxic · heal · fix · perfect · soulmate · spice up (as a verb) · naughty · dirty · miss you (from the app) · don't miss · last chance · hurry · today only · hack · grow together (as a slogan) · E2E · zero-knowledge · they/them for the partner · em dashes · homework · task (for anything the app asks; the 30-Day Challenge's day tasks are the one exception) · routine (as a noun for the app; "part of our routine" is the user's line, not ours) · chore · check in (as a verb outside the Sunday Check-in) · assignment · exercise (for a question or a game)
+
+## Words users use when it works
+
+From the review mining (USER_VOICE.md §8), the phrases couples reach for in five-star reviews. Write toward this register.
+
+| They say | Where it fits |
+|---|---|
+| "not even five minutes a day", "manageable" | store subtitle, paywall, Daily empty state |
+| "brought us closer", "reconnect" | store description, Sunday Check-in intro |
+| "things we never knew", "questions you'd never think to bring up" | Daily, Memory Lane |
+| "just for the two of us", "private, just for you two" | privacy lines, About page |
+| "feels like flirting, not therapy" | Truth or Dare, Fantasy Wishes, the anti-list |
+| "keeps things fresh" | Tonight's Date, Draw one for tonight |
+
+Quote the register, not the sentence: a review line never goes into the app as if we said it. The complaint phrases ("cash grab", "everything behind a paywall", "lost my streak", "childish", "one question a day") are what the store copy answers, never what it says.
