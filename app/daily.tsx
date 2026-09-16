@@ -19,6 +19,7 @@ import {
   DailyQuestionDoc,
   subscribeDailyQuestions, submitAnswer, submitGuess, skipGuess, GUESS_SKIPPED, bothAnswered,
   drawMoreQuestions, MAX_BONUS_DRAWS as MAX_QUESTION_DRAWS, reactToDailyQuestion, replyToDailyQuestion,
+  askCustomQuestion, customGi, CUSTOM_GI_BASE,
 } from '../services/dailyQuestionsService';
 import { addTodo } from '../services/todoService';
 import { notifyPartner } from '../services/notificationService';
@@ -201,6 +202,43 @@ export default function DailyScreen() {
 
   const cfg = QUESTION_CATEGORY_CONFIG[selectedCat];
 
+  // "Ask {partner} something" (USER_VOICE C2b): one couple-written
+  // question per person per day, shown in every category, same mutual
+  // reveal as the pool questions. gi is derived from the couple's slots.
+  const [showAsk, setShowAsk] = useState(false);
+  const [askText, setAskText] = useState('');
+  const [asking, setAsking] = useState(false);
+  const customQuestions = useMemo(() => {
+    const out: { gi: number; q: Question; askedBy: string; askedByName: string }[] = [];
+    for (const [askerUid, c] of Object.entries(qDoc?.custom ?? {})) {
+      if (!c?.text) continue;
+      out.push({
+        gi: customGi(couple?.partner1Uid, askerUid),
+        q: { text: c.text, category: selectedCat, format: 'open' },
+        askedBy: askerUid,
+        askedByName: askerUid === uid ? (profile?.name ?? 'You') : partnerName,
+      });
+    }
+    return out.sort((a, b) => a.gi - b.gi);
+  }, [qDoc?.custom, couple?.partner1Uid, selectedCat, uid, profile?.name, partnerName]);
+  const questionAt = (gi: number): Question | undefined =>
+    gi >= CUSTOM_GI_BASE ? customQuestions.find((c) => c.gi === gi)?.q : qDoc?.items[gi];
+  const handleAsk = async () => {
+    const text = askText.trim();
+    if (!coupleId || !text || asking) return;
+    setAsking(true);
+    try {
+      await askCustomQuestion(coupleId, uid, text);
+      const title = `${profile?.name ?? 'Your partner'} asked you something 💬`;
+      notifyPartner(coupleId, uid, title, text.slice(0, 80), { title, body: 'Open Daily.' }).catch(() => {});
+      setAskText('');
+      setShowAsk(false);
+      showToast(`Sent to ${partnerName}. You answer it too.`);
+    } finally {
+      setAsking(false);
+    }
+  };
+
   // Build the render row list in a single memo so both subscriptions
   // committing back-to-back produces one paint, not two. Actions and
   // questions are spread-interleaved (see interleaveRows above) so the
@@ -229,6 +267,8 @@ export default function DailyScreen() {
         }
       });
     }
+    // Couple-written questions belong to every category (C2b).
+    for (const c of customQuestions) questions.push({ kind: 'question', gi: c.gi, q: c.q });
     // Pick major = whichever has more items so warmup + spread still makes
     // sense if content pool ever inverts. Current pool always has more
     // actions than questions (Playful 5:3, Spicy 10:3, Deep 0:3 handled
@@ -236,7 +276,7 @@ export default function DailyScreen() {
     return actions.length >= questions.length
       ? interleaveRows(actions, questions)
       : interleaveRows(questions, actions);
-  }, [wishDoc, qDoc, selectedCat]);
+  }, [wishDoc, qDoc, selectedCat, customQuestions]);
 
   const rowId = (r: Row): string => `${r.kind}-${r.gi}`;
 
@@ -302,10 +342,11 @@ export default function DailyScreen() {
   // GUESS_SKIPPED sentinel string; either value unlocks reveal.
   const [guessModalGi, setGuessModalGi] = useState<number | null>(null);
 
+
   const revealed = (gi: number) => {
     if (!partnerId || !qDoc) return false;
     if (!bothAnswered(qDoc, gi, uid, partnerId)) return false;
-    const item = qDoc.items[gi];
+    const item = questionAt(gi);
     // Non-binary questions: reveal as soon as both have answered (no
     // guess step exists for open-text or scale).
     if (item?.format !== 'binary') return true;
@@ -338,7 +379,7 @@ export default function DailyScreen() {
     // skipped. Fires whether or not partner has already answered —
     // either way, guess happens before reveal. Guard reads Firestore
     // only (H28) so cold reload after skip doesn't re-fire the modal.
-    const item = qDoc.items[gi];
+    const item = questionAt(gi);
     if (
       item?.format === 'binary' &&
       !qDoc.guesses?.[uid]?.[String(gi)]
@@ -479,9 +520,10 @@ export default function DailyScreen() {
   const allMatches = (wishDoc?.items ?? [])
     .map((item, gi) => ({ item, gi }))
     .filter(({ gi }) => matched(gi));
-  const answeredQuestions = (qDoc?.items ?? [])
-    .map((item, gi) => ({ item, gi }))
-    .filter(({ gi }) => revealed(gi));
+  const answeredQuestions = [
+    ...(qDoc?.items ?? []).map((item, gi) => ({ item, gi })),
+    ...customQuestions.map((c) => ({ item: c.q, gi: c.gi })),
+  ].filter(({ gi }) => revealed(gi));
   const totalMatchCount = allMatches.length;
 
   const loading = !wishDoc || !qDoc;
@@ -548,6 +590,12 @@ export default function DailyScreen() {
           );
         })}
       </View>
+
+      {qDoc && !qDoc.custom?.[uid] && (
+        <TouchableOpacity style={styles.askLink} onPress={() => setShowAsk(true)} activeOpacity={0.7} accessibilityRole="button">
+          <Text style={styles.askLinkText}>Ask {partnerName} something ›</Text>
+        </TouchableOpacity>
+      )}
 
       <KeyboardAwareScrollView
         ref={scrollRef}
@@ -657,6 +705,7 @@ export default function DailyScreen() {
                 sides={qSides(currentCard.gi)}
                 onReact={(on) => reactQ(currentCard.gi, on)}
                 onReply={(t) => replyQ(currentCard.gi, t)}
+                askedByName={customQuestions.find((c) => c.gi === currentCard.gi)?.askedByName}
               />
             )}
 
@@ -784,6 +833,35 @@ export default function DailyScreen() {
                 );
               })}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Ask {partner} something (C2b) */}
+      <Modal visible={showAsk} transparent animationType="slide" onRequestClose={() => setShowAsk(false)}>
+        <View style={styles.guessOverlay}>
+          <View style={styles.guessSheet}>
+            <Text style={styles.guessSheetTitle}>Ask {partnerName} something</Text>
+            <Text style={styles.guessSheetHint}>One question, answered by both of you, revealed together. One a day.</Text>
+            <TextInput
+              style={styles.askInput}
+              value={askText}
+              onChangeText={(t) => setAskText(t.slice(0, 200))}
+              placeholder="What would you like to know?"
+              placeholderTextColor={Colors.muted}
+              multiline
+              maxLength={200}
+              autoFocus
+              accessibilityLabel="Your question"
+            />
+            <View style={styles.guessSheetBtns}>
+              <TouchableOpacity style={styles.askCancelBtn} onPress={() => setShowAsk(false)} accessibilityRole="button">
+                <Text style={styles.askCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.askBtn, (!askText.trim() || asking) && { opacity: 0.5 }]} onPress={handleAsk} disabled={!askText.trim() || asking} accessibilityRole="button">
+                <Text style={styles.askBtnText}>{asking ? '…' : 'Send'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1078,7 +1156,7 @@ function ActionCard({
 }
 
 function QuestionCard({
-  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg, sides, onReact, onReply,
+  gi, q, partnerName, mine, theirs, both, myGuess, onAskWhy, onOpenGuess, draft, onDraftChange, onSubmit, onQuickSubmit, cardBg, sides, onReact, onReply, askedByName,
 }: {
   gi: number;
   q: Question;
@@ -1105,6 +1183,8 @@ function QuestionCard({
   sides?: { mine: ReactionSide; theirs: ReactionSide };
   onReact?: (on: boolean) => void;
   onReply?: (text: string) => Promise<void>;
+  // Couple-written question (C2b): who asked it; renders a FROM pill.
+  askedByName?: string;
 }) {
   // Guess feedback state — only for binary Qs where user made a REAL
   // guess (not the H28 GUESS_SKIPPED sentinel).
@@ -1119,9 +1199,9 @@ function QuestionCard({
   return (
     <View style={[styles.card, styles.questionCard, { backgroundColor: both ? '#F1F8E9' : cardBg }, both && { borderColor: Colors.success }]}>
       <View style={styles.typePill}>
-        <Text style={styles.typePillText}>QUESTION</Text>
+        <Text style={styles.typePillText}>{askedByName ? `FROM ${askedByName.toUpperCase()}` : 'QUESTION'}</Text>
       </View>
-      <Text style={styles.cardQuestion}>{personalise(q.text, partnerName)}</Text>
+      <Text style={styles.cardQuestion}>{askedByName ? q.text : personalise(q.text, partnerName)}</Text>
 
       {both && guessed && (
         <View style={[styles.guessBanner, correctGuess ? styles.guessBannerCorrect : styles.guessBannerWrong]}>
@@ -1290,6 +1370,13 @@ const styles = StyleSheet.create({
   // with card content. Category identity still comes from card background
   // + left border colour; the pill just says "this is a pick / a question".
   pillRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  askLink: { alignItems: 'center', paddingVertical: 6 },
+  askLinkText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  askInput: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, minHeight: 90, textAlignVertical: 'top', marginTop: Spacing.sm },
+  askBtn: { flex: 1, backgroundColor: Colors.burgundy, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center' },
+  askBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
+  askCancelBtn: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  askCancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
   typePill: {
     alignSelf: 'flex-start', paddingVertical: 2, paddingHorizontal: 8,
     backgroundColor: Colors.burgundy, borderRadius: Radius.full,

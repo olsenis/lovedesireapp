@@ -22,6 +22,12 @@ export interface DailyQuestionDoc {
   // only once both answered. Same per-uid guard in rules as answers.
   reactions?: Record<string, Record<string, true>>;
   replies?: Record<string, Record<string, string>>;
+  // A question one partner wrote for the other today (Sep 2026, USER_VOICE
+  // C2b): keyed by the asker's uid (rules: own key only), one per person
+  // per day. Its gi is DERIVED (customGi), never stored, and sits above
+  // the items range so answers / guesses / reactions / replies keep
+  // working; drawMoreQuestions rewrites items only, so it survives.
+  custom?: Record<string, { text: string; createdAt: number }>;
   // Paid-only bonus draws stacked on top of the base daily set. Each draw
   // extends items by 3 per category (playful/deep/spicy). Capped at 3.
   bonusDraws?: number;
@@ -138,6 +144,7 @@ export function subscribeDailyQuestions(
           ...(data.guesses ? { guesses: data.guesses } : {}),
           ...(data.reactions ? { reactions: data.reactions } : {}),
           ...(data.replies ? { replies: data.replies } : {}),
+          ...(data.custom ? { custom: data.custom } : {}),
         };
         await setDoc(ref, migrated);
         onChange(migrated);
@@ -204,6 +211,23 @@ export async function submitAnswer(
   });
   trackEvent('daily_question_answered');
   markFirstRitualIfUnset(coupleId);
+}
+
+// Couple-written question of the day (USER_VOICE C2b). The gi is derived
+// from the couple's slots so both phones agree without storing it:
+// partner1's question is 1000, partner2's is 1001.
+export const CUSTOM_GI_BASE = 1000;
+export function customGi(partner1Uid: string | undefined, askerUid: string): number {
+  return askerUid === partner1Uid ? CUSTOM_GI_BASE : CUSTOM_GI_BASE + 1;
+}
+
+export async function askCustomQuestion(coupleId: string, uid: string, text: string): Promise<void> {
+  const clean = text.trim().slice(0, 200);
+  if (!clean) return;
+  await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
+    [`custom.${uid}`]: { text: clean, createdAt: Date.now() },
+  });
+  trackEvent('daily_custom_asked');
 }
 
 // A heart and one line on a revealed question (USER_VOICE C2). Empty

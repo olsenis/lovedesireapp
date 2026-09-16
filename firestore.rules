@@ -356,6 +356,15 @@ service cloud.firestore {
                  .affectedKeys().hasOnly([request.auth.uid])
           )
           && (
+            // Couple-written Daily question (Sep 2026, USER_VOICE C2b): keyed
+            // by the asker's uid, own key only, so nobody can put a question
+            // in the partner's name.
+            !('custom' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('custom', {}).size() == 0
+            || request.resource.data.get('custom', {}).diff(resource.data.get('custom', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          )
+          && (
             // Memory Lane (Sep 2026) stamps completedAt.{uid}. A member may
             // only stamp their own key, otherwise a partner could be marked
             // "done" with an empty score. blueprints/{uid} lives under this

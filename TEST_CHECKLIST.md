@@ -1821,6 +1821,12 @@ Multiplayer Truth or Dare, the merged Daily feature (actions + questions in one 
   1. ‹ Back → re-enter
   - **Expected:** Returns into active session at same phase.
 
+### Daily: ask your partner something (Sep 2026, USER_VOICE C2b)
+- [ ] **One question a day, both answer, revealed together** 📱
+  1. Phone A: Daily → "Ask Eva something ›" → write a question → Send
+  2. Phone B: push "Oli asked you something 💬" (discreet body "Open Daily."); open Daily
+  - **Expected:** A card with the pill "FROM OLI" appears at the end of every category on both phones; A's link is gone for today, B still has "Ask Oli something ›"; both answer → side-by-side reveal, hearts and replies work; it counts in "Reveals ›". Premium "Draw more" keeps it. Firestore: `custom.{uidA}` writable by A only.
+
 ### Daily: heart and one line on revealed items (Sep 2026, USER_VOICE C2)
 - [ ] **Heart and reply on a revealed question** 📱
   1. Both answer a question → reveal. Phone A taps ♡ under the answers
