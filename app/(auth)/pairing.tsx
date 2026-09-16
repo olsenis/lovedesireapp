@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
-import { APP_NAME, JOIN_URL } from '../../constants/app';
+import { inviteMessage } from '../../constants/app';
 import QRCode from 'react-native-qrcode-svg';
 import { useAuth } from '../../hooks/useAuth';
 import { doc, getDoc, onSnapshot, deleteField, updateDoc } from 'firebase/firestore';
@@ -127,9 +127,7 @@ export default function PairingScreen() {
   const handleShare = async () => {
     if (!inviteCode) return;
     try {
-      await Share.share({
-        message: `Join me on ${APP_NAME}, a private app for two. Install it, then enter my code ${inviteCode}. ${JOIN_URL}?code=${inviteCode}`,
-      });
+      await Share.share({ message: inviteMessage(inviteCode) });
       trackEvent('invite_shared');
     } catch {
       // User dismissed the sheet or no share target; nothing to do.

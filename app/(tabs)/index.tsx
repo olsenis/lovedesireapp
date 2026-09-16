@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Share } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,6 +9,7 @@ import { useSubscription } from '../../hooks/useSubscription';
 import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
+import { inviteMessage } from '../../constants/app';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
@@ -1441,15 +1442,59 @@ export default function HomeScreen() {
           </View>
         </LinearGradient>
       ) : (
-        <TouchableOpacity style={styles.connectBanner} onPress={() => router.push('/(auth)/pairing')} accessibilityRole="button">
-          <Text style={styles.connectEmoji}>💌</Text>
-          <Text style={styles.connectText}>Invite your partner to connect</Text>
-          {couple?.inviteCode && (
-            <View style={styles.codeBox}>
-              <Text style={styles.connectCode}>{couple.inviteCode}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity style={styles.connectBanner} onPress={() => router.push('/(auth)/pairing')} accessibilityRole="button">
+            <Text style={styles.connectEmoji}>💌</Text>
+            <Text style={styles.connectText}>Invite your partner to connect</Text>
+            {couple?.inviteCode && (
+              <View style={styles.codeBox}>
+                <Text style={styles.connectCode}>{couple.inviteCode}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          {/* The first week alone (Sep 2026, USER_VOICE C6): the person who
+              installed waits for the partner, often for days. Four things
+              that work solo, plus what the partner will find on arrival. */}
+          <View style={styles.waitCard}>
+            <Text style={styles.waitTitle}>While you wait</Text>
+            {couple?.inviteCode && (
+              <TouchableOpacity
+                style={styles.waitRow}
+                onPress={() => { Share.share({ message: inviteMessage(couple.inviteCode!) }).then(() => trackEvent('invite_shared')).catch(() => {}); }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+              >
+                <Text style={styles.waitRowEmoji}>📨</Text>
+                <View style={styles.waitRowText}>
+                  <Text style={styles.waitRowTitle}>Send the invite again</Text>
+                  <Text style={styles.waitRowSub}>Your code and a link that explains the app</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.waitRow} onPress={() => router.push('/calendar' as any)} activeOpacity={0.8} accessibilityRole="button">
+              <Text style={styles.waitRowEmoji}>📅</Text>
+              <View style={styles.waitRowText}>
+                <Text style={styles.waitRowTitle}>Add a Special Day</Text>
+                <Text style={styles.waitRowSub}>Your anniversary, a first, a birthday</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.waitRow} onPress={() => router.push('/quiz' as any)} activeOpacity={0.8} accessibilityRole="button">
+              <Text style={styles.waitRowEmoji}>💬</Text>
+              <View style={styles.waitRowText}>
+                <Text style={styles.waitRowTitle}>Take the Love Language quiz</Text>
+                <Text style={styles.waitRowSub}>Your partner's side appears when they join</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.waitRow} onPress={() => router.push('/notes' as any)} activeOpacity={0.8} accessibilityRole="button">
+              <Text style={styles.waitRowEmoji}>💌</Text>
+              <View style={styles.waitRowText}>
+                <Text style={styles.waitRowTitle}>Write a Love Note for when they arrive</Text>
+                <Text style={styles.waitRowSub}>The first thing waiting for your partner</Text>
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.waitFoot}>When your partner joins, they see your name, your photo and this week's rituals. Nothing else is waiting on you.</Text>
+          </View>
+        </>
       )}
 
       {/* Tonight match: only renders when BOTH signals are live. Nothing
@@ -1680,6 +1725,7 @@ export default function HomeScreen() {
            signal — kept lean with Daily (best daily rhythm, merges picks +
            questions), Truth or Dare (highest-rated interaction), and Fantasy
            Wishes (paid premium showcase). */}
+      {isConnected && (<>
       <View style={styles.sectionDivider}>
         <View style={styles.sectionLine} />
         <Text style={styles.sectionLabel}>Tonight's Picks</Text>
@@ -1729,6 +1775,7 @@ export default function HomeScreen() {
       <TouchableOpacity style={styles.seeAllGamesRow} onPress={() => router.push('/(tabs)/discover' as any)} activeOpacity={0.7} accessibilityRole="button">
         <Text style={styles.seeAllGamesText}>See all games →</Text>
       </TouchableOpacity>
+      </>)}
 
       {/* Waiting for you nudges */}
       {nudges.length > 0 && (
@@ -1860,6 +1907,14 @@ const styles = StyleSheet.create({
   connectText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   codeBox: { backgroundColor: 'rgba(136,14,79,0.08)', borderRadius: Radius.md, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm, marginTop: 4 },
   connectCode: { fontFamily: Fonts.heading, fontSize: 30, color: Colors.burgundy, letterSpacing: 8 },
+  waitCard: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm, ...Shadow.sm },
+  waitTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text, marginBottom: 2 },
+  waitRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  waitRowEmoji: { fontSize: 22, width: 30, textAlign: 'center' },
+  waitRowText: { flex: 1 },
+  waitRowTitle: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
+  waitRowSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, marginTop: 2 },
+  waitFoot: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, lineHeight: 18, marginTop: Spacing.xs },
 
   moodSection: { backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
   sectionTitle: { fontFamily: Fonts.heading, fontSize: 22, color: Colors.text },

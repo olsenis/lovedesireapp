@@ -500,6 +500,11 @@ Three accounts: Óli, Eva, and a third test account C. Watch the Firestore conso
 ## 2. Home tabs (Home / Discover / Us + Together List surfaced on Home)
 Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). Together List `href: null` in _layout, surfaced as a Home card.
 
+### Home while unpaired (Sep 2026, USER_VOICE C6)
+- [ ] **While you wait card**
+  1. Fresh account, skip pairing, land on Home
+  - **Expected:** Connect banner with the code, then "While you wait": Send the invite again (share sheet with the code and the /join link), Add a Special Day, Take the Love Language quiz, Write a Love Note; the footer line about what the partner will see; no Tonight's Picks tiles; the mood picker still there. After pairing the card and the banner are gone and the tiles are back.
+
 ### Discreet notifications (Sep 2026, USER_VOICE A4)
 - [ ] **Switch exists and defaults on**
   1. Profile → Notifications card, push notifications on, OS permission granted
