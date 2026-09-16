@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import * as Haptics from 'expo-haptics';
 import { useSubscription } from '../hooks/useSubscription';
 import { notifyPartner } from '../services/notificationService';
-import { MoodEntry, MoodEmoji, MOOD_LABELS, ALL_MOODS, subscribeMoodHistory, setMood, getTodaysMood, subscribeToMoods } from '../services/moodService';
+import { MoodEntry, MoodEmoji, MOOD_LABELS, ALL_MOODS, subscribeMoodHistory, setMood, getTodaysMood, subscribeToMoods, CUSTOM_MOOD, CUSTOM_MOOD_MAX, moodLabel } from '../services/moodService';
 import { unlockMoodNotes } from '../services/noteService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -49,6 +49,8 @@ export default function MoodHistoryScreen() {
   const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [tab, setTab] = useState<'mine' | 'together'>('mine');
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
+  const [showOwnWords, setShowOwnWords] = useState(false);
+  const [ownWords, setOwnWords] = useState('');
   useTrackScreen('mood_history');
 
   const coupleId = profile?.coupleId;
@@ -69,15 +71,15 @@ export default function MoodHistoryScreen() {
     });
   }, [coupleId, user?.uid]);
 
-  const handleMoodPick = async (emoji: MoodEmoji) => {
+  const handleMoodPick = async (emoji: MoodEmoji, label?: string) => {
     if (!user || !coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      await setMood(coupleId, user.uid, emoji);
-      setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
+      await setMood(coupleId, user.uid, emoji, undefined, label);
+      setMyMood({ id: 'optimistic', uid: user.uid, emoji, label, createdAt: Date.now() });
       notifyPartner(
         coupleId, user.uid,
-        'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`,
+        'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${moodLabel(emoji, label)}`,
         { title: 'New mood 💫', body: `${profile?.name ?? 'Your partner'} updated a mood` },
       ).catch(() => {});
       unlockMoodNotes(coupleId, user.uid, emoji).catch(() => {});
@@ -155,8 +157,42 @@ export default function MoodHistoryScreen() {
                   <Text style={styles.moodLabel}>{MOOD_LABELS[emoji]}</Text>
                 </TouchableOpacity>
               ))}
+              <TouchableOpacity
+                key="own"
+                style={[styles.moodBtn, myMood?.emoji === CUSTOM_MOOD && styles.moodBtnActive]}
+                onPress={() => { setOwnWords(myMood?.emoji === CUSTOM_MOOD ? (myMood.label ?? '') : ''); setShowOwnWords(true); }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Describe your mood in your own words">
+                <Text style={styles.moodEmoji}>{CUSTOM_MOOD}</Text>
+                <Text style={styles.moodLabel} numberOfLines={1}>{myMood?.emoji === CUSTOM_MOOD && myMood.label ? myMood.label : 'Own words'}</Text>
+              </TouchableOpacity>
             </View>
           </View>
+
+          <Modal visible={showOwnWords} transparent animationType="slide" onRequestClose={() => setShowOwnWords(false)}>
+            <View style={styles.ownOverlay}>
+              <View style={styles.ownSheet}>
+                <Text style={styles.ownTitle}>In your own words</Text>
+                <TextInput
+                  style={styles.ownInput}
+                  value={ownWords}
+                  onChangeText={(t) => setOwnWords(t.slice(0, CUSTOM_MOOD_MAX))}
+                  placeholder="Bone tired, buzzing, soft…"
+                  placeholderTextColor={Colors.muted}
+                  maxLength={CUSTOM_MOOD_MAX}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={() => { if (ownWords.trim()) { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, ownWords.trim()); } }}
+                  accessibilityLabel="Your mood in your own words"
+                />
+                <View style={styles.ownBtns}>
+                  <TouchableOpacity style={styles.ownCancel} onPress={() => setShowOwnWords(false)} accessibilityRole="button"><Text style={styles.ownCancelText}>Cancel</Text></TouchableOpacity>
+                  <TouchableOpacity style={[styles.ownSave, !ownWords.trim() && { opacity: 0.5 }]} disabled={!ownWords.trim()} onPress={() => { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, ownWords.trim()); }} accessibilityRole="button"><Text style={styles.ownSaveText}>Set mood</Text></TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
 
           {/* Stats row */}
           <View style={styles.statsRow}>
@@ -164,7 +200,7 @@ export default function MoodHistoryScreen() {
               <View style={styles.statCard}>
                 <Text style={styles.statEmoji}>{myTop}</Text>
                 <Text style={styles.statLabel}>Most common</Text>
-                <Text style={styles.statSub}>{MOOD_LABELS[myTop]}</Text>
+                <Text style={styles.statSub}>{moodLabel(myTop)}</Text>
               </View>
             )}
             <View style={styles.statCard}>
@@ -263,6 +299,15 @@ const styles = StyleSheet.create({
   moodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'space-between' },
   moodBtn: { width: '23%', backgroundColor: '#FFF8F0', borderRadius: Radius.lg, paddingVertical: Spacing.sm, alignItems: 'center', borderWidth: 1, borderColor: 'transparent' },
   moodBtnActive: { backgroundColor: Colors.blush, borderColor: Colors.rose },
+  ownOverlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.5)', justifyContent: 'flex-end' },
+  ownSheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.sm, paddingBottom: Spacing.xxl },
+  ownTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
+  ownInput: { fontFamily: Fonts.body, fontSize: 16, color: Colors.text, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md },
+  ownBtns: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+  ownCancel: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  ownCancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
+  ownSave: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', backgroundColor: Colors.burgundy },
+  ownSaveText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   moodEmoji: { fontSize: 28 },
   moodLabel: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, marginTop: 2, textAlign: 'center' },
 

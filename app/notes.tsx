@@ -225,7 +225,7 @@ export default function NotesScreen() {
       }
       await createNote(profile.coupleId, user.uid, message.trim(), openAt, openCondition, triggerEmoji, audioURL);
       trackEvent(mediaType === 'voice' ? 'voice_note_created' : 'love_note_created');
-      const moodLabel = triggerEmoji ? MOOD_LABELS[triggerEmoji].toLowerCase() : '';
+      const moodLabel = triggerEmoji ? (MOOD_LABELS[triggerEmoji] ?? 'that mood').toLowerCase() : '';
       const mediaWord = mediaType === 'voice' ? 'voice note' : 'note';
       const subtitle =
         openCondition === 'sad'      ? `A ${mediaWord} will unlock when you feel ${moodLabel}` :
@@ -287,7 +287,7 @@ export default function NotesScreen() {
     if (note.opened) return 'Opened ✓';
     if (note.openCondition === 'sad') {
       const emoji = note.triggerEmoji ?? '😢';
-      return `Unlocks when partner feels ${emoji} ${MOOD_LABELS[emoji]}`;
+      return `Unlocks when partner feels ${emoji} ${MOOD_LABELS[emoji] ?? 'that mood'}`;
     }
     if (note.openCondition === 'visit')     return 'Unlocks on your next visit';
     if (note.openCondition === 'missing')   return "In partner's Open When... stash";

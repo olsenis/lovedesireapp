@@ -44,7 +44,7 @@ function topMood(entries: MoodEntry[]): { emoji: MoodEmoji; count: number; label
   for (const e of entries) counts.set(e.emoji, (counts.get(e.emoji) ?? 0) + 1);
   const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
   const [emoji, count] = sorted[0];
-  return { emoji, count, label: MOOD_LABELS[emoji] };
+  return { emoji, count, label: MOOD_LABELS[emoji] ?? 'a mood' };
 }
 
 // Session-scoped memoisation. Aggregating a year is 8+ Firestore

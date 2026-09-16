@@ -500,6 +500,14 @@ Three accounts: Óli, Eva, and a third test account C. Watch the Firestore conso
 ## 2. Home tabs (Home / Discover / Us + Together List surfaced on Home)
 Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). Together List `href: null` in _layout, surfaced as a Home card.
 
+### Moods: five more and your own words (Sep 2026, USER_VOICE C4)
+- [ ] **New chips** 📱
+  - **Expected:** Home and Mood History pickers show 🫥 Off, 💭 In my head, 🌀 Overthinking, 🥹 Tender, 🙋 Check in with me (free) and a last chip 💬 Own words. Kinky / Horny still locked for free couples.
+
+- [ ] **Own words** 📱
+  1. Phone A: 💬 Own words → "Bone tired" → Set mood
+  - **Expected:** A's pill shows 💬; B's push reads "Oli is feeling 💬 Bone tired" (or "Oli updated a mood" when discreet); Mood History shows "Bone tired" on the chip and in stats; Notes' trigger-mood picker and Memory Lane are unchanged (no 💬 there). Firestore: `label: "Bone tired"`.
+
 ### Home while unpaired (Sep 2026, USER_VOICE C6)
 - [ ] **While you wait card**
   1. Fresh account, skip pairing, land on Home

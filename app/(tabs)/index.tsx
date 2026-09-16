@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Share, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -10,7 +10,7 @@ import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { inviteMessage } from '../../constants/app';
-import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry } from '../../services/moodService';
+import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, CUSTOM_MOOD_MAX, moodLabel } from '../../services/moodService';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
 import { subscribeSensateProgress, SensateProgress } from '../../services/sensateService';
@@ -236,6 +236,9 @@ export default function HomeScreen() {
   const visibleMoods = ALL_MOODS.filter(m => isSubscribed || !ADULT_MOODS.includes(m));
 
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
+  // Own words mood (C4): a small sheet with one field.
+  const [showOwnWords, setShowOwnWords] = useState(false);
+  const [ownWords, setOwnWords] = useState('');
   const [partnerMood, setPartnerMood] = useState<MoodEntry | null>(null);
   // "Tonight?" signal (Sep 2026): my private flag, the partner's only
   // while mine is live (rules), and the match key the push was sent for.
@@ -521,16 +524,16 @@ export default function HomeScreen() {
   );
 
 
-  const handleMoodPick = async (emoji: MoodEmoji) => {
+  const handleMoodPick = async (emoji: MoodEmoji, label?: string) => {
     if (!user || !coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      await setMood(coupleId, user.uid, emoji);
+      await setMood(coupleId, user.uid, emoji, undefined, label);
       trackEvent('mood_set');
-      setMyMood({ id: 'optimistic', uid: user.uid, emoji, createdAt: Date.now() });
+      setMyMood({ id: 'optimistic', uid: user.uid, emoji, label, createdAt: Date.now() });
       notifyPartner(
         coupleId, user.uid,
-        'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${MOOD_LABELS[emoji]}`,
+        'New mood 💫', `${profile?.name ?? 'Your partner'} is feeling ${emoji} ${moodLabel(emoji, label)}`,
         { title: 'New mood 💫', body: `${profile?.name ?? 'Your partner'} updated a mood` },
       ).catch(() => {});
       unlockMoodNotes(coupleId, user.uid, emoji).catch(() => {});
@@ -884,7 +887,7 @@ export default function HomeScreen() {
   // log a reflection. Low moods are 😢/🥺/😰/😤 per moodService MoodEmoji.
   if (isSubscribed && profile?.features?.intimacyLog && moodHistory.length > 0) {
     const weekAgo = Date.now() - 7 * 86400000;
-    const LOW_MOOD_SET = new Set<MoodEmoji>(['😢', '🥺', '😰', '😤']);
+    const LOW_MOOD_SET = new Set<MoodEmoji>(['😢', '🥺', '😰', '😤', '🫥', '🥹']);
     const recentLowCount = moodHistory
       .filter(m => m.uid === uid && m.createdAt >= weekAgo)
       .filter(m => LOW_MOOD_SET.has(m.emoji))
@@ -1435,7 +1438,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.avatarNameLight}>{partner?.name ?? '...'}</Text>
               {partnerTimezone && <Text style={styles.tzClock}>{partnerTimezone}</Text>}
-              <View style={styles.moodPill}>
+              <View style={styles.moodPill} accessibilityLabel={partnerMood ? `${partner?.name ?? 'Partner'} is feeling ${moodLabel(partnerMood.emoji, partnerMood.label)}` : 'No mood yet'}>
                 <Text style={styles.moodPillEmoji}>{partnerMood?.emoji ?? '·'}</Text>
               </View>
             </View>
@@ -1640,9 +1643,39 @@ export default function HomeScreen() {
                 <Text style={styles.moodLabel}>🔒</Text>
               </TouchableOpacity>
             ))}
+            <TouchableOpacity key="own" style={styles.moodBtn} onPress={() => { setOwnWords(''); setShowOwnWords(true); }} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Describe your mood in your own words">
+              <Text style={styles.moodEmoji}>{CUSTOM_MOOD}</Text>
+              <Text style={styles.moodLabel}>Own words</Text>
+            </TouchableOpacity>
           </View>
       </View>
       )}
+
+      {/* Own words mood sheet (C4) */}
+      <Modal visible={showOwnWords} transparent animationType="slide" onRequestClose={() => setShowOwnWords(false)}>
+        <View style={styles.ownOverlay}>
+          <View style={styles.ownSheet}>
+            <Text style={styles.ownTitle}>In your own words</Text>
+            <Text style={styles.ownHint}>One or two words. {partner?.name ?? 'Your partner'} sees them on Home.</Text>
+            <TextInput
+              style={styles.ownInput}
+              value={ownWords}
+              onChangeText={(t) => setOwnWords(t.slice(0, CUSTOM_MOOD_MAX))}
+              placeholder="Bone tired, buzzing, soft…"
+              placeholderTextColor={Colors.muted}
+              maxLength={CUSTOM_MOOD_MAX}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={() => { if (ownWords.trim()) { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, ownWords.trim()); } }}
+              accessibilityLabel="Your mood in your own words"
+            />
+            <View style={styles.ownBtns}>
+              <TouchableOpacity style={styles.ownCancel} onPress={() => setShowOwnWords(false)} accessibilityRole="button"><Text style={styles.ownCancelText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.ownSave, !ownWords.trim() && { opacity: 0.5 }]} disabled={!ownWords.trim()} onPress={() => { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, ownWords.trim()); }} accessibilityRole="button"><Text style={styles.ownSaveText}>Set mood</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Tonight's Ritual section removed July 2026 — Questions Game merged
           into Daily and its own dedicated ritual row became redundant with
@@ -1922,6 +1955,16 @@ const styles = StyleSheet.create({
   moodBtn: { alignItems: 'center', width: '22%', paddingVertical: Spacing.sm, borderRadius: Radius.md, backgroundColor: Colors.cream, borderWidth: 1, borderColor: Colors.border },
   moodEmoji: { fontSize: 26 },
   moodLabel: { fontFamily: Fonts.body, fontSize: 9, color: Colors.muted, textAlign: 'center', marginTop: 2 },
+  ownOverlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.5)', justifyContent: 'flex-end' },
+  ownSheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.sm, paddingBottom: Spacing.xxl },
+  ownTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
+  ownHint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+  ownInput: { fontFamily: Fonts.body, fontSize: 16, color: Colors.text, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.xs },
+  ownBtns: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+  ownCancel: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  ownCancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
+  ownSave: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', backgroundColor: Colors.burgundy },
+  ownSaveText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   nudgeLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: Spacing.sm },
   nudgeCard: { flexDirection: 'row', alignItems: 'center', borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.sm, gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },

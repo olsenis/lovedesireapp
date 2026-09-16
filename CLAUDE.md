@@ -210,7 +210,7 @@ reports/{reportId}                   H33 Report — reporterUid, coupleId, targe
 | `authService.ts` | `register`, `login`, `logout`, `getUserProfile`, `createUserProfile`, `disconnectFromCouple` |
 | `coupleService.ts` | `createCouple`, `joinCouple` (→ `rateLimitedJoin` callable, writes a pending request), `acceptPairing` (→ `acceptPairing` callable, Sep 2026), `declinePairing`, `cancelPairingRequest`, `setCoupleStartDate`, `setLongDistance`, `setNextVisitDate`, `setPartnerBirthday`, `markFirstRitualIfUnset` |
 | `todoService.ts` | `subscribeTodos`, `addTodo`, `toggleTodo`, `deleteTodo` — category: daily/dates/intimacy/goals (legacy `fantasy` category from before July 2026 is normalised to `intimacy` at read time) |
-| `moodService.ts` | `setMood`, `getTodaysMood`, `subscribeToMoods` |
+| `moodService.ts` | `setMood(coupleId, uid, emoji, note?, label?)`, `getTodaysMood`, `subscribeToMoods`, `subscribeMoodHistory`, `MOOD_LABELS`, `ALL_MOODS` (20 pickable), `CUSTOM_MOOD` (💬, own words, NOT in ALL_MOODS on purpose), `moodLabel(emoji, label?)` (use this wherever a label is printed; safe on unknown emoji). Sep 2026 C4 added Off / In my head / Overthinking / Tender / Check in with me and the own-words sheet on Home and Mood History. |
 | `noteService.ts` | `subscribeNotes`, `createNote`, `openNote` |
 | `reminderService.ts` | `subscribeReminders`, `addReminder`, `toggleReminder`, `deleteReminder`, `scheduleReminderNotifications`, `cancelReminderNotifications` |
 | `fantasyWishesService.ts` | `subscribeFantasyWishes`, `addFantasyWishesItem(coupleId, text, category?)`, `voteOnFantasyWish`, `isFWMatch`, `markFWAddToList`, `clearAndReloadFantasyWishes`, `setFWCategory(coupleId, category, on)` (writes `couples/{id}.fwCategories.{category}`, Sep 2026 A6) |
