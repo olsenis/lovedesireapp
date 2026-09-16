@@ -2306,6 +2306,11 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
+### Fantasy Wishes: draw one for tonight (Sep 2026, USER_VOICE C12)
+- [ ] **Same draw on both phones** 📱 💰
+  1. Couple with at least two matches; both open Matches; both tap "🎲 Draw one for tonight"
+  - **Expected:** The same match is pinned to the top on both phones with "🎲 Tonight's draw" and the highlighted border; "+ Add to Together List" works on it; "Draw again" gives the next seeded pick (still the same on both phones if tapped the same number of times). With fewer than two matches there is no button.
+
 ### Fantasy Wishes: heart and one line on a match (Sep 2026, USER_VOICE C2)
 - [ ] **Match card row** 📱 💰
   1. On a match, Phone A ♡; Phone B Reply one line

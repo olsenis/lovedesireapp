@@ -16,6 +16,7 @@ import { addTodo } from '../services/todoService';
 import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_PRESETS, FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { personalise } from '../services/personalise';
+import { seededPick } from '../services/seed';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -48,6 +49,10 @@ export default function FantasyWishesScreen() {
   // Category choice sheet (USER_VOICE A6). The choice itself lives on the
   // couple doc; this is only the sheet's visibility plus a one-time hint.
   const [showCategories, setShowCategories] = useState(false);
+  // "Draw one for tonight" (USER_VOICE C12): a seeded pick from the
+  // matches, same on both phones the same day; nothing is written.
+  const [drawCount, setDrawCount] = useState(0);
+  const [drawnId, setDrawnId] = useState<string | null>(null);
   const [hintDismissed, setHintDismissed] = useState(false);
   const [newText, setNewText] = useState('');
   const [loadingPresets, setLoadingPresets] = useState(false);
@@ -282,6 +287,20 @@ export default function FantasyWishesScreen() {
   const catOn = (c?: FantasyWishesCategory) => !c || fwCats[c] !== false;
   const categoriesOff = FW_CATEGORY_ORDER.filter((c) => fwCats[c] === false);
   const playable = useMemo(() => items.filter((i) => catOn(i.category)), [items, couple?.fwCategories]);
+  const drawOne = () => {
+    if (matched.length < 2 || !coupleId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const next = drawCount + 1;
+    const day = new Date().toISOString().slice(0, 10);
+    const pick = seededPick(matched, 1, `${day}::${coupleId}::${next}`)[0];
+    setDrawCount(next);
+    setDrawnId(pick?.id ?? null);
+  };
+  const matchesList = useMemo(() => {
+    if (!drawnId) return matched;
+    const drawn = matched.find((i) => i.id === drawnId);
+    return drawn ? [drawn, ...matched.filter((i) => i.id !== drawnId)] : matched;
+  }, [matched, drawnId]);
   const votedCount = useMemo(() => playable.filter((i) => myVote(i) !== null).length, [playable, uid]);
   const totalCount = playable.length;
   const nothingOn = items.length > 0 && playable.length === 0;
@@ -438,9 +457,14 @@ export default function FantasyWishesScreen() {
 
       {activeTab === 'matches' && (
         <FlatList
-          data={matched}
+          data={matchesList}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.matchesList}
+          ListHeaderComponent={matched.length >= 2 ? (
+            <TouchableOpacity style={styles.drawBtn} onPress={drawOne} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Draw one of your matches for tonight">
+              <Text style={styles.drawBtnText}>{drawnId ? '🎲 Draw again' : '🎲 Draw one for tonight'}</Text>
+            </TouchableOpacity>
+          ) : null}
           ListEmptyComponent={
             <View style={styles.emptyCard}>
               <Text style={styles.emptyEmoji}>💫</Text>
@@ -452,13 +476,13 @@ export default function FantasyWishesScreen() {
             const iPressed = (item.addToList ?? []).includes(uid);
             const theyPressed = !!partnerId && (item.addToList ?? []).includes(partnerId);
             const bothPressed = fwBothWantToAdd(item, uid, partnerId ?? '');
-            const celebrating = item.id === newMatchId;
+            const celebrating = item.id === newMatchId || item.id === drawnId;
             return (
               <View style={[styles.matchCard, celebrating && styles.matchCardCelebrating]}>
                 <Text style={styles.matchEmoji}>✨</Text>
                 <View style={styles.matchInfo}>
                   <Text style={styles.matchText}>{personalise(item.text, partner?.name)}</Text>
-                  <Text style={styles.matchBadge}>✓ You both want this</Text>
+                  <Text style={styles.matchBadge}>{item.id === drawnId ? "🎲 Tonight's draw" : '✓ You both want this'}</Text>
                   {bothPressed ? (
                     <TouchableOpacity
                       onPress={() => router.push('/todo' as any)}
@@ -852,6 +876,8 @@ const styles = StyleSheet.create({
 
   matchCard: { borderRadius: Radius.lg, padding: Spacing.lg, flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, backgroundColor: '#F3E5F5' },
   matchCardCelebrating: { borderColor: Colors.burgundy, borderWidth: 2, backgroundColor: '#FCE4EC' },
+  drawBtn: { backgroundColor: Colors.burgundy, borderRadius: Radius.full, paddingVertical: 12, alignItems: 'center' },
+  drawBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   matchEmoji: { fontSize: 28, marginTop: 2 },
   matchInfo: { flex: 1, gap: 4 },
   matchText: { fontFamily: Fonts.heading, fontSize: 17, color: Colors.text, lineHeight: 24 },
