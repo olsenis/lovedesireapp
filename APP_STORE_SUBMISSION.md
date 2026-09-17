@@ -4,7 +4,7 @@ Ready-to-paste text and decisions for App Store Connect. Update this file whenev
 
 ## App identity
 
-- **Name + subtitle:** drafted in [MARKETING.md §2.2-2.3](MARKETING.md) with a `{APP_NAME}` token while H43 (rename) is open. Current draft: `{APP_NAME}: Couples Intimacy` / `Rituals, games & check-ins`. (The old subtitle `For couples who want more` was retired Aug 2026 for the tagline "A private app for two".)
+- **Name + subtitle:** drafted in [MARKETING.md §2.2-2.3](MARKETING.md) with a `{APP_NAME}` token while H43 (rename) is open. Current draft: `{APP_NAME}: Couples Intimacy` / `Rituals, games & check-ins`. (The old subtitle `For couples who want more` was retired Aug 2026 for the tagline "A private app for two".) **Two live subtitle candidates (Sep 17 2026):** the draft `Rituals, games & check-ins` (26) and the challenger `Rituals, games, long distance` (29), because long distance is the largest praise context in the review mining (946 reviews, USER_VOICE.md §3). Pick at submission; the loser's words go into the keyword field or a custom product page (MARKETING §2.6).
 - **Bundle ID (iOS):** `com.desire.app`
 - **Package (Android):** `com.desire.app` (Android via APK sideload only, not Google Play)
 - **Primary category:** Lifestyle
@@ -18,8 +18,9 @@ Decided August 2026; annual lowered Sep 13 2026. **Source of truth for the numbe
 - **Annual:** **$39.99/yr** — ~67% off effective vs monthly ($3.33/mo). Lowered from $59.99 on Sep 13 2026 to sit inside the indie "one pays for both" cluster (Cozy Couples $29.99, see COMPETITORS.md); raise later on ratings, not before
 - **Free trial:** **7 days** — Apple standard, needed because both partners must pair + try
 - **Launch introductory offer:** **First month $4.99** (50% off) — reduces friction for early adopters, expires after ~90 days per Apple intro-rate rules
-- **Lifetime tier:** none at launch — revisit post-launch if enough users ask
-- **Revenue split:** Apple takes 30% first year, 15% after. Net: ~$6.99-$8.49/mo, ~$41.99-$50.99/yr
+- **Lifetime tier:** decided yes on Sep 14 2026 (USER_VOICE_TODO D3), price not set; not in the first build unless it is priced before submission (non-consumable IAP, `com.desire.app.premium.lifetime`)
+- **Revenue split:** Apple takes 30% first year, 15% after. Net: ~$6.99-$8.49/mo, ~$27.99-$33.99/yr at $39.99
+- **Said in the description field** (MARKETING §2.10, USER_VOICE A3): "$9.99 a month or $39.99 a year, 7 days free, one subscription covers both of you." Re-check the three numbers against `constants/pricing.ts` on submission day.
 
 ### App Store Connect setup
 
@@ -67,6 +68,10 @@ Paste into "Notes for the Reviewer" verbatim:
 
 Six free-tier screens with caption copy in [MARKETING.md §2.8](MARKETING.md). Rule kept from here: never show Fantasy Wishes / Spicy Daily / Fire challenge in screenshots, it invites the reviewer to misread an isolated item as advertising porn.
 
+## After approval: ratings and reviews
+
+The rating prompt rules and the review-reply routine are in [MARKETING.md §2.9](MARKETING.md): every review answered within 48 hours for the first 90 days, Óli posts from App Store Connect, Claude drafts, three openings, never argue, never ask for a new rating. Turn on App Store Connect email notifications for new reviews on launch day.
+
 ## Legal
 
 Privacy Policy and Terms of Service must be hosted at a public URL before submission. Currently in-app only at `/privacy-policy` and `/terms-of-service`. Host on the marketing website (Vercel) before submitting.
@@ -109,9 +114,12 @@ Based on [BRAND_RESEARCH.md](BRAND_RESEARCH.md) — "Love Desire" is clear of tr
 - [ ] Test account credentials created + verified (see reviewer notes above)
 - [ ] Age rating questionnaire completed (see this doc)
 - [ ] Reviewer notes pasted from this doc
+- [ ] Subtitle chosen: `Rituals, games & check-ins` or `Rituals, games, long distance` (App identity above)
 - [ ] Keywords set from MARKETING.md §2.4 (all four locales)
 - [ ] Description + promo text pasted from MARKETING.md §2.10 (the description states the price and the 7-day trial, USER_VOICE A3)
 - [ ] Permission strings present in the build: camera, microphone, photo library (read + add), Face ID (`NSFaceIDUsageDescription`, app lock, Sep 2026)
 - [ ] EAS build submitted via `npx eas build --platform ios --profile production`
 - [ ] Build uploaded to App Store Connect
+- [ ] Android APK built from the same commit, same version and build number; `latest.json` updated (MARKETING §3 parity rule)
+- [ ] Review-reply routine read (MARKETING §2.9); App Store Connect notifications for new reviews on
 - [ ] Final review of everything above before hitting "Submit for Review"

@@ -103,8 +103,8 @@ Effort key: S under 1 h · M half a day · L a day or more.
 - **B1. VOICE.md**  `S`  ✅ (Sep 16) Add to "words we never use": homework, task, routine (as a noun for the app), "work on your relationship" (already), "check in" as a verb outside the Sunday ritual. Add a "words users use when it works" list from USER_VOICE §8 (five minutes a day, brought us closer, things we never knew, just for the two of us, feels like flirting not therapy).
 - **B2. MARKETING §6 and §2.9**  `S`  ✅ (Sep 17) Astroturf note: half of the Sep 2026 r/apps thread is founders; real users name Cozy Couples, SumOne, Couple Joy, Paired, Agapé. Review-reply routine: every review answered within 48 h for the first 90 days, three template openings (thanks + specific; sorry + what we changed + version; question + how to reach us), never argue, never ask for a re-rating.
 - **B3. Free tier declared permanent**  `S`  ✅ Sep 15 2026 (/pricing free column + MARKETING §1). One sentence in MARKETING §1 and on `/pricing`: "What is free today stays free." Paired, Lovewick and Cozy Couples each lost their best reviews by withdrawing free features (§9b point 1). This is a promise, so it needs D2 first.
-- **B4. Android parity line**  `S`  ⬜ MARKETING §3: the APK ships the same build number as the App Store version in the same week; the site's manifest shows both. "it sometimes lags behind in features from the Apple version" is the sideload complaint.
-- **B5. APP_STORE_SUBMISSION**  `S`  ⬜ Price and trial in the description field; subtitle candidates with "long distance"; the review-reply routine linked.
+- **B4. Android parity line**  `S`  ✅ (Sep 17) MARKETING §3: the APK ships the same build number as the App Store version in the same week; the site's manifest shows both. "it sometimes lags behind in features from the Apple version" is the sideload complaint.
+- **B5. APP_STORE_SUBMISSION**  `S`  ✅ (Sep 17) Price and trial in the description field; subtitle candidates with "long distance"; the review-reply routine linked.
 - **B6. NAMING / H43**  `S`  ⬜ Already added: the "name alone would prove to be a deterrent" quote under next step 4. Decision still Óli's (D1).
 
 ---

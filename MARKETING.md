@@ -210,9 +210,16 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 
 ---
 
-## 3. Google Play
+## 3. Google Play and Android parity
 
-Not applicable. Android ships as a signed APK from the website (`/android`), decided May 2026 (CLAUDE.md, Distribution strategy). Android discovery is therefore web search (§4), not store search. No Play Console metadata to maintain.
+Google Play: not applicable. Android ships as a signed APK from the website (`/android`), decided May 2026 (CLAUDE.md, Distribution strategy) and confirmed Sep 14 2026 (USER_VOICE_TODO D4: the explicit material rules Play out). Android discovery is therefore web search (§4), not store search. No Play Console metadata to maintain.
+
+**Parity rule (Sep 17 2026, USER_VOICE_TODO B4).** The sideload complaint in the review mining is "it sometimes lags behind in features from the Apple version". Nothing forces an APK to keep up, so the rule is written down:
+
+- **One version, one build number.** Every App Store release has an APK built from the same commit with the same `version` and the same `buildNumber` / `versionCode`, on the site in the same week. APK first or the same day, so Android never reads as second.
+- **The manifest shows both.** `web/public/latest.json` carries `version`, `build`, `released`, `url`, `notes` and `ios: { version, released }`; the `/android` page prints the two side by side so a visitor can see they match.
+- **No platform-only features.** A real platform gap (home-screen widget timing, Face ID versus fingerprint wording) is said on `/android` in one line, not left to be discovered.
+- **Open before the APK goes up:** `/android` already promises that the app checks for a new version on launch. That check is not built. Build it with the first EAS Android build (fetch `latest.json` on launch, compare with `Constants.expoConfig.version`, one Modal with "Download"), or reword the page. Tracked in LAUNCH_STATUS §8.
 
 ---
 

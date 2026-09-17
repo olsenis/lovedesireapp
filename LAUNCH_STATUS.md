@@ -109,7 +109,8 @@ Originally shipped as an in-app screen (`4903b93`), then migrated to a standalon
 Per [CLAUDE.md](CLAUDE.md) distribution strategy, Android is NOT on Google Play — the signed APK is hosted on our marketing site. Before launch:
 - Run `npx eas build --platform android --profile production` — outputs signed APK (not AAB — we want the direct-install format, not Play Store bundle)
 - Upload APK to `web/public/` (or Cloudflare R2 / other CDN if large)
-- Create `web/public/latest.json` version manifest: `{ "version": "1.0.0", "url": "...apk", "notes": "..." }`
+- Create `web/public/latest.json` version manifest: `{ "version": "1.0.0", "build": 1, "released": "2026-..", "url": "...apk", "notes": "...", "ios": { "version": "1.0.0", "released": "2026-.." } }` (parity rule, MARKETING §3: same commit, same version and build number as the App Store release, same week)
+- **In-app update prompt: not built yet.** `/android` already promises "the app checks this page on launch". Build it with the first Android EAS build (fetch `latest.json`, compare with `Constants.expoConfig.version`, one Modal with "Download") or reword the page before the APK goes up
 - Update `/android` page: replace the disabled download button with the real APK URL, remove the "Coming with launch" placeholder text
 - Test the download → install → sign-up flow on a real Android device
 
