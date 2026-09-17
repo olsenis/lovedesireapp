@@ -160,66 +160,101 @@
   // Content. Icelandic prose for Eva; app labels quoted exactly as the
   // English UI renders them (the partner's profile name is "Oli").
   var DAYS = [
-    { id: 'sun13', label: 'Í dag', date: 'Sunnudagur 13. september', items: [
-      { id: 'sunday38', num: 1, title: 'Sunday Check-in, vika 38', where: 'Us → Sunday Check-in',
-        steps: [
-          '5 sleðar → „Next", 5 spurningar → „Save and next", „Call it" (má sleppa), „Finish check-in ✓"',
-          'Eftir það: kort „Last week Oli predicted" → „✓ Came true" / „✗ Did not" → „Save verdicts"'
-        ],
-        expect: 'Svör hlið við hlið þegar Óli er búinn. Óli sér „Eva called X of 3".' },
-      { id: 'memory', num: 2, title: 'Memory Lane, þitt eigið sett', where: 'Discover → Memory Lane',
-        warn: 'Óli á að opna Memory Lane á undan þér. Ekki læst lengur.',
-        steps: ['Svaraðu 5 spurningum'],
-        expect: 'Spurningarnar tala um Óla („what did Oli say", „Oli\'s mood"), aldrei um þig með þínu nafni. Skor beggja hlið við hlið.' },
-      { id: 'tonight', num: 3, title: '„Tonight? 🔥" á Home', where: 'Home, undir mood-inu þínu í parakortinu',
-        steps: [
-          'Ýttu á „Tonight? 🔥" (verður „Tonight 🔥 ✓")',
-          'Athugaðu síma Óla: hann á að sjá EKKERT nýtt',
-          'Óli ýtir líka'
-        ],
-        expect: 'Báðir símar sýna „You\'re both in the mood tonight 🔥". Þú (sem ýttir fyrst) færð eina push-tilkynningu. Ýttu aftur á pilluna → hverfur.' },
-      { id: 'spicy', num: 4, title: 'Spicy-samþykki', where: 'Discover → Truth or Dare → Together Right Here → Spicy',
-        steps: ['Ýttu á Truth'],
-        expect: 'Kort „Before Spicy, both of you" með „We\'re both in" / „Not tonight". Kemur bara einu sinni á dag.' },
-      { id: 'lovers', num: 5, title: 'The Lovers, ráð í Together List', where: 'Us → The Lovers, neðst undir „Try this"',
-        steps: ['„+ Together List" undir einu ráði'],
-        expect: 'Toast, takkinn verður „✓ Saved to Together List", ráðið er í Together List merkt „from The Lovers".' },
-      { id: 'intimacy', num: 6, title: 'Intimacy Log, stefna', where: 'Us → Intimacy Log → „We were intimate"',
-        steps: ['Veldu Oral → röð birtist: „For Oli" / „For you" / „Both ways" → „For Oli" → Save'],
-        expect: 'Í listanum: „Oral · for Oli". Á síma Óla: „Oral · for you". Stats-flipinn kviknar þegar 3 færslur eru komnar.' },
-      { id: 'story', num: 7, title: 'Our Story, breyta', where: 'Us → Our Story → ýttu á „Our first shared fantasy"',
-        steps: ['Ýttu í Note-reitinn'],
-        expect: 'Sheetið er heilt niður úr (kremaður bakgrunnur alla leið), Save helst fyrir ofan lyklaborðið.' },
-      { id: 'date', num: 8, title: 'Tonight\'s Date, velja af lista', where: 'Discover → Tonight\'s Date, skrunaðu niður',
-        steps: ['Ýttu á „Night Walk" í „All date ideas"'],
-        expect: 'Síðan skrunar upp og Night Walk er í kortinu með Rate og Save for later.' }
+    { id: 'l1', label: 'Lota 1', date: 'Strax, ekkert sérstakt þarf', items: [
+      { id: 'moods5', num: 1, title: 'Fimm ný mood', where: 'Home, mood-röðin',
+        steps: ['Skrunaðu mood-röðina til enda', 'Veldu „Off" 🫥 eða „Check in with me" 🙋'],
+        expect: 'Nýju fimm eru þar: Off, In my head, Overthinking, Tender, Check in with me. Óli sér valið þitt í parakortinu.' },
+      { id: 'ownwords', num: 2, title: 'Mood í eigin orðum', where: 'Home → síðasti flipinn „💬 Own words"',
+        steps: ['Skrifaðu eitt eða tvö orð (t.d. „Bone tired") → „Set mood"', 'Ýttu svo á mood-pilluna þína í parakortinu (opnar Mood History)'],
+        expect: 'Pillan þín sýnir 💬. Í Mood History stendur orðið þitt á 💬-flipanum. Hámark 24 stafir.' },
+      { id: 'ask', num: 3, title: 'Daily: spyrðu Óla að einhverju', where: 'Home → Daily → hlekkur undir flokkunum „Ask Oli something ›"',
+        steps: ['Skrifaðu spurningu → „Send"', 'Svaraðu henni sjálf', 'Óli svarar á sínum síma'],
+        expect: 'Kort merkt „FROM EVA" birtist í öllum flokkum á báðum símum. Hlekkurinn hverfur hjá þér í dag, Óli hefur enn sinn. Svörin birtast hlið við hlið þegar bæði eru komin.' },
+      { id: 'askback', num: 4, title: 'Daily: spurning frá Óla', where: 'Home → Daily',
+        warn: 'Óli sendir sína spurningu fyrst.',
+        steps: ['Finndu kortið „FROM OLI" og svaraðu'],
+        expect: 'Bæði kortin (þitt og Óla) eru í Daily á sama tíma, og bæði teljast í „Reveals ›".' },
+      { id: 'heartdaily', num: 5, title: 'Hjarta og ein lína á svar', where: 'Daily, á spurningu sem þið bæði hafið svarað',
+        steps: ['Ýttu á ❤️ undir svörunum', '„Reply" → ein lína → senda', 'Ýttu aftur á línuna þína og breyttu henni'],
+        expect: 'Óli sér hjartað þitt og „Eva: …". Engin hjörtu eða svör sjást á spurningum sem annað ykkar á eftir að svara.' },
+      { id: 'heartsunday', num: 6, title: 'Hjarta á Sunday-svar', where: 'Us → Sunday Check-in (vika þar sem bæði kláruðu)',
+        steps: ['❤️ og ein lína á eitt svar Óla', 'Opnaðu eldri viku í History'],
+        expect: 'Hjartað og línan sjást hjá Óla. Í History sjást þau en er ekki hægt að breyta.' },
+      { id: 'discreet', num: 7, title: 'Discreet-rofinn', where: 'Profile → „Discreet on the lock screen" (hjá notification-rofanum)',
+        steps: ['Rofinn á að vera Á sjálfgefið', 'Slökktu, lokaðu appinu, opnaðu aftur'],
+        expect: 'Stillingin helst. Kveiktu aftur á eftir. (Push-textinn sjálfur prófast fyrst í alvöru buildi.)' },
+      { id: 'applock', num: 8, title: 'Læsa appinu', where: 'Profile → Privacy → „Lock the app"',
+        steps: ['Kveiktu (síminn biður um auðkenningu)', 'Farðu í app switcher og skoðaðu smámyndina', 'Bíddu rúma mínútu utan appsins, opnaðu aftur', 'Slökktu aftur á eftir'],
+        expect: 'Smámyndin sýnir bara kremaðan skjá með nafninu, ekkert efni. Eftir mínútu biður appið um auðkenningu. Í Expo Go á iPhone kemur passcode í stað Face ID, það er eðlilegt.' },
+      { id: 'paywall', num: 9, title: 'Paywall segir satt', where: 'Profile → Upgrade (eða læst kort í Discover)',
+        warn: 'Bara ef parið er EKKI með Premium núna.',
+        steps: ['Skoðaðu verðraðirnar og línuna undir takkanum'],
+        expect: '„Free until {dagsetning eftir 7 daga}, then $39.99 a year…" og „Cancel before then and you pay nothing." Engin AI-umfjöllun neins staðar.' }
     ]},
-    { id: 'mon14', label: 'Mánudagur', date: '14. september', items: [
-      { id: 'daily-skip', num: 9, title: 'Daily, spurning sem Óli sleppir', where: 'Home → Daily',
-        steps: ['Svaraðu einni spurningu sem Óli ætlar að sleppa (talið saman um hvaða)'],
-        expect: 'Sú spurning kemur aldrei í Memory Lane hjá Óla. Óli staðfestir á fimmtudag.' },
-      { id: 'mood-new', num: 10, title: 'Nýtt mood', where: 'Home',
-        steps: ['Veldu „Cuddly" 🤗 (eða Playful 😏, Grateful 🫶)'],
-        expect: 'Óli sér það á sínum síma.' },
-      { id: 'wyr-b7', num: 11, title: 'Would You Rather á meðan Óli skrifar', where: 'Discover → Would You Rather',
-        steps: ['Svaraðu spurningu 3 og STOPPAÐU þar', 'Óli skrifar nýja spurningu á sínum síma'],
-        expect: 'Svarið þitt lifir, leikurinn hoppar ekki. Spurning Óla kemur í næstu umferð.' }
+    { id: 'l2', label: 'Lota 2', date: 'Premium Á (Óli kveikir í Firebase)', items: [
+      { id: 'fwcats', num: 10, title: 'Fantasy Wishes: flokkar', where: 'Discover → Fantasy Wishes → ☰ efst',
+        warn: 'Óli setur isPremium = true á parið áður en þessi lota byrjar.',
+        steps: ['Opnaðu „Categories"', 'Slökktu á BDSM', 'Kjóstu nokkur spil'],
+        expect: 'Fyrstu spilin eru Sensual. Engin BDSM-spil koma. Hjá Óla er BDSM líka slökkt (stillingin er sameiginleg). Matches breytast ekki.' },
+      { id: 'fwalloff', num: 11, title: 'Fantasy Wishes: allt slökkt', where: 'Sama ☰ blað',
+        steps: ['Slökktu á öllum fjórum', 'Kveiktu svo aftur á öllum'],
+        expect: 'Kort „Every category is off" með „Turn one back on…". Stokkurinn kemur aftur þegar kveikt er.' },
+      { id: 'fwdraw', num: 12, title: 'Draw one for tonight', where: 'Fantasy Wishes → Matches',
+        warn: 'Þarf minnst tvö match. Ýtið bæði jafn oft á takkann.',
+        steps: ['Þið Óli ýtið bæði á „🎲 Draw one for tonight"', 'Berið saman símana', 'Bæði ýta á „🎲 Draw again"'],
+        expect: 'Sama match efst á báðum símum, merkt „🎲 Tonight\'s draw". „+ Add to Together List" virkar á því. Draw again gefur nýtt, aftur það sama hjá báðum.' },
+      { id: 'fwheart', num: 13, title: 'Hjarta á match', where: 'Fantasy Wishes → Matches',
+        steps: ['❤️ og ein lína á eitt match'],
+        expect: 'Óli sér hvort tveggja á sínu match-korti.' }
     ]},
-    { id: 'fri18', label: 'Föstudagur', date: '18. september', items: [
-      { id: 'lovers-tip', num: 12, title: 'Lovers-ráð á Home', where: 'Home, efst í „Waiting for you"',
+    { id: 'l3', label: 'Lota 3', date: 'Premium AF aftur (Óli slekkur)', items: [
+      { id: 'readfw', num: 14, title: 'Lesaðgangur: Fantasy Wishes', where: 'Discover → Fantasy Wishes (kortið sýnir 🔒)',
+        warn: 'Óli setur isPremium = false. Appið á EKKI að henda þér beint á Upgrade.',
+        steps: ['Ýttu á kortið'],
+        expect: 'Skjárinn opnast með borða „Premium has ended. Everything you saved is still yours…". Matches sjást, enginn stokkur til að kjósa í, „+ Add to Together List" virkar enn. Borðinn opnar Upgrade.' },
+      { id: 'readlog', num: 15, title: 'Lesaðgangur: Intimacy Log', where: 'Us → Intimacy Log',
+        steps: ['Opnaðu Log og Stats'],
+        expect: 'Færslurnar og Stats sjást. Enginn „We were intimate" takki, ekki hægt að eyða.' },
+      { id: 'readlovers', num: 16, title: 'Lesaðgangur: The Lovers og Activity Cards', where: 'Us → The Lovers · Discover → Activity Cards',
+        steps: ['Opnaðu bæði'],
+        expect: 'The Lovers sýnir niðurstöðuna þína og samanburðinn, enginn Retake. Activity Cards sýnir borðið með kláruðum spilum, ekkert hægt að snúa. Presence og Tease fara beint á Upgrade (viljandi).' }
+    ]},
+    { id: 'fri18', label: 'Föstudagur', date: '18. september (frá umferð 2)', items: [
+      { id: 'lovers-tip', num: 17, title: 'Lovers-ráð á Home', where: 'Home, efst í „Waiting for you"',
+        warn: 'Þarf Premium Á.',
         steps: ['Er þar kort 🧬 „A Lovers tip for the weekend" eða „What lights Oli up"?'],
         expect: 'Textinn nefnir Óla, ekki þig. Tap opnar The Lovers, kortið hverfur út vikuna.' }
     ]},
-    { id: 'sun20', label: 'Sunnudagur', date: '20. september', items: [
-      { id: 'sunday39', num: 13, title: 'Sunday Check-in, vika 39', where: 'Us → Sunday Check-in',
-        steps: ['Kláraðu eins og nr. 1'],
-        expect: 'Spár Óla frá síðustu viku koma til dóms, og þínar spár sýna dóma Óla („You called X of 3").' }
+    { id: 'sun20', label: 'Sunnudagur', date: '20. september (frá umferð 2)', items: [
+      { id: 'sunday39', num: 18, title: 'Sunday Check-in, vika 39', where: 'Us → Sunday Check-in',
+        steps: ['5 sleðar, 5 spurningar, „Call it" (má sleppa), „Finish check-in ✓"', 'Dæmdu spár Óla frá síðustu viku'],
+        expect: 'Svör hlið við hlið þegar Óli er búinn, með ❤️ og Reply undir hverju svari. Þínar spár sýna dóma Óla („You called X of 3").' }
+    ]},
+    { id: 'last', label: 'Síðast', date: 'Aftenging, gerið þetta allra síðast', items: [
+      { id: 'a1new', num: 19, title: 'Nýr maki fær ekkert gamalt', where: 'Óli stýrir, þú fylgist með',
+        warn: 'Þetta aftengir ykkur tímabundið. Óli notar þriðja reikning („Test") sem nýjan maka.',
+        steps: [
+          'Þú: Profile → „Disconnect couple" → „Disconnect"',
+          'Óli: parar sig við Test-reikninginn með kóða og samþykkir',
+          'Test-reikningurinn skoðar Intimacy Log, Fantasy Wishes Matches, Sunday History, Notes, Moments'
+        ],
+        expect: 'Allt er TÓMT hjá Test. Ekkert frá ykkur Óla sést. Óli sér heldur ekki gömlu gögnin í nýja parinu.' },
+      { id: 'a1back', num: 20, title: 'Þú kemur aftur og allt er þar', where: 'Pairing-skjárinn, „I have a code"',
+        steps: [
+          'Óli aftengist Test og býr til nýjan kóða',
+          'Þú slærð inn kóðann → Óli samþykkir',
+          'Skoðaðu Sunday History, Matches og Moments'
+        ],
+        expect: 'Þú ferð sjálfkrafa inn á Home þegar Óli samþykkir (enginn Retry-takki). Gamla sagan ykkar er öll komin aftur.' },
+      { id: 'c6wait', num: 21, title: 'Home á meðan beðið er', where: 'Home, á meðan þú ert ótengd (milli skrefa í nr. 19 og 20)',
+        steps: ['Skoðaðu Home áður en þú slærð inn kóðann hans Óla'],
+        expect: 'Undir boðskortinu er „While you wait": Send the invite again, Add a Special Day, Take the Love Language quiz, Write a Love Note. Engar Tonight\'s Picks flísar. „Send the invite again" opnar deiliblaðið með kóða og hlekk.' }
     ]}
   ];
   var ALL = DAYS.reduce(function (a, d) { return a.concat(d.items); }, []);
 
   // Ticks live in this phone's browser only.
-  var LS = 'evu-listinn-v2';
+  var LS = 'evu-listinn-v3';
   var done = {};
   try { done = JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) {}
 
@@ -239,7 +274,7 @@
     h += '<header class="top">';
     h += '<p class="eyebrow">Love Desire · prófun á síma B</p>';
     h += '<h1>Evu-listinn</h1>';
-    h += '<p class="lede">Umferð 2: fjórir dagar, þrettán atriði. Hakaðu við jafnóðum. Enskir takkar eru skrifaðir eins og þeir birtast í appinu.</p>';
+    h += '<p class="lede">Umferð 3: allt sem bættist við 14. til 17. september. Þrjár lotur sem má taka í einni setu, tvö atriði sem bíða síns dags, og aftengingin allra síðast. Enskir takkar eru skrifaðir eins og þeir birtast í appinu.</p>';
     h += '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + doneN + '" aria-label="Framvinda">';
     h += '<span class="bar"><span class="fill" style="width:' + pct + '%"></span></span>';
     h += '<span class="count">' + doneN + ' af ' + total + ' búið</span></div>';
