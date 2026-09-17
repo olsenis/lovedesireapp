@@ -23,7 +23,7 @@ Goal: be better than the shelf where it counts (COMPETITORS.md §5): reliable on
 | 7 | **Hygiene before strangers**: rules validation on `bingoCustom` / `wyrCustom` text (R11 B11), weekId over midnight (R11 B13), WYR best-record in a transaction, PII hash in Cloud Logging. | Claude | 2.5 h | ✅ rules deployed (bounded, typed, exact keys; excluded from the wildcard), `hooks/useCurrentWeekId`, `runTransaction` in `updateWYRRecordIfBest`, `hid()` in functions (deployed). Privacy-policy sentence on 30-day hashed logs still to add. |
 | 8 | **Loose ends**: VOICE.md (tone guide), Eva's web checklist refreshed for round 2, ratings + invite copy into MARKETING §10 as done. | Claude | 1.5 h | ✅ VOICE.md, Evu-listinn umferð 2 (13 items, Sep 13 to 20), privacy policies name the 30-day hashed logs, MARKETING §10 updated |
 
-Not in this sprint, on purpose: home-screen widget (native, after the first EAS build), new games, content pools, the name (decide, do not build). Everything else that surfaced this week is filed in POST_LAUNCH C1 or MARKETING §10.
+Not in this sprint, on purpose: home-screen widget (native, after the first EAS build), new games (Scratch Cards, Óli's idea of Sep 17, is designed in POST_LAUNCH and filed as USER_VOICE_TODO C15), content pools, the name (decide, do not build). Everything else that surfaced this week is filed in POST_LAUNCH C1 or MARKETING §10.
 
 ### Proposed from review mining (USER_VOICE.md §7, Sep 13 2026), not started, awaiting pick
 
