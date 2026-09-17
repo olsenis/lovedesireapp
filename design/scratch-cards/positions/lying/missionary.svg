@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 78 328 250" width="328" height="250" role="img" aria-label="Missionary">
+    <rect x="58" y="262" width="78" height="30" rx="15" fill="#FCE4EC"/>
+    <path d="M64 298 Q200 308 336 298" fill="none" stroke="#F4A7B9" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+    <g fill="none" stroke="#E88FA8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M120 274 L216 276"/>
+    </g>
+    <circle cx="96" cy="266" r="19" fill="#E88FA8"/>
+    <g fill="none" stroke="#880E4F" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M144 214 Q188 228 228 252"/>
+      <path d="M228 252 L288 280 L340 290"/>
+      <path d="M148 222 L152 288"/>
+    </g>
+    <circle cx="122" cy="204" r="19" fill="#880E4F"/>
+    <g fill="none" stroke="#E88FA8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M216 276 L262 218 L222 196"/>
+      <path d="M134 266 Q146 232 178 218"/>
+    </g>
+</svg>

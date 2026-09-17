@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 78 328 250" width="328" height="250" role="img" aria-label="From Behind">
+    <path d="M64 298 Q200 308 336 298" fill="none" stroke="#F4A7B9" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+    <g fill="none" stroke="#E88FA8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M116 190 Q162 204 206 182"/>
+      <path d="M118 194 L112 286"/>
+      <path d="M206 182 L188 284 L246 290"/>
+    </g>
+    <circle cx="92" cy="178" r="19" fill="#E88FA8"/>
+    <g fill="none" stroke="#880E4F" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M238 124 Q242 160 236 198"/>
+      <path d="M236 198 L244 282 L312 288"/>
+      <path d="M236 132 Q216 156 204 176"/>
+    </g>
+    <circle cx="236" cy="94" r="19" fill="#880E4F"/>
+</svg>

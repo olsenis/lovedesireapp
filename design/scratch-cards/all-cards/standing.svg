@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" width="400" height="520" role="img" aria-label="Scratch card: Standing">
+  <rect x="12" y="12" width="376" height="496" rx="28" fill="#FFF8F0" stroke="#F0D5DC" stroke-width="2"/>
+  <text x="200" y="58" text-anchor="middle" font-family="Lato, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="2.4" fill="#9E7B84">FROM EVA · POSITION</text>
+  <rect x="36" y="78" width="328" height="250" rx="22" fill="#FFFFFF" stroke="#F0D5DC" stroke-width="1.5"/>
+  <g>
+    <path d="M64 298 Q200 308 336 298" fill="none" stroke="#F4A7B9" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+    <g fill="none" stroke="#880E4F" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M170 142 L176 208"/>
+      <path d="M176 208 L166 296"/>
+      <path d="M176 208 L192 296"/>
+    </g>
+    <circle cx="168" cy="112" r="19" fill="#880E4F"/>
+    <g fill="none" stroke="#E88FA8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M218 150 L216 212"/>
+      <path d="M216 212 L224 296"/>
+    </g>
+    <circle cx="218" cy="120" r="19" fill="#E88FA8"/>
+    <g fill="none" stroke="#E88FA8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M216 212 L154 208 L142 258"/>
+      <path d="M218 160 Q194 146 168 148"/>
+    </g>
+    <g fill="none" stroke="#880E4F" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M170 154 Q140 178 150 206"/>
+    </g>
+  </g>
+  <text x="200" y="378" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="36" font-weight="600" fill="#880E4F">Standing</text>
+  <text x="200" y="412" text-anchor="middle" font-family="Lato, Segoe UI, Arial, sans-serif" font-size="15" fill="#6B4652">Face to face, one leg lifted and held.</text>
+  <text x="200" y="434" text-anchor="middle" font-family="Lato, Segoe UI, Arial, sans-serif" font-size="15" fill="#6B4652">Use a wall for balance.</text>
+  <rect x="110" y="456" width="180" height="40" rx="20" fill="#880E4F"/>
+  <text x="200" y="481" text-anchor="middle" font-family="Lato, Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#FFF8F0">Redeem</text>
+</svg>

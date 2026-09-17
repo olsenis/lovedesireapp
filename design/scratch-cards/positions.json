@@ -1,0 +1,60 @@
+{
+  "_how_to_edit": "Change name or lines here, then run: python design/scratch-cards/build_positions.py. Max about 48 characters per line, two lines. The drawings live in build_positions.py under the same id.",
+  "sender": "EVA",
+  "positions": [
+    {
+      "id": "spooning",
+      "group": "lying",
+      "name": "Spooning",
+      "lines": [
+        "Both on one side, one curled behind the other.",
+        "Slow, close, easy to stay in."
+      ]
+    },
+    {
+      "id": "on-top",
+      "group": "on-top",
+      "name": "On Top",
+      "lines": [
+        "One lies back, the other sits astride.",
+        "Whoever is on top sets the pace."
+      ]
+    },
+    {
+      "id": "from-behind",
+      "group": "from-behind",
+      "name": "From Behind",
+      "lines": [
+        "One on hands and knees, the other kneels behind.",
+        "Hands on hips, take your time."
+      ]
+    },
+    {
+      "id": "missionary",
+      "group": "lying",
+      "name": "Missionary",
+      "lines": [
+        "One lies back, the other lies over.",
+        "Legs wrapped around, faces close."
+      ]
+    },
+    {
+      "id": "lotus",
+      "group": "seated",
+      "name": "Lotus",
+      "lines": [
+        "Sitting up, one in the other's lap.",
+        "Arms around, rocking slowly."
+      ]
+    },
+    {
+      "id": "standing",
+      "group": "standing",
+      "name": "Standing",
+      "lines": [
+        "Face to face, one leg lifted and held.",
+        "Use a wall for balance."
+      ]
+    }
+  ]
+}

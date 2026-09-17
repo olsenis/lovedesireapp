@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 78 328 250" width="328" height="250" role="img" aria-label="Lotus">
+    <path d="M64 298 Q200 308 336 298" fill="none" stroke="#F4A7B9" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+    <g fill="none" stroke="#880E4F" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M168 284 Q156 232 172 182"/>
+      <path d="M168 284 L256 288 L300 268"/>
+    </g>
+    <circle cx="176" cy="150" r="19" fill="#880E4F"/>
+    <g fill="none" stroke="#E88FA8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M226 262 Q242 214 226 170"/>
+      <path d="M226 262 L160 258 L118 286"/>
+    </g>
+    <circle cx="224" cy="140" r="19" fill="#E88FA8"/>
+    <g fill="none" stroke="#880E4F" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M174 196 Q214 214 242 206"/>
+    </g>
+    <g fill="none" stroke="#E88FA8" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M224 180 Q198 170 166 186"/>
+    </g>
+</svg>
