@@ -151,6 +151,21 @@ Use `expo-store-review` (`StoreReview.requestReview()`), which calls Apple's nat
 - Gate: at least 7 days since install and at least 3 rituals completed, tracked locally.
 - **Built Sep 13 2026:** `services/reviewPromptService.ts`. `noteFirstOpen()` runs on every authenticated launch; `noteHappyMoment()` is called after a Fantasy Wishes match, when the Sunday reveal appears during a visit, when Memory Lane is completed, and on day 30 of a challenge. Ask fires 1.8 s after the moment. No-op in Expo Go; verify on the first EAS build.
 
+**Replying to reviews (decided Sep 14 2026, USER_VOICE_TODO D5 and B2).** Óli answers, Claude drafts, everything goes out under Óli's name from App Store Connect → Ratings and Reviews. A reply is public and the reviewer gets a notification, so it is store copy as much as support.
+
+- **Cadence:** every review answered within 48 hours for the first 90 days, one and two star reviews first. After day 90: every review under four stars, and any review that asks a question.
+- **Routine:** Óli pastes the new reviews into a session, Claude drafts one reply each in the VOICE.md register, Óli edits and posts. When a fix ships, the old reply is edited to name the version (Apple notifies the reviewer again, which is the only honest way to earn a changed rating).
+- **Three openings, by kind of review:**
+  1. Praise: thanks plus the one specific thing they named. "Thank you. The Sunday reveal is our favourite part too."
+  2. Complaint we can act on: sorry, what changed, which version. "Sorry about that. Questions no longer repeat inside eight weeks as of 1.0.2."
+  3. Complaint we cannot read yet: one question and how to reach us. "That should not happen. Could you write to support@lovedesireapp.com with the phone model? We read everything."
+- **Never:** argue, explain why the reviewer is wrong, ask for a new rating, paste the same reply twice in a row, mention a competitor, promise a date.
+- **Drafts for the three complaints the category always gets** (USER_VOICE.md §2):
+  - Price or paywall: "Fair point to raise. Most of the app is free and stays free, one subscription covers both of you, and what you made is never locked if you stop paying. The price is in the description so nobody is surprised."
+  - "Feels childish" or "too tame": "Thanks for trying it. The explicit side (Fantasy Wishes, Spicy levels) sits behind the 18+ switch and Premium, on purpose. If that is what you were after, it is there."
+  - Partner never joined: "That is the hard part of any app for two. The invite can be sent again from Home, and the Love Language quiz, Special Days and a first Love Note work while you wait."
+- A review that reports a bug becomes a BUG_BASH row the same day; a wish that shows up three times becomes a USER_VOICE_TODO row.
+
 ### 2.10 Description and promo text
 
 **Promotional text** (170 chars max, editable without a new build, shows above the description):
@@ -234,7 +249,7 @@ All of these are code tasks, listed in §10.
 | T-7 | Icelandic press | Vísir / mbl / Viðskiptablaðið tech desks: "Icelandic couple builds a couples app, launches globally". Human-interest beats product. | Óli |
 | T-7 | Nordic tech | Nordic tech newsletters and podcasts, same angle. | Óli |
 | T-0 | Product Hunt | Launch post, first comment explains the anti-list. Ask TestFlight couples to comment. | both |
-| T-0 | Reddit | r/LongDistance, r/relationship_advice, r/couples, r/apps: read each sub's self-promo rule first. The Sep 2026 r/apps thread (COMPETITORS.md §1) shows the norm: founders who opened with "I built X" got silence or mockery; answer the question as a user of couples apps first, mention ours last, answer every comment. | Óli |
+| T-0 | Reddit | r/LongDistance, r/relationship_advice, r/couples, r/apps: read each sub's self-promo rule first. The Sep 2026 r/apps thread (COMPETITORS.md §1) shows the norm: founders who opened with "I built X" got silence or mockery; answer the question as a user of couples apps first, mention ours last, answer every comment. **Astroturf note (USER_VOICE.md §9, Sep 2026):** about half of the 118 comments in that thread are founders, and r/iOSAppsMarketing plus one r/ldssexuality thread are almost entirely seeded, so do not read app mentions there as demand; the apps real users name unprompted are Cozy Couples, SumOne, Couple Joy, Paired and Agapé. We never seed: no sock accounts, no asking TestFlight couples to post on Reddit. | Óli |
 | T-0 to T+30 | Apple Search Ads | §8, brand defence plus a small generic test. | Óli |
 | T+1 onward | TikTok / Instagram | One format only: the Sunday Check-in reveal, 20 seconds, two phones, one question. Never explicit content, always the 18+ note in bio. Two per week is enough. | both |
 | T+30 | Review | Search terms, keyword swap, custom product pages 6 to 10. | Claude |
