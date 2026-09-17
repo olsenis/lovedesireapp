@@ -611,6 +611,17 @@ This gate cannot be delegated. Sign off comes from the app owner personally afte
   1. Phone A signed in on device 1. Sign into same account on device 2.
   - **Expected:** `users/{uid}.pushToken` now holds device 2 token. Pushes arrive on device 2, not device 1.
 
+- [ ] **"{name} asked you something 💬" from Daily (Sep 2026, C2b)** 📡
+  1. Phone A: Daily → "Ask Eva something ›" → Send. Phone B locked, Discreet on (default).
+  - **Expected:** Title "Oli asked you something 💬", body "Open Daily." (never the question). With Discreet off on B: the first 80 characters of the question. Tap opens the app.
+
+- [ ] **Ratings prompt (expo-store-review, MARKETING §2.9)** 📡 ⚠️
+  1. Fresh install of the build; use the app for 7 days; reach 3 happy moments (Fantasy Wishes match, a Sunday reveal that appears during the visit, Memory Lane completed, challenge day 30).
+  - **Expected:** Apple's native star sheet about 2 s after the third moment. Never on Home, on open or after the paywall; not again for 90 days. TestFlight shows the sheet but does not submit the rating. To test sooner, clear the app's data and temporarily lower the gates in `services/reviewPromptService.ts` on a dev build only.
+
+### Dev build only, mirrored on Evu-listinn (items 22 to 27)
+Push arrives at all · discreet on · discreet off · the Daily ask push · Face ID instead of the passcode (§8) · the ratings prompt. None of these can be checked in Expo Go.
+
 ---
 
 ## 8. iOS permissions (5 tests)

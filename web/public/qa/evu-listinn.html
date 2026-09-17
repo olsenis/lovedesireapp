@@ -249,6 +249,33 @@
       { id: 'c6wait', num: 21, title: 'Home á meðan beðið er', where: 'Home, á meðan þú ert ótengd (milli skrefa í nr. 19 og 20)',
         steps: ['Skoðaðu Home áður en þú slærð inn kóðann hans Óla'],
         expect: 'Undir boðskortinu er „While you wait": Send the invite again, Add a Special Day, Take the Love Language quiz, Write a Love Note. Engar Tonight\'s Picks flísar. „Send the invite again" opnar deiliblaðið með kóða og hlekk.' }
+    ]},
+    { id: 'dev', label: 'Dev build', date: 'Þegar fyrsta iPhone buildið er komið', items: [
+      { id: 'push-basic', num: 22, title: 'Push berst yfirhöfuð', where: 'Profile → notification-rofinn Á, á báðum símum',
+        warn: 'Ekkert í þessari lotu virkar í Expo Go. Bíður eftir alvöru buildi á iPhone.',
+        steps: ['Óli skrifar Love Note sem opnast strax', 'Læstu símanum þínum á meðan'],
+        expect: 'Tilkynning kemur á læsta skjáinn þinn innan nokkurra sekúndna.' },
+      { id: 'push-discreet-on', num: 23, title: 'Push með Discreet Á (sjálfgefið)', where: 'Læsti skjárinn þinn',
+        steps: [
+          'Þú ýtir á „Tonight? 🔥", svo Óli',
+          'Óli velur mood',
+          'Þið fáið Fantasy Wishes match',
+          'Óli skrifar Reply á svar í Daily'
+        ],
+        expect: 'Bara hlutlaus texti: „Tonight ✓ / You and Oli are on the same page.", „Oli updated a mood", „Open to read it.". Aldrei mood-heitið, texti spilsins eða línan sjálf.' },
+      { id: 'push-discreet-off', num: 24, title: 'Push með Discreet AF', where: 'Profile → „Discreet on the lock screen" → af',
+        steps: ['Endurtakið sömu fjögur skref og í nr. 23', 'Kveiktu aftur á Discreet á eftir'],
+        expect: 'Nú sést fulli textinn, t.d. „Oli is feeling 💬 Bone tired" og línan úr Reply.' },
+      { id: 'push-ask', num: 25, title: 'Push: „Oli asked you something 💬"', where: 'Daily',
+        steps: ['Óli sendir spurningu með „Ask Eva something ›"', 'Ýttu á tilkynninguna'],
+        expect: 'Með Discreet Á stendur „Open Daily." undir titlinum, ekki spurningin. Tap opnar appið.' },
+      { id: 'faceid', num: 26, title: 'Face ID í stað passcode', where: 'Profile → Privacy → „Lock the app"',
+        steps: ['Kveiktu', 'Lokaðu appinu alveg og opnaðu aftur', 'Farðu út í rúma mínútu og komdu aftur'],
+        expect: 'Face ID kemur upp (ekki talnakóðinn) í bæði skiptin. Í fyrsta sinn spyr iOS um Face ID leyfi fyrir appið. App switcher sýnir kremaða huluna.' },
+      { id: 'rating', num: 27, title: 'Beiðni um stjörnur', where: 'Eftir góða stund: match, Sunday-afhjúpun, Memory Lane búið',
+        warn: 'Kemur fyrst eftir 7 daga frá fyrstu opnun á buildinu og þrjár góðar stundir. Í TestFlight birtist blaðið en einkunnin sendist ekki.',
+        steps: ['Notaðu appið eðlilega í viku', 'Taktu eftir hvenær stjörnublað Apple birtist'],
+        expect: 'Blaðið kemur um tveimur sekúndum eftir góða stund. Aldrei á Home, aldrei við opnun, aldrei eftir paywall. Ekki aftur næstu 90 daga.' }
     ]}
   ];
   var ALL = DAYS.reduce(function (a, d) { return a.concat(d.items); }, []);
@@ -274,7 +301,7 @@
     h += '<header class="top">';
     h += '<p class="eyebrow">Love Desire · prófun á síma B</p>';
     h += '<h1>Evu-listinn</h1>';
-    h += '<p class="lede">Umferð 3: allt sem bættist við 14. til 17. september. Þrjár lotur sem má taka í einni setu, tvö atriði sem bíða síns dags, og aftengingin allra síðast. Enskir takkar eru skrifaðir eins og þeir birtast í appinu.</p>';
+    h += '<p class="lede">Umferð 3: allt sem bættist við 14. til 17. september. Þrjár lotur sem má taka í einni setu, tvö atriði sem bíða síns dags, aftengingin síðast, og neðst það sem bíður fyrsta iPhone buildsins. Enskir takkar eru skrifaðir eins og þeir birtast í appinu.</p>';
     h += '<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="' + total + '" aria-valuenow="' + doneN + '" aria-label="Framvinda">';
     h += '<span class="bar"><span class="fill" style="width:' + pct + '%"></span></span>';
     h += '<span class="count">' + doneN + ' af ' + total + ' búið</span></div>';
