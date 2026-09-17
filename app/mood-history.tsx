@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import * as Haptics from 'expo-haptics';
 import { useSubscription } from '../hooks/useSubscription';
@@ -44,6 +46,7 @@ function streak(myMoods: MoodEntry[]): number {
 
 export default function MoodHistoryScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('mood-history');
   const { partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
   const [moods, setMoods] = useState<MoodEntry[]>([]);
@@ -274,6 +277,18 @@ export default function MoodHistoryScreen() {
           )}
         </ScrollView>
       )}
+      <HelpModal
+        visible={help.visible}
+        title="Mood History"
+        description={`Both of your moods over the last weeks, side by side.`}
+        tips={[
+          `Set today's mood here or on Home`,
+          `💬 Own words lets you say it your way, and ${partnerName} sees exactly that`,
+          `The calendar shows your month, the chart shows the days you both logged`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

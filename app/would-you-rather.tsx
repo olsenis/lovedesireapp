@@ -670,10 +670,20 @@ export default function WouldYouRatherScreen() {
             );
           })}
         </ScrollView>
-        <HelpModal visible={help.visible} title="Would You Rather"
-          description="Both partners answer at the same time, then reveal. See if you match, and talk about why you chose differently."
-          tips={["Pick a level and both answer simultaneously",`Your answer is hidden until ${partnerName} also answers`,"If you match → +1 point","If you don't → discuss why! That's the fun part"]}
-          onDismiss={help.dismiss} onDismissAll={help.dismissAll} />
+        <HelpModal
+          visible={help.visible}
+          title="Would You Rather"
+          description={`Both of you answer the same question, then see each other's pick at the same moment. Matching is fun, not matching is the conversation.`}
+          tips={[
+            `Your answer stays hidden until ${partnerName} has answered too`,
+            `Five reveals a day, so there is something left for tomorrow`,
+            `Write one of your own for ${partnerName}, it goes to the front of the deck`,
+            `Packs are ten questions on one theme, played in order`,
+            `A match worth keeping can be saved to your Together List`,
+          ]}
+          onDismiss={help.dismiss}
+          onDismissAll={help.dismissAll}
+        />
 
         {addEditModal}
 

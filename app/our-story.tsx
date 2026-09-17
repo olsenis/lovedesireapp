@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import {
   Milestone,
@@ -46,6 +48,7 @@ function formatLongDate(ts: number): string {
 
 export default function OurStoryScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('our-story');
   const { partner, couple } = useCouple(user?.uid, profile?.coupleId);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -403,7 +406,7 @@ export default function OurStoryScreen() {
             accessibilityRole="button"
           >
             <Text style={styles.archiveEmoji}>🌹</Text>
-            <Text style={styles.archiveNum}>{dailyMatches?.length ?? '—'}</Text>
+            <Text style={styles.archiveNum}>{dailyMatches?.length ?? '·'}</Text>
             <Text style={styles.archiveLabel}>Daily matches</Text>
             {(dailyMatches?.length ?? 0) > 0 && <Text style={styles.archiveTap}>View →</Text>}
           </TouchableOpacity>
@@ -692,6 +695,18 @@ export default function OurStoryScreen() {
         destructive
         onConfirm={confirmDelete}
         onCancel={() => setDeleteConfirm(null)}
+      />
+      <HelpModal
+        visible={help.visible}
+        title="Our Story"
+        description={`Your timeline: the firsts the app noticed and the ones you add yourselves.`}
+        tips={[
+          `Firsts fill in on their own as you use the app`,
+          `Tap one to add a note, + Add for a milestone of your own`,
+          `Your archive below keeps your matches and past weeks`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
       />
     </View>
   );

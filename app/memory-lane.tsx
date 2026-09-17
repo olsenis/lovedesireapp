@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import { useTrackScreen } from '../hooks/useTrackScreen';
 import { WhileYouWait } from '../components/WhileYouWait';
@@ -29,6 +31,7 @@ const SOURCE_LABEL: Record<MemorySource, string> = {
 
 export default function MemoryLaneScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('memory-lane');
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId;
@@ -233,6 +236,19 @@ export default function MemoryLaneScreen() {
           )}
         </View>
       </ScrollView>
+      <HelpModal
+        visible={help.visible}
+        title="Memory Lane"
+        description={`Five questions a week, made from your own history in the app: photos, answers, moods, firsts.`}
+        tips={[
+          `Your questions are about ${partnerName}, and ${partnerName} gets a different set about you`,
+          `You see right away whether you remembered`,
+          `When both of you are done, the two results sit side by side`,
+          `A new round every week`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

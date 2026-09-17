@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import { ImportantDate, subscribeDates, addImportantDate, deleteImportantDate } from '../services/importantDateService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
@@ -59,6 +61,7 @@ const BUCKET_LABELS: Record<'thisMonth' | 'nextThree' | 'later', string> = {
 
 export default function CalendarScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('special-days');
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   useTrackScreen('calendar');
   const [dates, setDates] = useState<ImportantDate[]>([]);
@@ -313,6 +316,18 @@ export default function CalendarScreen() {
           </View>
         </View>
       </Modal>
+      <HelpModal
+        visible={help.visible}
+        title="Special Days"
+        description={`The dates that matter to the two of you, in the order they are coming.`}
+        tips={[
+          `Add anniversaries, birthdays, firsts and small rituals`,
+          `Keep it a surprise 🤫 hides what the day is from ${partnerName} until it arrives`,
+          `Your anniversary, a birthday and Valentine's Day appear on their own once the dates are set`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </KeyboardAvoidingView>
   );
 }

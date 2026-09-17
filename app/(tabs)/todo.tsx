@@ -378,12 +378,12 @@ export default function TogetherScreen() {
       <HelpModal
         visible={help.visible}
         title="Together List"
-        description="A shared to-do list that both of you can add to and check off in real time."
+        description={`One shared list that both of you add to and tick off, live on both phones.`}
         tips={[
-          'Tap + Add to add a new item',
-          'Choose a category, Daily Life, Date Ideas, Intimacy, or Goals',
-          'Tap the circle to mark something done',
-          'Both partners see all changes instantly',
+          `Tap + Add, then pick Daily Life, Date Ideas, Intimacy or Goals`,
+          `Tap the circle when it is done. ${partner?.name ?? 'your partner'} sees it right away`,
+          `A mutual Yes in Daily, a Fantasy Wishes match or a Lovers tip can be saved here with one tap`,
+          `Suggestions from ${partner?.name ?? 'your partner'} wait at the top until you answer them`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

@@ -285,12 +285,13 @@ export default function BlueprintScreen() {
       <HelpModal
         visible={help.visible}
         title="The Lovers"
-        description="15 questions that identify your erotic type, how you feel most alive in intimacy. When both partners complete it, your compatibility appears."
+        description={`15 quick questions about how you feel most alive in intimacy. When both of you have finished, the app shows how your two styles meet.`}
         tips={[
-          '5 types: Sensual, Sexual, Energetic, Kinky, Shapeshifter',
-          'Answer honestly, no right or wrong type',
-          `When both complete it: see ${partner?.name ?? 'your partner'}'s type + compatibility tips`,
-          'Includes 3 actionable tips for your specific combination',
+          `Five styles: Feeling, Sexual, Spark, Kinky, Explorer. None is better than another`,
+          `Go with your gut, there are no right answers`,
+          `When ${partner?.name ?? 'your partner'} finishes too, you both see the pairing and three things to try`,
+          `+ Together List under a tip saves it to your shared list`,
+          `On Fridays, Home shows one tip for the weekend`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

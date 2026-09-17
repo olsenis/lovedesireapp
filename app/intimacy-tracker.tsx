@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, TextInput,
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import { usePaidAccess } from '../hooks/usePaidAccess';
 import { PremiumEndedBanner } from '../components/PremiumEndedBanner';
@@ -122,6 +124,7 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function IntimacyTrackerScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('intimacy-log');
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   useTrackScreen('intimacy_log');
   const [entries, setEntries] = useState<IntimacyEntry[]>([]);
@@ -385,6 +388,19 @@ export default function IntimacyTrackerScreen() {
       onConfirm={confirmDelete}
       onCancel={() => setDeleteConfirm(null)}
     />
+      <HelpModal
+        visible={help.visible}
+        title="Intimacy Log"
+        description={`A private record of your closeness, shared by the two of you and nobody else.`}
+        tips={[
+          `Tap We were intimate, fill in what you like, and add one thing worth remembering`,
+          `Who started it and who it was for are written from your side, and read the right way round on ${partnerName}'s phone`,
+          `Stats appear once there are 3 entries`,
+          `If Premium ever ends, everything you logged stays readable`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </>
   );
 }

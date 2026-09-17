@@ -256,12 +256,12 @@ export default function RouletteScreen() {
       <HelpModal
         visible={help.visible}
         title="Tonight's Date"
-        description="Let fate decide your next date. Spin for a random date idea from 48 options across three types."
+        description={`Let chance pick the plan. Spin for a date idea at home, out, or somewhere new.`}
         tips={[
-          'Filter by At Home, Going Out, or Adventure',
-          'Spin and get a random date idea',
-          'Tap Try again to get a different one',
-          'Browse all 48 ideas in the list below',
+          `Filter by At Home, Going Out or Adventure`,
+          `Tap Spin for a Date! Not tonight? Try again ↻`,
+          `Give a date stars once you have done it, then show only your highest rated`,
+          `Or scroll to All date ideas and tap the one you want`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

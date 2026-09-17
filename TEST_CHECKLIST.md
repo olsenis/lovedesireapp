@@ -3980,6 +3980,14 @@ Profile screen controls, payment paywall, help system, legal viewers.
 
 ---
 
+### Feature hints sweep (Sep 17 2026)
+- [ ] **Every hint matches its screen**
+  1. Profile → Help → reset (hints on)
+  2. Open each of the 21 screens once: Together List, Activity Cards, The Lovers, 30-Day Challenge, Daily, Fantasy Wishes, Love Notes, Love Language Quiz, Flirt Reminders, Tonight's Date, Presence, Truth or Dare, Would You Rather, Sunday Check-in, Memory Lane, Moments, Intimacy Log, Tease, Special Days, Our Story, Mood History
+  - **Expected:** One "How it works" card per screen on the first visit only. Every quoted button exists on that screen, the partner is named, no old names (The Lovers lists Feeling / Sexual / Spark / Kinky / Explorer; Tonight's Date names no count). "I don't need more help" on any card silences the rest. On a paid screen opened read-only the card still makes sense.
+
+- [ ] **Onboarding tour mood step mentions Tonight? 🔥** (fresh account, pair, reach the mood step)
+
 ### App lock (Sep 2026, USER_VOICE A7)
 - [ ] **Turn on requires Face ID and locks after a minute** 📱
   1. Profile → Privacy → "Lock the app" ON → Face ID / passcode prompt → confirm

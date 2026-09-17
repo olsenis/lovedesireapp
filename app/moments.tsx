@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import { MomentEntry, subscribeMoments, submitMomentPhoto } from '../services/momentService';
 import { uploadMomentPhoto, UploadTooLargeError } from '../services/storageService';
@@ -20,6 +22,7 @@ import { ReportModal } from '../components/ReportModal';
 
 export default function MomentsScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('moments');
   const { couple, partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
   const uid = user?.uid ?? '';
   const coupleId = profile?.coupleId ?? '';
@@ -294,6 +297,19 @@ export default function MomentsScreen() {
       <ReportModal
         contentRef={reportContentRef}
         onClose={closeReport}
+      />
+      <HelpModal
+        visible={help.visible}
+        title="Moments"
+        description={`One photo a day from each of you, of whatever today looks like.`}
+        tips={[
+          `Your photo stays hidden until ${partner?.name ?? 'your partner'} has taken one too, then both appear together`,
+          `One a day each, so it takes seconds`,
+          `Earlier days stay under Past moments`,
+          `Open a photo to find the report link if something is not okay`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
       />
     </View>
   );

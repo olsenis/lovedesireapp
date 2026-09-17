@@ -116,7 +116,7 @@ function timeLabel(note: LoveNote): string {
       return `Unlocks when partner feels ${label}`;
     }
     if (note.openCondition === 'visit') return 'Unlocks on next visit';
-    if (note.openCondition === 'missing') return 'For when you miss them';
+    if (note.openCondition === 'missing') return 'For a missing-you moment';
     if (note.openCondition === 'sleepless') return "For when you can't sleep";
     return 'Unlocks on a condition';
   }
@@ -811,12 +811,12 @@ export default function NotesScreen() {
       <HelpModal
         visible={help.visible}
         title="Love Notes"
-        description={`Write a timed message that ${partnerName} can't open until the moment you choose.`}
+        description={`Write something ${partnerName} can only open when the moment comes.`}
         tips={[
-          'Tap Write to compose a note',
-          'Choose when it unlocks, right now, tonight, tomorrow, or next week',
-          'Partner sees it exists but can\'t read it until the time comes',
-          'Tap a ready note to open it',
+          `Tap Write, then choose when it opens: Right now, tonight, this weekend or a date you pick`,
+          `Or tie it to a moment: a mood ${partnerName} logs, When you miss me, When you can't sleep`,
+          `${partnerName} sees that a note is waiting, never what it says`,
+          `Tap a note that is ready to open it`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

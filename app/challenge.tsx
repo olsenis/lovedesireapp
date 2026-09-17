@@ -562,12 +562,12 @@ export default function ChallengeScreen() {
       <HelpModal
         visible={help.visible}
         title="30-Day Challenge"
-        description="A daily practice for 30 days. Choose your intensity, Reconnect, Spark, Fire, or Desire."
+        description={`One small thing a day for 30 days, done by both of you. Pick Reconnect, Spark, Fire or Desire.`}
         tips={[
-          'Setup phase: each partner can swap 2 days before starting',
-          'Both must mark a day done for it to count',
-          'Use a Veto (2 each) to skip a day and just have sex instead',
-          'Desire program is 18+, a content warning appears before starting',
+          `Before you start, each of you can edit 2 days. Refresh suggests another idea`,
+          `A day counts when both of you have tapped Mark as done ✓`,
+          `🎲 Veto (2 each) drops the day's plan so you can just have sex instead`,
+          `Reconnect and Spark are free. Fire and Desire are Premium, and Desire is 18+`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

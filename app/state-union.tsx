@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import {
   getWeekQuestions,
@@ -66,6 +68,7 @@ type ComposeStep = 'pulse' | number | 'predictions';
 
 export default function StateUnionScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('sunday-checkin');
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
@@ -719,6 +722,20 @@ export default function StateUnionScreen() {
         )}
       </ScrollView>
       </KeyboardAvoidingView>
+      <HelpModal
+        visible={help.visible}
+        title="Sunday Check-in"
+        description={`Once a week: five quick ratings and five questions about the two of you. Everything stays private until both of you have finished.`}
+        tips={[
+          `Rate the week on five sliders, then answer the five questions in your own words`,
+          `Call it is optional: up to three guesses about ${partnerName}'s coming week, which ${partnerName} marks next Sunday`,
+          `When both are done, the answers appear side by side`,
+          `Leave a ❤️ or one line under an answer`,
+          `Past weeks stay in History`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
+      />
     </View>
   );
 }

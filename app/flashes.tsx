@@ -64,6 +64,8 @@ function FlashVoice({ uri, large = false }: { uri: string; large?: boolean }) {
 }
 
 import { useAuth } from '../hooks/useAuth';
+import { useHelp } from '../hooks/useHelp';
+import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import { useSubscription } from '../hooks/useSubscription';
 import { FlashEntry, subscribeFlashes, sendFlash, markFlashViewed, formatCountdown } from '../services/flashService';
@@ -80,6 +82,7 @@ import { ReportModal } from '../components/ReportModal';
 
 export default function FlashesScreen() {
   const { user, profile } = useAuth();
+  const help = useHelp('tease');
   const { partner } = useCouple(user?.uid ?? '', profile?.coupleId ?? '');
   const { isSubscribed, isLoading: subLoading } = useSubscription();
   const uid = user?.uid ?? '';
@@ -497,6 +500,17 @@ export default function FlashesScreen() {
       <ReportModal
         contentRef={reportContentRef}
         onClose={closeReport}
+      />
+      <HelpModal
+        visible={help.visible}
+        title="Tease"
+        description={`A photo, a short video or a voice note for ${partner?.name ?? 'your partner'} only, from right now.`}
+        tips={[
+          `It disappears after opening, and after 24 hours either way`,
+          `Report this tease is in the viewer if something is not okay`,
+        ]}
+        onDismiss={help.dismiss}
+        onDismissAll={help.dismissAll}
       />
     </View>
   );

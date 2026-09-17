@@ -265,7 +265,7 @@ export default function OnboardingTourScreen() {
             <Text style={styles.heroEmoji}>💭</Text>
             <Text style={styles.title}>How are you feeling right now?</Text>
             <Text style={styles.body}>
-              {partner?.name ?? 'Your partner'} will see this on their home. You can change it any time from the home screen.
+              {partner?.name ?? 'Your partner'} will see this on their home. You can change it any time from the home screen. Under your mood there is also Tonight? 🔥, which stays private unless you both tap it.
             </Text>
             <View style={styles.moodGrid}>
               {visibleMoods.map((m) => {
