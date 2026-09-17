@@ -3980,6 +3980,11 @@ Profile screen controls, payment paywall, help system, legal viewers.
 
 ---
 
+### Home: match cards open Matches (Sep 17 2026)
+- [ ] **"N matches" and "Intimate moment"** 💰
+  1. Couple with Fantasy Wishes matches; tap "N matches" on Home
+  - **Expected:** Fantasy Wishes opens on the Matches tab, not the deck. With the Intimacy Log on and no entry for 7+ days, "Intimate moment" reads "One of your matches, maybe tonight?" and also opens Matches; with a mutual Yes in Daily today it reads "You both picked something today" and opens Daily; with neither it opens the Intimacy Log. No day count in the text.
+
 ### Feature hints sweep (Sep 17 2026)
 - [ ] **Every hint matches its screen**
   1. Profile → Help → reset (hints on)

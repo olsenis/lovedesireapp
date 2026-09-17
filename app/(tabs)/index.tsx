@@ -636,7 +636,7 @@ export default function HomeScreen() {
       emoji: '✨',
       title: `${fwMatches.length} ${fwMatches.length === 1 ? 'match' : 'matches'}`,
       subtitle: 'You both want the same thing, tap to see',
-      route: '/fantasy-wishes',
+      route: '/fantasy-wishes?tab=matches',
       bg: '#F3E5F5',
     });
   }
@@ -912,24 +912,26 @@ export default function HomeScreen() {
     const last = intimacyEntries[0].createdAt;
     const daysSince = Math.floor((Date.now() - last) / 86400000);
     if (daysSince >= 7) {
-      // Priority 1: mutual Fantasy Wish
-      const fwMatch = fwItems.find(i => isFWMatch(i, uid, partnerId));
-      // Priority 2: shared Daily Pick today
+      // A Fantasy Wishes match is NOT a reason here (Sep 2026): the
+      // "N matches" card above already says it and opens Matches, and this
+      // card used to promise Fantasy Wishes while opening the Intimacy Log.
+      // The card now goes where its sentence points.
+      // Reason 1: shared Daily Pick today
       const myVotes = (dailyWishDoc?.votes[uid] ?? {}) as Record<string, string>;
       const partnerVotes = (dailyWishDoc?.votes[partnerId] ?? {}) as Record<string, string>;
       const sharedPick = Object.keys(myVotes).find(k => myVotes[k] === 'yes' && partnerVotes[k] === 'yes') ?? null;
 
-      const subtitle = fwMatch
-        ? `You both want to try something from your Fantasy Wishes, maybe tonight?`
-        : sharedPick
+      const subtitle = sharedPick
         ? `You both picked something today, why not make it happen?`
-        : `It's been ${daysSince} days, some time together tonight?`;
+        : fwMatches.length > 0
+        ? `It's been a little while. One of your matches, maybe tonight?`
+        : `It's been a little while, some time together tonight?`;
 
       list.push({
         emoji: '💝',
         title: 'Intimate moment',
         subtitle,
-        route: '/intimacy-tracker',
+        route: sharedPick ? '/daily' : fwMatches.length > 0 ? '/fantasy-wishes?tab=matches' : '/intimacy-tracker',
         bg: '#FFF0F3',
       });
     }

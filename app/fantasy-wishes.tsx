@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, FlatList, KeyboardAvoidingView, Platform, Switch } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useSpicyConsent } from '../hooks/useSpicyConsent';
@@ -43,7 +43,9 @@ export default function FantasyWishesScreen() {
     consentAskedRef.current = true;
     requireSpicyConsent('solo', () => {}, () => router.back());
   }, [ready, spicyOk, requireSpicyConsent]);
-  const [activeTab, setActiveTab] = useState<'explore' | 'matches'>('explore');
+  // Home's match cards deep-link straight to Matches (?tab=matches).
+  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<'explore' | 'matches'>(tabParam === 'matches' ? 'matches' : 'explore');
   useEffect(() => { if (readOnly) setActiveTab('matches'); }, [readOnly]);
   const [showAdd, setShowAdd] = useState(false);
   // Category choice sheet (USER_VOICE A6). The choice itself lives on the
