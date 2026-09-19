@@ -445,12 +445,12 @@ export default function StateUnionScreen() {
             <Text style={styles.questionLabel}>Optional</Text>
             <Text style={styles.questionText}>Call it</Text>
             <Text style={styles.waitHint}>
-              Up to three predictions about {partnerName} for the coming week. Hidden until the next check-in you both finish, when {partnerName} says which came true.
+              A small game to end on. Guess up to three things {partnerName} will do this coming week. {partnerName} cannot see them until your next check-in, and then marks each one right or wrong.
             </Text>
             {[
               'e.g. Will suggest sushi at least once',
               'e.g. Will fall asleep during a movie',
-              'e.g. Will send a voice note before Wednesday',
+              'e.g. Will text me first on Friday',
             ].slice(0, MAX_PREDICTIONS).map((ph, i) => (
               <TextInput
                 key={i}
@@ -462,7 +462,19 @@ export default function StateUnionScreen() {
                 maxLength={100}
               />
             ))}
+            {/* Three buttons do not fit one row on a narrow phone (the primary
+                shrank to unreadable, Sep 2026): Finish gets its own row. */}
             <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={[styles.primaryBtn, submitting && styles.btnDisabled]}
+                onPress={() => handleComplete(predDraft.some((p) => p.trim()))}
+                disabled={submitting}
+                accessibilityRole="button"
+              >
+                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1}>{predDraft.some((p) => p.trim()) ? 'Save and finish ✓' : 'Finish check-in ✓'}</Text>}
+              </TouchableOpacity>
+            </View>
+            <View style={[styles.actionsRow, { justifyContent: 'space-between' }]}>
               <TouchableOpacity
                 style={styles.secondaryBtn}
                 onPress={() => {
@@ -480,15 +492,7 @@ export default function StateUnionScreen() {
                 disabled={submitting}
                 accessibilityRole="button"
               >
-                <Text style={styles.secondaryBtnText}>Skip</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.primaryBtn, submitting && styles.btnDisabled]}
-                onPress={() => handleComplete(predDraft.some((p) => p.trim()))}
-                disabled={submitting}
-                accessibilityRole="button"
-              >
-                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Finish check-in ✓</Text>}
+                <Text style={styles.secondaryBtnText}>Skip this part</Text>
               </TouchableOpacity>
             </View>
           </View>
