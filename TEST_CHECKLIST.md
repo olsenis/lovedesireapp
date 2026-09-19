@@ -2823,6 +2823,13 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
   1. Phone A submits 3; Phone B submits 1; B opens History
   - **Expected:** Phone B sees only own 1.
 
+### Sunday Check-in: light first, deeper later (Sep 19 2026)
+- [ ] **A new couple's first check-in is a light set**
+  1. Fresh couple → Us → Sunday Check-in → finish the pulse
+  - **Expected:** The five questions come from a tier 1 set (baseline, friendship, play and silliness, rituals, the little things, home). Firestore `stateUnion/{week}.questionSetId` is one of 0, 8, 16, 19, 20, 23. Both phones show the same set. Every question reads as plain English.
+
+- [ ] **An old couple keeps its week** : a week doc that already exists keeps its `questionSetId`; History shows earlier weeks with the questions they were answered against.
+
 ### Sunday Check-in: heart and one line on each other's answers (Sep 2026, USER_VOICE C2)
 - [ ] **After both finish** 📱
   1. Both complete the check-in; Phone A ♡ under question 2, Phone B replies one line under question 4

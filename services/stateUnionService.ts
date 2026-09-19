@@ -15,6 +15,7 @@ import {
 import { db } from './firebase';
 import { trackEvent } from './statsService';
 import { markFirstRitualIfUnset } from './coupleService';
+import { excludeRecent } from './seed';
 
 // Sunday Check-in question pool. Each set is 5 questions, one week per
 // set. A deterministic per-couple picker (see pickWeeklyQuestionSet) means
@@ -45,7 +46,7 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   ],
   // Set 2 — growth & carrying
   [
-    'What have you been carrying quietly this week?',
+    'What has been weighing on you this week that you have not mentioned?',
     'Where did we handle something well as a team?',
     "What is something you're proud of yourself for?",
     'What is one thing you want us to try differently next week?',
@@ -54,7 +55,7 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   // Set 3 — attention & rhythm
   [
     'When did we laugh together this week?',
-    "What has felt off between us that we haven't named yet?",
+    "Is there something between us that has not felt quite right, that we have not talked about?",
     "What is one moment from this week you'd want to remember?",
     'What would you love more attention from me on?',
     'What is something you want to celebrate about us right now?',
@@ -62,31 +63,31 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   // Set 4 — repair & tenderness
   [
     'What is a moment this week where you needed reassurance?',
-    'What is something I did that stayed with you, good or hard?',
-    "What would feel like repair for something that's lingered?",
+    'What is something I did this week that you kept thinking about, good or hard?',
+    "Is there something unresolved between us, and what would help fix it?",
     'What is a way we can be tender with each other next week?',
     'What is one thing you love about being in this with me?',
   ],
   // Set 5 — rest & pace
   [
     'How did the pace of this week feel to you?',
-    'When did you feel most depleted this week?',
+    'When did you feel most worn out this week?',
     'Was there a moment I helped you slow down?',
     'What would help you feel more rested next week?',
     'What small comfort feels like real rest to you?',
   ],
   // Set 6 — sharing life admin
   [
-    'What kept us running smoothly this week without anyone thanking it?',
-    'What piece of life admin have you been quietly holding?',
-    'What is one thing I take off your plate that helps most?',
-    'What is one small task we could hand off differently next week?',
+    'What kept our week working that nobody said thank you for?',
+    'What practical thing have you been taking care of alone without mentioning it?',
+    'What is one thing I take care of for you that helps the most?',
+    'What is one chore we could share differently next week?',
     'What is a boring shared chore you secretly enjoy?',
   ],
   // Set 7 — money together
   [
     'What did we spend money on this week that felt worth it?',
-    'What is a money worry you have been carrying quietly?',
+    'What is a money worry you have kept to yourself?',
     'When have I made you feel safer about money lately?',
     'What is one thing we could save toward that would excite you?',
     'What is a small money treat that would feel like love right now?',
@@ -112,7 +113,7 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
     'What big change have you been thinking about this week?',
     'What feels most uncertain to you right now?',
     'What is something I have said that made a coming change feel doable?',
-    'What is one thing you would love to nail down before it arrives?',
+    'What is one thing you would like to have decided before it happens?',
     'What are you most looking forward to on the other side of it?',
   ],
   // Set 11 — what has changed since we met
@@ -134,17 +135,17 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   // Set 13 — what we say vs what we mean
   [
     'When this week did I not quite hear what you were really saying?',
-    'What is something you almost said this week but held back?',
-    'When have I picked up on what you meant without you spelling it out?',
+    'What is something you almost said this week but did not?',
+    'When did I understand what you meant without you having to explain it?',
     'What would help you say something hard next week?',
-    'What phrase between us has become a shorthand only we understand?',
+    'What word or phrase of ours would nobody else understand?',
   ],
   // Set 14 — fear and reassurance
   [
     'What was one small thing this week that made you anxious?',
-    'What fear have you been carrying that you have not put into words?',
-    'What is one way I could reassure you that would actually land?',
-    'What is one worry you would love to hand off next week?',
+    'What is a fear you have not told me about yet?',
+    'What could I say or do that would really make you feel reassured?',
+    'What is one worry you would like to stop carrying alone next week?',
     'When do you feel safest with me?',
   ],
   // Set 15 — hope for us
@@ -158,7 +159,7 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   // Set 16 — play and silliness
   [
     'What made you laugh with me hardest this week?',
-    'When did you feel most playful with yourself this week?',
+    'When did you feel most playful this week, even on your own?',
     'What is something silly I do that you love?',
     'What is one silly thing we could do together this weekend?',
     'What is our best inside joke right now?',
@@ -166,7 +167,7 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   // Set 17 — body and health
   [
     'How has your body felt this week?',
-    'What is one thing you have been ignoring physically that you should not?',
+    'What is your body telling you that you have been ignoring?',
     'What is one way I take care of you that your body notices?',
     'What is one small thing you could do next week to feel better in your body?',
     'What is a physical comfort we share that you love?',
@@ -175,14 +176,14 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   [
     'What are you proud of pushing forward this week?',
     'What ambition have you been quiet about lately?',
-    'What are you rooting for me on right now?',
+    'What are you hoping I succeed at right now?',
     'What is one goal you would love my support with next?',
-    'What is one dream of yours that lights you up when you think about it?',
+    'What is one dream of yours that makes you happy just thinking about it?',
   ],
   // Set 19 — rituals we have built
   [
     'What ritual of ours felt especially good this week?',
-    'What is a habit of your own that has been slipping lately?',
+    'What is a good habit of yours that you have been skipping lately?',
     'What is one small thing I do daily that you would miss most?',
     'What is a new ritual you would love us to try?',
     'What is your favorite tiny thing we always do together?',
@@ -191,7 +192,7 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   [
     'What small thing this week made you feel loved?',
     'What is a tiny thing you did for yourself this week that helped?',
-    'What is one small gesture from me that always lands?',
+    'What is one small thing I do that always makes you feel good?',
     'What small kindness could I offer you next week?',
     'What is a tiny detail about us right now that you love?',
   ],
@@ -201,7 +202,7 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
     'Where have you been feeling invisible lately, even outside of us?',
     'What is one thing you wish I noticed more?',
     'What would help you feel more seen next week?',
-    'What is one part of you I get right that others miss?',
+    'What is one thing about you that I understand and most people do not?',
   ],
   // Set 22 — compromise
   [
@@ -221,9 +222,9 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   ],
   // Set 24 — repair
   [
-    'What small moment from this week could use a soft word between us?',
-    'What have you been holding onto that you would love to put down?',
-    'What is one thing I could say that would help something land right?',
+    'Was there a small moment this week where one of us should say something kind about it?',
+    'What have you been holding on to that you would like to let go of?',
+    'What is one thing I could say that would make something between us feel settled?',
     'What is one thing you would love us to leave behind next week?',
     'What is one small way we already repair things well?',
   ],
@@ -234,16 +235,60 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
 // so anything that hasn't migrated to getWeekQuestions() keeps working.
 export const STATE_UNION_QUESTIONS: string[] = STATE_UNION_QUESTION_SETS[0];
 
-// Deterministic per-couple-per-week set picker. Same shuffle-hash pattern
-// used by daily-questions (services/dailyQuestionsService.ts): both
-// partners see the same set on a given week, and the choice never drifts.
-// Returns an index into STATE_UNION_QUESTION_SETS.
-export function pickWeeklyQuestionSet(weekId: string, coupleId: string): number {
+// Depth of each set, by index (Sep 2026). 1 = light and warm, 2 = the
+// middle, 3 = the heavy ones (repair, fear, money, family, feeling unseen).
+// A couple's first check-ins come from tier 1 only; the heavy sets wait
+// until the ritual is a habit. Review mining: couples leave when an app
+// gets heavy before it has earned it. A new set MUST get a tier here.
+export const STATE_UNION_SET_TIER: (1 | 2 | 3)[] = [
+  1, // 0  the original baseline
+  2, // 1  care & needs
+  2, // 2  growth & carrying
+  2, // 3  attention & rhythm
+  3, // 4  repair & tenderness
+  2, // 5  rest & pace
+  2, // 6  sharing life admin
+  3, // 7  money together
+  1, // 8  friendship outside the couple
+  3, // 9  family
+  2, // 10 big changes
+  2, // 11 what has changed since we met
+  3, // 12 alone vs together
+  3, // 13 what we say vs what we mean
+  3, // 14 fear and reassurance
+  2, // 15 hope for us
+  1, // 16 play and silliness
+  2, // 17 body and health
+  2, // 18 ambition and drive
+  1, // 19 rituals we have built
+  1, // 20 the little things
+  3, // 21 being seen
+  2, // 22 compromise
+  1, // 23 what home means
+  3, // 24 repair
+];
+// Check-ins 1 to 3: tier 1 only. 4 to 8: tiers 1 and 2. From 9: everything.
+export const SUNDAY_LIGHT_WEEKS = 3;
+export const SUNDAY_MIDDLE_WEEKS = 8;
+
+// Deterministic per-couple-per-week set picker: both partners compute the
+// same set from the same inputs, and the result is frozen on the week doc.
+// `history` = the questionSetIds of the couple's EARLIER check-in weeks,
+// oldest first. It decides how deep this week may go (by count, so a couple
+// that skips weeks is not pushed ahead) and keeps recently used sets out
+// (the window shrinks until something is left, like Daily's no-repeat).
+export function pickWeeklyQuestionSet(weekId: string, coupleId: string, history: number[] = []): number {
+  const n = history.length + 1;
+  const maxTier = n <= SUNDAY_LIGHT_WEEKS ? 1 : n <= SUNDAY_MIDDLE_WEEKS ? 2 : 3;
+  const allowed = STATE_UNION_QUESTION_SETS
+    .map((_, i) => i)
+    .filter((i) => (STATE_UNION_SET_TIER[i] ?? 2) <= maxTier);
+  const recent = [...history].reverse().map((id) => [String(id)]);
+  const pool = excludeRecent(allowed, (i) => String(i), recent, 1);
   const seed = `${weekId}::${coupleId}`;
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-  const idx = Math.abs(h) % STATE_UNION_QUESTION_SETS.length;
-  return idx;
+  return pool[Math.abs(h) % pool.length] ?? 0;
 }
 
 // Resolve the 5 questions for a specific week's doc. Uses the doc's
@@ -374,7 +419,19 @@ export async function ensureStateUnionDoc(coupleId: string, weekId: string): Pro
   const ref = doc(db, 'couples', coupleId, 'stateUnion', weekId);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    const questionSetId = pickWeeklyQuestionSet(weekId, coupleId);
+    // Earlier weeks decide how deep this one may go and which sets to skip.
+    // One read per new week; ids are zero-padded YYYY-WW, so they sort.
+    let history: number[] = [];
+    try {
+      const all = await getDocs(collection(db, 'couples', coupleId, 'stateUnion'));
+      history = all.docs
+        .filter((d) => d.id < weekId)
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .map((d) => (d.data() as StateUnionDoc).questionSetId ?? 0);
+    } catch {
+      // No history readable: treated as a first check-in, which is the safe side.
+    }
+    const questionSetId = pickWeeklyQuestionSet(weekId, coupleId, history);
     await setDoc(ref, { weekId, startedAt: Date.now(), completedAt: {}, answeredCount: {}, questionSetId });
     // Retention analytics — fires when a week's stateUnion doc is
     // newly created (i.e. the couple has started the check-in for
