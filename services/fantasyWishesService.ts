@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, writeBatch, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
 import { FANTASY_WISHES_PRESETS, FantasyWishesCategory } from '../constants/content';
@@ -240,23 +240,32 @@ export async function resetFantasyWishes(coupleId: string): Promise<void> {
 // deleted; a couple-written wish keeps its doc and loses the old per-doc
 // fields. Pre-launch there were only test couples, so old votes are not
 // carried over. Idempotent; safe for both phones to run.
+//
+// NOT a batched write, on purpose: a batch (or a transaction) gets 20 rules
+// get() calls in TOTAL, and the wildcard rule spends one per write on
+// isMemberOfCouple, so a batch of more than about 15 couple-subcollection
+// writes is rejected as a whole. Single writes in parallel chunks instead.
 export async function cleanupLegacyFantasyWishes(coupleId: string): Promise<void> {
   const col = collection(db, 'couples', coupleId, 'fantasyWishes');
   const snap = await getDocs(col);
-  const legacy = snap.docs.filter((d) => 'votes' in d.data());
-  for (let start = 0; start < legacy.length; start += 400) {
-    const batch = writeBatch(db);
-    for (const d of legacy.slice(start, start + 400)) {
-      const data = d.data() as { text?: string; category?: string };
-      if (data.category || (data.text && PRESET_TEXTS.has(data.text))) {
-        batch.delete(d.ref);
-      } else {
-        batch.update(d.ref, {
-          votes: deleteField(), addToList: deleteField(), matchedAt: deleteField(),
-          reactions: deleteField(), replies: deleteField(),
-        });
-      }
-    }
-    await batch.commit();
+  const legacy = snap.docs
+    .map((d) => ({ ref: d.ref, data: d.data() as { text?: string; category?: string; createdBy?: string; createdAt?: number; votes?: unknown } }))
+    .filter((d) => d.data.votes !== undefined);
+  // The old seeding wrote the whole pool in one burst, so copies share a
+  // createdAt within a second or two. That catches a copy whose text has
+  // since been reworded and that predates categories.
+  const stamps = legacy.map((d) => d.data.createdAt ?? 0).sort((x, y) => x - y);
+  const inBurst = (t: number) => stamps.filter((x) => Math.abs(x - t) <= 2000).length >= 10;
+  const isPresetCopy = (d: typeof legacy[number]) =>
+    !d.data.createdBy && (!!d.data.category || (!!d.data.text && PRESET_TEXTS.has(d.data.text)) || inBurst(d.data.createdAt ?? 0));
+  for (let start = 0; start < legacy.length; start += 25) {
+    await Promise.all(legacy.slice(start, start + 25).map((d) =>
+      isPresetCopy(d)
+        ? deleteDoc(d.ref)
+        : updateDoc(d.ref, {
+            votes: deleteField(), addToList: deleteField(), matchedAt: deleteField(),
+            reactions: deleteField(), replies: deleteField(),
+          }),
+    ));
   }
 }

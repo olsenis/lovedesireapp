@@ -4,10 +4,42 @@
       "collectionGroup": "notes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "openCondition", "order": "ASCENDING" },
-        { "fieldPath": "opened", "order": "ASCENDING" }
+        {
+          "fieldPath": "openCondition",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "opened",
+          "order": "ASCENDING"
+        }
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "fwState",
+      "fieldPath": "votes",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "fwState",
+      "fieldPath": "matched",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "fwState",
+      "fieldPath": "addToList",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "fwState",
+      "fieldPath": "reactions",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "fwState",
+      "fieldPath": "replies",
+      "indexes": []
+    }
+  ]
 }

@@ -2348,9 +2348,9 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 
 - [ ] **New content reaches everyone** : add a throwaway preset to `FANTASY_WISHES_PRESETS` locally → it is in the deck of an old and a new couple with no reload. Reword a preset that is already a match → Matches still shows the original text. Remove both again.
 
-- [ ] **Start over** : ↺ → confirm dialog names both of you → votes, matches, hearts gone for both, own wishes still there.
+- [ ] **Start over** : ↺ → confirm dialog names both of you → votes, matches, hearts gone for both, own wishes still there. Vote twice afterwards: no "Load 8 more" prompt yet.
 
-- [ ] **Couple from before the change (Oli + Eva)** : the old copied docs disappear from `fantasyWishes` in the background (only couple-written ones remain), Fantasy Wishes starts fresh, nothing crashes. Test matches from before are gone on purpose.
+- [ ] **Couple from before the change (Oli + Eva)** : within a few seconds of opening, `fantasyWishes` holds no doc with a `votes` field (only real couple-written wishes remain), Fantasy Wishes starts fresh, nothing crashes, and NO "✨ New wish added" toast appears on open (reopen three times). Test matches from before are gone on purpose.
 
 - [ ] **Look-back readers** : Memory Lane (dev unlock) still builds its Fantasy Wishes question from a new match; Year in Review counts it.
 

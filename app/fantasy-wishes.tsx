@@ -34,6 +34,9 @@ export default function FantasyWishesScreen() {
   // there at once. See services/fantasyWishesService.ts.
   const [fwState, setFwState] = useState<FWState | null>(null);
   const [customs, setCustoms] = useState<CustomWish[]>([]);
+  // Its own flag: the state doc and the wishes arrive separately, and the
+  // "new wish" toast must take its baseline from the FIRST wishes snapshot.
+  const [customsLoaded, setCustomsLoaded] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const items = useMemo(() => composeFWItems(fwState, customs), [fwState, customs]);
   // Paid screen with a read view (USER_VOICE A2): a lapsed couple keeps
@@ -104,7 +107,7 @@ export default function FantasyWishesScreen() {
   useEffect(() => {
     if (!coupleId) return;
     const u1 = subscribeFWState(coupleId, (st) => { setFwState(st); setLoaded(true); });
-    const u2 = subscribeCustomWishes(coupleId, setCustoms);
+    const u2 = subscribeCustomWishes(coupleId, (list) => { setCustoms(list); setCustomsLoaded(true); });
     return () => { u1(); u2(); };
   }, [coupleId]);
 
@@ -167,7 +170,7 @@ export default function FantasyWishesScreen() {
   useEffect(() => {
     const own = customs.filter((c) => c.votes === undefined);
     if (!initialSeenRef.current) {
-      if (!loaded) return;
+      if (!customsLoaded) return;
       own.forEach((i) => seenItemIdsRef.current.add(i.id));
       initialSeenRef.current = true;
       return;
@@ -183,7 +186,7 @@ export default function FantasyWishesScreen() {
       showToast('✨ New wish added');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customs, loaded]);
+  }, [customs, customsLoaded]);
 
   const handleVote = async (item: FantasyWishesItem, vote: FWVote) => {
     if (!coupleId || !user) return;
@@ -258,6 +261,11 @@ export default function FantasyWishesScreen() {
       await resetFantasyWishes(id);
       setSkipped(new Set());
       setDrawnId(null);
+      setDrawCount(0);
+      // A fresh deck starts a fresh session: no "Load 8 more" after two votes.
+      setVotedInSession(0);
+      setNextPromptAt(SESSION_BATCH);
+      setPausedForLater(false);
       prevMatchIdsRef.current = null;
     } finally {
       setResetting(false);
