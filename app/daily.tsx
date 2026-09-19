@@ -767,7 +767,7 @@ export default function DailyScreen() {
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing.xl }}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: Spacing.md, paddingBottom: Spacing.xl }}>
               {allMatches.length === 0 && answeredQuestions.length === 0 && (
                 <Text style={styles.emptyText}>No matches or reveals yet today.</Text>
               )}

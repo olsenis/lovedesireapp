@@ -464,6 +464,10 @@ export default function FantasyWishesScreen() {
 
       {activeTab === 'matches' && (
         <FlatList
+          // "handled": the reply sheet (a Modal inside ReactionRow) is still a
+          // React child of this list, and a list left on the default swallows
+          // the first tap to close the keyboard, so Send needed two taps.
+          keyboardShouldPersistTaps="handled"
           data={matchesList}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.matchesList}

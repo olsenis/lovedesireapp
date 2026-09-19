@@ -97,6 +97,10 @@ export function ReactionRow({ mine, theirs, partnerName, onReact, onReply, compa
         return mineFirst ? [mineLine, theirsLine] : [theirsLine, mineLine];
       })()}
 
+      {/* HOSTS: any ScrollView / FlatList above this row needs
+          keyboardShouldPersistTaps="handled". A Modal is still a React child
+          of the list, and a list on the default swallows the first tap to
+          close the keyboard, so Send would need two taps. */}
       {/* The reply is written in a bottom sheet, not inline (Sep 2026): an
           input that mounts inside a long scrolling reveal got scrolled off
           screen when the keyboard opened. Same keyboard-safe shape as the
