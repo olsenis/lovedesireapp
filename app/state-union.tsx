@@ -331,7 +331,7 @@ export default function StateUnionScreen() {
       >
         <Text style={styles.eyebrow}>{weekIdToLabel(weekId)}</Text>
         <Text style={styles.intro}>
-          A short weekly ritual. 5 questions to keep you both close. Answer privately, reveal together.
+          A short weekly ritual. 5 questions to keep you both close. Answer privately, reveal together. Short answers are fine, write what comes first.
         </Text>
 
         {/* ─── PHASE 1A: Pulse step (5 quick dimensions before text) ─── */}

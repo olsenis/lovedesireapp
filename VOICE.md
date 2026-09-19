@@ -47,7 +47,7 @@ Same voice, one step more formal. "A private app for two." "Weekly rituals, nigh
 
 ## Words we never use
 
-streak · score (outside games) · unlock (for progress) · reward · badge · level up · journey · toxic · heal · fix · perfect · soulmate · spice up (as a verb) · naughty · dirty · miss you (from the app) · don't miss · last chance · hurry · today only · hack · grow together (as a slogan) · E2E · zero-knowledge · they/them for the partner · em dashes · homework · task (for anything the app asks; the 30-Day Challenge's day tasks are the one exception) · routine (as a noun for the app; "part of our routine" is the user's line, not ours) · chore · check in (as a verb outside the Sunday Check-in) · assignment · exercise (for a question or a game)
+streak · score (outside games) · unlock (for progress) · reward · badge · level up · journey · toxic · heal · fix · perfect · soulmate · spice up (as a verb) · naughty · dirty · miss you (from the app) · don't miss · last chance · hurry · today only · hack · grow together (as a slogan) · E2E · zero-knowledge · they/them for the partner · em dashes · homework · task (for anything the app asks; the 30-Day Challenge's day tasks are the one exception) · routine (as a noun for the app; "part of our routine" is the user's line, not ours) · chore · check in (as a verb outside the Sunday Check-in) · assignment · exercise (for a question or a game) · pattern · restorative · repair (as a noun) · feel seen · hold space · show up for
 
 ## Words users use when it works
 

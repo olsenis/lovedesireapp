@@ -2823,6 +2823,10 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
   1. Phone A submits 3; Phone B submits 1; B opens History
   - **Expected:** Phone B sees only own 1.
 
+### Sunday Check-in: questions you can answer from memory (Sep 19 2026)
+- [ ] **Read one full set on each phone**
+  - **Expected:** Every question can be answered in a sentence with something that happened. None asks you to analyse a feeling ("When has my flexibility felt like love…" is gone). "you" is always the person answering and "I" the partner. The intro ends "Short answers are fine, write what comes first." A week already in progress keeps its answers under the same five slots.
+
 ### Sunday Check-in: light first, deeper later (Sep 19 2026)
 - [ ] **A new couple's first check-in is a light set**
   1. Fresh couple → Us → Sunday Check-in → finish the pulse
