@@ -378,6 +378,15 @@ Calls rateLimitedJoin Cloud Function. Input auto-uppercases and clamps to 8.
   2. On Phone 2 reach the tour step 1 then step 4 and step 5
   - **Expected:** Step 1 reads 'You're paired with Eva'. Step 4: 'When's Eva's birthday?'. Step 5: '...Eva will see this on their home.'
 
+### New account never sees the 18+ gate (Sep 19 2026)
+- [ ] **No flash between Register and Pairing** ⚠️
+  1. Register a fresh account with the 18+ box ticked → Onboarding (name) → Pairing. Repeat three times, once on a slow connection.
+  - **Expected:** No full-screen "Welcome to …" at any point. The invite code is on one line.
+
+- [ ] **Legacy account still gets the gate**
+  1. Firebase Console: delete `users/{uid}/private/consent` for a test account → reopen the app
+  - **Expected:** The gate appears and stays until tapped. "I confirm" continues to the right screen; "Decline" deletes the account and lands on Login.
+
 ### Auth State Routing Guard (app/_layout.tsx)
 
 - [ ] **Cold-launch logged out goes to login**

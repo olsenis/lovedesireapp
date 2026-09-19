@@ -393,6 +393,8 @@ legal age of majority + adult content laws). Two paths, both required:
    modal blocks all navigation. Decline path deletes the Firebase Auth user
    so no bypass is possible by signing back in.
 
+A new account never sees the post-login gate (Sep 19 2026): the routing effect skips the consent read while on Register (which awaits `confirmConsent` before navigating), a confirmed record always clears a stale gate, and an account created in the last minute gets one re-read after 1.5 s before the gate shows. Before this, the read could land before Register's write and the gate flashed for a second, unmounting the Stack while it did.
+
 Legal defensibility: timestamp is stored per-user in Firestore, not just
 device-local, so we have a per-account audit trail if ever required.
 

@@ -27,6 +27,7 @@ import { createUserProfile } from '../services/authService';
 import { acceptPairing, declinePairing } from '../services/coupleService';
 import { getConsent, confirmConsent } from '../services/consentService';
 import { getOnboardingState } from '../services/onboardingService';
+import { APP_NAME } from '../constants/app';
 import { markCoupleActive, trackEvent } from '../services/statsService';
 import { scheduleLoveLanguageNudge, cancelLoveLanguageNudge } from '../services/loveLanguageNudgeService';
 import { LoveLanguage } from '../constants/content';
@@ -146,13 +147,40 @@ export default function RootLayout() {
   useEffect(() => {
     if (loading) return;
     if (user) {
-      getConsent(user.uid).then((consent) => {
-        if (!consent?.confirmed) {
-          setShowConsent(true);
-        } else {
-          routeAfterConsent(user.uid, profile?.coupleId, profile?.name, pathname);
+      // A NEW account must never see the 18+ gate: Register already took the
+      // attestation. Three guards against the race where this read lands
+      // before register.tsx has written the consent doc (Sep 2026, the gate
+      // flashed for a second and unmounted the whole Stack while it did):
+      // 1. no check at all while on Register, which awaits confirmConsent
+      //    before it navigates, so the next run of this effect sees the doc;
+      // 2. a confirmed record always clears a stale gate;
+      // 3. an account created in the last minute gets one re-read before
+      //    the gate is shown. Legacy accounts are unaffected.
+      if (isOnPath(pathname, 'register')) { setRoutingChecked(true); return; }
+      let cancelled = false;
+      const uid = user.uid;
+      const createdAt = user.metadata?.creationTime ? Date.parse(user.metadata.creationTime) : 0;
+      const isFresh = createdAt > 0 && Date.now() - createdAt < 60_000;
+      (async () => {
+        try {
+          let consent = await getConsent(uid);
+          if (!consent?.confirmed && isFresh) {
+            await new Promise((r) => setTimeout(r, 1500));
+            if (cancelled) return;
+            consent = await getConsent(uid);
+          }
+          if (cancelled) return;
+          if (!consent?.confirmed) {
+            setShowConsent(true);
+          } else {
+            setShowConsent(false);
+            routeAfterConsent(uid, profile?.coupleId, profile?.name, pathname);
+          }
+        } finally {
+          if (!cancelled) setRoutingChecked(true);
         }
-      }).finally(() => setRoutingChecked(true));
+      })();
+      return () => { cancelled = true; };
     } else {
       // Only bounce to /login if the user is somewhere they shouldn't be while
       // unsigned. Register + terms + privacy have to stay reachable, otherwise
@@ -369,9 +397,9 @@ export default function RootLayout() {
       <View style={consentStyles.screen}>
         <View style={consentStyles.card}>
           <Text style={consentStyles.emoji}>💝</Text>
-          <Text style={consentStyles.title}>Welcome to Desire</Text>
+          <Text style={consentStyles.title}>Welcome to {APP_NAME}</Text>
           <Text style={consentStyles.body}>
-            Desire is a couples intimacy app for adults. It contains content of a sexual and intimate nature, including explicit material in the premium tier.
+            {APP_NAME} is a couples intimacy app for adults. It contains content of a sexual and intimate nature, including explicit material in the premium tier.
           </Text>
           <Text style={consentStyles.body}>
             By continuing, you confirm that you are at least 18 years old and agree to our{' '}
