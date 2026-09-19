@@ -483,7 +483,7 @@ Calls rateLimitedJoin Cloud Function. Input auto-uppercases and clamps to 8.
 ### Pairing after a disconnect (Sep 2026, USER_VOICE A1: acceptPairing callable)
 Three accounts: Óli, Eva, and a third test account C. Watch the Firestore console for `archivedAt` / `partnerLeftUid`.
 
-- [ ] **New partner gets a fresh couple, no history** 🔒
+- [x] **New partner gets a fresh couple, no history** 🔒 ✅ PASSED Sep 19 2026, two phones (Oli + a new account "Ola" after disconnecting from Eva): nothing from the former partner visible on either phone (Our Story archives, Fantasy Wishes, Sunday history, Moments, Notes). Found on the way and fixed the same day: Premium did not follow its owner to the fresh doc.
   1. Óli + Eva paired; create one Intimacy Log entry, one Fantasy Wishes vote each, one Love Note, one Moment
   2. Eva: Profile → Disconnect couple
   3. Sign in as C on Eva's phone → Profile or pairing screen → enter Óli's code
