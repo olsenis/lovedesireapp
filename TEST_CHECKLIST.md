@@ -473,6 +473,13 @@ Calls rateLimitedJoin Cloud Function. Input auto-uppercases and clamps to 8.
   3. Continue through onboarding into the app
   - **Expected:** App allows full usage even without email verification.
 
+### Premium follows its owner through a new pairing (Sep 19 2026)
+- [ ] **The one who stays keeps Premium** 📱 💰
+  1. Couple with `isPremium: true` (no `premiumOwnerUid`, or owner = Oli). Eva disconnects. Oli pairs with a NEW partner
+  - **Expected:** The fresh couple doc has `isPremium: true`, the old `premiumSince`, and `premiumOwnerUid` = Oli. Fantasy Wishes opens for both without the paywall. If `premiumOwnerUid` was Eva's uid, the fresh doc is NOT premium.
+
+- [ ] **A joiner brings their own** : a solo account whose doc is premium joins a free member → the shared doc becomes premium with the joiner as owner.
+
 ### Pairing after a disconnect (Sep 2026, USER_VOICE A1: acceptPairing callable)
 Three accounts: Óli, Eva, and a third test account C. Watch the Firestore console for `archivedAt` / `partnerLeftUid`.
 

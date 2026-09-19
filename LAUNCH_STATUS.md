@@ -80,6 +80,7 @@ Must be enrolled + team configured before EAS can produce a production iOS build
 - Budget 1 week to catch real-device issues before submission
 
 ### 4. RevenueCat integration
+- **Premium must follow the person who pays (found in the A1 two-phone test, Sep 19 2026).** `isPremium` lives on the couple doc, and a new partner gets a FRESH doc. `acceptPairing` now carries `isPremium` / `premiumSince` / `premiumOwnerUid` to the fresh doc when the member who stays owns it (or the owner is unknown, as with QA grants), and adds a joiner's own Premium; a subscription owned by the partner who LEFT is not inherited. The webhook therefore MUST: (1) use the payer's Firebase uid as the RevenueCat app user id, (2) write `premiumOwnerUid` with every grant, (3) resolve the payer's CURRENT `users/{uid}.coupleId` on every event, never a stored couple id, and (4) cover the payer who leaves: their next couple doc (created client-side, which cannot write `isPremium`) needs a `syncPremium` callable that re-checks the entitlement for the uid, called on pairing and on app start.
 Currently the /upgrade screen is a placeholder ("Coming soon"). Before launch:
 - Set up RevenueCat account + link to Apple App Store Connect subscription products
 - Wire `react-native-purchases` into the app

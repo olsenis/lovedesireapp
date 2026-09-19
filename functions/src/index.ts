@@ -246,12 +246,17 @@ export const acceptPairing = onCall({ invoker: 'public' }, async (req) => {
     const joinerSnap = await tx.get(joinerRef);
     const joinerCoupleId = joinerSnap.exists ? (joinerSnap.data()?.coupleId as string | undefined) : undefined;
     let soloRef: FirebaseFirestore.DocumentReference | null = null;
+    // Premium the JOINER brings along (their own solo / previous doc).
+    let joinerPremium: { since: unknown; owner: string } | null = null;
     if (joinerCoupleId && joinerCoupleId !== coupleId) {
       soloRef = db.collection('couples').doc(joinerCoupleId);
       const soloSnap = await tx.get(soloRef);
       if (soloSnap.exists) {
         const solo = soloSnap.data()!;
         const soloMember = solo.partner1Uid === joiner || solo.partner2Uid === joiner;
+        if (soloMember && solo.isPremium === true && (!solo.premiumOwnerUid || solo.premiumOwnerUid === joiner)) {
+          joinerPremium = { since: solo.premiumSince ?? now, owner: joiner };
+        }
         if (soloMember && solo.partner1Uid && solo.partner2Uid && !solo.archivedAt) {
           // Still paired elsewhere: disconnect there first.
           return { ok: false, reason: 'joiner_paired' };
@@ -266,6 +271,20 @@ export const acceptPairing = onCall({ invoker: 'public' }, async (req) => {
     const fresh = !!left && left !== joiner;
     const clearPending = { pendingPartner2Uid: del, pendingPartner2Name: del, pendingPartner2At: del };
 
+    // PREMIUM FOLLOWS ITS OWNER (Sep 19 2026). isPremium lives on the couple
+    // doc, so a FRESH doc for a new partner used to start without it: the
+    // person who pays lost Premium by re-pairing. Carry it when the member
+    // who stays owns it (or the owner is unknown: QA grants and anything
+    // before premiumOwnerUid existed), and when the joiner brings their own.
+    // A subscription owned by the partner who LEFT is not inherited. The
+    // RevenueCat webhook must write premiumOwnerUid (LAUNCH_STATUS).
+    const stayerOwns = couple.isPremium === true && (!couple.premiumOwnerUid || couple.premiumOwnerUid === uid);
+    const premiumCarry = stayerOwns
+      ? { isPremium: true, premiumSince: couple.premiumSince ?? now, premiumOwnerUid: (couple.premiumOwnerUid as string | undefined) ?? uid }
+      : joinerPremium
+        ? { isPremium: true, premiumSince: joinerPremium.since, premiumOwnerUid: joinerPremium.owner }
+        : null;
+
     let targetId = coupleId;
     let targetCode = String(couple.inviteCode ?? '');
     if (fresh) {
@@ -279,6 +298,7 @@ export const acceptPairing = onCall({ invoker: 'public' }, async (req) => {
         inviteCode: targetCode,
         inviteExpiresAt: now + 7 * 24 * 3600_000,
         createdAt: now,
+        ...(premiumCarry ?? {}),
       });
       tx.update(coupleRef, {
         ...clearPending,
@@ -294,6 +314,9 @@ export const acceptPairing = onCall({ invoker: 'public' }, async (req) => {
         [targetField]: joiner,
         partnerLeftUid: del,
         partnerLeftAt: del,
+        // Same doc (first pairing or the same partner back): only ADD the
+        // joiner's own Premium; never touch what the doc already has.
+        ...(couple.isPremium !== true && joinerPremium ? { isPremium: true, premiumSince: joinerPremium.since, premiumOwnerUid: joinerPremium.owner } : {}),
       });
     }
     if (soloRef) {
