@@ -587,7 +587,10 @@ export default function FantasyWishesScreen() {
                 </View>
               );
             })}
-            <TouchableOpacity style={styles.saveBtn} onPress={() => setShowCategories(false)} accessibilityRole="button">
+            {/* saveBtn is flex: 1 for the two-button row in the Add sheet. Stacked
+                alone in a column it must be flex: 0, or RN 0.86 collapses the
+                label to nothing (same trap as Sunday Check-in's Save). */}
+            <TouchableOpacity style={[styles.saveBtn, { flex: 0, alignSelf: 'stretch', marginTop: Spacing.md }]} onPress={() => setShowCategories(false)} accessibilityRole="button">
               <Text style={styles.saveBtnText}>Done</Text>
             </TouchableOpacity>
           </View>
