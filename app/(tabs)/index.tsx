@@ -1471,8 +1471,8 @@ export default function HomeScreen() {
               >
                 <Text style={styles.waitRowEmoji}>📨</Text>
                 <View style={styles.waitRowText}>
-                  <Text style={styles.waitRowTitle}>Send the invite again</Text>
-                  <Text style={styles.waitRowSub}>Your code and a link that explains the app</Text>
+                  <Text style={styles.waitRowTitle}>Send the invite</Text>
+                  <Text style={styles.waitRowSub}>Your code and a link that explains the app, by message or any app you like</Text>
                 </View>
               </TouchableOpacity>
             )}
@@ -1487,17 +1487,17 @@ export default function HomeScreen() {
               <Text style={styles.waitRowEmoji}>💬</Text>
               <View style={styles.waitRowText}>
                 <Text style={styles.waitRowTitle}>Take the Love Language quiz</Text>
-                <Text style={styles.waitRowSub}>Your partner's side appears when they join</Text>
+                <Text style={styles.waitRowSub}>Your partner's result shows up next to yours after joining</Text>
               </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.waitRow} onPress={() => router.push('/notes' as any)} activeOpacity={0.8} accessibilityRole="button">
               <Text style={styles.waitRowEmoji}>💌</Text>
               <View style={styles.waitRowText}>
-                <Text style={styles.waitRowTitle}>Write a Love Note for when they arrive</Text>
+                <Text style={styles.waitRowTitle}>Write a Love Note for your partner's arrival</Text>
                 <Text style={styles.waitRowSub}>The first thing waiting for your partner</Text>
               </View>
             </TouchableOpacity>
-            <Text style={styles.waitFoot}>When your partner joins, they see your name, your photo and this week's rituals. Nothing else is waiting on you.</Text>
+            <Text style={styles.waitFoot}>Your partner arrives to your name, your photo and this week's rituals. Nothing else is waiting on you.</Text>
           </View>
         </>
       )}
