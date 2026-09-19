@@ -205,10 +205,10 @@ export const STATE_UNION_QUESTION_SETS: string[][] = [
   ],
   // Set 22 — compromise
   [
-    'Where did one of us bend for the other this week?',
-    'What is one compromise you have been quietly holding?',
+    'When did one of us give way or adjust for the other this week?',
+    'Is there something you keep going along with that you have not mentioned?',
     'When has my flexibility felt like love to you?',
-    'What is one thing you would love to compromise less on soon?',
+    'What is one thing you would like to give way on less often?',
     'What is one thing we agree on so easily it feels lucky?',
   ],
   // Set 23 — what home means
