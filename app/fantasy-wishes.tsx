@@ -13,7 +13,7 @@ import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, FWState, CustomWish, subscribeFWState, subscribeCustomWishes, composeFWItems, cleanupLegacyFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, resetFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
+import { FantasyWishesItem, FWVote, FWState, CustomWish, subscribeFWState, subscribeCustomWishes, composeFWItems, orderFWDeck, cleanupLegacyFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, resetFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { personalise } from '../services/personalise';
@@ -325,15 +325,14 @@ export default function FantasyWishesScreen() {
   const totalCount = playable.length;
   const nothingOn = playable.length === 0;
 
-  // Deck order: unvoted playable items, gentle categories first (sensual,
-  // roleplay, explicit, bdsm, then uncategorised), createdAt within a
-  // category, and any id in `skipped` moves to the back so Skip defers
-  // without dropping the card. Voting removes items (no longer unvoted).
+  // Deck order: the ramp from orderFWDeck (gentle first, categories mixed,
+  // building), minus what I have voted on; any id in `skipped` moves to the
+  // back so Skip defers without dropping the card.
   const deck = useMemo(() => {
-    const rank = (c?: FantasyWishesCategory) => (c ? FW_CATEGORY_ORDER.indexOf(c) : FW_CATEGORY_ORDER.length);
-    const unvoted = playable
-      .filter((i) => myVote(i) === null)
-      .sort((a, b) => rank(a.category) - rank(b.category) || a.createdAt - b.createdAt);
+    // The ramp is laid out over the whole playable set and THEN the voted
+    // cards drop out, so a card keeps its place: a couple midway continues
+    // where it was, and both phones agree (see orderFWDeck).
+    const unvoted = orderFWDeck(playable).filter((i) => myVote(i) === null);
     const front = unvoted.filter((i) => !skipped.has(i.id));
     const back = unvoted.filter((i) => skipped.has(i.id));
     return [...front, ...back];
@@ -385,7 +384,7 @@ export default function FantasyWishesScreen() {
       </View>}
       {!readOnly && Object.keys(fwCats).length === 0 && !hintDismissed && (
         <TouchableOpacity style={styles.catHint} onPress={() => { setHintDismissed(true); setShowCategories(true); }} activeOpacity={0.7} accessibilityRole="button">
-          <Text style={styles.catHintText}>Sensual comes first. Choose what is for the two of you ›</Text>
+          <Text style={styles.catHintText}>Starts gentle and builds. Choose what is for the two of you ›</Text>
         </TouchableOpacity>
       )}
 
@@ -563,7 +562,7 @@ export default function FantasyWishesScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Categories</Text>
-            <Text style={styles.catNote}>Turn off anything that is not for the two of you. Nothing is deleted; turned-off cards just stay out of the deck. Either of you can change this.</Text>
+            <Text style={styles.catNote}>Turn off anything that is not for the two of you. Nothing is deleted; turned-off cards just stay out of the deck. Either of you can change this. Cards get more intense the further you go.</Text>
             {FW_CATEGORY_ORDER.map((c) => {
               const cfg = FANTASY_WISHES_CATEGORY_CONFIG[c];
               const on = fwCats[c] !== false;

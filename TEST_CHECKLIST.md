@@ -2333,6 +2333,17 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
+### Fantasy Wishes: the deck starts gentle and builds (Sep 19 2026)
+- [ ] **Same order on both phones, gentle first** 📱 💰
+  1. New couple (or after Start over), both open Fantasy Wishes and compare the first ten cards without voting
+  - **Expected:** Identical cards in identical order. The first are "A hotel room booked for nothing except pleasure", "Strangers meeting for the first time at a bar", "Full-body massage by candlelight…": mild, and from different categories. No level is shown anywhere. The hint reads "Starts gentle and builds. Choose what is for the two of you ›".
+
+- [ ] **A vote does not reshuffle** : A votes on three cards → B's deck is unchanged; A's next card is the one that was fourth. Skip for later sends the card to the back.
+
+- [ ] **Categories off** : turn BDSM off → the deck is still gentle first and mixed; turn everything off but Explicit → still starts with the mild Explicit cards (places, moods).
+
+- [ ] **Far into the deck** (dev: vote No quickly through about 230 cards on a test couple) : nothing intense (anal, pain, heavy power exchange) appears before roughly card 220.
+
 ### Fantasy Wishes: storage like Daily (Sep 19 2026)
 - [ ] **New couple: no loading, no seeding** 📱 💰
   1. New premium couple opens Fantasy Wishes

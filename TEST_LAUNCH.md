@@ -127,7 +127,7 @@ For each pool, tick the box only after reading every item. If you find one drift
   - Spicy (104) · paid tier · [merged from old Spicy + Sexual, July 2026]
   - Deep (30) · paid tier · [reflective, connection-oriented actions added August 2026 — read carefully to confirm none read as "task-y" like Sweet items should; if a Deep action feels like a chore instead of a conversation invitation, flag it]
 
-- [ ] **Fantasy Wishes** — [constants/content.ts:FANTASY_WISHES_PRESETS](constants/content.ts) · 394 items · paid tier only
+- [ ] **Fantasy Wishes** — [constants/content.ts:FANTASY_WISHES_PRESETS](constants/content.ts) · 392 items, each with a category and a level (readable list: FANTASY_WISHES_LEVELS.md) · paid tier only
   - Verify: noun/gerund phrases, not commands ("Kiss for 30 seconds") or questions ("What if we...?"). Prompt: memory/fantasy_wishes_prompt.md.
   - Categories: Sensual / Roleplay / Explicit / BDSM
 

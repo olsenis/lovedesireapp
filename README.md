@@ -35,7 +35,7 @@ Games and challenges for the two of you.
 | 🆚 **Versus** | Guess your partner's binary answers from Questions Game history |
 | 🤔 **Would You Rather** | Simultaneous answer reveal. **191** questions across Playful / Romantic / Spicy |
 | 🃏 **Activity Cards** | 25 face-down cards per month. Turn-based reveal with passes system |
-| ✨ **Fantasy Wishes** | Explicit double-blind voting on **394** presets. Only mutual Yes ever surfaces |
+| ✨ **Fantasy Wishes** | Explicit double-blind voting on **392** presets. Only mutual Yes ever surfaces |
 | 🌹 **Daily Picks** | 5 new picks per day per category. Mutual Yes → adds to Together List |
 | 🎰 **Date Night Roulette** | Spin for one of **130** date ideas (home / out / adventure, LDR virtual filter) |
 

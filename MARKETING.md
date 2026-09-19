@@ -24,7 +24,7 @@ Related: [APP_STORE_SUBMISSION.md](APP_STORE_SUBMISSION.md) (submission checklis
 |---|---|
 | Conversation questions across Playful / Deep / Spicy | 474 |
 | Truths + dares across Sweet / Flirty / Spicy | 310 + 274 |
-| Fantasy Wishes scenarios (paid) | 394 |
+| Fantasy Wishes scenarios (paid) | 392 |
 | Date ideas incl. virtual for long distance | 130 |
 | Would You Rather questions + themed packs | 191 + 6 packs |
 | 30-day programs | 4 x 30 days |

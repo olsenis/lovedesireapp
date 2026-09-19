@@ -1,7 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
-import { FANTASY_WISHES_PRESETS, FantasyWishesCategory } from '../constants/content';
+import { FANTASY_WISHES_PRESETS, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { hashString } from './seed';
 
 // ─── Storage model (Sep 19 2026) ─────────────────────────────────────────────
@@ -59,6 +59,7 @@ export interface FantasyWishesItem {
   createdAt: number;
   matchedAt?: number;
   category?: FantasyWishesCategory;
+  level?: 1 | 2 | 3;   // intensity of a preset; drives the deck order, never shown
   reactions?: Record<string, true>;
   replies?: Record<string, string>;
   custom?: boolean;   // couple-written
@@ -68,13 +69,13 @@ export interface FantasyWishesItem {
 export const presetId = (text: string) => `preset-${hashString(text).toString(36)}`;
 
 // Built once. `order` keeps the authored order inside a category.
-const PRESET_INDEX = FANTASY_WISHES_PRESETS.map((p, order) => ({ id: presetId(p.text), text: p.text, category: p.category, order }));
+const PRESET_INDEX = FANTASY_WISHES_PRESETS.map((p, order) => ({ id: presetId(p.text), text: p.text, category: p.category, level: p.level, order }));
 const PRESET_BY_ID = new Map(PRESET_INDEX.map((p) => [p.id, p]));
 const PRESET_TEXTS = new Set(FANTASY_WISHES_PRESETS.map((p) => p.text));
 
 const stateRef = (coupleId: string) => doc(db, 'couples', coupleId, 'fwState', 'main');
 
-function viewOf(id: string, base: { text: string; category?: FantasyWishesCategory; createdAt: number; custom?: boolean; retired?: boolean }, state: FWState): FantasyWishesItem {
+function viewOf(id: string, base: { text: string; category?: FantasyWishesCategory; level?: 1 | 2 | 3; createdAt: number; custom?: boolean; retired?: boolean }, state: FWState): FantasyWishesItem {
   const votes: Record<string, FWVote> = {};
   for (const [u, m] of Object.entries(state.votes ?? {})) if (m?.[id]) votes[u] = m[id];
   const addToList = Object.entries(state.addToList ?? {}).filter(([, m]) => m?.[id]).map(([u]) => u);
@@ -89,7 +90,7 @@ function viewOf(id: string, base: { text: string; category?: FantasyWishesCatego
 // wishes, and any match whose card has since left the pool.
 export function composeFWItems(state: FWState | null, customs: CustomWish[]): FantasyWishesItem[] {
   const s = state ?? {};
-  const out: FantasyWishesItem[] = PRESET_INDEX.map((p) => viewOf(p.id, { text: p.text, category: p.category, createdAt: p.order }, s));
+  const out: FantasyWishesItem[] = PRESET_INDEX.map((p) => viewOf(p.id, { text: p.text, category: p.category, level: p.level, createdAt: p.order }, s));
   const known = new Set(PRESET_INDEX.map((p) => p.id));
   for (const c of customs) {
     if (c.votes !== undefined) continue; // legacy copy, cleaned up by cleanupLegacyFantasyWishes
@@ -100,6 +101,43 @@ export function composeFWItems(state: FWState | null, customs: CustomWish[]): Fa
     if (!known.has(id)) out.push(viewOf(id, { text: m.text, createdAt: m.at, retired: true }, s));
   }
   return out;
+}
+
+// ─── Deck order: starts gentle, mixes categories, builds (Sep 19 2026) ───────
+// A RAMP, not strict waves. Each intensity level is spread over its own
+// stretch of the deck and the stretches overlap, so the first twenty or so
+// cards are all gentle, level 2 then starts to mix in, and level 3 only
+// appears past the middle. (Strict waves put the first level-2 card at
+// position 159 of 394: the old "fifty Sensual cards in a row" problem again.)
+// Every (category, level) pile is spread EVENLY over its level's stretch, so
+// the categories mix by themselves (longest run of one category: about 4).
+//
+// Deterministic from the content alone, on purpose: both partners get the
+// same order, so they vote on the same cards the same evening and matches
+// come early. No per-person shuffle, ever. Computed over whatever is passed
+// in, so a category switched off in the ☰ sheet drops out and the ramp
+// re-forms. Items without a level (couple-written) come last.
+const LEVEL_SPAN: Record<1 | 2 | 3, [number, number]> = { 1: [0, 0.6], 2: [0.08, 0.9], 3: [0.5, 1] };
+
+export function orderFWDeck(items: FantasyWishesItem[]): FantasyWishesItem[] {
+  const catRank = (c?: FantasyWishesCategory) => (c ? FW_CATEGORY_ORDER.indexOf(c) : FW_CATEGORY_ORDER.length);
+  const piles = new Map<string, FantasyWishesItem[]>();
+  const tail: FantasyWishesItem[] = [];
+  for (const it of [...items].sort((a, b) => a.createdAt - b.createdAt)) {
+    if (!it.level) { tail.push(it); continue; }
+    const key = `${it.category ?? ''}|${it.level}`;
+    const pile = piles.get(key);
+    if (pile) pile.push(it); else piles.set(key, [it]);
+  }
+  const scored: { pos: number; cat: number; order: number; item: FantasyWishesItem }[] = [];
+  for (const pile of piles.values()) {
+    pile.forEach((item, r) => {
+      const [lo, hi] = LEVEL_SPAN[item.level as 1 | 2 | 3];
+      scored.push({ pos: lo + ((r + 0.5) / pile.length) * (hi - lo), cat: catRank(item.category), order: item.createdAt, item });
+    });
+  }
+  scored.sort((a, b) => a.pos - b.pos || a.cat - b.cat || a.order - b.order);
+  return [...scored.map((x) => x.item), ...tail];
 }
 
 // For Home and Our Story: only the items the couple has touched, from ONE
