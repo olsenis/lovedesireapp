@@ -414,12 +414,17 @@ export default function StateUnionScreen() {
             {planDraft.map((val, i) => (
               <TextInput
                 key={i}
-                style={[styles.input, { minHeight: 44, marginTop: i === 0 ? Spacing.sm : 6 }]}
+                style={[styles.input, { minHeight: 64, marginTop: i === 0 ? Spacing.sm : 6 }]}
                 placeholder={['e.g. Bring coffee to bed on Tuesday', 'e.g. Take the bins out without being asked', 'e.g. Book the table myself'][i]}
                 placeholderTextColor={Colors.muted}
                 value={val}
                 onChangeText={(t) => setPlanDraft((prev) => prev.map((v, j) => (j === i ? t : v)))}
                 maxLength={PLAN_MAX_LENGTH}
+                multiline
+                // Ideas from "Need an idea?" run to a sentence; a single-line
+                // field scrolled sideways and hid the start (Sep 2026).
+                textAlignVertical="top"
+                blurOnSubmit
                 accessibilityLabel={`Something you will do for ${partnerName}`}
               />
             ))}
