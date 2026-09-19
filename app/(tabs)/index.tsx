@@ -1453,7 +1453,7 @@ export default function HomeScreen() {
             <Text style={styles.connectText}>Invite your partner to connect</Text>
             {couple?.inviteCode && (
               <View style={styles.codeBox}>
-                <Text style={styles.connectCode}>{couple.inviteCode}</Text>
+                <Text style={styles.connectCode} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{couple.inviteCode}</Text>
               </View>
             )}
           </TouchableOpacity>

@@ -401,7 +401,7 @@ export default function PairingScreen() {
         ) : (
           <>
             <TouchableOpacity onPress={handleCopy} style={styles.codeRow} accessibilityRole="button">
-              <Text style={styles.code}>{inviteCode || '--------'}</Text>
+              <Text style={styles.code} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{inviteCode || '--------'}</Text>
               <Text style={styles.copyHint}>{copied ? '✓ Copied!' : 'Tap to copy'}</Text>
             </TouchableOpacity>
             {!!inviteCode && (
@@ -545,9 +545,13 @@ const styles = StyleSheet.create({
   },
   code: {
     fontFamily: Fonts.heading,
-    fontSize: 44,
+    fontSize: 40,
     color: Colors.burgundy,
-    letterSpacing: 10,
+    // 8 characters: one line always (numberOfLines + adjustsFontSizeToFit on
+    // the Text); the spacing is modest so narrow phones do not shrink it much.
+    letterSpacing: 6,
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   copyHint: {
     fontFamily: Fonts.body,
