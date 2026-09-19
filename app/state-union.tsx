@@ -359,7 +359,7 @@ export default function StateUnionScreen() {
                 disabled={!allPulseComplete || submitting}
                 accessibilityRole="button"
               >
-                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Save and reflect →</Text>}
+                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Save and reflect →</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -412,7 +412,7 @@ export default function StateUnionScreen() {
                   disabled={!draftAnswer.trim() || submitting}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.primaryBtnText}>Save and next →</Text>
+                  <Text style={styles.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Save and next →</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
@@ -421,7 +421,7 @@ export default function StateUnionScreen() {
                   disabled={!draftAnswer.trim() || submitting}
                   accessibilityRole="button"
                 >
-                  {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Next →</Text>}
+                  {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Next →</Text>}
                 </TouchableOpacity>
               )}
             </View>
@@ -477,7 +477,7 @@ export default function StateUnionScreen() {
                 disabled={submitting}
                 accessibilityRole="button"
               >
-                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Finish check-in ✓</Text>}
+                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Finish check-in ✓</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -555,7 +555,7 @@ export default function StateUnionScreen() {
                     disabled={!allGraded || savingVerdicts}
                     accessibilityRole="button"
                   >
-                    {savingVerdicts ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText}>Save verdicts</Text>}
+                    {savingVerdicts ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Save verdicts</Text>}
                   </TouchableOpacity>
                 )}
               </>
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
   secondaryBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   secondaryBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
-  primaryBtn: { flex: 1, paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, backgroundColor: Colors.burgundy, alignItems: 'center' },
+  primaryBtn: { flex: 1, paddingVertical: Spacing.md, paddingHorizontal: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.burgundy, alignItems: 'center' },
   primaryBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   btnDisabled: { opacity: 0.4 },
 
