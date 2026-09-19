@@ -2333,6 +2333,11 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
+### Fantasy Wishes: first open for a new couple (Sep 19 2026)
+- [ ] **The deck is set up once, fast** 📱 💰
+  1. New premium couple, both open Fantasy Wishes and tap "Explore together" at about the same time
+  - **Expected:** "Setting up your deck" for a second or two, then the first Sensual card. Firestore `fantasyWishes` holds exactly as many docs as there are presets (394), ids `preset-…`, no duplicates. ↺ reload gives the same ids again.
+
 ### Fantasy Wishes: draw one for tonight (Sep 2026, USER_VOICE C12)
 - [ ] **Same draw on both phones** 📱 💰
   1. Couple with at least two matches; both open Matches; both tap "🎲 Draw one for tonight"

@@ -1,7 +1,8 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, limit, writeBatch, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
 import { FantasyWishesCategory } from '../constants/content';
+import { hashString } from './seed';
 
 export type FWVote = 'yes' | 'maybe' | 'no';
 
@@ -137,15 +138,46 @@ export function fwBothWantToAdd(item: FantasyWishesItem, uid1: string, uid2: str
   return (item.addToList ?? []).includes(uid1) && (item.addToList ?? []).includes(uid2);
 }
 
+// Writes the preset deck in ONE batched write with deterministic ids
+// (Sep 19 2026). It used to be one addDoc per preset (394 round trips, a
+// visible "Loading…" for a new couple) with random ids, so two phones
+// tapping "Explore together" at the same moment could double the deck.
+// Same text -> same id, so a second seed can never duplicate; createdAt
+// keeps the authored order inside a category. A batch holds up to 500
+// writes; chunked anyway so the pool can grow past that.
+const presetId = (text: string) => `preset-${hashString(text).toString(36)}`;
+
+export async function seedFantasyWishesPresets(
+  coupleId: string,
+  presets: { text: string; category?: FantasyWishesCategory }[],
+): Promise<void> {
+  const col = collection(db, 'couples', coupleId, 'fantasyWishes');
+  // Someone (the partner, a moment ago) already seeded: nothing to do. A
+  // blind overwrite would also be rejected by the rules once votes exist.
+  const existing = await getDocs(query(col, limit(1)));
+  if (!existing.empty) return;
+  const now = Date.now();
+  for (let start = 0; start < presets.length; start += 400) {
+    const batch = writeBatch(db);
+    presets.slice(start, start + 400).forEach((p, i) => {
+      batch.set(doc(col, presetId(p.text)), {
+        text: p.text, votes: {}, createdAt: now + start + i, ...(p.category ? { category: p.category } : {}),
+      });
+    });
+    await batch.commit();
+  }
+}
+
 export async function clearAndReloadFantasyWishes(
   coupleId: string,
   presets: { text: string; category?: FantasyWishesCategory }[]
 ): Promise<void> {
-  // Delete all existing items
-  const snap = await getDocs(collection(db, 'couples', coupleId, 'fantasyWishes'));
-  await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-  // Load new presets
-  await Promise.all(presets.map((p) => addDoc(collection(db, 'couples', coupleId, 'fantasyWishes'), {
-    text: p.text, votes: {}, createdAt: Date.now(), ...(p.category ? { category: p.category } : {}),
-  })));
+  const col = collection(db, 'couples', coupleId, 'fantasyWishes');
+  const snap = await getDocs(col);
+  for (let start = 0; start < snap.docs.length; start += 400) {
+    const batch = writeBatch(db);
+    snap.docs.slice(start, start + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  await seedFantasyWishesPresets(coupleId, presets);
 }

@@ -13,7 +13,7 @@ import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
+import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, seedFantasyWishesPresets, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_PRESETS, FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { personalise } from '../services/personalise';
 import { seededPick } from '../services/seed';
@@ -231,7 +231,7 @@ export default function FantasyWishesScreen() {
     if (!id || loadingPresets) return;
     setLoadingPresets(true);
     try {
-      await Promise.all(FANTASY_WISHES_PRESETS.map((p) => addFantasyWishesItem(id, p.text, p.category)));
+      await seedFantasyWishesPresets(id, FANTASY_WISHES_PRESETS);
     } finally {
       setLoadingPresets(false);
     }
@@ -399,7 +399,7 @@ export default function FantasyWishesScreen() {
               <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
               <Text style={styles.emptyText}>
                 {loadingPresets
-                  ? 'Adding 120 wishes, this takes a moment'
+                  ? 'Setting up your deck'
                   : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
               </Text>
             </TouchableOpacity>
