@@ -19,6 +19,7 @@ import { isAppLockEnabled, setAppLockEnabled, canUseAppLock, authenticate } from
 import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
 import { uploadProfilePhoto, UploadTooLargeError } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -128,9 +129,14 @@ export default function ProfileScreen() {
     setBirthdayModal(false);
   };
 
+  // Switching the log off hides it for me; it does not erase anything. The
+  // privacy policy says special-category data goes "with the associated
+  // feature", so the choice is offered right here instead of left unsaid.
+  const [offerLogClear, setOfferLogClear] = useState(false);
   const toggleIntimacyLog = async (val: boolean) => {
     setIntimacyLogOn(val);
     if (user) await createUserProfile(user.uid, { features: { intimacyLog: val } } as any);
+    if (!val && profile?.coupleId) setOfferLogClear(true);
   };
 
   const toggleHelp = async (val: boolean) => {
@@ -894,6 +900,17 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <ConfirmModal
+        visible={offerLogClear}
+        title="The Intimacy Log is off"
+        message={`What you logged is kept and hidden from you, not erased. Every entry is about both of you, so either of you may clear the log: it clears after seven days, or at once if ${partner?.name ?? 'your partner'} agrees.`}
+        confirmLabel="Clear the log"
+        cancelLabel="Keep it for now"
+        destructive
+        onConfirm={() => { setOfferLogClear(false); router.push('/reset' as any); }}
+        onCancel={() => setOfferLogClear(false)}
+      />
 
       {/* Disconnect couple */}
       <Modal visible={disconnectModal} transparent animationType="slide">
