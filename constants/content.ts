@@ -2760,7 +2760,7 @@ export const FANTASY_WISHES_CATEGORY_CONFIG: Record<FantasyWishesCategory, { lab
   bdsm:     { label: 'BDSM',     emoji: '⛓️', description: 'Power, restraint, sensation, being watched by each other.' },
 };
 
-// 392 items: sensual 50, roleplay 67, explicit 209, bdsm 66. By level: 158 / 169 / 65.
+// 392 items: sensual 50, roleplay 55, explicit 221, bdsm 66. By level: 158 / 169 / 65.
 // Every card is for the two of you (the one card that mentioned others was
 // removed Sep 19 2026). The content lives here; a couple's Firestore holds only
 // their votes. `level` drives the deck order (orderFWDeck in the service):
@@ -3022,18 +3022,18 @@ export const FANTASY_WISHES_PRESETS: FantasyWishesItem[] = [
   { text: "Captured and questioned, fantasy captive/captor scenario", category: 'roleplay', level: 3 },
   { text: "Wealthy client and their personal assistant, power dynamic shifted", category: 'roleplay', level: 2 },
   // More locations
-  { text: "A luxury hotel room booked with nothing planned except pleasure", category: 'roleplay', level: 1 },
-  { text: "Sex in a dressing room, unplanned and just barely private", category: 'roleplay', level: 2 },
-  { text: "In a tent while camping, low risk of being heard, high sense of freedom", category: 'roleplay', level: 1 },
-  { text: "On a train or overnight journey, curtains closed, moving in the dark", category: 'roleplay', level: 2 },
-  { text: "A parked car at a secluded overlook at night", category: 'roleplay', level: 2 },
-  { text: "In the kitchen while cooking, letting it escalate naturally", category: 'roleplay', level: 1 },
-  { text: "In a hot tub at a rental, just private enough", category: 'roleplay', level: 1 },
-  { text: "At a lake house, naked in the water together after dark", category: 'roleplay', level: 1 },
-  { text: "A vacation rental in a foreign city, completely anonymous", category: 'roleplay', level: 1 },
-  { text: "On a private sailboat or boat cabin", category: 'roleplay', level: 1 },
-  { text: "In front of a fireplace on a cold night, nowhere else to be", category: 'roleplay', level: 1 },
-  { text: "A secluded outdoor spa or private pool", category: 'roleplay', level: 1 },
+  { text: "A luxury hotel room booked with nothing planned except pleasure", category: 'explicit', level: 1 },
+  { text: "Sex in a dressing room, unplanned and just barely private", category: 'explicit', level: 2 },
+  { text: "In a tent while camping, low risk of being heard, high sense of freedom", category: 'explicit', level: 1 },
+  { text: "On a train or overnight journey, curtains closed, moving in the dark", category: 'explicit', level: 2 },
+  { text: "A parked car at a secluded overlook at night", category: 'explicit', level: 2 },
+  { text: "In the kitchen while cooking, letting it escalate naturally", category: 'explicit', level: 1 },
+  { text: "In a hot tub at a rental, just private enough", category: 'explicit', level: 1 },
+  { text: "At a lake house, naked in the water together after dark", category: 'explicit', level: 1 },
+  { text: "A vacation rental in a foreign city, completely anonymous", category: 'explicit', level: 1 },
+  { text: "On a private sailboat or boat cabin", category: 'explicit', level: 1 },
+  { text: "In front of a fireplace on a cold night, nowhere else to be", category: 'explicit', level: 1 },
+  { text: "A secluded outdoor spa or private pool", category: 'explicit', level: 1 },
   // Orgasm control and edging
   { text: "Edging, bringing each other to the edge and stopping, 4 times before finishing", category: 'explicit', level: 2 },
   { text: "Orgasm denial for a full evening, the other does not finish until told", category: 'explicit', level: 3 },

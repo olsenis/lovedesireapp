@@ -608,10 +608,15 @@ function WishDeckCard({ item, onVote, partnerName }: {
   // (didn't count as match, effectively same outcome as No). Skip covers
   // "not sure yet". Existing Maybe votes in Firestore are preserved but
   // no longer surfaced anywhere in the UI.
+  // The category is printed on the card since the deck became a mixed ramp
+  // (Sep 19 2026): without it "Celebrity and fan meeting backstage" reads as a
+  // riddle, with it as a part to play. The level is never shown.
+  const cat = item.category ? FANTASY_WISHES_CATEGORY_CONFIG[item.category] : null;
   return (
     <View style={styles.deckCard}>
       <View style={styles.deckCardAccent} />
       <View style={styles.deckCardInner}>
+        {cat && <Text style={styles.deckCat}>{cat.emoji}  {cat.label.toUpperCase()}</Text>}
         <View style={styles.deckCardBody}>
           <Text style={styles.deckWishText}>{personalise(item.text, partnerName)}</Text>
         </View>
@@ -817,6 +822,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.md,
+  },
+  deckCat: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    color: Colors.muted,
+    textAlign: 'center',
   },
   deckWishText: {
     fontFamily: Fonts.heading,

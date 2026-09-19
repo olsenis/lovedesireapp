@@ -11,51 +11,51 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 | Flokkur | Stig 1 | Stig 2 | Stig 3 | Alls |
 |---|---|---|---|---|
 | Sensual | 42 | 8 | 0 | 50 |
-| Roleplay | 51 | 15 | 1 | 67 |
-| Explicit | 56 | 121 | 32 | 209 |
+| Roleplay | 42 | 12 | 1 | 55 |
+| Explicit | 65 | 124 | 32 | 221 |
 | BDSM | 9 | 25 | 32 | 66 |
 | **Alls** | **158** | **169** | **65** | **392** |
 
 ## Fyrstu 40 spilin sem nýtt par sér
 
 1. Explicit · stig 1 · A hotel room booked for nothing except pleasure
-2. Roleplay · stig 1 · Strangers meeting for the first time at a bar
-3. Sensual · stig 1 · Full-body massage by candlelight with no goal except touch
+2. Sensual · stig 1 · Full-body massage by candlelight with no goal except touch
+3. Roleplay · stig 1 · Strangers meeting for the first time at a bar
 4. Explicit · stig 1 · Outdoors under the stars, somewhere private and remote
-5. Roleplay · stig 1 · Hotel check-in with a mysterious stranger
-6. Sensual · stig 1 · A bath together where you wash each other slowly
+5. Sensual · stig 1 · A bath together where you wash each other slowly
+6. Roleplay · stig 1 · Hotel check-in with a mysterious stranger
 7. Explicit · stig 1 · A cabin in the woods with no other people for miles
-8. Roleplay · stig 1 · Royalty and devoted servant
+8. Explicit · stig 1 · In water, pool, lake, or ocean
 9. BDSM · stig 1 · Watching each other undress slowly, not allowed to touch yet
 10. Sensual · stig 1 · Lying together in complete silence, exploring touch for one hour
-11. Explicit · stig 1 · In water, pool, lake, or ocean
-12. Roleplay · stig 1 · Celebrity and fan meeting backstage
-13. Explicit · stig 1 · In a car in a remote location
-14. Sensual · stig 1 · A blindfolded sensory experience, warm, cold, soft, rough
-15. Roleplay · stig 1 · Forbidden attraction between neighbors
-16. Explicit · stig 1 · A balcony at night with a view
+11. Roleplay · stig 1 · Royalty and devoted servant
+12. Explicit · stig 1 · In a car in a remote location
+13. Sensual · stig 1 · A blindfolded sensory experience, warm, cold, soft, rough
+14. Roleplay · stig 1 · Celebrity and fan meeting backstage
+15. Explicit · stig 1 · A balcony at night with a view
+16. Explicit · stig 1 · A private beach at dusk or dawn
 17. Sensual · stig 1 · Dancing slowly together in the dark to a playlist made for the night
-18. Roleplay · stig 1 · Photographer and model session
-19. Explicit · stig 1 · A private beach at dusk or dawn
-20. Roleplay · stig 1 · Old flames reuniting after years apart
+18. Roleplay · stig 1 · Forbidden attraction between neighbors
+19. Explicit · stig 1 · An outdoor hot tub
+20. Explicit · stig 1 · Somewhere you've always thought about but never done
 21. Sensual · stig 1 · Being undressed slowly with only hands and lips
-22. Explicit · stig 1 · An outdoor hot tub
+22. Roleplay · stig 1 · Photographer and model session
 23. Explicit · stig 2 · Take intimate photos together (private, just for us)
-24. Roleplay · stig 1 · Two strangers sharing a cabin on a night train
+24. Explicit · stig 1 · A hotel where neither of you has ever been, completely anonymous
 25. Explicit · stig 2 · Act out a full fantasy scenario, from beginning to end
-26. Explicit · stig 1 · Somewhere you've always thought about but never done
-27. Sensual · stig 1 · Waking each other up with slow, gentle touch
+26. Sensual · stig 1 · Waking each other up with slow, gentle touch
+27. Roleplay · stig 1 · Old flames reuniting after years apart
 28. BDSM · stig 2 · One partner takes full control for the entire night, agreed in advance
 29. Explicit · stig 2 · Have a full 'yes night', one partner sets the whole agenda
-30. Roleplay · stig 1 · A masquerade, you don't know who the other person is
+30. Explicit · stig 1 · Try something completely new together in the bedroom
 31. BDSM · stig 1 · Sex with the lights fully on, no hiding, full eye contact
-32. Explicit · stig 1 · A hotel where neither of you has ever been, completely anonymous
-33. Explicit · stig 2 · Try edging, building and pausing, over and over
+32. Explicit · stig 2 · Try edging, building and pausing, over and over
+33. Explicit · stig 1 · Do a sensory experience, blindfold massage
 34. Sensual · stig 1 · Feather-light touch across the whole body for 30 minutes
-35. Roleplay · stig 2 · Boss and employee after hours
+35. Roleplay · stig 1 · Two strangers sharing a cabin on a night train
 36. Explicit · stig 2 · Consensual light restraint, wrists, agreed in advance
-37. Roleplay · stig 1 · A dare game that goes further than expected
-38. Explicit · stig 1 · Try something completely new together in the bedroom
+37. Roleplay · stig 2 · Boss and employee after hours
+38. Explicit · stig 1 · Roleplay a fantasy scenario together
 39. Explicit · stig 2 · Sensory deprivation, blindfold and stillness
 40. Sensual · stig 1 · One partner controls the pace and pressure the entire evening
 
@@ -106,7 +106,7 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 - Whispering slowly in each other's ears until the words become something else
 - Late-night intimacy after everyone else in the world has gone to sleep
 
-### Roleplay (51)
+### Roleplay (42)
 
 - Strangers meeting for the first time at a bar
 - Hotel check-in with a mysterious stranger
@@ -129,15 +129,6 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 - Night security guard and the visitor who won't leave
 - Escape room, two strangers locked in until they solve each other
 - Historical period roleplay, Victorian, ancient Rome, Renaissance court
-- A luxury hotel room booked with nothing planned except pleasure
-- In a tent while camping, low risk of being heard, high sense of freedom
-- In the kitchen while cooking, letting it escalate naturally
-- In a hot tub at a rental, just private enough
-- At a lake house, naked in the water together after dark
-- A vacation rental in a foreign city, completely anonymous
-- On a private sailboat or boat cabin
-- In front of a fireplace on a cold night, nowhere else to be
-- A secluded outdoor spa or private pool
 - Two strangers on a long-haul flight who share a row and nothing else at first
 - A witch and the traveler who knocks on the wrong door at midnight
 - A professional athlete and the journalist assigned to profile them
@@ -160,7 +151,7 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 - A florist and the customer who orders the same bouquet every week for someone unnamed
 - Midnight in a grand hotel, only two guests left in the bar, neither wanting to leave
 
-### Explicit (56)
+### Explicit (65)
 
 - A hotel room booked for nothing except pleasure
 - Outdoors under the stars, somewhere private and remote
@@ -211,6 +202,15 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 - Trying a position you've only talked about but never actually done
 - Sex after a long build-up, hours of anticipation and tension first
 - A toy chest, build one together and agree on what goes in it
+- A luxury hotel room booked with nothing planned except pleasure
+- In a tent while camping, low risk of being heard, high sense of freedom
+- In the kitchen while cooking, letting it escalate naturally
+- In a hot tub at a rental, just private enough
+- At a lake house, naked in the water together after dark
+- A vacation rental in a foreign city, completely anonymous
+- On a private sailboat or boat cabin
+- In front of a fireplace on a cold night, nowhere else to be
+- A secluded outdoor spa or private pool
 - Day-long teasing with the rule: nothing until tonight
 - Using breathwork together to extend and intensify sensation
 - Trying a new position specifically chosen from a book or video together beforehand
@@ -245,7 +245,7 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 - Tight blindfold plus earplugs, all sensation focused on touch alone
 - Lying still while being touched everywhere except where you want it most
 
-### Roleplay (15)
+### Roleplay (12)
 
 - Boss and employee after hours
 - Doctor and patient, examination that goes further than expected
@@ -255,15 +255,12 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 - Vampire seduction, old-world power, helpless prey
 - Massage therapist appointment that crosses a professional line
 - Wealthy client and their personal assistant, power dynamic shifted
-- Sex in a dressing room, unplanned and just barely private
-- On a train or overnight journey, curtains closed, moving in the dark
-- A parked car at a secluded overlook at night
 - A spy extracting information from a contact who is dangerously willing to cooperate
 - A CEO and the management consultant sent to evaluate them personally
 - An undercover officer and the person whose cover they're starting to believe
 - A warlord and the emissary sent to negotiate, terms going well off-script
 
-### Explicit (121)
+### Explicit (124)
 
 - Take intimate photos together (private, just for us)
 - Act out a full fantasy scenario, from beginning to end
@@ -357,6 +354,9 @@ Röðin í stokknum er stígandi: stig 1 dreifist yfir fyrstu 60% stokksins, sti
 - Glass or metal toy, heated or cooled before use together
 - Suction toy used during penetration, both stimulated simultaneously
 - Handcuffs, agreed in advance, key accessible at all times
+- Sex in a dressing room, unplanned and just barely private
+- On a train or overnight journey, curtains closed, moving in the dark
+- A parked car at a secluded overlook at night
 - Edging, bringing each other to the edge and stopping, 4 times before finishing
 - Mutual edging, both partners brought to the edge simultaneously
 - Timed session, both must last at least 45 minutes before finishing
