@@ -9,20 +9,18 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { notifyPartner } from '../services/notificationService';
 import {
   RESET_ROWS, ResetRow, ResetKey, ResetRequest,
-  subscribeResetRequests, runReset, requestReset, confirmReset, cancelReset,
+  subscribeResetRequests, clearMine, requestReset, confirmReset, cancelReset, resetDateLabel,
 } from '../services/resetService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 
-// Reset (Sep 19 2026): start over in ONE part of the app. Opened from
-// Profile → Reset. Rare, irreversible, and it touches the partner's data
-// too, which is why it lives here and not on each feature's own screen.
-// Small rows clear after a confirm; big rows ask the partner first. See
-// services/resetService.ts for the rule and the callable for the deleting.
-type Pending =
-  | { kind: 'run' | 'request' | 'confirm'; row: ResetRow }
-  | null;
+// Reset (Sep 19 2026): erase one part of the shared history. Opened from
+// Profile → Reset. The rule is in services/resetService.ts:
+//   yours  -> you, alone, now
+//   your partner's -> your partner has to agree
+//   about both (Intimacy Log) -> either of you; 7 days, or now if both agree
+type Pending = { kind: 'mine' | 'request' | 'confirm'; row: ResetRow } | null;
 
 export default function ResetScreen() {
   const { user, profile } = useAuth();
@@ -34,8 +32,8 @@ export default function ResetScreen() {
 
   const [requests, setRequests] = useState<ResetRequest[]>([]);
   const [pending, setPending] = useState<Pending>(null);
-  const [busy, setBusy] = useState<ResetKey | null>(null);
-  const [cleared, setCleared] = useState<Set<ResetKey>>(new Set());
+  const [busy, setBusy] = useState<string | null>(null);
+  const [cleared, setCleared] = useState<Record<string, 'mine' | 'all'>>({});
   const [failed, setFailed] = useState<ResetKey | null>(null);
 
   useEffect(() => {
@@ -43,15 +41,15 @@ export default function ResetScreen() {
     return subscribeResetRequests(coupleId, setRequests);
   }, [coupleId]);
 
-  const act = async (key: ResetKey, fn: () => Promise<void>, markCleared: boolean) => {
+  const act = async (key: ResetKey, fn: () => Promise<void>, mark?: 'mine' | 'all') => {
     if (!coupleId || busy) return;
     setBusy(key);
     setFailed(null);
     try {
       await fn();
-      if (markCleared) {
+      if (mark) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setCleared((s) => new Set(s).add(key));
+        setCleared((s) => ({ ...s, [key]: mark }));
       }
     } catch {
       setFailed(key);
@@ -65,53 +63,67 @@ export default function ResetScreen() {
     setPending(null);
     if (!p || !coupleId) return;
     const { row } = p;
-    if (p.kind === 'run') return act(row.key, () => runReset(coupleId, row.key), true);
-    if (p.kind === 'confirm') return act(row.key, () => confirmReset(coupleId, row.key), true);
-    await act(row.key, () => requestReset(coupleId, row.key), false);
+    if (p.kind === 'mine') return act(row.key, () => clearMine(coupleId, row.key), row.kind === 'derived' ? 'all' : 'mine');
+    if (p.kind === 'confirm') return act(row.key, () => confirmReset(coupleId, row.key), 'all');
+    await act(row.key, () => requestReset(coupleId, row.key));
     // Neutral on the lock screen: never the subject of the request.
     const title = `${profile?.name ?? 'Your partner'} asked you something`;
     notifyPartner(coupleId, uid, title, 'Open Profile, then Reset, to answer.', { title, body: 'Open the app to answer.' }).catch(() => {});
   };
 
-  const small = RESET_ROWS.filter((r) => !r.both);
-  const big = RESET_ROWS.filter((r) => r.both);
-
   const renderRow = (row: ResetRow) => {
     const req = requests.find((r) => r.key === row.key);
-    const mine = req?.uid === uid;
-    const theirs = !!req && !mine;
+    const mineReq = req?.uid === uid;
+    const theirReq = !!req && !mineReq;
+    const joint = row.kind === 'joint';
     const isBusy = busy === row.key;
-    const done = cleared.has(row.key) && !req;
+    const when = req?.autoAt ? resetDateLabel(req.autoAt) : '';
+    const hint =
+      failed === row.key ? 'That did not work. Check your connection and try again.'
+      : theirReq && joint ? `${partnerName} is clearing this on ${when}. Agree and it clears now.`
+      : theirReq ? `${partnerName} asked to clear this for both of you.`
+      : mineReq && joint ? `Clears on ${when}. If ${partnerName} agrees it clears now. You can cancel until then.`
+      : mineReq ? `Waiting for ${partnerName} to agree. Your own part you can clear right now.`
+      : cleared[row.key] === 'all' ? 'Cleared. It starts from empty again.'
+      : cleared[row.key] === 'mine' ? `Your part is cleared. ${partnerName}'s is untouched.`
+      : joint ? `${row.all} Every entry is about both of you, so either of you may clear it. It clears after seven days, or at once if ${partnerName} agrees.`
+      : row.kind === 'derived' ? row.all
+      : row.mine;
     return (
       <View key={row.key} style={styles.row}>
         <Text style={styles.rowEmoji}>{row.emoji}</Text>
         <View style={styles.rowBody}>
           <Text style={styles.rowLabel}>{row.label}</Text>
-          <Text style={styles.rowHint}>
-            {failed === row.key ? 'That did not work. Check your connection and try again.'
-              : done ? 'Cleared. It starts from empty again.'
-              : theirs ? `${partnerName} asked to clear this for both of you.`
-              : mine ? `Waiting for ${partnerName} to agree.`
-              : row.clears}
-          </Text>
+          <Text style={styles.rowHint}>{hint}</Text>
           <View style={styles.rowActions}>
-            {theirs ? (
-              <>
-                <TouchableOpacity style={styles.dangerBtn} disabled={isBusy} onPress={() => setPending({ kind: 'confirm', row })} accessibilityRole="button">
-                  <Text style={styles.dangerBtnText}>{isBusy ? '…' : 'Agree and clear'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => coupleId && act(row.key, () => cancelReset(coupleId, row.key), false)} accessibilityRole="button">
-                  <Text style={styles.quietBtnText}>Not now</Text>
-                </TouchableOpacity>
-              </>
-            ) : mine ? (
-              <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => coupleId && act(row.key, () => cancelReset(coupleId, row.key), false)} accessibilityRole="button">
-                <Text style={styles.quietBtnText}>{isBusy ? '…' : 'Cancel'}</Text>
+            {row.kind !== 'joint' && (
+              <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => setPending({ kind: 'mine', row })} accessibilityRole="button" accessibilityHint="Cannot be undone">
+                <Text style={styles.quietBtnText}>{isBusy ? '…' : row.kind === 'derived' ? 'Clear' : 'Clear mine'}</Text>
               </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => setPending({ kind: row.both ? 'request' : 'run', row })} accessibilityRole="button" accessibilityHint="Cannot be undone">
-                <Text style={styles.quietBtnText}>{isBusy ? '…' : row.both ? `Ask ${partnerName}` : 'Clear'}</Text>
-              </TouchableOpacity>
+            )}
+            {row.kind !== 'derived' && !!partner && (
+              theirReq ? (
+                <>
+                  <TouchableOpacity style={styles.dangerBtn} disabled={isBusy} onPress={() => setPending({ kind: 'confirm', row })} accessibilityRole="button">
+                    <Text style={styles.dangerBtnText}>{joint ? 'Agree to clear it now' : 'Agree and clear'}</Text>
+                  </TouchableOpacity>
+                  {/* No "Not now" on a joint row: the partner can speed an
+                      erasure up, never stop it. */}
+                  {!joint && (
+                    <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => coupleId && act(row.key, () => cancelReset(coupleId, row.key))} accessibilityRole="button">
+                      <Text style={styles.quietBtnText}>Not now</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : mineReq ? (
+                <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => coupleId && act(row.key, () => cancelReset(coupleId, row.key))} accessibilityRole="button">
+                  <Text style={styles.quietBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => setPending({ kind: 'request', row })} accessibilityRole="button">
+                  <Text style={styles.quietBtnText}>{joint ? 'Clear the log' : 'Clear for both'}</Text>
+                </TouchableOpacity>
+              )
             )}
           </View>
         </View>
@@ -119,23 +131,25 @@ export default function ResetScreen() {
     );
   };
 
-  const confirmCopy = (): { title: string; message: string; label: string } => {
-    if (!pending) return { title: '', message: '', label: '' };
+  const copy = ((): { title: string; message: string; label: string; destructive: boolean } => {
+    if (!pending) return { title: '', message: '', label: '', destructive: false };
     const { row, kind } = pending;
-    if (kind === 'request') {
-      return {
-        title: `Ask ${partnerName}?`,
-        message: `${row.label}: ${row.clears} Nothing is cleared until ${partnerName} agrees, and you can cancel until then.`,
-        label: 'Ask',
-      };
+    if (kind === 'mine') {
+      return row.kind === 'derived'
+        ? { title: `Clear ${row.label}?`, message: `${row.all} It cannot be undone.`, label: 'Clear', destructive: true }
+        : { title: `Clear your part of ${row.label}?`, message: `${row.mine} ${partnerName}'s part stays. It cannot be undone.`, label: 'Clear mine', destructive: true };
     }
-    return {
-      title: `Clear ${row.label}?`,
-      message: `${row.clears} This is for both you and ${partnerName}, and it cannot be undone.`,
-      label: 'Clear',
-    };
-  };
-  const copy = confirmCopy();
+    if (kind === 'request') {
+      return row.kind === 'joint'
+        ? { title: 'Clear the Intimacy Log?', message: `${row.all} It clears in seven days, or at once if ${partnerName} agrees. You can cancel until then, and ${partnerName} will see that you started this.`, label: 'Start', destructive: true }
+        : { title: `Ask ${partnerName}?`, message: `${row.all} Nothing of ${partnerName}'s is cleared unless ${partnerName} agrees. Your own part you can clear yourself at any time.`, label: 'Ask', destructive: false };
+    }
+    return { title: `Clear ${row.label} for both?`, message: `${row.all} It cannot be undone.`, label: 'Clear', destructive: true };
+  })();
+
+  const personal = RESET_ROWS.filter((r) => r.kind === 'personal');
+  const joint = RESET_ROWS.filter((r) => r.kind === 'joint');
+  const derived = RESET_ROWS.filter((r) => r.kind === 'derived');
 
   return (
     <View style={styles.screen}>
@@ -149,29 +163,26 @@ export default function ResetScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.intro}>
-          Start over in one part of the app. Each of these clears that part of your shared history for both of you. Nothing here touches your account or your pairing.
+          Start over in one part of the app. What you made is yours to clear, alone and at once. What {partnerName} made needs {partnerName}. Nothing here touches your account or your pairing.
         </Text>
 
-        {!partner ? (
-          <View style={styles.card}>
-            <Text style={styles.rowHint}>This is for a paired couple. There is nothing shared to clear yet.</Text>
-          </View>
-        ) : (
+        <Text style={styles.sectionLabel}>Yours and {partnerName}'s</Text>
+        <Text style={styles.sectionHint}>"Clear mine" is instant. "Clear for both" asks {partnerName} first, and a request waits for seven days.</Text>
+        <View style={styles.card}>{personal.map(renderRow)}</View>
+
+        {!!partner && (
           <>
-            <Text style={styles.sectionLabel}>You can clear these yourself</Text>
-            <View style={styles.card}>{small.map(renderRow)}</View>
-
-            <Text style={styles.sectionLabel}>These need both of you</Text>
-            <Text style={styles.sectionHint}>
-              Something one of you wrote or photographed. You ask, {partnerName} agrees, and only then is it cleared. A request waits for seven days.
-            </Text>
-            <View style={styles.card}>{big.map(renderRow)}</View>
-
-            <Text style={styles.foot}>
-              Good to know: after Daily or Sunday Check-in is cleared, Memory Lane has less to ask about for a while, and your year in review counts from here.
-            </Text>
+            <Text style={styles.sectionLabel}>About both of you</Text>
+            <View style={styles.card}>{joint.map(renderRow)}</View>
           </>
         )}
+
+        <Text style={styles.sectionLabel}>Built from the rest</Text>
+        <View style={styles.card}>{derived.map(renderRow)}</View>
+
+        <Text style={styles.foot}>
+          Good to know: after Daily or Sunday Check-in is cleared, Memory Lane has less to ask about for a while, and your year in review counts from here.
+        </Text>
       </ScrollView>
 
       <ConfirmModal
@@ -179,7 +190,7 @@ export default function ResetScreen() {
         title={copy.title}
         message={copy.message}
         confirmLabel={copy.label}
-        destructive={pending?.kind !== 'request'}
+        destructive={copy.destructive}
         onConfirm={onConfirmed}
         onCancel={() => setPending(null)}
       />

@@ -10,7 +10,7 @@ import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { inviteMessage } from '../../constants/app';
-import { subscribeResetRequests, ResetRequest, RESET_ROWS } from '../../services/resetService';
+import { subscribeResetRequests, ResetRequest, RESET_ROWS, resetDateLabel } from '../../services/resetService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, CUSTOM_MOOD_MAX, moodLabel } from '../../services/moodService';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
@@ -642,8 +642,12 @@ export default function HomeScreen() {
     if (!row) continue;
     list.unshift({
       emoji: row.emoji,
-      title: `${partner?.name ?? 'Your partner'} asked to clear ${row.label}`,
-      subtitle: 'For both of you. Agree or say not now',
+      // A joint row (Intimacy Log) clears on its own date: the partner can
+      // only bring it forward, so the card says so instead of asking.
+      title: r.autoAt
+        ? `${partner?.name ?? 'Your partner'} is clearing the ${row.label}`
+        : `${partner?.name ?? 'Your partner'} asked to clear ${row.label}`,
+      subtitle: r.autoAt ? `On ${resetDateLabel(r.autoAt)}. Agree and it clears now` : 'For both of you. Agree or say not now',
       route: '/reset',
       bg: '#FFF4CC',
     });

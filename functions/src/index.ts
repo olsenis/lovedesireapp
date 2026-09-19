@@ -345,16 +345,17 @@ export const acceptPairing = onCall({ invoker: 'public' }, async (req) => {
 //    - Scrub the leaving user's uid from the couple doc (set their slot to null)
 //    - Mark `partnerLeftUid` + `partnerLeftAt`; acceptPairing uses partnerLeftUid to
 //      give a NEW partner a fresh couple doc (only the same partner re-joins this one)
-//    - Keep all couple subcollections + storage (shared history)
+//    - Erase the leaver's own contributions; keep the partner's (eraseOwnContributions)
 // 2. If the user is in a couple AND the partner is also already gone (or never
 //    joined), it is safe to delete the entire couple + subcollections + storage.
 // 3. Always delete the leaving user's own profile + private subcollections +
 //    profile photo.
 //
-// Per-uid solo entries inside shared subcollections (mood entries tagged with
-// the deleting user, intimacy log entries loggedBy them) are kept as part of the
-// couple's shared history — the partner may want to look back. Privacy Policy
-// must reflect this.
+// Since Sep 19 2026 the leaver's OWN contributions inside shared subcollections
+// (moods, answers, votes, photos, notes they wrote, quiz results) are erased
+// too, together with what is jointly about both (Intimacy Log, Fantasy Wishes
+// matches): see eraseOwnContributions. The partner keeps what the partner
+// made, the Together List and Special Days. Matches Privacy §6.
 export const deleteUserCascade = auth.user().onDelete(async (user) => {
   const uid = user.uid;
   console.log(`Cascading delete for ${hid(uid)}`);
@@ -372,12 +373,18 @@ export const deleteUserCascade = auth.user().onDelete(async (user) => {
 
     if (partnerStillPresent) {
       // Scrub identity; keep shared history for the remaining partner
+      // Privacy §6: special-category data is deleted with the account, and
+      // what a person wrote is theirs. Until Sep 19 2026 this branch kept ALL
+      // shared history, which contradicted the published policy. Now the
+      // leaver's own contributions go, plus what is jointly about both
+      // (Intimacy Log, Fantasy Wishes matches); the partner keeps their own.
+      await eraseOwnContributions(coupleDoc.id, uid);
       await coupleDoc.ref.update({
         [isPartner1 ? 'partner1Uid' : 'partner2Uid']: null,
         partnerLeftAt: admin.firestore.FieldValue.serverTimestamp(),
         partnerLeftUid: uid,
       });
-      console.log(`Scrubbed ${hid(uid)} from couple ${hid(coupleDoc.id)}, kept shared data for ${hid(otherUid)}`);
+      console.log(`Scrubbed ${hid(uid)} from couple ${hid(coupleDoc.id)}, erased own contributions, kept the partner's for ${hid(otherUid)}`);
     } else {
       // No remaining partner — safe to delete everything
       await deleteCoupleData(coupleDoc.id);
@@ -435,59 +442,173 @@ async function deleteDocDescendants(docRef: FirebaseFirestore.DocumentReference)
   }
 }
 
-// ─── Reset: start over in one part of the app (Sep 19 2026) ─────────────────
-// A couple clears ONE kind of shared history without touching the account or
-// the pairing. Small things (rebuildable or derived) one member may clear;
-// big things (something one of them wrote or photographed) need both: one
-// asks, the other confirms. Deleting happens here and not on the client
-// because the rules forbid a client from deleting Sunday Check-in docs,
-// Moments has files in Storage, and "both agreed" can only be checked here.
+// ─── Reset: erasing one part of a couple's shared history (Sep 19 2026) ──────
+// The rule (GDPR Art. 17 and 7(3) read against a product where most data is
+// shared by two people; conservative reading, see DPIA.md):
 //
-// Honest scope: the rules already let a member delete most couple docs
-// directly, so the two-person step is a guard against regret and anger, not
-// a security boundary. The target table is server-side so a client can never
-// name an arbitrary path.
+//   1. What is YOURS you can always erase, alone and at once   -> action `mine`
+//   2. What is your PARTNER'S needs your partner               -> `request` / `confirm`
+//   3. What is inseparably about BOTH (an Intimacy Log entry, a Fantasy Wishes
+//      match) either of you can erase. One-sided, it clears after a 7 day
+//      cooling-off (a guard against an angry moment; Art. 12(3) allows a
+//      month and the screen says the date) or at once if the partner agrees.
+//
+// NEVER make one person's erasure depend on another person's consent, and
+// never let one person destroy the other's own data on their own.
+//
+// Deleting happens here and not on the client: the rules forbid a client from
+// deleting Sunday Check-in docs, Moments has files in Storage, and "the
+// partner agreed" can only be checked here. The target table is server-side
+// so a client can never name a path.
 type ResetTarget = {
-  both: boolean;
-  collections?: string[];        // whole subcollections under the couple
-  docs?: string[];               // single docs, path relative to the couple
-  storage?: string[];            // Storage prefixes relative to couples/{id}/
-  // Keep a doc in a listed collection when this returns true.
-  keep?: (data: FirebaseFirestore.DocumentData) => boolean;
+  // Erases the caller's own part. Absent = the target has no separable
+  // personal part (derived data, or jointly about both).
+  mine?: (coupleRef: FirebaseFirestore.DocumentReference, coupleId: string, uid: string) => Promise<void>;
+  // Erases everything for both.
+  all: (coupleRef: FirebaseFirestore.DocumentReference, coupleId: string) => Promise<void>;
+  // derived: no personal content of its own, either member clears it at once.
+  // joint:   inseparably about both, one-sided erasure with a cooling-off.
+  kind: 'personal' | 'derived' | 'joint';
 };
+
+const FD = admin.firestore.FieldValue;
+
+async function deleteWholeCollection(coupleRef: FirebaseFirestore.DocumentReference, name: string, keep?: (d: FirebaseFirestore.DocumentData) => boolean): Promise<void> {
+  const snap = await coupleRef.collection(name).get();
+  const doomed = keep ? snap.docs.filter((d) => !keep(d.data())) : snap.docs;
+  for (const d of doomed) await deleteDocDescendants(d.ref);
+  if (doomed.length > 0) await batchDeleteDocs(doomed);
+}
+
+// Removes `field.{uid}` from every doc of a collection that has it.
+async function stripUidKeys(coupleRef: FirebaseFirestore.DocumentReference, name: string, fields: string[], uid: string): Promise<FirebaseFirestore.QueryDocumentSnapshot[]> {
+  const snap = await coupleRef.collection(name).get();
+  let batch = db.batch();
+  let n = 0;
+  for (const d of snap.docs) {
+    const data = d.data();
+    const patch: Record<string, unknown> = {};
+    for (const f of fields) if (data[f] && typeof data[f] === 'object' && uid in data[f]) patch[`${f}.${uid}`] = FD.delete();
+    if (Object.keys(patch).length === 0) continue;
+    batch.update(d.ref, patch);
+    if (++n % 400 === 0) { await batch.commit(); batch = db.batch(); }
+  }
+  if (n % 400 !== 0) await batch.commit();
+  return snap.docs;
+}
+
+async function deleteStorageMatching(coupleId: string, prefix: string, uid?: string): Promise<void> {
+  try {
+    if (!uid) { await storage.deleteFiles({ prefix: `couples/${coupleId}/${prefix}` }); return; }
+    const [files] = await storage.getFiles({ prefix: `couples/${coupleId}/${prefix}` });
+    // File names end in `_{uid}.{ext}` (storageService.ts).
+    await Promise.all(files.filter((f) => f.name.includes(`_${uid}.`)).map((f) => f.delete().catch(() => undefined)));
+  } catch { /* nothing there */ }
+}
+
 const RESET_TARGETS: Record<string, ResetTarget> = {
-  fantasyWishes: { both: false, docs: ['fwState/main'] },
-  moods:         { both: false, collections: ['moods'] },
-  memoryLane:    { both: false, collections: ['memoryLane'] },
-  presence:      { both: false, docs: ['sensate/progress'] },
-  intimacyLog:   { both: true,  collections: ['intimacyLog'] },
-  daily:         { both: true,  collections: ['dailyQuestions', 'dailyWishes'] },
-  sunday:        { both: true,  collections: ['stateUnion'] },
-  moments:       { both: true,  collections: ['moments'], storage: ['moments/'] },
-  notes:         { both: true,  collections: ['notes'], storage: ['voiceNotes/'] },
-  // Only what the couple added. A milestone the app noticed carries an
-  // autoKey, and its key is recorded on the couple doc so it is never made
-  // twice: deleting it would lose it for good.
-  ourStory:      { both: true,  collections: ['milestones'], keep: (d) => !!d.autoKey },
+  fantasyWishes: {
+    kind: 'personal',
+    // My votes AND every match: a match reveals my Yes.
+    mine: async (c, _id, uid) => {
+      const ref = c.collection('fwState').doc('main');
+      if (!(await ref.get()).exists) return;
+      await ref.update({
+        [`votes.${uid}`]: FD.delete(), [`addToList.${uid}`]: FD.delete(), [`reactions.${uid}`]: FD.delete(),
+        [`replies.${uid}`]: FD.delete(), [`replyAt.${uid}`]: FD.delete(), matched: FD.delete(),
+      });
+    },
+    all: async (c) => { await c.collection('fwState').doc('main').delete(); },
+  },
+  moods: {
+    kind: 'personal',
+    mine: async (c, _id, uid) => { await deleteWholeCollection(c, 'moods', (d) => d.uid !== uid); },
+    all: async (c) => { await deleteWholeCollection(c, 'moods'); },
+  },
+  daily: {
+    kind: 'personal',
+    mine: async (c, _id, uid) => {
+      await stripUidKeys(c, 'dailyQuestions', ['answers', 'guesses', 'reactions', 'replies', 'replyAt', 'custom', 'discussed'], uid);
+      const docs = await stripUidKeys(c, 'dailyWishes', ['votes', 'reactions', 'replies', 'replyAt'], uid);
+      // addToList is index -> [uids]
+      for (const d of docs) {
+        const atl = d.data().addToList as Record<string, string[]> | undefined;
+        if (!atl) continue;
+        const next: Record<string, string[]> = {};
+        let changed = false;
+        for (const [k, arr] of Object.entries(atl)) {
+          const kept = (arr ?? []).filter((u) => u !== uid);
+          if (kept.length !== (arr ?? []).length) changed = true;
+          next[k] = kept;
+        }
+        if (changed) await d.ref.update({ addToList: next });
+      }
+    },
+    all: async (c) => { await deleteWholeCollection(c, 'dailyQuestions'); await deleteWholeCollection(c, 'dailyWishes'); },
+  },
+  sunday: {
+    kind: 'personal',
+    mine: async (c, _id, uid) => {
+      const weeks = await c.collection('stateUnion').get();
+      for (const w of weeks.docs) {
+        await w.ref.collection('entries').doc(uid).delete();
+        await w.ref.update({ [`completedAt.${uid}`]: FD.delete(), [`answeredCount.${uid}`]: FD.delete() });
+      }
+    },
+    all: async (c) => { await deleteWholeCollection(c, 'stateUnion'); },
+  },
+  moments: {
+    kind: 'personal',
+    mine: async (c, id, uid) => {
+      const snap = await c.collection('moments').get();
+      for (const d of snap.docs) {
+        const photos = (d.data().photos ?? {}) as Record<string, unknown>;
+        if (!(uid in photos)) continue;
+        if (Object.keys(photos).length <= 1) await d.ref.delete();
+        else await d.ref.update({ [`photos.${uid}`]: FD.delete() });
+      }
+      await deleteStorageMatching(id, 'moments/', uid);
+    },
+    all: async (c, id) => { await deleteWholeCollection(c, 'moments'); await deleteStorageMatching(id, 'moments/'); },
+  },
+  notes: {
+    kind: 'personal',
+    mine: async (c, id, uid) => { await deleteWholeCollection(c, 'notes', (d) => d.fromUid !== uid); await deleteStorageMatching(id, 'voiceNotes/', uid); },
+    all: async (c, id) => { await deleteWholeCollection(c, 'notes'); await deleteStorageMatching(id, 'voiceNotes/'); },
+  },
+  // Only milestones a person added. One the app noticed carries an autoKey and
+  // its key is recorded on the couple doc so it is never made twice.
+  ourStory: {
+    kind: 'personal',
+    mine: async (c, _id, uid) => { await deleteWholeCollection(c, 'milestones', (d) => !!d.autoKey || d.createdBy !== uid); },
+    all: async (c) => { await deleteWholeCollection(c, 'milestones', (d) => !!d.autoKey); },
+  },
+  // Every entry describes both people.
+  intimacyLog: { kind: 'joint', all: async (c) => { await deleteWholeCollection(c, 'intimacyLog'); } },
+  memoryLane:  { kind: 'derived', all: async (c) => { await deleteWholeCollection(c, 'memoryLane'); } },
+  presence:    { kind: 'derived', all: async (c) => { await c.collection('sensate').doc('progress').delete(); } },
 };
 const RESET_REQUEST_TTL_MS = 7 * 24 * 3600_000;
+const RESET_COOLING_OFF_MS = 7 * 24 * 3600_000;
 
-async function runReset(coupleId: string, target: ResetTarget): Promise<void> {
+// Everything that is the leaving person's own, plus what is jointly about
+// both. Used by the account-delete cascade when the partner stays, so the
+// cascade does what Privacy §6 says.
+async function eraseOwnContributions(coupleId: string, uid: string): Promise<void> {
   const coupleRef = db.doc(`couples/${coupleId}`);
-  for (const name of target.collections ?? []) {
-    const snap = await coupleRef.collection(name).get();
-    const doomed = target.keep ? snap.docs.filter((d) => !target.keep!(d.data())) : snap.docs;
-    for (const d of doomed) await deleteDocDescendants(d.ref);
-    if (doomed.length > 0) await batchDeleteDocs(doomed);
+  for (const [key, t] of Object.entries(RESET_TARGETS)) {
+    try {
+      if (t.kind === 'joint') await t.all(coupleRef, coupleId);
+      else if (t.mine) await t.mine(coupleRef, coupleId, uid);
+    } catch (e) {
+      console.error(`eraseOwnContributions ${key} failed for couple=${hid(coupleId)}`, e);
+    }
   }
-  for (const path of target.docs ?? []) {
-    const ref = coupleRef.collection(path.split('/')[0]).doc(path.split('/')[1]);
-    await deleteDocDescendants(ref);
-    await ref.delete();
-  }
-  for (const prefix of target.storage ?? []) {
-    try { await storage.deleteFiles({ prefix: `couples/${coupleId}/${prefix}` }); } catch { /* nothing there */ }
-  }
+  await coupleRef.collection('blueprints').doc(uid).delete().catch(() => undefined);
+  await coupleRef.collection('loveLanguages').doc(uid).delete().catch(() => undefined);
+  await coupleRef.collection('tonight').doc(uid).delete().catch(() => undefined);
+  const reqs = await coupleRef.collection('resetRequests').get();
+  await Promise.all(reqs.docs.map((d) => d.ref.delete()));
 }
 
 export const resetCoupleData = onCall({ invoker: 'public' }, async (req) => {
@@ -497,54 +618,81 @@ export const resetCoupleData = onCall({ invoker: 'public' }, async (req) => {
   const key = String(req.data?.key ?? '');
   const action = String(req.data?.action ?? '');
   const target = Object.prototype.hasOwnProperty.call(RESET_TARGETS, key) ? RESET_TARGETS[key] : undefined;
-  if (!coupleId || coupleId.length > 64 || !target || !['run', 'request', 'confirm', 'cancel'].includes(action)) {
+  if (!coupleId || coupleId.length > 64 || !target || !['mine', 'request', 'confirm', 'cancel'].includes(action)) {
     throw new HttpsError('invalid-argument', 'Unknown reset.');
   }
   const coupleRef = db.doc(`couples/${coupleId}`);
   const couple = (await coupleRef.get()).data();
   const members = [couple?.partner1Uid, couple?.partner2Uid].filter(Boolean) as string[];
   if (!couple || !members.includes(uid)) throw new HttpsError('permission-denied', 'Not your couple.');
-  if (couple.archivedAt || members.length < 2) throw new HttpsError('failed-precondition', 'Only for a paired couple.');
 
-  // 10 actions an hour per person is far more than anyone needs.
   const now = Date.now();
   const rateRef = db.collection('rateLimits').doc(`reset_${uid}`);
   const rateOk = await db.runTransaction(async (tx) => {
     const snap = await tx.get(rateRef);
     const recent = ((snap.data()?.attempts ?? []) as number[]).filter((t) => now - t < 3600_000);
-    if (recent.length >= 10) return false;
+    if (recent.length >= 20) return false;
     tx.set(rateRef, { attempts: [...recent, now] }, { merge: true });
     return true;
   });
   if (!rateOk) throw new HttpsError('resource-exhausted', 'Too many attempts. Try again later.');
 
   const reqRef = coupleRef.collection('resetRequests').doc(key);
-  if (action === 'run') {
-    if (target.both) throw new HttpsError('failed-precondition', 'This one needs both of you.');
-    await runReset(coupleId, target);
-    console.log(`reset run ${key} couple=${hid(coupleId)} by=${hid(uid)}`);
+
+  // Your own part: always, alone, at once. Works unpaired and on an archived
+  // couple too; it is the person's right, not a feature of being paired.
+  if (action === 'mine') {
+    if (target.kind === 'joint') throw new HttpsError('failed-precondition', 'This one is about both of you.');
+    if (target.kind === 'derived') await target.all(coupleRef, coupleId);
+    else await target.mine!(coupleRef, coupleId, uid);
+    console.log(`reset mine ${key} couple=${hid(coupleId)} by=${hid(uid)}`);
     return { ok: true, cleared: true };
   }
+
+  if (couple.archivedAt || members.length < 2) throw new HttpsError('failed-precondition', 'Only for a paired couple.');
+  if (target.kind === 'derived') throw new HttpsError('failed-precondition', 'No request needed.');
+
   if (action === 'request') {
-    if (!target.both) throw new HttpsError('failed-precondition', 'No request needed.');
-    await reqRef.set({ uid, at: now });
+    await reqRef.set({ uid, at: now, ...(target.kind === 'joint' ? { autoAt: now + RESET_COOLING_OFF_MS } : {}) });
     return { ok: true, cleared: false };
   }
+  const pending = (await reqRef.get()).data();
   if (action === 'cancel') {
-    // Either the asker withdrawing or the partner saying "Not now". Same
-    // quiet result on purpose: no "declined" state is ever stored.
+    if (!pending) return { ok: true, cleared: false };
+    // The asker may always withdraw. The partner's "Not now" removes an
+    // ordinary request, but cannot stop a joint erasure: that would make one
+    // person's right depend on the other.
+    if (pending.uid !== uid && target.kind === 'joint') throw new HttpsError('failed-precondition', 'Only the person who started this can cancel it.');
     await reqRef.delete();
     return { ok: true, cleared: false };
   }
   // confirm: only the OTHER member, only on a live request.
-  const pending = (await reqRef.get()).data();
   if (!pending || pending.uid === uid || !members.includes(pending.uid) || now - Number(pending.at ?? 0) > RESET_REQUEST_TTL_MS) {
     throw new HttpsError('failed-precondition', 'Nothing to confirm.');
   }
-  await runReset(coupleId, target);
+  await target.all(coupleRef, coupleId);
   await reqRef.delete();
   console.log(`reset confirm ${key} couple=${hid(coupleId)} by=${hid(uid)}`);
   return { ok: true, cleared: true };
+});
+
+// Joint erasures whose cooling-off has passed. Hourly so "clears on {date}"
+// is true to the day.
+export const runDueResets = onSchedule('every 60 minutes', async () => {
+  const now = Date.now();
+  const due = await db.collectionGroup('resetRequests').where('autoAt', '<=', now).get();
+  for (const d of due.docs) {
+    const coupleRef = d.ref.parent.parent;
+    const target = RESET_TARGETS[d.id];
+    if (!coupleRef || !target || target.kind !== 'joint') { await d.ref.delete(); continue; }
+    try {
+      await target.all(coupleRef, coupleRef.id);
+      await d.ref.delete();
+      console.log(`reset auto ${d.id} couple=${hid(coupleRef.id)}`);
+    } catch (e) {
+      console.error(`reset auto ${d.id} failed couple=${hid(coupleRef.id)}`, e);
+    }
+  }
 });
 
 async function deleteCoupleData(coupleId: string): Promise<void> {

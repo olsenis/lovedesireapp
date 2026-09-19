@@ -680,14 +680,16 @@ export default function ProfileScreen() {
 
         {/* Reset: start over in one part of the app. Its own screen (app/reset.tsx):
             ten destructive buttons do not belong in Profile itself. */}
-        {!!partner && (
+        {/* Shown whenever there is a couple doc, paired or not: clearing your own
+            part is your right, not a feature of being paired. */}
+        {!!profile?.coupleId && (
           <>
             <Text style={styles.sectionLabel}>Reset</Text>
             <View style={styles.card}>
               <TouchableOpacity style={styles.row} onPress={() => router.push('/reset' as any)} accessibilityRole="button">
                 <View style={styles.rowTextStack}>
                   <Text style={styles.rowLabel}>Start over in part of the app</Text>
-                  <Text style={styles.rowHint}>Clear one part of your shared history. Your account and your pairing stay.</Text>
+                  <Text style={styles.rowHint}>Clear your own part of any feature at once, or ask to clear it for both. Your account and your pairing stay.</Text>
                 </View>
                 <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
