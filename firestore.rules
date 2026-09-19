@@ -282,7 +282,17 @@ service cloud.firestore {
               || (request.resource.data.createdBy == 'system' && 'autoKey' in request.resource.data))
           && (!('loggedBy'  in request.resource.data) || request.resource.data.loggedBy  == request.auth.uid)
           && (!('sealedBy'  in request.resource.data) || request.resource.data.sealedBy  == request.auth.uid)
-          && (!('uid'       in request.resource.data) || request.resource.data.uid       == request.auth.uid);
+          && (!('uid'       in request.resource.data) || request.resource.data.uid       == request.auth.uid)
+          // A doc may be BORN with per-uid maps (Sep 19 2026: Fantasy Wishes'
+          // state doc is created by the first vote). Only the caller's own
+          // key may be in them, or a client could create the doc with the
+          // partner's Yes forged in and fake a match. Day docs are created
+          // with empty maps, which pass.
+          && request.resource.data.get('votes', {}).keys().hasOnly([request.auth.uid])
+          && request.resource.data.get('answers', {}).keys().hasOnly([request.auth.uid])
+          && request.resource.data.get('reactions', {}).keys().hasOnly([request.auth.uid])
+          && request.resource.data.get('replies', {}).keys().hasOnly([request.auth.uid])
+          && (subcollection != 'fwState' || request.resource.data.get('addToList', {}).keys().hasOnly([request.auth.uid]));
         // Updates: identity fields are immutable once set. Additionally, any
         // subcollection doc that carries a nested map keyed by uid — the
         // classic `answers` (Questions Game, WYR), `votes` (Daily Picks,
@@ -362,6 +372,15 @@ service cloud.firestore {
             !('custom' in request.resource.data.diff(resource.data).affectedKeys())
             || request.resource.data.get('custom', {}).size() == 0
             || request.resource.data.get('custom', {}).diff(resource.data.get('custom', {}))
+                 .affectedKeys().hasOnly([request.auth.uid])
+          )
+          && (
+            // Fantasy Wishes state doc (Sep 19 2026): addToList is uid-keyed
+            // THERE. (dailyWishes keeps an index-keyed addToList, so this guard
+            // must stay scoped to fwState.)
+            subcollection != 'fwState'
+            || !('addToList' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.get('addToList', {}).diff(resource.data.get('addToList', {}))
                  .affectedKeys().hasOnly([request.auth.uid])
           )
           && (

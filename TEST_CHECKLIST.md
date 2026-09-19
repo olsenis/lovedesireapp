@@ -2333,10 +2333,26 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
-### Fantasy Wishes: first open for a new couple (Sep 19 2026)
-- [ ] **The deck is set up once, fast** 📱 💰
-  1. New premium couple, both open Fantasy Wishes and tap "Explore together" at about the same time
-  - **Expected:** "Setting up your deck" for a second or two, then the first Sensual card. Firestore `fantasyWishes` holds exactly as many docs as there are presets (394), ids `preset-…`, no duplicates. ↺ reload gives the same ids again.
+### Fantasy Wishes: storage like Daily (Sep 19 2026)
+- [ ] **New couple: no loading, no seeding** 📱 💰
+  1. New premium couple opens Fantasy Wishes
+  - **Expected:** The first Sensual card is there at once; no "Explore together", no spinner. Firestore: no `fwState` doc and nothing in `fantasyWishes` until the first vote, then exactly one doc `fwState/main` with `votes.{uid}.{preset-…}`.
+
+- [ ] **Match** 📱 💰
+  1. A votes Yes, then B votes Yes on the same card
+  - **Expected:** `matched.{id}` = `{ at, text }`; match toast on both phones; the card is in Matches; Home "1 match" opens Matches; Our Story → Fantasy matches shows it; heart, Reply, "+ Add to Together List" (one todo, not two) and 🎲 Draw one for tonight all work on it. A No is visible nowhere on the other phone; Skip for later writes nothing.
+
+- [ ] **Forged votes are refused** ⚠️ : from a dev console, create `fwState/main` with `votes: { <partnerUid>: … }` on a couple without one → permission denied; update `votes.<partnerUid>.x` on an existing one → denied.
+
+- [ ] **Couple-written wish** : + Add → appears for both at the end of the deck, can be voted and matched; "✨ New wish added" toast on the partner's phone only.
+
+- [ ] **New content reaches everyone** : add a throwaway preset to `FANTASY_WISHES_PRESETS` locally → it is in the deck of an old and a new couple with no reload. Reword a preset that is already a match → Matches still shows the original text. Remove both again.
+
+- [ ] **Start over** : ↺ → confirm dialog names both of you → votes, matches, hearts gone for both, own wishes still there.
+
+- [ ] **Couple from before the change (Oli + Eva)** : the old copied docs disappear from `fantasyWishes` in the background (only couple-written ones remain), Fantasy Wishes starts fresh, nothing crashes. Test matches from before are gone on purpose.
+
+- [ ] **Look-back readers** : Memory Lane (dev unlock) still builds its Fantasy Wishes question from a new match; Year in Review counts it.
 
 ### Fantasy Wishes: draw one for tonight (Sep 2026, USER_VOICE C12)
 - [ ] **Same draw on both phones** 📱 💰

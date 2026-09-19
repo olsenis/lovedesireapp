@@ -182,6 +182,8 @@ A partner sends a card the other scratches open with a finger. It hides a vouche
 - **Effort:** vouchers, own text and the wallet about 6 h; the positions text pool 3 h more; art is a separate project.
 - **When:** after two-phone round 3 passes and the first EAS build exists. A candidate for the first post-launch update: visible, giftable, and the sweet vouchers make a clean screenshot.
 
+**Fantasy Wishes: make double-blind true in the database too (recorded Sep 19 2026).** Both partners' votes sit in `fwState/main`, which both can read, so a partner with developer tools could see a No. The UI never shows it and the store copy only says "never shown". Making it cryptographically true: each person's votes in `users/{uid}/private/fwVotes` and a callable that computes `matched` from the two private docs. About a day plus a migration of live couples; do it if a review or a security report ever raises it.
+
 Not borrowed, on purpose: streaks and paid streak recovery (Cherished, Orbs), coins / gems / pets (SumOne, Cozy Couples, LoveWidgets), relationship health scores (BaeSync), chat (Orbs, Pikant, Fenn), AI-generated content (Pikant, Lovefix, Flamme), per-partner unlocks (Couple Game), free-tier content that expires (Cozy Couples).
 
 **Pricing (decided Sep 13 2026):** the indie "one pays for both" cluster sits at $4.99/mo and $29.99/yr (Cozy Couples with 45k ratings, Cuplido, koopla); Agapé is punished in reviews for $50 to $180/yr. Annual lowered from $59.99 to **$39.99**, monthly stays $9.99. Revisit upward once there are a few hundred ratings.

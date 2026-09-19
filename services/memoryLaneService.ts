@@ -4,6 +4,7 @@ import {
 import { db } from './firebase';
 import { trackEvent } from './statsService';
 import { seededShuffle, seededPick } from './seed';
+import { getFWMatches } from './fantasyWishesService';
 import { personalise } from './personalise';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji } from './moodService';
 import {
@@ -178,14 +179,9 @@ async function loadSources(coupleId: string, uidA: string, uidB: string): Promis
   })());
 
   const fwMatches = safe((async (): Promise<FwSrc[]> => {
-    // Only matched items carry matchedAt. Single-field range query uses the
-    // automatic index, so this fetches ~N matches instead of all ~394
-    // preset docs the couple has loaded.
-    const snap = await getDocs(query(collection(db, 'couples', coupleId, 'fantasyWishes'), where('matchedAt', '>', 0)));
-    return snap.docs
-      .map((d) => d.data() as { text?: string; matchedAt?: number })
-      .filter((m): m is FwSrc => !!m.text && typeof m.matchedAt === 'number')
-      .sort((a, b) => a.matchedAt - b.matchedAt);
+    // One read of the couple's Fantasy Wishes state doc (Sep 19 2026); a
+    // match carries the text it was made with, oldest first.
+    return (await getFWMatches(coupleId, uidA, uidB)).map((m) => ({ text: m.text, matchedAt: m.matchedAt }));
   })());
 
   const [m, d, mo, mi, su, fw] = await Promise.all([moments, daily, moods, milestones, sundays, fwMatches]);

@@ -13,8 +13,9 @@ import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, subscribeFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, clearAndReloadFantasyWishes, seedFantasyWishesPresets, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
-import { FANTASY_WISHES_PRESETS, FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
+import { FantasyWishesItem, FWVote, FWState, CustomWish, subscribeFWState, subscribeCustomWishes, composeFWItems, cleanupLegacyFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, resetFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { personalise } from '../services/personalise';
 import { seededPick } from '../services/seed';
 import { Colors } from '../constants/colors';
@@ -27,12 +28,19 @@ export default function FantasyWishesScreen() {
   const { user, profile } = useAuth();
   const { couple, partner } = useCouple(user?.uid, profile?.coupleId);
   useTrackScreen('fantasy_wishes');
-  const [items, setItems] = useState<FantasyWishesItem[]>([]);
+  // Storage like Daily (Sep 19 2026): the deck is the app's own list, the
+  // couple has ONE state doc (votes, matches, hearts) plus docs for wishes
+  // they wrote themselves. No seeding and no loading: the first card is
+  // there at once. See services/fantasyWishesService.ts.
+  const [fwState, setFwState] = useState<FWState | null>(null);
+  const [customs, setCustoms] = useState<CustomWish[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const items = useMemo(() => composeFWItems(fwState, customs), [fwState, customs]);
   // Paid screen with a read view (USER_VOICE A2): a lapsed couple keeps
   // their Matches, loses the deck, adding and reset. Nothing to read →
-  // /upgrade as before. Covers every entry point incl. Home nudges.
-  const { ready, readOnly } = usePaidAccess(loaded ? items.length > 0 : null);
+  // /upgrade as before. "Something to read" = at least one match.
+  const hasMatches = Object.keys(fwState?.matched ?? {}).length > 0;
+  const { ready, readOnly } = usePaidAccess(loaded ? hasMatches : null);
   // Spicy session consent (Sep 2026): the whole feature is explicit, so
   // ask once per day on entry; "Not tonight" leaves the screen. Applies
   // to the read view too (matches are explicit text).
@@ -57,8 +65,8 @@ export default function FantasyWishesScreen() {
   const [drawnId, setDrawnId] = useState<string | null>(null);
   const [hintDismissed, setHintDismissed] = useState(false);
   const [newText, setNewText] = useState('');
-  const [loadingPresets, setLoadingPresets] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   // Session-only skip set. Skipping doesn't record a vote — it just moves
   // the card to the back of the deck so the user can defer without either
   // saying yes/maybe/no or reloading the whole feature. Cleared on Reset.
@@ -95,8 +103,20 @@ export default function FantasyWishesScreen() {
 
   useEffect(() => {
     if (!coupleId) return;
-    return subscribeFantasyWishes(coupleId, (list) => { setItems(list); setLoaded(true); });
+    const u1 = subscribeFWState(coupleId, (st) => { setFwState(st); setLoaded(true); });
+    const u2 = subscribeCustomWishes(coupleId, setCustoms);
+    return () => { u1(); u2(); };
   }, [coupleId]);
+
+  // A couple from before the storage change still has the copied preset
+  // docs. Remove them once, in the background; nothing on screen waits.
+  const legacyCleanedRef = useRef(false);
+  useEffect(() => {
+    if (!coupleId || legacyCleanedRef.current) return;
+    if (!customs.some((c) => c.votes !== undefined)) return;
+    legacyCleanedRef.current = true;
+    cleanupLegacyFantasyWishes(coupleId).catch(() => { legacyCleanedRef.current = false; });
+  }, [coupleId, customs]);
 
   // Detect fresh mutual Yes matches. On first snapshot we snapshot existing
   // matches into the ref without celebrating (those are historical). Any
@@ -104,7 +124,7 @@ export default function FantasyWishesScreen() {
   // my own Yes landing on partner's Yes, or from partner's Yes landing on
   // mine while I'm looking at the screen.
   useEffect(() => {
-    if (!partnerId || items.length === 0) return;
+    if (!partnerId || !loaded) return;
     const currentMatchIds = new Set(
       items.filter((i) => isFWMatch(i, uid, partnerId)).map((i) => i.id),
     );
@@ -145,13 +165,14 @@ export default function FantasyWishesScreen() {
   const seenItemIdsRef = useRef<Set<string>>(new Set());
   const initialSeenRef = useRef<boolean>(false);
   useEffect(() => {
-    if (items.length === 0) return;
+    const own = customs.filter((c) => c.votes === undefined);
     if (!initialSeenRef.current) {
-      items.forEach((i) => seenItemIdsRef.current.add(i.id));
+      if (!loaded) return;
+      own.forEach((i) => seenItemIdsRef.current.add(i.id));
       initialSeenRef.current = true;
       return;
     }
-    const newIds = items.filter((i) => !seenItemIdsRef.current.has(i.id)).map((i) => i.id);
+    const newIds = own.filter((i) => !seenItemIdsRef.current.has(i.id)).map((i) => i.id);
     if (newIds.length === 0) return;
     newIds.forEach((id) => seenItemIdsRef.current.add(id));
     // Only fire the partner-added toast for items the partner (not us)
@@ -162,15 +183,14 @@ export default function FantasyWishesScreen() {
       showToast('✨ New wish added');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items]);
+  }, [customs, loaded]);
 
   const handleVote = async (item: FantasyWishesItem, vote: FWVote) => {
     if (!coupleId || !user) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await voteOnFantasyWish(coupleId, item.id, uid, vote, partnerId);
-    if (vote === 'yes' && partnerId) {
-      const updated = { ...item, votes: { ...item.votes, [uid]: 'yes' as const } };
-      if (isFWMatch(updated, uid, partnerId)) {
+    const { newMatch } = await voteOnFantasyWish(coupleId, item, uid, vote, partnerId);
+    if (newMatch) {
+      if (partnerId) {
         notifyPartner(
           coupleId, uid,
           'New match ✨', 'You have a shared fantasy wish',
@@ -216,7 +236,7 @@ export default function FantasyWishesScreen() {
     if (!newText.trim() || !coupleId) return;
     isLocallyAddingRef.current = true;
     try {
-      const newId = await addFantasyWishesItem(coupleId, newText.trim());
+      const newId = await addFantasyWishesItem(coupleId, newText.trim(), uid);
       locallyAddedIdsRef.current.add(newId);
       setNewText('');
       setShowAdd(false);
@@ -226,30 +246,19 @@ export default function FantasyWishesScreen() {
     }
   };
 
-  const loadPresets = async () => {
-    const id = profile?.coupleId;
-    if (!id || loadingPresets) return;
-    setLoadingPresets(true);
-    try {
-      await seedFantasyWishesPresets(id, FANTASY_WISHES_PRESETS);
-    } finally {
-      setLoadingPresets(false);
-    }
-  };
-
+  // "Start over": clears BOTH partners' votes, matches, hearts and lines.
+  // The couple's own wishes stay. Always behind a confirm (it used to be a
+  // single tap on ↺).
   const handleReset = async () => {
     const id = profile?.coupleId;
     if (!id || resetting) return;
+    setConfirmReset(false);
     setResetting(true);
     try {
-      await clearAndReloadFantasyWishes(id, FANTASY_WISHES_PRESETS);
+      await resetFantasyWishes(id);
       setSkipped(new Set());
-      // Refs get re-populated by the initial-seen guard when the new items
-      // land via the subscription. Clear so celebrations for the fresh set
-      // fire correctly if a match happens right away.
+      setDrawnId(null);
       prevMatchIdsRef.current = null;
-      seenItemIdsRef.current = new Set();
-      initialSeenRef.current = false;
     } finally {
       setResetting(false);
     }
@@ -288,7 +297,8 @@ export default function FantasyWishesScreen() {
   const fwCats = couple?.fwCategories ?? {};
   const catOn = (c?: FantasyWishesCategory) => !c || fwCats[c] !== false;
   const categoriesOff = FW_CATEGORY_ORDER.filter((c) => fwCats[c] === false);
-  const playable = useMemo(() => items.filter((i) => catOn(i.category)), [items, couple?.fwCategories]);
+  // Retired cards (matched once, no longer in the pool) live in Matches only.
+  const playable = useMemo(() => items.filter((i) => !i.retired && catOn(i.category)), [items, couple?.fwCategories]);
   const drawOne = () => {
     if (matched.length < 2 || !coupleId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -305,7 +315,7 @@ export default function FantasyWishesScreen() {
   }, [matched, drawnId]);
   const votedCount = useMemo(() => playable.filter((i) => myVote(i) !== null).length, [playable, uid]);
   const totalCount = playable.length;
-  const nothingOn = items.length > 0 && playable.length === 0;
+  const nothingOn = playable.length === 0;
 
   // Deck order: unvoted playable items, gentle categories first (sensual,
   // roleplay, explicit, bdsm, then uncategorised), createdAt within a
@@ -348,13 +358,11 @@ export default function FantasyWishesScreen() {
         </TouchableOpacity>
         <Text style={styles.title}>Fantasy Wishes</Text>
         {readOnly ? <View style={{ width: 60 }} /> : <View style={{ flexDirection: 'row', gap: Spacing.md, alignItems: 'center' }}>
-          {items.length > 0 && (
-            <TouchableOpacity onPress={() => setShowCategories(true)} accessibilityRole="button" accessibilityLabel="Choose categories">
-              <Text style={styles.resetBtn}>☰</Text>
-            </TouchableOpacity>
-          )}
-          {items.length > 0 && (
-            <TouchableOpacity onPress={handleReset} disabled={resetting} accessibilityRole="button" accessibilityLabel="Reset wishes" accessibilityHint="Cannot be undone">
+          <TouchableOpacity onPress={() => setShowCategories(true)} accessibilityRole="button" accessibilityLabel="Choose categories">
+            <Text style={styles.resetBtn}>☰</Text>
+          </TouchableOpacity>
+          {!!fwState && (
+            <TouchableOpacity onPress={() => setConfirmReset(true)} disabled={resetting} accessibilityRole="button" accessibilityLabel="Start over" accessibilityHint="Clears votes and matches for both of you">
               <Text style={styles.resetBtn}>{resetting ? '…' : '↺'}</Text>
             </TouchableOpacity>
           )}
@@ -367,7 +375,7 @@ export default function FantasyWishesScreen() {
       {readOnly ? <PremiumEndedBanner /> : <View style={styles.infoBanner}>
         <Text style={styles.infoText}>✨ Vote privately, only mutual Yes matches are ever revealed</Text>
       </View>}
-      {!readOnly && items.length > 0 && Object.keys(fwCats).length === 0 && !hintDismissed && (
+      {!readOnly && Object.keys(fwCats).length === 0 && !hintDismissed && (
         <TouchableOpacity style={styles.catHint} onPress={() => { setHintDismissed(true); setShowCategories(true); }} activeOpacity={0.7} accessibilityRole="button">
           <Text style={styles.catHintText}>Sensual comes first. Choose what is for the two of you ›</Text>
         </TouchableOpacity>
@@ -393,17 +401,7 @@ export default function FantasyWishesScreen() {
 
       {activeTab === 'explore' && !readOnly && (
         <View style={styles.exploreBody}>
-          {items.length === 0 ? (
-            <TouchableOpacity style={styles.emptyCard} onPress={loadPresets} disabled={loadingPresets} activeOpacity={0.7} accessibilityRole="button">
-              <Text style={styles.emptyEmoji}>{loadingPresets ? '⏳' : '✨'}</Text>
-              <Text style={styles.emptyTitle}>{loadingPresets ? 'Loading…' : 'Explore together'}</Text>
-              <Text style={styles.emptyText}>
-                {loadingPresets
-                  ? 'Setting up your deck'
-                  : 'Tap to load explicit sexual scenarios. Only mutual Yes is ever revealed.'}
-              </Text>
-            </TouchableOpacity>
-          ) : nothingOn ? (
+          {nothingOn ? (
             <TouchableOpacity style={styles.emptyCard} onPress={() => setShowCategories(true)} activeOpacity={0.7} accessibilityRole="button">
               <Text style={styles.emptyEmoji}>☰</Text>
               <Text style={styles.emptyTitle}>Every category is off</Text>
@@ -585,6 +583,15 @@ export default function FantasyWishesScreen() {
         </View>
       </Modal>
 
+      <ConfirmModal
+        visible={confirmReset}
+        title="Start over?"
+        message={`This clears the votes, matches, hearts and replies of both you and ${partner?.name ?? 'your partner'}. Wishes you wrote yourselves stay. It cannot be undone.`}
+        confirmLabel="Start over"
+        destructive
+        onConfirm={handleReset}
+        onCancel={() => setConfirmReset(false)}
+      />
       <HelpModal
         visible={help.visible}
         title="Fantasy Wishes"

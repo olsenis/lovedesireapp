@@ -1,48 +1,150 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, limit, writeBatch, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, writeBatch, runTransaction, deleteField, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
-import { FantasyWishesCategory } from '../constants/content';
+import { FANTASY_WISHES_PRESETS, FantasyWishesCategory } from '../constants/content';
 import { hashString } from './seed';
+
+// ─── Storage model (Sep 19 2026) ─────────────────────────────────────────────
+// Fantasy Wishes is stored like Daily: the CONTENT lives in the app
+// (FANTASY_WISHES_PRESETS) and Firestore holds only what the couple did.
+//
+//   couples/{id}/fwState/main        one doc per couple, see FWState
+//   couples/{id}/fantasyWishes/{id}  couple-written wishes only (text, createdBy)
+//
+// Until this date every preset was COPIED into each couple's collection (394
+// docs) with votes on each doc. That meant a loading screen for a new couple,
+// 394 reads on every open of Home / Our Story / this screen, and no way for a
+// couple that had started to ever receive new or corrected presets. Now a new
+// couple sees the first card at once, every open is one read, and the deck is
+// simply "the app's list minus what I have voted on".
+//
+// A preset is addressed by a fixed id derived from its text. Rewording a
+// preset therefore makes it a new card; a match keeps the text it was made
+// with (FWState.matched snapshots it), so nothing is ever orphaned.
+//
+// Privacy, unchanged and deliberate to state: both partners' votes sit in a
+// doc both can read, so "double-blind" is a promise of the UI, not of the
+// database. Making it cryptographically true needs private per-user vote docs
+// and a server function that computes matches (POST_LAUNCH).
 
 export type FWVote = 'yes' | 'maybe' | 'no';
 
+// Every per-person map is keyed by uid at the TOP level, so the per-uid rules
+// guard (own key only) applies exactly as it does to Daily's answers.
+export interface FWState {
+  votes?: Record<string, Record<string, FWVote>>;          // uid -> itemId -> vote
+  matched?: Record<string, { at: number; text: string }>;  // itemId -> when, and the text it was matched with
+  addToList?: Record<string, Record<string, true>>;        // uid -> itemId
+  reactions?: Record<string, Record<string, true>>;        // uid -> itemId   (C2)
+  replies?: Record<string, Record<string, string>>;        // uid -> itemId -> one line (C2)
+}
+
+export interface CustomWish {
+  id: string;
+  text: string;
+  createdAt: number;
+  createdBy?: string;
+  // Present only on a LEGACY copied doc from before Sep 19 2026.
+  votes?: unknown;
+  category?: FantasyWishesCategory;
+}
+
+// The per-item view the screens render. Same shape as before the storage
+// change, composed from the state doc instead of read from an item doc.
 export interface FantasyWishesItem {
   id: string;
   text: string;
   votes: Record<string, FWVote>;
   addToList?: string[]; // uids who pressed "Add to Together List"
   createdAt: number;
-  // Stamped once, atomically, when the vote that completes the mutual
-  // YES lands. Absent on legacy matches from before this field was
-  // introduced — the Matches list sort falls back to createdAt for
-  // those so the ordering degrades gracefully instead of crashing.
   matchedAt?: number;
-  // Preset category (Sep 2026, USER_VOICE A6). Absent on couple-written
-  // wishes and on items loaded before categories existed: those are
-  // always shown, never filtered.
   category?: FantasyWishesCategory;
-  // Reactions and replies on a match (Sep 2026, USER_VOICE C2): uid -> true / text.
   reactions?: Record<string, true>;
   replies?: Record<string, string>;
+  custom?: boolean;   // couple-written
+  retired?: boolean;  // matched once, no longer in the pool: shown in Matches, never dealt
 }
 
-export function subscribeFantasyWishes(coupleId: string, onChange: (items: FantasyWishesItem[]) => void): Unsubscribe {
-  const q = query(collection(db, 'couples', coupleId, 'fantasyWishes'), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, (snap) => {
-    onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as FantasyWishesItem)));
+export const presetId = (text: string) => `preset-${hashString(text).toString(36)}`;
+
+// Built once. `order` keeps the authored order inside a category.
+const PRESET_INDEX = FANTASY_WISHES_PRESETS.map((p, order) => ({ id: presetId(p.text), text: p.text, category: p.category, order }));
+const PRESET_BY_ID = new Map(PRESET_INDEX.map((p) => [p.id, p]));
+const PRESET_TEXTS = new Set(FANTASY_WISHES_PRESETS.map((p) => p.text));
+
+const stateRef = (coupleId: string) => doc(db, 'couples', coupleId, 'fwState', 'main');
+
+function viewOf(id: string, base: { text: string; category?: FantasyWishesCategory; createdAt: number; custom?: boolean; retired?: boolean }, state: FWState): FantasyWishesItem {
+  const votes: Record<string, FWVote> = {};
+  for (const [u, m] of Object.entries(state.votes ?? {})) if (m?.[id]) votes[u] = m[id];
+  const addToList = Object.entries(state.addToList ?? {}).filter(([, m]) => m?.[id]).map(([u]) => u);
+  const reactions: Record<string, true> = {};
+  for (const [u, m] of Object.entries(state.reactions ?? {})) if (m?.[id]) reactions[u] = true;
+  const replies: Record<string, string> = {};
+  for (const [u, m] of Object.entries(state.replies ?? {})) if (m?.[id]) replies[u] = m[id];
+  return { id, ...base, votes, addToList, matchedAt: state.matched?.[id]?.at, reactions, replies };
+}
+
+// Everything the Fantasy Wishes screen shows: the whole pool, the couple's own
+// wishes, and any match whose card has since left the pool.
+export function composeFWItems(state: FWState | null, customs: CustomWish[]): FantasyWishesItem[] {
+  const s = state ?? {};
+  const out: FantasyWishesItem[] = PRESET_INDEX.map((p) => viewOf(p.id, { text: p.text, category: p.category, createdAt: p.order }, s));
+  const known = new Set(PRESET_INDEX.map((p) => p.id));
+  for (const c of customs) {
+    if (c.votes !== undefined) continue; // legacy copy, cleaned up by cleanupLegacyFantasyWishes
+    known.add(c.id);
+    out.push(viewOf(c.id, { text: c.text, createdAt: c.createdAt, custom: true }, s));
+  }
+  for (const [id, m] of Object.entries(s.matched ?? {})) {
+    if (!known.has(id)) out.push(viewOf(id, { text: m.text, createdAt: m.at, retired: true }, s));
+  }
+  return out;
+}
+
+// For Home and Our Story: only the items the couple has touched, from ONE
+// read. Text comes from the pool, or from the match snapshot.
+function touchedItems(state: FWState | null): FantasyWishesItem[] {
+  const s = state ?? {};
+  const ids = new Set<string>(Object.keys(s.matched ?? {}));
+  for (const m of Object.values(s.votes ?? {})) for (const id of Object.keys(m ?? {})) ids.add(id);
+  return [...ids].map((id) => {
+    const p = PRESET_BY_ID.get(id);
+    return viewOf(id, { text: s.matched?.[id]?.text ?? p?.text ?? '', category: p?.category, createdAt: s.matched?.[id]?.at ?? p?.order ?? 0 }, s);
   });
 }
 
-// Returns the newly created doc id so callers can inject the wish into the
-// active view immediately (e.g. Fantasy Wishes' locked-5 batch bumps to 6
-// when the user adds a custom wish, so it's visible without waiting for
-// Load 5 more).
-export async function addFantasyWishesItem(coupleId: string, text: string, category?: FantasyWishesCategory): Promise<string> {
+export function subscribeFWState(coupleId: string, onChange: (state: FWState | null) => void): Unsubscribe {
+  return onSnapshot(stateRef(coupleId), (snap) => onChange(snap.exists() ? (snap.data() as FWState) : null));
+}
+
+// Kept under its old name for Home and Our Story, which only filter on votes
+// and matches. One document read instead of the whole copied pool.
+export function subscribeFantasyWishes(coupleId: string, onChange: (items: FantasyWishesItem[]) => void): Unsubscribe {
+  return subscribeFWState(coupleId, (state) => onChange(touchedItems(state)));
+}
+
+export function subscribeCustomWishes(coupleId: string, onChange: (items: CustomWish[]) => void): Unsubscribe {
+  const q = query(collection(db, 'couples', coupleId, 'fantasyWishes'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snap) => onChange(snap.docs.map((d) => ({ id: d.id, ...d.data() } as CustomWish))));
+}
+
+// One-shot for Memory Lane and Year in Review.
+export async function getFWMatches(coupleId: string, uid1: string, uid2: string): Promise<{ id: string; text: string; matchedAt: number }[]> {
+  const snap = await getDoc(stateRef(coupleId));
+  if (!snap.exists()) return [];
+  return touchedItems(snap.data() as FWState)
+    .filter((i) => isFWMatch(i, uid1, uid2) && typeof i.matchedAt === 'number' && !!i.text)
+    .map((i) => ({ id: i.id, text: i.text, matchedAt: i.matchedAt as number }))
+    .sort((a, b) => a.matchedAt - b.matchedAt);
+}
+
+// A couple-written wish. Its votes live in the state doc like any other card.
+export async function addFantasyWishesItem(coupleId: string, text: string, uid: string): Promise<string> {
   const ref = await addDoc(collection(db, 'couples', coupleId, 'fantasyWishes'), {
     text,
-    votes: {},
+    createdBy: uid,
     createdAt: Date.now(),
-    ...(category ? { category } : {}),
   });
   return ref.id;
 }
@@ -52,54 +154,48 @@ export async function addFantasyWishesItem(coupleId: string, text: string, categ
 // subscription they already hold. Either partner may change it.
 export async function setFWCategory(coupleId: string, category: FantasyWishesCategory, on: boolean): Promise<void> {
   await updateDoc(doc(db, 'couples', coupleId), { [`fwCategories.${category}`]: on });
-  trackEvent(on ? 'fw_category_on' : 'fw_category_off');
 }
 
-// Vote and, if this YES completes the mutual match, stamp matchedAt in the
-// same write so the Matches list can sort by true completion order rather
-// than the wish's creation date. Uses a transaction only for the completing
-// case so the common non-YES / no-partner-known write stays a cheap update.
+// One transaction on the state doc. The vote that completes a mutual Yes
+// stamps `matched` once, with the text as it read then. Returns whether this
+// vote made a new match.
 export async function voteOnFantasyWish(
   coupleId: string,
-  itemId: string,
+  item: { id: string; text: string },
   uid: string,
   vote: FWVote,
   partnerId?: string,
-): Promise<void> {
-  const ref = doc(db, 'couples', coupleId, 'fantasyWishes', itemId);
-  if (vote !== 'yes' || !partnerId) {
-    await updateDoc(ref, { [`votes.${uid}`]: vote });
-    trackEvent('fantasy_wish_voted');
-    return;
-  }
-  await runTransaction(db, async (tx) => {
+): Promise<{ newMatch: boolean }> {
+  const ref = stateRef(coupleId);
+  const result = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
-    if (!snap.exists()) return;
-    const data = snap.data() as FantasyWishesItem;
-    const partnerAlreadyYes = data.votes?.[partnerId] === 'yes';
-    const myPreviousVote = data.votes?.[uid];
-    const willBeNewMatch = partnerAlreadyYes && myPreviousVote !== 'yes';
-    tx.update(ref, {
-      [`votes.${uid}`]: 'yes',
-      ...(willBeNewMatch ? { matchedAt: Date.now() } : {}),
-    });
+    const data = (snap.exists() ? snap.data() : {}) as FWState;
+    const partnerYes = !!partnerId && data.votes?.[partnerId]?.[item.id] === 'yes';
+    const newMatch = vote === 'yes' && partnerYes && !data.matched?.[item.id];
+    if (!snap.exists()) {
+      // First vote this couple ever casts. Only my own key (rules enforce it).
+      tx.set(ref, { votes: { [uid]: { [item.id]: vote } } });
+    } else {
+      tx.update(ref, {
+        [`votes.${uid}.${item.id}`]: vote,
+        ...(newMatch ? { [`matched.${item.id}`]: { at: Date.now(), text: item.text } } : {}),
+      });
+    }
+    return { newMatch };
   });
   trackEvent('fantasy_wish_voted');
+  return result;
 }
 
 // A heart and one line on a match (USER_VOICE C2).
 export async function reactToFantasyWish(coupleId: string, uid: string, itemId: string, on: boolean): Promise<void> {
-  await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
-    [`reactions.${uid}`]: on ? true : deleteField(),
-  });
+  await updateDoc(stateRef(coupleId), { [`reactions.${uid}.${itemId}`]: on ? true : deleteField() });
   if (on) trackEvent('reaction_sent');
 }
 
 export async function replyToFantasyWish(coupleId: string, uid: string, itemId: string, text: string): Promise<void> {
   const clean = text.trim().slice(0, 200);
-  await updateDoc(doc(db, 'couples', coupleId, 'fantasyWishes', itemId), {
-    [`replies.${uid}`]: clean ? clean : deleteField(),
-  });
+  await updateDoc(stateRef(coupleId), { [`replies.${uid}.${itemId}`]: clean ? clean : deleteField() });
   if (clean) trackEvent('reply_sent');
 }
 
@@ -107,28 +203,23 @@ export function isFWMatch(item: FantasyWishesItem, uid1: string, uid2: string): 
   return item.votes[uid1] === 'yes' && item.votes[uid2] === 'yes';
 }
 
-// Atomic version of the "I want to add this to Together List" mark.
-// Reads the addToList array inside a transaction, adds the caller's uid if
-// missing, and returns completedNow=true ONLY for the caller whose write made
-// the pair complete. Prevents the race where both partners press within the
-// same second, each reads a snapshot where only their own uid is missing, and
-// neither writes the todo — same pattern already used in dailyWishService.
+// Atomic "I want this on our Together List". completedNow is true ONLY for the
+// caller whose write completed the pair, so exactly one phone creates the todo
+// even when both press within the same second.
 export async function markFWAddToListAtomic(
   coupleId: string,
   uid: string,
   partnerId: string | undefined,
   itemId: string,
 ): Promise<{ completedNow: boolean }> {
-  const ref = doc(db, 'couples', coupleId, 'fantasyWishes', itemId);
+  const ref = stateRef(coupleId);
   const result = await runTransaction(db, async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) return { completedNow: false };
-    const data = snap.data() as FantasyWishesItem;
-    const currentList = data.addToList ?? [];
-    if (currentList.includes(uid)) return { completedNow: false }; // Idempotent
-    const newList = [...currentList, uid];
-    tx.update(ref, { addToList: newList });
-    return { completedNow: !!partnerId && newList.includes(partnerId) };
+    const data = snap.data() as FWState;
+    if (data.addToList?.[uid]?.[itemId]) return { completedNow: false }; // idempotent
+    tx.update(ref, { [`addToList.${uid}.${itemId}`]: true });
+    return { completedNow: !!partnerId && !!data.addToList?.[partnerId]?.[itemId] };
   });
   if (result.completedNow) trackEvent('fantasy_wish_match');
   return result;
@@ -138,46 +229,34 @@ export function fwBothWantToAdd(item: FantasyWishesItem, uid1: string, uid2: str
   return (item.addToList ?? []).includes(uid1) && (item.addToList ?? []).includes(uid2);
 }
 
-// Writes the preset deck in ONE batched write with deterministic ids
-// (Sep 19 2026). It used to be one addDoc per preset (394 round trips, a
-// visible "Loading…" for a new couple) with random ids, so two phones
-// tapping "Explore together" at the same moment could double the deck.
-// Same text -> same id, so a second seed can never duplicate; createdAt
-// keeps the authored order inside a category. A batch holds up to 500
-// writes; chunked anyway so the pool can grow past that.
-const presetId = (text: string) => `preset-${hashString(text).toString(36)}`;
-
-export async function seedFantasyWishesPresets(
-  coupleId: string,
-  presets: { text: string; category?: FantasyWishesCategory }[],
-): Promise<void> {
-  const col = collection(db, 'couples', coupleId, 'fantasyWishes');
-  // Someone (the partner, a moment ago) already seeded: nothing to do. A
-  // blind overwrite would also be rejected by the rules once votes exist.
-  const existing = await getDocs(query(col, limit(1)));
-  if (!existing.empty) return;
-  const now = Date.now();
-  for (let start = 0; start < presets.length; start += 400) {
-    const batch = writeBatch(db);
-    presets.slice(start, start + 400).forEach((p, i) => {
-      batch.set(doc(col, presetId(p.text)), {
-        text: p.text, votes: {}, createdAt: now + start + i, ...(p.category ? { category: p.category } : {}),
-      });
-    });
-    await batch.commit();
-  }
+// "Start over": both partners' votes, matches, hearts and lines go; the
+// couple's own wishes stay.
+export async function resetFantasyWishes(coupleId: string): Promise<void> {
+  await deleteDoc(stateRef(coupleId));
 }
 
-export async function clearAndReloadFantasyWishes(
-  coupleId: string,
-  presets: { text: string; category?: FantasyWishesCategory }[]
-): Promise<void> {
+// Removes the copied preset docs of the old model. A legacy doc is one in
+// `fantasyWishes` that still carries a `votes` field. Copies of presets are
+// deleted; a couple-written wish keeps its doc and loses the old per-doc
+// fields. Pre-launch there were only test couples, so old votes are not
+// carried over. Idempotent; safe for both phones to run.
+export async function cleanupLegacyFantasyWishes(coupleId: string): Promise<void> {
   const col = collection(db, 'couples', coupleId, 'fantasyWishes');
   const snap = await getDocs(col);
-  for (let start = 0; start < snap.docs.length; start += 400) {
+  const legacy = snap.docs.filter((d) => 'votes' in d.data());
+  for (let start = 0; start < legacy.length; start += 400) {
     const batch = writeBatch(db);
-    snap.docs.slice(start, start + 400).forEach((d) => batch.delete(d.ref));
+    for (const d of legacy.slice(start, start + 400)) {
+      const data = d.data() as { text?: string; category?: string };
+      if (data.category || (data.text && PRESET_TEXTS.has(data.text))) {
+        batch.delete(d.ref);
+      } else {
+        batch.update(d.ref, {
+          votes: deleteField(), addToList: deleteField(), matchedAt: deleteField(),
+          reactions: deleteField(), replies: deleteField(),
+        });
+      }
+    }
     await batch.commit();
   }
-  await seedFantasyWishesPresets(coupleId, presets);
 }

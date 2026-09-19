@@ -1,4 +1,5 @@
 import { collection, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import { getFWMatches } from './fantasyWishesService';
 import { db } from './firebase';
 import type { MoodEntry, MoodEmoji } from './moodService';
 import { MOOD_LABELS } from './moodService';
@@ -155,14 +156,9 @@ export async function aggregateYearSummary(
   // old docs, or docs where one partner voted no).
   let fantasyMatches = 0;
   try {
-    const fwSnap = await getDocs(collection(db, 'couples', coupleId, 'fantasyWishes'));
-    for (const d of fwSnap.docs) {
-      const data: any = d.data();
-      const matchedAt = data.matchedAt;
-      if (typeof matchedAt !== 'number') continue;
-      if (matchedAt < start || matchedAt >= end) continue;
-      const votes = data.votes ?? {};
-      if (partnerId && votes[uid] === 'yes' && votes[partnerId] === 'yes') fantasyMatches++;
+    if (partnerId) {
+      const matches = await getFWMatches(coupleId, uid, partnerId);
+      fantasyMatches = matches.filter((m) => m.matchedAt >= start && m.matchedAt < end).length;
     }
   } catch {}
 
