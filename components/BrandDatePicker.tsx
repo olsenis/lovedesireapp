@@ -115,15 +115,13 @@ export function BrandDatePicker({
     setAndroidDate(null);
   };
 
-  const handleIOSChange = (_event: { type: string }, date?: Date) => {
-    if (date && _event.type !== 'dismissed') onChange(date);
+  // datetimepicker 9 deprecated the single `onChange`; a picked value and a
+  // dismissal now arrive on separate callbacks (onValueChange / onDismiss).
+  const handleIOSChange = (_event: unknown, date?: Date) => {
+    if (date) onChange(date);
   };
 
-  const handleAndroidChange = (event: { type: string }, date?: Date) => {
-    if (event.type === 'dismissed') {
-      closePicker();
-      return;
-    }
+  const handleAndroidChange = (_event: unknown, date?: Date) => {
     if (!date) {
       closePicker();
       return;
@@ -169,7 +167,7 @@ export function BrandDatePicker({
                 value={value ?? initialValue ?? new Date()}
                 mode={mode}
                 display="spinner"
-                onChange={handleIOSChange}
+                onValueChange={handleIOSChange}
                 maximumDate={maximumDate}
                 minimumDate={minimumDate}
                 themeVariant="light"
@@ -192,7 +190,8 @@ export function BrandDatePicker({
           value={androidDate ?? value ?? initialValue ?? new Date()}
           mode={mode === 'datetime' && androidStep === 'time' ? 'time' : 'date'}
           display="default"
-          onChange={handleAndroidChange}
+          onValueChange={handleAndroidChange}
+          onDismiss={closePicker}
           maximumDate={androidStep === 'date' ? maximumDate : undefined}
           minimumDate={androidStep === 'date' ? minimumDate : undefined}
         />
