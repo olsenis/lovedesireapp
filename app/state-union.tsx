@@ -353,7 +353,6 @@ export default function StateUnionScreen() {
               </View>
             ))}
             <View style={styles.actionsRow}>
-              <View style={{ flex: 1 }} />
               <TouchableOpacity
                 style={[styles.primaryBtn, (!allPulseComplete || submitting) && styles.btnDisabled]}
                 onPress={handleSavePulse}
@@ -727,8 +726,8 @@ export default function StateUnionScreen() {
         title="Sunday Check-in"
         description={`Once a week: five quick ratings and five questions about the two of you. Everything stays private until both of you have finished.`}
         tips={[
-          `Rate the week on five sliders, then answer the five questions in your own words`,
-          `Call it is optional: up to three guesses about ${partnerName}'s coming week, which ${partnerName} marks next Sunday`,
+          `Rate the week from 1 to 5 on five things, then answer five questions in your own words`,
+          `Call it is optional: up to three guesses about ${partnerName}'s coming week, marked right or wrong next Sunday`,
           `When both are done, the answers appear side by side`,
           `Leave a ❤️ or one line under an answer`,
           `Past weeks stay in History`,
@@ -775,7 +774,7 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center', marginTop: Spacing.sm },
   secondaryBtn: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   secondaryBtnText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.muted },
-  primaryBtn: { flex: 1, paddingVertical: Spacing.md, borderRadius: Radius.full, backgroundColor: Colors.burgundy, alignItems: 'center' },
+  primaryBtn: { flex: 1, paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.full, backgroundColor: Colors.burgundy, alignItems: 'center' },
   primaryBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   btnDisabled: { opacity: 0.4 },
 
