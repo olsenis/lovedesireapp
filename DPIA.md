@@ -82,7 +82,7 @@ Verbatim from Privacy Policy §5:
 Verbatim from Privacy Policy §6:
 
 > • Account personal data (name, email, profile photo, birthday), deleted immediately upon account deletion
-> • Shared couple data (memories, todos, notes, moments, matches), retained until both partners delete their accounts, since ownership is joint
+> • What you made in the shared space (your answers, moods, photos, notes you wrote, votes, hearts, replies and quiz results), deleted when you clear it in Profile, Reset, or with your account. What your partner made stays with your partner
 > • Special-category data (mood entries, intimacy log, quiz results, Sunday Check-in answers), deleted with the associated feature or account
 > • Per-couple session telemetry, 12 months, then replaced by anonymised aggregates
 > • Aggregated (anonymised) telemetry, retained indefinitely; contains no identifying information
@@ -159,7 +159,8 @@ Specifically:
 **Withdrawal (Art. 7(3)):**
 - Any Settings toggle for a feature disables further processing
 - Unpair (Profile → "Disconnect from partner") ends shared-content processing
-- Account delete (Profile → "Delete account") triggers `deleteUserCascade` in `functions/src/index.ts`, cascading through all couple + user data
+- Account delete (Profile → "Delete account") triggers `deleteUserCascade` in `functions/src/index.ts`. If the partner remains, `eraseOwnContributions` removes everything the leaver made in the shared space (answers, moods, photos, notes written, votes, hearts, replies, quiz results) and everything that is about both at once (Intimacy Log, Fantasy Wishes matches); the partner keeps what the partner made. If no partner remains, the whole couple is deleted
+- Per-feature erasure (Profile → Reset, Sep 19 2026): a person erases their own part of any feature alone and at once; clearing the partner's part needs the partner; data inseparably about both (Intimacy Log) either may erase, after a 7-day cooling-off or at once if the partner agrees, and only the initiator can cancel. Switching the Intimacy Log off offers the erasure on the spot
 - Withdrawal is as easy as giving (same number of taps, no penalty)
 
 **Fresh consent for material changes (Privacy §10):**
@@ -275,6 +276,14 @@ Framework aligns with EDPB WP248 rev 01 guidance and reuses the data-class inven
 - Combined: **Medium-High**
 - Mitigation posture: two-attestation model (register-time in `app/(auth)/register.tsx` + post-login re-attestation in `app/_layout.tsx`), decline path deletes the Firebase Auth user immediately; H42 adds photo-consent re-attestation as a third gate; abuse-report channel (`abuse@lovedesireapp.com`) accepts credible reports of underage users with commitment to prompt deletion. Accepted residual risk given no technical alternative short of ID verification (which itself creates a data-protection risk).
 
+**One partner destroys the other's data.** In a shared space a "clear" action can wipe what the other person wrote or photographed, in anger or by mistake.
+- Likelihood: **Medium** · Severity: **Medium** (loss of personal history, not disclosure)
+- Mitigation (Sep 19 2026): clearing is split. "Clear mine" touches only the caller's own keys and documents, enforced server-side in `resetCoupleData`; "Clear for both" needs the partner's explicit agreement inside 7 days. Residual: **Low**. Known limit: Firestore rules still let a member delete most couple documents directly with a modified client; the split is a guard against regret and anger, not a security boundary.
+
+**Erasure blocked by the partner.** If clearing shared data always needed both, a person could not withdraw consent for their own special-category data while the partner refused.
+- Likelihood: **Medium** in a breakup · Severity: **High** (continued processing of sex-life data against the data subject's will)
+- Mitigation (Sep 19 2026): own data is always erasable alone and at once; jointly-about-both data (Intimacy Log) is erasable by either, the partner can only bring it forward. Account deletion erases the same set. Residual: **Low**.
+
 ### 4.4 Specific harm scenarios for special-category rows
 
 Enumerating concrete harms rather than abstract "risk to rights and freedoms" satisfies EDPB's expectation that DPIAs describe realistic consequences.
@@ -321,7 +330,8 @@ Extended technical measures beyond the Privacy Policy statement:
 - **Age gate (dual-layer)** — 18+ checkbox required to enable "Create Account" in `app/(auth)/register.tsx`; post-login modal in `app/_layout.tsx` re-verifies for existing users where the consent doc is missing; decline path deletes the Auth user.
 - **Firestore consent tracking** — private subcollections `users/{uid}/private/consent` and `users/{uid}/private/photoConsent` provide per-user auditable record of when consent was given.
 - **Automatic cleanup functions** — `cleanupExpiredFlashes` (24h), `cleanupOldTruthDareAudio` (30d), `cleanupOldSessions` (12mo) prevent stale sensitive data from accumulating beyond stated retention.
-- **Cascade delete** — `deleteUserCascade` (Firebase Auth onDelete trigger) removes user + couple data + Storage blobs on account termination. Fulfils Art. 17 right to erasure.
+- **Cascade delete** — `deleteUserCascade` (Firebase Auth onDelete trigger) removes the user, their Storage blobs, the whole couple when no partner remains, and otherwise the leaver's own contributions plus data jointly about both (`eraseOwnContributions`). Fulfils Art. 17 without destroying the remaining partner's own data. Until Sep 19 2026 this branch kept ALL shared history, which contradicted Privacy §6; found in a pre-launch review and fixed before any real user existed.
+- **Per-feature erasure** — `resetCoupleData` callable + Profile → Reset. One person's erasure never depends on another person's consent (Art. 17, Art. 7(3)), and one person cannot destroy the other's own data alone (Art. 32 availability / integrity of the partner's data). Joint special-category data: one-sided erasure with a 7-day cooling-off, inside the one-month limit of Art. 12(3), date shown to both.
 
 ### 5.2 Organisational measures
 

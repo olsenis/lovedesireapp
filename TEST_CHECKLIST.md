@@ -2333,27 +2333,29 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
-### Reset: start over in one part of the app (Sep 19 2026)
-- [ ] **The screen** : Profile → Reset → "Start over in part of the app" opens Reset: four rows under "You can clear these yourself", six under "These need both of you". An unpaired account has no Reset section in Profile.
+### Reset and erasure: yours alone, your partner's together (Sep 19 2026)
+- [ ] **The screen** : Profile → Reset → "Start over in part of the app". Three groups: "Yours and {partner}'s" (seven rows, each with "Clear mine" and "Clear for both"), "About both of you" (Intimacy Log, one action), "Built from the rest" (Memory Lane, Presence, one "Clear"). The Reset row is there for an unpaired account that still has a couple doc.
 
-- [ ] **Small row, one person** 📱
-  1. A: Mood History → Clear → the confirm names B and says it cannot be undone → Clear
-  - **Expected:** The row says "Cleared…"; Mood History is empty on both phones and does not crash if B has it open. Same for Fantasy Wishes (own wishes stay), Memory Lane, Presence (back to Discover). If it fails with a generic error right after a deploy, the callable's Cloud Run invoker IAM binding is missing.
+- [ ] **Clear mine is instant and touches only me** 📱 ⚠️
+  1. Both phones have Daily answers, Sunday answers, moods, a Moment, a note each, Fantasy Wishes votes and a match. A: Reset → Daily → "Clear mine" → confirm
+  - **Expected:** A's answers, hearts, replies and asked question are gone on both phones; B's are untouched; questions A had answered read as unanswered for A. Repeat per row: Sunday (A's entry gone, the week is no longer "both completed"), Mood History, Moments (A's files gone from Storage, B's photo stays, a day with only A's photo disappears), Love Notes (only notes A wrote), Our Story (only milestones A added; automatic ones stay), Fantasy Wishes (A's votes gone, Matches empty on BOTH phones, B's votes still in `fwState/main`). If it fails with a generic error right after a deploy, the callable's Cloud Run invoker IAM binding is missing.
 
-- [ ] **Big row, both agree** 📱
-  1. A: Moments → "Ask Eva" → Ask. B (locked): push "Oli asked you something", body never names Moments
-  2. B: Home shows "Oli asked to clear Moments" → opens Reset → "Agree and clear" → confirm
-  - **Expected:** A's row showed "Waiting for Eva to agree" with Cancel. After B agrees: photos gone on both phones, `couples/{id}/moments` empty, Storage `couples/{id}/moments/` empty, the request doc gone, Home card gone.
+- [ ] **Clear for both needs the partner** 📱
+  1. A: Moments → "Clear for both" → Ask. B (locked): push "Oli asked you something", body never names Moments; Home card "Oli asked to clear Moments"
+  2. B: "Agree and clear" → confirm
+  - **Expected:** A's row showed "Waiting for Eva to agree. Your own part you can clear right now." with Cancel. After B agrees everything is gone for both, Storage prefix empty, request and Home card gone. "Not now" removes the request and nothing is deleted; no "declined" text anywhere.
 
-- [ ] **Not now, and Cancel** 📱 : B taps "Not now" → A's row is simply back to normal, nothing deleted, no "declined" anywhere. A asks again and taps Cancel → B's card disappears.
+- [ ] **Intimacy Log: either of you, seven days, only the starter can cancel** 📱 ⚠️
+  1. A: Intimacy Log → "Clear the log" → Start
+  - **Expected:** Both phones show the date. B's row offers only "Agree to clear it now" (no "Not now"); B's Home card reads "Oli is clearing the Intimacy Log" with the date. A's Cancel stops it. B calling `cancel` from a dev console → failed-precondition. Set `autoAt` into the past in the console and wait for the hourly `runDueResets` → log gone, request gone.
 
-- [ ] **Sunday Check-ins** (the one a client cannot delete) : after both agree, Past check-ins is empty, this week starts again, and the next set is a light one.
+- [ ] **Intimacy Log switch** : Profile → Features → turn it off → sheet "The Intimacy Log is off" with "Keep it for now" / "Clear the log" (opens Reset). Keep deletes nothing.
 
-- [ ] **Our Story** : only milestones you added are gone; "We started dating", "Our first shared fantasy" and the other automatic ones stay.
+- [ ] **Account deletion with the partner remaining** ⚠️ : throwaway account paired with a test account, both with content → delete the throwaway → its moods, answers, Sunday entries, photos, notes, votes and quiz results are gone, the Intimacy Log and Fantasy Wishes matches are gone, the partner's own content and the Together List remain, and the partner's app opens every screen without a crash.
 
-- [ ] **Refusals** ⚠️ (dev console, `httpsCallable('resetCoupleData')`) : `confirm` by the person who asked → failed-precondition; `run` on `moments` → failed-precondition; key `todos` → invalid-argument; a user outside the couple → permission-denied; a client write to `couples/{id}/resetRequests/x` → denied by rules.
+- [ ] **Refusals** ⚠️ (dev console) : `confirm` by the person who asked; `mine` on `intimacyLog`; `request` on `memoryLane`; an unknown key; a user outside the couple; a client write to `couples/{id}/resetRequests/x` (rules).
 
-- [ ] **Each feature opens on empty after its reset** : Intimacy Log, Daily, Sunday Check-in, Moments, Love Notes, Our Story, Memory Lane, Presence, Mood History, Fantasy Wishes show their empty state, not an error.
+- [ ] **The texts say what the code does** : in-app Privacy Policy §6 and §7, the site's privacy policy, FAQ and support page all describe "your part at once, your partner's with agreement, about-both by either of you after seven days". No page says shared data stays until the partner deletes.
 
 ### Replies: whoever wrote first is on top (Sep 19 2026)
 - [ ] **Order follows time, not person** 📱

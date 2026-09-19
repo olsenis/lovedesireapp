@@ -87,6 +87,11 @@ Currently the /upgrade screen is a placeholder ("Coming soon"). Before launch:
 - Webhook writes to `couples/{coupleId}/isPremium` per the couple-level pattern (see [CLAUDE.md](CLAUDE.md))
 - Test the subscribe → premium unlock flow end-to-end on real devices
 
+### 4b. Privacy texts, DPIA and deletion aligned (Sep 19 2026)
+- Done: per-feature erasure (Profile → Reset), account deletion and the Intimacy Log switch follow one rule, and the in-app policy, site policy, FAQ, support page and DPIA describe exactly that. Pre-launch there are no real users, so Privacy §10's 30-day notice for material changes does not apply; the texts simply ship correct.
+- **Open, recommended before submission:** a short read of Privacy §4 to §7 and DPIA §4.3 / §5.1 by someone who knows Persónuvernd's practice. The design is the conservative reading of Art. 17 / 7(3) / 12(3) for data shared by two people, not legal advice. Questions worth asking: is a 7-day cooling-off on jointly-about-both special-category data acceptable, and is keeping the remaining partner's own content after the other deletes their account the right balance.
+- DPIA sign-off date needs refreshing by Óli (material change to special-category processing).
+
 ### 5. App Store submission material
 - Screenshots (6 required for 6.5" + 5.5" iPhones)
 - App icon 1024x1024 (exists but verify no alpha channel)
