@@ -103,7 +103,7 @@ Categories:
 | Feature | Type | Tier | Pool | UI | Fun | Notes |
 |---|---|---|---|---|---|---|
 | Love Language Quiz | 10-Q quiz | Free | 10 Q | 3/5 | 3/5 | Classic feature, once-per-user. |
-| Sunday Check-in (with Pulse) | 5-dim pulse pre-step + 5 Gottman questions + mutual reveal | Free | 5 dims + 5 Q | 4/5 | 4/5 | Pulse merged in Aug 2026 — see H24 in POLISH_TODO. Weekly cadence, private-then-reveal, number-vs-number comparison IS the interpretation. |
+| Sunday Check-in (with Pulse) | 5-dim pulse pre-step + 5 questions + mutual reveal + optional private "A little something for {partner}" (only what was done is shown) | Free | 5 dims + 5 Q | 4/5 | 4/5 | Pulse merged in Aug 2026 — see H24 in POLISH_TODO. Weekly cadence, private-then-reveal, number-vs-number comparison IS the interpretation. |
 | Sunday Check-in (State Union) | 5-Q weekly Gottman ritual | Free | 5 Q per week | 4/5 | 2/5 | Deliberate ritual. Cadence-driven. |
 | Our Story | Timeline of joint milestones + five archives (Fantasy matches, Daily matches, Sunday check-ins, Love language weeks, Daily answers) | Free | Auto-generated | 3/5 | 4/5 | The place to look back; Daily answers added Sep 19 2026 (USER_VOICE C3). |
 | Year-in-Review | Annual highlight reel | Free | Auto-generated | 4/5 | 4/5 | Emotional payoff. Seasonal. |

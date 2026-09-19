@@ -684,3 +684,7 @@ Remaining shared 📸: Moments daily prompt + incoming Flash — both photo-rela
 ## Ongoing / behavioral
 
 - Refer to the partner by NAME or "your partner" in app copy AND in Claude's conversation with the user — never they/them. Full convention in [CLAUDE.md](CLAUDE.md) under "Pronoun-free copy convention".
+
+## ⏸️ Sunday Check-in predictions ("Call it") — retired Sep 19 2026
+
+Shipped Sep 2026 as a retention hook (hidden predictions about the partner, graded next week). Retired before launch: the founder read it as "things I hope for", which turns it into a hidden wish list and a scorecard the partner fills in against themselves. Replaced by "A little something for {partner}" (see CLAUDE.md): plans about your own behaviour, private, only the done ones ever shown. The entry fields `predictions` / `verdictsOnPartner` remain as legacy on old test weeks.

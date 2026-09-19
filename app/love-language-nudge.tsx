@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { LoveLanguage, LOVE_LANGUAGE_LABELS } from '../constants/content';
 import { pickWeeklyActions } from '../services/loveLanguageNudgeService';
+import { getRecentPlan } from '../services/sundayPlanService';
 import { personalise } from '../services/personalise';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -33,6 +34,16 @@ export default function LoveLanguageNudgeScreen() {
   const partnerLang = partner?.loveLanguage as LoveLanguage | undefined;
   const partnerName = partner?.name ?? 'your partner';
   const coupleId = profile?.coupleId ?? '';
+
+  // What I privately planned at the Sunday Check-in, so this screen does not
+  // hand me the same errand twice. Only I can read it.
+  const [myPlan, setMyPlan] = useState<string[]>([]);
+  useEffect(() => {
+    if (!user?.uid || !coupleId) return;
+    let cancelled = false;
+    getRecentPlan(user.uid, coupleId).then((p) => { if (!cancelled) setMyPlan(p?.items ?? []); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.uid, coupleId]);
 
   const actions = useMemo(
     () => (partnerLang ? pickWeeklyActions(partnerLang, coupleId) : []),
@@ -73,7 +84,14 @@ export default function LoveLanguageNudgeScreen() {
               <Text style={styles.heroHint}>{LANGUAGE_HINT[partnerLang](partnerName)}</Text>
             </View>
 
-            <Text style={styles.sectionLabel}>3 ways to try this week</Text>
+            {myPlan.length > 0 && (
+              <View style={styles.planCard}>
+                <Text style={styles.planLabel}>You already planned, only you can see this</Text>
+                {myPlan.map((t, i) => (<Text key={i} style={styles.planItem}>{t}</Text>))}
+              </View>
+            )}
+
+            <Text style={styles.sectionLabel}>{myPlan.length > 0 ? '3 more ideas for this week' : '3 ways to try this week'}</Text>
             <View style={styles.actionsList}>
               {actions.map((a, i) => (
                 <View key={i} style={styles.actionCard}>
@@ -145,6 +163,9 @@ const styles = StyleSheet.create({
     textAlign: 'center', lineHeight: 22, marginTop: Spacing.sm,
   },
 
+  planCard: { backgroundColor: Colors.blush, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.lg, gap: 4 },
+  planLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: Colors.burgundy },
+  planItem: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 21 },
   sectionLabel: {
     fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted,
     textTransform: 'uppercase', letterSpacing: 0.8, marginTop: Spacing.md,

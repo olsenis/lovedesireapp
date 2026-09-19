@@ -2834,6 +2834,22 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
   1. Phone A submits 3; Phone B submits 1; B opens History
   - **Expected:** Phone B sees only own 1.
 
+### Sunday Check-in: a little something for your partner (Sep 19 2026, replaced Call it)
+- [ ] **The plan stays private** 📱
+  1. Phone A: finish the five questions → "A little something for Eva" → write "Bring coffee to bed" (try "Need an idea?" and "+ Another") → "Save and finish ✓"
+  - **Expected:** Firestore: the text is in `users/{A}/private/sundayPlans.plans.{week}` with the coupleId, and NOWHERE under `couples/…`. Phone B never shows it, also after both finish. "Skip this part" completes the check-in without a plan.
+
+- [ ] **Only what was done is shown** 📱
+  1. Make last week's plan testable: in the console rename the plan key to last week's id (`YYYY-WW`), then finish this week's check-in on A
+  2. Card "Last time you planned" → tick the item → Save. B finishes too
+  - **Expected:** B's reveal shows "🎁 Oli did this for you, on purpose" with the item, also under Past check-ins and in Our Story → Sunday check-ins. Repeat with nothing ticked: no card, no text, no count anywhere on B; the plan is not asked about again on A.
+
+- [ ] **Former partner's plan is not offered** : a plan made while paired with Eva does not appear after pairing with Ola.
+
+- [ ] **Monday screen** : Love Language nudge shows "You already planned, only you can see this" above "3 more ideas for this week".
+
+- [ ] **No leftovers** : no "Call it", "predicted" or "called x of y" anywhere on the Sunday screen, old weeks included.
+
 ### Sunday Check-in: questions you can answer from memory (Sep 19 2026)
 - [ ] **Read one full set on each phone**
   - **Expected:** Every question can be answered in a sentence with something that happened. None asks you to analyse a feeling ("When has my flexibility felt like love…" is gone). "you" is always the person answering and "I" the partner. The intro ends "Short answers are fine, write what comes first." A week already in progress keeps its answers under the same five slots.

@@ -130,3 +130,21 @@ export const LOVE_LANGUAGE_ACTIONS: Record<LoveLanguage, string[]> = {
     'Lean into {partner} during the boring parts of a movie',
   ],
 };
+
+// Fallback for "Need an idea?" in the Sunday Check-in's last step when the
+// partner has not taken the Love Language quiz (services/sundayPlanService).
+// Same register as above: small, doable this week, about the DOER.
+export const GENERIC_SMALL_THINGS: string[] = [
+  'Bring coffee or tea to bed one morning',
+  'Do one chore that is usually not mine, without saying so',
+  'Send a message in the middle of the day just to say hi',
+  'Cook or order the favourite dinner',
+  'Put my phone away for a whole evening together',
+  'Plan one hour for just the two of us and protect it',
+  'Leave a note somewhere it will be found',
+  'Give a proper long hug at the door',
+  'Ask about the day and really listen',
+  'Pick up a small treat on the way home',
+  'Take care of the thing that has been put off for weeks',
+  'Say thank you for something I usually take for granted',
+];

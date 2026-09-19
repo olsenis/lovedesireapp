@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../hooks/useAuth';
+import { MAX_PLANS, PLAN_MAX_LENGTH, SundayPlan, savePlan, getOpenPlan, resolvePlan, ideaFor } from '../services/sundayPlanService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
@@ -25,12 +26,9 @@ import {
   bothCompleted,
   subscribeStateUnionHistory,
   getPreviousWeekId,
-  submitPredictions,
-  submitVerdictsOnPartner,
+  submitDoneForPartner,
   reactOnPartnerAnswer,
   replyOnPartnerAnswer,
-  MAX_PREDICTIONS,
-  PREDICTION_LOOKBACK_WEEKS,
 } from '../services/stateUnionService';
 import { notifyPartner } from '../services/notificationService';
 import { ReactionRow } from '../components/ReactionRow';
@@ -64,8 +62,9 @@ const PULSE_DIMENSIONS: PulseDim[] = [
 
 // Compose is a three-phase step-through: a single pulse screen (all 5
 // dimensions on one page), the 5-question text wizard, then an optional
-// predictions card (Sep 2026) before the check-in is marked complete.
-type ComposeStep = 'pulse' | number | 'predictions';
+// "A little something" card (Sep 19 2026, replaced Call it) before the
+// check-in is marked complete.
+type ComposeStep = 'pulse' | number | 'plan';
 
 export default function StateUnionScreen() {
   const { user, profile } = useAuth();
@@ -89,20 +88,15 @@ export default function StateUnionScreen() {
   const [draftAnswer, setDraftAnswer] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
-  // Predictions step draft (3 slots, empty = not made).
-  const [predDraft, setPredDraft] = useState<string[]>(Array.from({ length: MAX_PREDICTIONS }, () => ''));
-  // Grading targets, resolved one-shot once I have completed this week
-  // by looking back up to PREDICTION_LOOKBACK_WEEKS for both-completed
-  // weeks (Review #11 B6). `gradeTarget` is the newest such week where
-  // the partner made predictions (with my verdicts if already graded);
-  // `myPredTarget` is the newest where I made predictions (with the
-  // partner's verdicts if they have graded).
-  type GradeTarget = { weekId: string; weeksAgo: number; partnerPredictions: string[]; myVerdicts?: Record<string, boolean> };
-  type MyPredTarget = { weekId: string; weeksAgo: number; predictions: string[]; partnerVerdicts?: Record<string, boolean> };
-  const [gradeTarget, setGradeTarget] = useState<GradeTarget | null>(null);
-  const [myPredTarget, setMyPredTarget] = useState<MyPredTarget | null>(null);
-  const [verdictDraft, setVerdictDraft] = useState<Record<string, boolean>>({});
-  const [savingVerdicts, setSavingVerdicts] = useState(false);
+  // "A little something for {partner}" (services/sundayPlanService): one
+  // field to start, up to MAX_PLANS. Private until I tick it as done.
+  const [planDraft, setPlanDraft] = useState<string[]>(['']);
+  const [ideaTaps, setIdeaTaps] = useState(0);
+  // An earlier plan of mine that I have not answered for yet, loaded once
+  // I have completed this week. `doneTicks` are the items I say I did.
+  const [openPlan, setOpenPlan] = useState<SundayPlan | null>(null);
+  const [doneTicks, setDoneTicks] = useState<Record<number, boolean>>({});
+  const [savingDone, setSavingDone] = useState(false);
   // Prevent the pulse-seed effect from clobbering user navigation after
   // the initial myEntry snapshot arrives. Without this, tapping "← Back"
   // from text step 0 back to pulse would immediately snap forward again.
@@ -203,7 +197,7 @@ export default function StateUnionScreen() {
   };
 
   // Last question's "Finish" no longer completes directly: it saves the
-  // answer and moves to the optional predictions card. Completion happens
+  // answer and moves to the optional last card. Completion happens
   // from there (Skip or Save and finish).
   const handleFinishQuestions = async () => {
     if (!coupleId || typeof step !== 'number' || !draftAnswer.trim()) return;
@@ -213,19 +207,20 @@ export default function StateUnionScreen() {
     try {
       await submitStateUnionAnswer(coupleId, weekId, uid, textStep, draftAnswer.trim());
       setDraftAnswer('');
-      setStep('predictions');
+      setStep('plan');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleComplete = async (withPredictions: boolean) => {
+  const handleComplete = async (withPlan: boolean) => {
     if (!coupleId) return;
     setSubmitting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
-      if (withPredictions) {
-        await submitPredictions(coupleId, weekId, uid, predDraft);
+      if (withPlan) {
+        // Private doc only. Never under couples/…: the partner could read it.
+        await savePlan(uid, coupleId, weekId, planDraft, partnerName).catch(() => {});
       }
       await markStateUnionCompleted(coupleId, weekId, uid);
       trackEvent('sunday_checkin_submitted');
@@ -240,59 +235,28 @@ export default function StateUnionScreen() {
     }
   };
 
-  // Once I have completed this week, walk back up to three weeks. Only
-  // both-completed weeks count (checked against the history subscription,
-  // no extra read), because the partner's entry is unreadable otherwise.
-  // Stops at the newest week with partner predictions and the newest
-  // with mine; a skipped week in between no longer orphans anything.
+  // Once I have completed this week: is there an earlier plan of mine to
+  // answer for? One read of my own private doc.
   useEffect(() => {
-    if (!coupleId || !partnerId || !iCompleted || history.length === 0) return;
+    if (!coupleId || !uid || !iCompleted) return;
     let cancelled = false;
-    (async () => {
-      let grade: GradeTarget | null = null;
-      let mineT: MyPredTarget | null = null;
-      for (let back = 1; back <= PREDICTION_LOOKBACK_WEEKS; back++) {
-        const w = getPreviousWeekId(new Date(), back);
-        const h = history.find((x) => x.weekId === w);
-        if (!h?.completedAt?.[uid] || !h?.completedAt?.[partnerId]) continue;
-        const [theirs, mine] = await Promise.all([
-          getStateUnionEntry(coupleId, w, partnerId),
-          getStateUnionEntry(coupleId, w, uid),
-        ]);
-        if (cancelled) return;
-        if (!grade && theirs?.predictions?.length) {
-          grade = { weekId: w, weeksAgo: back, partnerPredictions: theirs.predictions, myVerdicts: mine?.verdictsOnPartner };
-        }
-        if (!mineT && mine?.predictions?.length) {
-          mineT = { weekId: w, weeksAgo: back, predictions: mine.predictions, partnerVerdicts: theirs?.verdictsOnPartner };
-        }
-        if (grade && mineT) break;
-      }
-      if (cancelled) return;
-      setGradeTarget(grade);
-      setMyPredTarget(mineT);
-      if (grade?.myVerdicts) setVerdictDraft(grade.myVerdicts);
-    })().catch(() => {});
+    getOpenPlan(uid, coupleId).then((p) => { if (!cancelled) setOpenPlan(p); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [coupleId, partnerId, uid, iCompleted, history]);
+  }, [coupleId, uid, iCompleted]);
 
-  const partnerPredictions = gradeTarget?.partnerPredictions ?? [];
-  const verdictsSaved = !!gradeTarget?.myVerdicts;
-  const allGraded = partnerPredictions.length > 0
-    && partnerPredictions.every((_, i) => typeof verdictDraft[String(i)] === 'boolean');
-  const agoLabel = (n: number) => (n === 1 ? 'Last week' : n === 2 ? 'Two weeks ago' : 'Three weeks ago');
-
-  const handleSaveVerdicts = async () => {
-    if (!coupleId || !gradeTarget || !allGraded || savingVerdicts) return;
-    setSavingVerdicts(true);
+  // Only what I ticked is written where the partner can read it. Nothing
+  // ticked writes nothing. Either way the plan is closed and never asked again.
+  const handleSaveDone = async () => {
+    if (!coupleId || !openPlan || savingDone) return;
+    setSavingDone(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await submitVerdictsOnPartner(coupleId, gradeTarget.weekId, uid, verdictDraft);
-      // Verdicts live on a past week's entry, which is not subscribed;
-      // reflect the save locally so the block flips to read-only.
-      setGradeTarget((t) => (t ? { ...t, myVerdicts: verdictDraft } : t));
+      const done = openPlan.items.filter((_, i) => doneTicks[i]);
+      if (done.length > 0) await submitDoneForPartner(coupleId, weekId, uid, done);
+      await resolvePlan(uid, openPlan.weekId, done.length);
+      setOpenPlan(null);
     } finally {
-      setSavingVerdicts(false);
+      setSavingDone(false);
     }
   };
 
@@ -439,39 +403,58 @@ export default function StateUnionScreen() {
           </View>
         )}
 
-        {/* ─── PHASE 1C: Optional predictions (Sep 2026) ─── */}
-        {!iCompleted && step === 'predictions' && (
+        {/* ─── PHASE 1C: A little something (Sep 19 2026, replaced Call it) ─── */}
+        {!iCompleted && step === 'plan' && (
           <View style={styles.card}>
             <Text style={styles.questionLabel}>Optional</Text>
-            <Text style={styles.questionText}>Call it</Text>
+            <Text style={styles.questionText}>A little something for {partnerName}</Text>
             <Text style={styles.waitHint}>
-              A small game to end on. Guess up to three things {partnerName} will do this coming week. {partnerName} cannot see them until your next check-in, and then marks each one right or wrong.
+              One small thing you will do for {partnerName} before your next check-in. {partnerName} will not see this. Next time you tick what you did, and only that is shown.
             </Text>
-            {[
-              'e.g. Will suggest sushi at least once',
-              'e.g. Will fall asleep during a movie',
-              'e.g. Will text me first on Friday',
-            ].slice(0, MAX_PREDICTIONS).map((ph, i) => (
+            {planDraft.map((val, i) => (
               <TextInput
                 key={i}
                 style={[styles.input, { minHeight: 44, marginTop: i === 0 ? Spacing.sm : 6 }]}
-                placeholder={ph}
+                placeholder={['e.g. Bring coffee to bed on Tuesday', 'e.g. Take the bins out without being asked', 'e.g. Book the table myself'][i]}
                 placeholderTextColor={Colors.muted}
-                value={predDraft[i]}
-                onChangeText={(t) => setPredDraft((prev) => prev.map((v, j) => (j === i ? t : v)))}
-                maxLength={100}
+                value={val}
+                onChangeText={(t) => setPlanDraft((prev) => prev.map((v, j) => (j === i ? t : v)))}
+                maxLength={PLAN_MAX_LENGTH}
+                accessibilityLabel={`Something you will do for ${partnerName}`}
               />
             ))}
+            <View style={[styles.actionsRow, { justifyContent: 'space-between', marginTop: 4 }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  // Fills the first empty field (or the last one) with the next idea.
+                  const idea = ideaFor(partner?.loveLanguage, ideaTaps);
+                  setIdeaTaps((n) => n + 1);
+                  setPlanDraft((prev) => {
+                    const at = prev.findIndex((v) => !v.trim());
+                    const idx = at === -1 ? prev.length - 1 : at;
+                    return prev.map((v, j) => (j === idx ? idea : v));
+                  });
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.planLink}>Need an idea?</Text>
+              </TouchableOpacity>
+              {planDraft.length < MAX_PLANS && (
+                <TouchableOpacity onPress={() => setPlanDraft((prev) => [...prev, ''])} accessibilityRole="button">
+                  <Text style={styles.planLink}>+ Another</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {/* Three buttons do not fit one row on a narrow phone (the primary
                 shrank to unreadable, Sep 2026): Finish gets its own row. */}
             <View style={styles.actionsRow}>
               <TouchableOpacity
                 style={[styles.primaryBtn, submitting && styles.btnDisabled]}
-                onPress={() => handleComplete(predDraft.some((p) => p.trim()))}
+                onPress={() => handleComplete(planDraft.some((p) => p.trim()))}
                 disabled={submitting}
                 accessibilityRole="button"
               >
-                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1}>{predDraft.some((p) => p.trim()) ? 'Save and finish ✓' : 'Finish check-in ✓'}</Text>}
+                {submitting ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1}>{planDraft.some((p) => p.trim()) ? 'Save and finish ✓' : 'Finish check-in ✓'}</Text>}
               </TouchableOpacity>
             </View>
             <View style={[styles.actionsRow, { justifyContent: 'space-between' }]}>
@@ -515,90 +498,41 @@ export default function StateUnionScreen() {
           </>
         )}
 
-        {/* ─── Predictions: grade the partner's, see how mine landed ───
-            Renders in both PHASE 2 and PHASE 3 as its own card. Both
-            targets come from the look-back effect above; grading needs
-            only my completion this week (the retention hook: you finish
-            this week's check-in to see how last week's calls landed). */}
-        {iCompleted && partnerId && (gradeTarget || myPredTarget) && (
+        {/* ─── An earlier plan of mine: tick what happened ───
+            Private to me. Ticked items become `doneForPartner` on my entry
+            for this week; an unticked plan closes without a trace. */}
+        {iCompleted && openPlan && (
           <View style={styles.card}>
-            {gradeTarget && partnerPredictions.length > 0 && (
-              <>
-                <Text style={styles.questionLabel}>{agoLabel(gradeTarget.weeksAgo)} {partnerName} predicted</Text>
-                {partnerPredictions.map((p, i) => {
-                  const k = String(i);
-                  const v = verdictDraft[k];
-                  return (
-                    <View key={k} style={{ marginTop: Spacing.sm, gap: 6 }}>
-                      <Text style={styles.questionText}>{p}</Text>
-                      {verdictsSaved ? (
-                        <Text style={styles.waitText}>{v ? '✓ Came true' : '✗ Did not'}</Text>
-                      ) : (
-                        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-                          {([true, false] as const).map((val) => (
-                            <TouchableOpacity
-                              key={String(val)}
-                              onPress={() => setVerdictDraft((prev) => ({ ...prev, [k]: val }))}
-                              accessibilityRole="button"
-                              accessibilityLabel={val ? 'Came true' : 'Did not'}
-                              style={{
-                                paddingVertical: 8, paddingHorizontal: Spacing.md, borderRadius: Radius.full,
-                                borderWidth: 1, borderColor: Colors.burgundy,
-                                backgroundColor: v === val ? Colors.burgundy : 'transparent',
-                              }}
-                            >
-                              <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 13, color: v === val ? Colors.cream : Colors.burgundy }}>
-                                {val ? '✓ Came true' : '✗ Did not'}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-                {verdictsSaved ? (
-                  <Text style={[styles.waitHint, { marginTop: Spacing.sm }]}>
-                    {partnerName} called {partnerPredictions.filter((_, i) => verdictDraft[String(i)]).length} of {partnerPredictions.length}
-                  </Text>
-                ) : (
-                  <TouchableOpacity
-                    // primaryBtn is flex: 1 for actionsRow; stacked here it
-                    // must be flex: 0 or RN 0.86 collapses the label.
-                    style={[styles.primaryBtn, { flex: 0, marginTop: Spacing.md }, (!allGraded || savingVerdicts) && styles.btnDisabled]}
-                    onPress={handleSaveVerdicts}
-                    disabled={!allGraded || savingVerdicts}
-                    accessibilityRole="button"
-                  >
-                    {savingVerdicts ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>Save verdicts</Text>}
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-
-            {myPredTarget && (
-              <View style={{ marginTop: gradeTarget ? Spacing.lg : 0 }}>
-                <Text style={styles.questionLabel}>You predicted {agoLabel(myPredTarget.weeksAgo).toLowerCase()}</Text>
-                {myPredTarget.predictions.map((p, i) => {
-                  const theirs = myPredTarget.partnerVerdicts?.[String(i)];
-                  return (
-                    <View key={i} style={{ marginTop: Spacing.sm }}>
-                      <Text style={styles.questionText}>{p}</Text>
-                      <Text style={styles.waitText}>
-                        {typeof theirs === 'boolean'
-                          ? (theirs ? '✓ Came true' : '✗ Did not')
-                          : `${partnerName} has not graded these yet`}
-                      </Text>
-                    </View>
-                  );
-                })}
-                {myPredTarget.partnerVerdicts && (
-                  <Text style={[styles.waitHint, { marginTop: Spacing.sm }]}>
-                    You called {myPredTarget.predictions.filter((_, i) => myPredTarget.partnerVerdicts?.[String(i)]).length} of {myPredTarget.predictions.length}
-                  </Text>
-                )}
-              </View>
-            )}
+            <Text style={styles.questionLabel}>Last time you planned</Text>
+            <Text style={styles.waitHint}>Tick what you did. {partnerName} only ever sees the ticked ones.</Text>
+            {openPlan.items.map((item, i) => {
+              const on = !!doneTicks[i];
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.planTickRow}
+                  onPress={() => setDoneTicks((prev) => ({ ...prev, [i]: !prev[i] }))}
+                  activeOpacity={0.8}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: on }}
+                >
+                  <View style={[styles.planTickBox, on && styles.planTickBoxOn]}>
+                    {on && <Text style={styles.planTickMark}>✓</Text>}
+                  </View>
+                  <Text style={styles.planTickText}>{item}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              // primaryBtn is flex: 1 for actionsRow; stacked here it must be
+              // flex: 0 or RN 0.86 collapses the label.
+              style={[styles.primaryBtn, { flex: 0, marginTop: Spacing.md }, savingDone && styles.btnDisabled]}
+              onPress={handleSaveDone}
+              disabled={savingDone}
+              accessibilityRole="button"
+            >
+              {savingDone ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1}>Save</Text>}
+            </TouchableOpacity>
           </View>
         )}
 
@@ -607,6 +541,15 @@ export default function StateUnionScreen() {
           <View style={styles.revealCard}>
             <Text style={styles.revealTitle}>You both checked in 💗</Text>
             <Text style={styles.revealNextHint}>See you next Monday</Text>
+
+            {!!partnerEntry?.doneForPartner?.length && (
+              <View style={styles.doneBlock}>
+                <Text style={styles.doneTitle}>🎁 {partnerName} did this for you, on purpose</Text>
+                {partnerEntry.doneForPartner.map((t, i) => (
+                  <Text key={i} style={styles.doneItem}>{t}</Text>
+                ))}
+              </View>
+            )}
 
             {/* Pulse comparison — only renders when BOTH sides carry pulseScores.
                 Legacy weeks (pre-merge) skip this block gracefully. */}
@@ -708,6 +651,14 @@ export default function StateUnionScreen() {
                     </TouchableOpacity>
                     {expanded && isBoth && partnerId && (
                       <View style={styles.historyAnswers}>
+                        {!!historyEntries[h.weekId]?.theirs?.doneForPartner?.length && (
+                          <View style={styles.doneBlock}>
+                            <Text style={styles.doneTitle}>🎁 {partnerName} did this for you, on purpose</Text>
+                            {historyEntries[h.weekId]!.theirs!.doneForPartner!.map((t, i) => (
+                              <Text key={i} style={styles.doneItem}>{t}</Text>
+                            ))}
+                          </View>
+                        )}
                         {getWeekQuestions(h).map((q, i) => {
                           const cached = historyEntries[h.weekId];
                           const mine = cached?.mine?.answers?.[String(i)] ?? '...';
@@ -742,7 +693,7 @@ export default function StateUnionScreen() {
         description={`Once a week: five quick ratings and five questions about the two of you. Everything stays private until both of you have finished.`}
         tips={[
           `Rate the week from 1 to 5 on five things, then answer five questions in your own words`,
-          `Call it is optional: up to three guesses about ${partnerName}'s coming week, marked right or wrong next Sunday`,
+          `The last step is optional: one small thing you will do for ${partnerName}. It stays hidden, and only what you did is ever shown`,
           `When both are done, the answers appear side by side`,
           `Leave a ❤️ or one line under an answer`,
           `Past weeks stay in History`,
@@ -796,6 +747,15 @@ const styles = StyleSheet.create({
   waitEmoji: { fontSize: 48, textAlign: 'center' },
   waitTitle: { fontFamily: Fonts.headingItalic, fontSize: 22, color: Colors.burgundy, textAlign: 'center' },
   waitText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.text, textAlign: 'center' },
+  planLink: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, paddingVertical: 6 },
+  planTickRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.sm },
+  planTickBox: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: Colors.rose, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.white },
+  planTickBoxOn: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
+  planTickMark: { color: Colors.cream, fontFamily: Fonts.bodyBold, fontSize: 14 },
+  planTickText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 21 },
+  doneBlock: { backgroundColor: Colors.blush, borderRadius: Radius.lg, padding: Spacing.md, marginTop: Spacing.md, gap: 4 },
+  doneTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  doneItem: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 21 },
   waitHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
 
   pulseIntro: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', lineHeight: 20, marginBottom: Spacing.sm },

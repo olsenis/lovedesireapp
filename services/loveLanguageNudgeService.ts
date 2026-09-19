@@ -44,7 +44,7 @@ export async function scheduleLoveLanguageNudge(
       identifier: LOVE_NUDGE_ID,
       content: {
         title: `Speak ${partnerName}'s love language 💕`,
-        body: `${langLabel} — 3 small ways to try this week. Tap to see.`,
+        body: `${langLabel}: 3 small ways to try this week. Tap to see.`,
         sound: true,
         data: { route: '/love-language-nudge' },
       },

@@ -711,6 +711,14 @@ export default function OurStoryScreen() {
                         {isExpanded && !entries && (
                           <Text style={styles.archiveWeekLoading}>Loading…</Text>
                         )}
+                        {isExpanded && !!entries?.theirs?.doneForPartner?.length && (
+                          <View style={styles.archiveWeekQBlock}>
+                            <Text style={styles.archiveWeekQ}>🎁 {partner?.name ?? 'Partner'} did this for you, on purpose</Text>
+                            {entries.theirs.doneForPartner.map((t, i) => (
+                              <Text key={i} style={styles.archiveWeekAnswerText}>{t}</Text>
+                            ))}
+                          </View>
+                        )}
                         {isExpanded && entries && questions.map((q, i) => {
                           const mine = entries.mine?.answers?.[String(i)] ?? '·';
                           const theirs = entries.theirs?.answers?.[String(i)] ?? '·';

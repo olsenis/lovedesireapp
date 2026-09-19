@@ -358,8 +358,14 @@ export interface StateUnionEntry {
   // read-after-both-complete rules with no rules change. Owner-write has
   // no week restriction, which is what lets a later week grade an
   // earlier one.
+  // LEGACY since Sep 19 2026 ("Call it" was retired): old weeks may still
+  // carry these two; nothing reads or renders them any more.
   predictions?: string[];
   verdictsOnPartner?: Record<string, boolean>;
+  // "A little something" (Sep 19 2026): what I ticked as DONE from an
+  // earlier private plan (services/sundayPlanService). Only done items are
+  // ever written here; the plan itself never leaves users/{uid}/private.
+  doneForPartner?: string[];
   // My heart / one line on the PARTNER's answer to question qi (Sep 2026,
   // USER_VOICE C2). On my entry, so it inherits owner-write and the
   // read-after-both-complete gate: the partner sees it exactly when the
@@ -546,6 +552,21 @@ export async function replyOnPartnerAnswer(coupleId: string, weekId: string, uid
   if (clean) trackEvent('reply_sent');
 }
 
+// Writes the things I actually did for my partner onto MY entry of the
+// current week, so the partner reads them when this week's reveal opens.
+export async function submitDoneForPartner(
+  coupleId: string,
+  weekId: string,
+  uid: string,
+  items: string[],
+): Promise<void> {
+  const clean = items.map((t) => t.trim()).filter(Boolean).slice(0, 3);
+  if (clean.length === 0) return;
+  const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
+  await setDoc(entryRef, { doneForPartner: clean, updatedAt: Date.now() }, { merge: true });
+}
+
+// LEGACY (Call it, retired Sep 19 2026). Kept so old imports do not break.
 // How far back the grading screen looks for ungraded partner predictions.
 export const PREDICTION_LOOKBACK_WEEKS = 3;
 
