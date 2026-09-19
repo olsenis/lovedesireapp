@@ -19,6 +19,10 @@ import { Spacing, Radius } from '../constants/spacing';
 export interface ReactionSide {
   reaction?: boolean;
   reply?: string;
+  // When the reply was FIRST written (ms). The earlier one is shown on top;
+  // an edit keeps its original time. Absent on replies from before Sep 19
+  // 2026: then the partner's line comes first, as it always did.
+  replyAt?: number;
 }
 
 export const REPLY_MAX = 200;
@@ -28,7 +32,9 @@ export function ReactionRow({ mine, theirs, partnerName, onReact, onReply, compa
   theirs: ReactionSide;
   partnerName: string;
   onReact?: (on: boolean) => void;
-  onReply?: (text: string) => void | Promise<void>;
+  // keepTime is true when an existing reply is being edited, so the host
+  // does not move it behind the partner's by re-stamping it.
+  onReply?: (text: string, keepTime?: boolean) => void | Promise<void>;
   compact?: boolean;
   readOnly?: boolean;
 }) {
@@ -43,7 +49,7 @@ export function ReactionRow({ mine, theirs, partnerName, onReact, onReply, compa
     if (!onReply || sending) return;
     setSending(true);
     try {
-      await onReply(draft.trim().slice(0, REPLY_MAX));
+      await onReply(draft.trim().slice(0, REPLY_MAX), !!mine.reply && !!draft.trim());
       setEditing(false);
     } finally {
       setSending(false);
@@ -76,15 +82,20 @@ export function ReactionRow({ mine, theirs, partnerName, onReact, onReply, compa
         )}
       </View>
 
-      {theirs.reply ? (
-        <Text style={styles.theirReply}><Text style={styles.who}>{partnerName}: </Text>{theirs.reply}</Text>
-      ) : null}
-
-      {mine.reply && !editing ? (
-        <TouchableOpacity onPress={() => { if (!canWrite) return; setDraft(mine.reply ?? ''); setEditing(true); }} disabled={!canWrite} accessibilityRole="button" accessibilityLabel="Edit your reply">
-          <Text style={styles.myReply}><Text style={styles.who}>You: </Text>{mine.reply}</Text>
-        </TouchableOpacity>
-      ) : null}
+      {/* Whoever replied first is on top. Without both times (older replies)
+          the partner's line leads, as before. */}
+      {(() => {
+        const theirsLine = theirs.reply ? (
+          <Text key="theirs" style={styles.theirReply}><Text style={styles.who}>{partnerName}: </Text>{theirs.reply}</Text>
+        ) : null;
+        const mineLine = mine.reply && !editing ? (
+          <TouchableOpacity key="mine" onPress={() => { if (!canWrite) return; setDraft(mine.reply ?? ''); setEditing(true); }} disabled={!canWrite} accessibilityRole="button" accessibilityLabel="Edit your reply">
+            <Text style={styles.myReply}><Text style={styles.who}>You: </Text>{mine.reply}</Text>
+          </TouchableOpacity>
+        ) : null;
+        const mineFirst = typeof mine.replyAt === 'number' && (typeof theirs.replyAt !== 'number' ? false : mine.replyAt < theirs.replyAt);
+        return mineFirst ? [mineLine, theirsLine] : [theirsLine, mineLine];
+      })()}
 
       {/* The reply is written in a bottom sheet, not inline (Sep 2026): an
           input that mounts inside a long scrolling reveal got scrolled off

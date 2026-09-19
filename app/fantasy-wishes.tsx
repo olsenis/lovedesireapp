@@ -363,7 +363,7 @@ export default function FantasyWishesScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Fantasy Wishes</Text>
+        <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Fantasy Wishes</Text>
         {readOnly ? <View style={{ width: 60 }} /> : <View style={{ flexDirection: 'row', gap: Spacing.md, alignItems: 'center' }}>
           <TouchableOpacity onPress={() => setShowCategories(true)} accessibilityRole="button" accessibilityLabel="Choose categories">
             <Text style={styles.resetBtn}>☰</Text>
@@ -510,13 +510,13 @@ export default function FantasyWishesScreen() {
                   )}
                   {/* A heart and one line on the match (USER_VOICE C2); works in the read view too, the match is the couple's own data. */}
                   <ReactionRow
-                    mine={{ reaction: !!item.reactions?.[uid], reply: item.replies?.[uid] }}
-                    theirs={{ reaction: !!(partnerId && item.reactions?.[partnerId]), reply: partnerId ? item.replies?.[partnerId] : undefined }}
+                    mine={{ reaction: !!item.reactions?.[uid], reply: item.replies?.[uid], replyAt: item.replyAt?.[uid] }}
+                    theirs={{ reaction: !!(partnerId && item.reactions?.[partnerId]), reply: partnerId ? item.replies?.[partnerId] : undefined, replyAt: partnerId ? item.replyAt?.[partnerId] : undefined }}
                     partnerName={partner?.name ?? 'Partner'}
                     onReact={(on) => { if (coupleId) reactToFantasyWish(coupleId, uid, item.id, on).catch(() => {}); }}
-                    onReply={async (t) => {
+                    onReply={async (t, keepTime) => {
                       if (!coupleId) return;
-                      await replyToFantasyWish(coupleId, uid, item.id, t);
+                      await replyToFantasyWish(coupleId, uid, item.id, t, keepTime);
                       const clean = t.trim();
                       if (clean) {
                         const title = `${profile?.name ?? 'Your partner'} replied 💬`;
@@ -769,7 +769,9 @@ const styles = StyleSheet.create({
   },
   back: { width: 60 },
   backText: { fontFamily: Fonts.body, fontSize: 16, color: Colors.burgundy },
-  title: { fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy },
+  // flex + shrink-to-fit: with ☰, ↺ and + Add on the right the 28 pt title
+  // ran into the buttons on a narrow phone (Sep 2026).
+  title: { flex: 1, textAlign: 'center', fontFamily: Fonts.heading, fontSize: 28, color: Colors.burgundy, marginHorizontal: 4 },
   addBtn: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   resetBtn: { fontFamily: Fonts.bodyBold, fontSize: 18, color: Colors.muted },
 

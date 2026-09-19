@@ -366,6 +366,8 @@ export interface StateUnionEntry {
   // earlier private plan (services/sundayPlanService). Only done items are
   // ever written here; the plan itself never leaves users/{uid}/private.
   doneForPartner?: string[];
+  // When my reply on the partner's answer was first written: qi -> ms.
+  replyAtOnPartner?: Record<string, number>;
   // My heart / one line on the PARTNER's answer to question qi (Sep 2026,
   // USER_VOICE C2). On my entry, so it inherits owner-write and the
   // read-after-both-complete gate: the partner sees it exactly when the
@@ -545,10 +547,10 @@ export async function reactOnPartnerAnswer(coupleId: string, weekId: string, uid
   if (on) trackEvent('reaction_sent');
 }
 
-export async function replyOnPartnerAnswer(coupleId: string, weekId: string, uid: string, qi: number, text: string): Promise<void> {
+export async function replyOnPartnerAnswer(coupleId: string, weekId: string, uid: string, qi: number, text: string, keepTime = false): Promise<void> {
   const clean = text.trim().slice(0, 200);
   const entryRef = doc(db, 'couples', coupleId, 'stateUnion', weekId, 'entries', uid);
-  await setDoc(entryRef, { repliesOnPartner: { [String(qi)]: clean ? clean : deleteField() }, updatedAt: Date.now() }, { merge: true });
+  await setDoc(entryRef, { repliesOnPartner: { [String(qi)]: clean ? clean : deleteField() }, ...(clean && keepTime ? {} : { replyAtOnPartner: { [String(qi)]: clean ? Date.now() : deleteField() } }), updatedAt: Date.now() }, { merge: true });
   if (clean) trackEvent('reply_sent');
 }
 

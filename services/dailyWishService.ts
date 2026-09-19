@@ -15,6 +15,7 @@ export interface DailyWishDoc {
   // Reactions and replies on mutual-yes picks (Sep 2026, USER_VOICE C2): uid -> gi -> true / text.
   reactions?: Record<string, Record<string, true>>;
   replies?: Record<string, Record<string, string>>;
+  replyAt?: Record<string, Record<string, number>>; // uid -> gi -> first-reply time
   // Paid-only bonus draws stacked on top of base daily set. Each draw
   // extends items by 2 per category. Capped at 3 to keep total pool sane.
   bonusDraws?: number;
@@ -140,6 +141,7 @@ export function subscribeDailyWishes(coupleId: string, onChange: (doc: DailyWish
           bonusDraws: bonus,
           ...(existing.reactions ? { reactions: existing.reactions } : {}),
           ...(existing.replies ? { replies: existing.replies } : {}),
+          ...(existing.replyAt ? { replyAt: existing.replyAt } : {}),
         };
         await setDoc(ref, migrated);
         onChange(migrated);
@@ -237,10 +239,13 @@ export async function reactToDailyPick(coupleId: string, uid: string, globalInde
   if (on) trackEvent('reaction_sent');
 }
 
-export async function replyToDailyPick(coupleId: string, uid: string, globalIndex: number, text: string): Promise<void> {
+// `replyAt` holds when the reply was FIRST written, so the earlier of the two
+// is shown on top; keepTime leaves it alone on an edit.
+export async function replyToDailyPick(coupleId: string, uid: string, globalIndex: number, text: string, keepTime = false): Promise<void> {
   const clean = text.trim().slice(0, 200);
   await updateDoc(doc(db, 'couples', coupleId, 'dailyWishes', todayKey()), {
     [`replies.${uid}.${globalIndex}`]: clean ? clean : deleteField(),
+    ...(clean ? (keepTime ? {} : { [`replyAt.${uid}.${globalIndex}`]: Date.now() }) : { [`replyAt.${uid}.${globalIndex}`]: deleteField() }),
   });
   if (clean) trackEvent('reply_sent');
 }

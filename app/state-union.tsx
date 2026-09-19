@@ -603,13 +603,13 @@ export default function StateUnionScreen() {
                 {/* A heart / one line on each other's answer (USER_VOICE C2). Mine
                     lives on my entry (reactionsOnPartner); the partner's on theirs. */}
                 <ReactionRow
-                  mine={{ reaction: !!myEntry?.reactionsOnPartner?.[String(i)], reply: myEntry?.repliesOnPartner?.[String(i)] }}
-                  theirs={{ reaction: !!partnerEntry?.reactionsOnPartner?.[String(i)], reply: partnerEntry?.repliesOnPartner?.[String(i)] }}
+                  mine={{ reaction: !!myEntry?.reactionsOnPartner?.[String(i)], reply: myEntry?.repliesOnPartner?.[String(i)], replyAt: myEntry?.replyAtOnPartner?.[String(i)] }}
+                  theirs={{ reaction: !!partnerEntry?.reactionsOnPartner?.[String(i)], reply: partnerEntry?.repliesOnPartner?.[String(i)], replyAt: partnerEntry?.replyAtOnPartner?.[String(i)] }}
                   partnerName={partnerName}
                   onReact={(on) => { if (coupleId) reactOnPartnerAnswer(coupleId, weekId, uid, i, on).catch(() => {}); }}
-                  onReply={async (t) => {
+                  onReply={async (t, keepTime) => {
                     if (!coupleId) return;
-                    await replyOnPartnerAnswer(coupleId, weekId, uid, i, t);
+                    await replyOnPartnerAnswer(coupleId, weekId, uid, i, t, keepTime);
                     const clean = t.trim();
                     if (clean) {
                       const title = `${profile?.name ?? 'Your partner'} replied 💬`;
@@ -676,8 +676,8 @@ export default function StateUnionScreen() {
                               <ReactionRow
                                 readOnly
                                 compact
-                                mine={{ reaction: !!cached?.mine?.reactionsOnPartner?.[String(i)], reply: cached?.mine?.repliesOnPartner?.[String(i)] }}
-                                theirs={{ reaction: !!cached?.theirs?.reactionsOnPartner?.[String(i)], reply: cached?.theirs?.repliesOnPartner?.[String(i)] }}
+                                mine={{ reaction: !!cached?.mine?.reactionsOnPartner?.[String(i)], reply: cached?.mine?.repliesOnPartner?.[String(i)], replyAt: cached?.mine?.replyAtOnPartner?.[String(i)] }}
+                                theirs={{ reaction: !!cached?.theirs?.reactionsOnPartner?.[String(i)], reply: cached?.theirs?.repliesOnPartner?.[String(i)], replyAt: cached?.theirs?.replyAtOnPartner?.[String(i)] }}
                                 partnerName={partnerName}
                               />
                             </View>

@@ -2333,6 +2333,11 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
+### Replies: whoever wrote first is on top (Sep 19 2026)
+- [ ] **Order follows time, not person** 📱
+  1. On a fresh match (or a revealed Daily question, or a Sunday answer): A replies, then B replies
+  - **Expected:** On BOTH phones A's line is above B's ("You: …" first on A's phone, "Oli: …" first on B's). A edits the line: it stays on top. A removes it and writes a new one: it now sits under B's. Older replies without a time still show the partner's line first. The Fantasy Wishes title does not touch the ☰ button on a narrow phone.
+
 ### Fantasy Wishes: the deck starts gentle and builds (Sep 19 2026)
 - [ ] **Same order on both phones, gentle first** 📱 💰
   1. New couple (or after Start over), both open Fantasy Wishes and compare the first ten cards without voting

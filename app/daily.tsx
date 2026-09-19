@@ -500,12 +500,12 @@ export default function DailyScreen() {
   // day docs; written to my own uid key only (rules). A reply pushes the
   // partner with a discreet variant; a heart is silent.
   const qSides = (gi: number): { mine: ReactionSide; theirs: ReactionSide } => ({
-    mine: { reaction: !!qDoc?.reactions?.[uid]?.[String(gi)], reply: qDoc?.replies?.[uid]?.[String(gi)] },
-    theirs: { reaction: !!(partnerId && qDoc?.reactions?.[partnerId]?.[String(gi)]), reply: partnerId ? qDoc?.replies?.[partnerId]?.[String(gi)] : undefined },
+    mine: { reaction: !!qDoc?.reactions?.[uid]?.[String(gi)], reply: qDoc?.replies?.[uid]?.[String(gi)], replyAt: qDoc?.replyAt?.[uid]?.[String(gi)] },
+    theirs: { reaction: !!(partnerId && qDoc?.reactions?.[partnerId]?.[String(gi)]), reply: partnerId ? qDoc?.replies?.[partnerId]?.[String(gi)] : undefined, replyAt: partnerId ? qDoc?.replyAt?.[partnerId]?.[String(gi)] : undefined },
   });
   const pSides = (gi: number): { mine: ReactionSide; theirs: ReactionSide } => ({
-    mine: { reaction: !!wishDoc?.reactions?.[uid]?.[String(gi)], reply: wishDoc?.replies?.[uid]?.[String(gi)] },
-    theirs: { reaction: !!(partnerId && wishDoc?.reactions?.[partnerId]?.[String(gi)]), reply: partnerId ? wishDoc?.replies?.[partnerId]?.[String(gi)] : undefined },
+    mine: { reaction: !!wishDoc?.reactions?.[uid]?.[String(gi)], reply: wishDoc?.replies?.[uid]?.[String(gi)], replyAt: wishDoc?.replyAt?.[uid]?.[String(gi)] },
+    theirs: { reaction: !!(partnerId && wishDoc?.reactions?.[partnerId]?.[String(gi)]), reply: partnerId ? wishDoc?.replies?.[partnerId]?.[String(gi)] : undefined, replyAt: partnerId ? wishDoc?.replyAt?.[partnerId]?.[String(gi)] : undefined },
   });
   const pushReply = (text: string) => {
     if (!coupleId || !text) return;
@@ -513,9 +513,9 @@ export default function DailyScreen() {
     notifyPartner(coupleId, uid, title, text.slice(0, 80), { title, body: 'Open to read it.' }).catch(() => {});
   };
   const reactQ = (gi: number, on: boolean) => { if (coupleId) reactToDailyQuestion(coupleId, uid, gi, on).catch(() => {}); };
-  const replyQ = async (gi: number, text: string) => { if (!coupleId) return; await replyToDailyQuestion(coupleId, uid, gi, text); pushReply(text.trim()); };
+  const replyQ = async (gi: number, text: string, keepTime?: boolean) => { if (!coupleId) return; await replyToDailyQuestion(coupleId, uid, gi, text, keepTime); pushReply(text.trim()); };
   const reactP = (gi: number, on: boolean) => { if (coupleId) reactToDailyPick(coupleId, uid, gi, on).catch(() => {}); };
-  const replyP = async (gi: number, text: string) => { if (!coupleId) return; await replyToDailyPick(coupleId, uid, gi, text); pushReply(text.trim()); };
+  const replyP = async (gi: number, text: string, keepTime?: boolean) => { if (!coupleId) return; await replyToDailyPick(coupleId, uid, gi, text, keepTime); pushReply(text.trim()); };
 
   const allMatches = (wishDoc?.items ?? [])
     .map((item, gi) => ({ item, gi }))
@@ -683,7 +683,7 @@ export default function DailyScreen() {
                 showInPersonPill={!!couple?.isLongDistance && !!currentCard.inPerson}
                 sides={pSides(currentCard.gi)}
                 onReact={(on) => reactP(currentCard.gi, on)}
-                onReply={(t) => replyP(currentCard.gi, t)}
+                onReply={(t, keep) => replyP(currentCard.gi, t, keep)}
               />
             ) : (
               <QuestionCard
@@ -704,7 +704,7 @@ export default function DailyScreen() {
                 cardBg={cfg.color}
                 sides={qSides(currentCard.gi)}
                 onReact={(on) => reactQ(currentCard.gi, on)}
-                onReply={(t) => replyQ(currentCard.gi, t)}
+                onReply={(t, keep) => replyQ(currentCard.gi, t, keep)}
                 askedByName={customQuestions.find((c) => c.gi === currentCard.gi)?.askedByName}
               />
             )}
@@ -804,7 +804,7 @@ export default function DailyScreen() {
                         </Text>
                       </TouchableOpacity>
                     )}
-                    <ReactionRow compact {...pSides(gi)} partnerName={partnerName} onReact={(on) => reactP(gi, on)} onReply={(t) => replyP(gi, t)} />
+                    <ReactionRow compact {...pSides(gi)} partnerName={partnerName} onReact={(on) => reactP(gi, on)} onReply={(t, keep) => replyP(gi, t, keep)} />
                   </View>
                 );
               })}
@@ -828,7 +828,7 @@ export default function DailyScreen() {
                         <Text style={styles.matchAnswerText}>{theirs === GUESS_SKIPPED ? '—' : theirs ?? '—'}</Text>
                       </View>
                     </View>
-                    <ReactionRow compact {...qSides(gi)} partnerName={partnerName} onReact={(on) => reactQ(gi, on)} onReply={(t) => replyQ(gi, t)} />
+                    <ReactionRow compact {...qSides(gi)} partnerName={partnerName} onReact={(on) => reactQ(gi, on)} onReply={(t, keep) => replyQ(gi, t, keep)} />
                   </View>
                 );
               })}
@@ -1085,7 +1085,7 @@ function ActionCard({
   showInPersonPill?: boolean;
   sides?: { mine: ReactionSide; theirs: ReactionSide };
   onReact?: (on: boolean) => void;
-  onReply?: (text: string) => Promise<void>;
+  onReply?: (text: string, keepTime?: boolean) => Promise<void>;
 }) {
   return (
     <View style={[styles.card, styles.actionCard, didMatch && styles.cardMatched]}>
@@ -1184,7 +1184,7 @@ function QuestionCard({
   cardBg: string;
   sides?: { mine: ReactionSide; theirs: ReactionSide };
   onReact?: (on: boolean) => void;
-  onReply?: (text: string) => Promise<void>;
+  onReply?: (text: string, keepTime?: boolean) => Promise<void>;
   // Couple-written question (C2b): who asked it; renders a FROM pill.
   askedByName?: string;
 }) {

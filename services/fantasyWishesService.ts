@@ -37,6 +37,7 @@ export interface FWState {
   addToList?: Record<string, Record<string, true>>;        // uid -> itemId
   reactions?: Record<string, Record<string, true>>;        // uid -> itemId   (C2)
   replies?: Record<string, Record<string, string>>;        // uid -> itemId -> one line (C2)
+  replyAt?: Record<string, Record<string, number>>;        // uid -> itemId -> when first written (earlier reply shows on top)
 }
 
 export interface CustomWish {
@@ -62,6 +63,7 @@ export interface FantasyWishesItem {
   level?: 1 | 2 | 3;   // intensity of a preset; drives the deck order, never shown
   reactions?: Record<string, true>;
   replies?: Record<string, string>;
+  replyAt?: Record<string, number>;
   custom?: boolean;   // couple-written
   retired?: boolean;  // matched once, no longer in the pool: shown in Matches, never dealt
 }
@@ -83,7 +85,9 @@ function viewOf(id: string, base: { text: string; category?: FantasyWishesCatego
   for (const [u, m] of Object.entries(state.reactions ?? {})) if (m?.[id]) reactions[u] = true;
   const replies: Record<string, string> = {};
   for (const [u, m] of Object.entries(state.replies ?? {})) if (m?.[id]) replies[u] = m[id];
-  return { id, ...base, votes, addToList, matchedAt: state.matched?.[id]?.at, reactions, replies };
+  const replyAt: Record<string, number> = {};
+  for (const [u, m] of Object.entries(state.replyAt ?? {})) if (m?.[id]) replyAt[u] = m[id];
+  return { id, ...base, votes, addToList, matchedAt: state.matched?.[id]?.at, reactions, replies, replyAt };
 }
 
 // Everything the Fantasy Wishes screen shows: the whole pool, the couple's own
@@ -231,9 +235,12 @@ export async function reactToFantasyWish(coupleId: string, uid: string, itemId: 
   if (on) trackEvent('reaction_sent');
 }
 
-export async function replyToFantasyWish(coupleId: string, uid: string, itemId: string, text: string): Promise<void> {
+export async function replyToFantasyWish(coupleId: string, uid: string, itemId: string, text: string, keepTime = false): Promise<void> {
   const clean = text.trim().slice(0, 200);
-  await updateDoc(stateRef(coupleId), { [`replies.${uid}.${itemId}`]: clean ? clean : deleteField() });
+  await updateDoc(stateRef(coupleId), {
+    [`replies.${uid}.${itemId}`]: clean ? clean : deleteField(),
+    ...(clean ? (keepTime ? {} : { [`replyAt.${uid}.${itemId}`]: Date.now() }) : { [`replyAt.${uid}.${itemId}`]: deleteField() }),
+  });
   if (clean) trackEvent('reply_sent');
 }
 

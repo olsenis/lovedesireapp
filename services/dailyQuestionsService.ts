@@ -22,6 +22,7 @@ export interface DailyQuestionDoc {
   // only once both answered. Same per-uid guard in rules as answers.
   reactions?: Record<string, Record<string, true>>;
   replies?: Record<string, Record<string, string>>;
+  replyAt?: Record<string, Record<string, number>>; // uid -> gi -> first-reply time
   // A question one partner wrote for the other today (Sep 2026, USER_VOICE
   // C2b): keyed by the asker's uid (rules: own key only), one per person
   // per day. Its gi is DERIVED (customGi), never stored, and sits above
@@ -144,6 +145,7 @@ export function subscribeDailyQuestions(
           ...(data.guesses ? { guesses: data.guesses } : {}),
           ...(data.reactions ? { reactions: data.reactions } : {}),
           ...(data.replies ? { replies: data.replies } : {}),
+          ...(data.replyAt ? { replyAt: data.replyAt } : {}),
           ...(data.custom ? { custom: data.custom } : {}),
         };
         await setDoc(ref, migrated);
@@ -248,6 +250,8 @@ export interface DailyAnswerRow {
   theirReaction: boolean;
   myReply?: string;
   theirReply?: string;
+  myReplyAt?: number;
+  theirReplyAt?: number;
 }
 
 export async function getAllRevealedDailyAnswers(
@@ -279,6 +283,8 @@ export async function getAllRevealedDailyAnswers(
         theirReaction: !!data.reactions?.[partnerUid]?.[k],
         myReply: data.replies?.[myUid]?.[k],
         theirReply: data.replies?.[partnerUid]?.[k],
+        myReplyAt: data.replyAt?.[myUid]?.[k],
+        theirReplyAt: data.replyAt?.[partnerUid]?.[k],
       });
     }
   }
@@ -294,10 +300,13 @@ export async function reactToDailyQuestion(coupleId: string, uid: string, global
   if (on) trackEvent('reaction_sent');
 }
 
-export async function replyToDailyQuestion(coupleId: string, uid: string, globalIndex: number, text: string): Promise<void> {
+// `replyAt` holds when the reply was FIRST written, so the earlier of the two
+// is shown on top; keepTime leaves it alone on an edit.
+export async function replyToDailyQuestion(coupleId: string, uid: string, globalIndex: number, text: string, keepTime = false): Promise<void> {
   const clean = text.trim().slice(0, 200);
   await updateDoc(doc(db, 'couples', coupleId, 'dailyQuestions', todayKey()), {
     [`replies.${uid}.${globalIndex}`]: clean ? clean : deleteField(),
+    ...(clean ? (keepTime ? {} : { [`replyAt.${uid}.${globalIndex}`]: Date.now() }) : { [`replyAt.${uid}.${globalIndex}`]: deleteField() }),
   });
   if (clean) trackEvent('reply_sent');
 }

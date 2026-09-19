@@ -629,8 +629,8 @@ export default function OurStoryScreen() {
                                   </View>
                                   {(r.myReaction || r.theirReaction || r.myReply || r.theirReply) && (
                                     <ReactionRow
-                                      mine={{ reaction: r.myReaction, reply: r.myReply }}
-                                      theirs={{ reaction: r.theirReaction, reply: r.theirReply }}
+                                      mine={{ reaction: r.myReaction, reply: r.myReply, replyAt: r.myReplyAt }}
+                                      theirs={{ reaction: r.theirReaction, reply: r.theirReply, replyAt: r.theirReplyAt }}
                                       partnerName={partner?.name ?? 'Partner'}
                                       compact
                                       readOnly
