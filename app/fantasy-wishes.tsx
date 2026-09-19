@@ -667,7 +667,7 @@ function DoneState({ votedCount, totalCount, matchesCount, partnerLeft, partnerN
         </Text>
       </TouchableOpacity>
       <Text style={styles.doneComeBack}>
-        New wishes appear when either of you adds one, or use ↺ to reload the deck.
+        New cards show up here when the app adds them, or when either of you writes one.
       </Text>
       {categoriesOff > 0 && (
         <TouchableOpacity onPress={onOpenCategories} activeOpacity={0.7} accessibilityRole="button">

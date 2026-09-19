@@ -10,6 +10,7 @@ import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { inviteMessage } from '../../constants/app';
+import { subscribeResetRequests, ResetRequest, RESET_ROWS } from '../../services/resetService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, CUSTOM_MOOD_MAX, moodLabel } from '../../services/moodService';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
@@ -309,6 +310,8 @@ export default function HomeScreen() {
     return () => document.removeEventListener('visibilitychange', handler);
   }, []);
   const [fwItems, setFwItems] = useState<FantasyWishesItem[]>([]);
+  // Reset requests (app/reset.tsx): the partner asked to clear something big.
+  const [resetRequests, setResetRequests] = useState<ResetRequest[]>([]);
   const [dailyQDoc, setDailyQDoc] = useState<DailyQuestionDoc | null>(null);
   const [dailyWishDoc, setDailyWishDoc] = useState<DailyWishDoc | null>(null);
   const [wyrSession, setWyrSession] = useState<WYRSession | null>(null);
@@ -460,6 +463,7 @@ export default function HomeScreen() {
     const u1 = subscribeChallenge(coupleId, setChallengeState);
     const u2 = subscribeNotes(coupleId, setNotes);
     const u3 = subscribeFantasyWishes(coupleId, setFwItems);
+    const uReset = subscribeResetRequests(coupleId, setResetRequests);
     const u4 = subscribeDailyQuestions(coupleId, setDailyQDoc, { isLDR: !!couple?.isLongDistance });
     const u5 = subscribeDailyWishes(coupleId, setDailyWishDoc);
     const u6 = subscribeWYR(coupleId, setWyrSession);
@@ -482,7 +486,7 @@ export default function HomeScreen() {
     const u21 = subscribeStateUnionHistory(coupleId, setSuHistory);
     const u22 = subscribeCustomWYRQuestions(coupleId, setWyrCustom);
     const u23 = subscribeMemoryLane(coupleId, getCurrentWeekId(), setMlDoc);
-    return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); u21(); u22(); u23(); };
+    return () => { uReset(); u1(); u2(); u3(); u4(); u5(); u6(); u7(); u8(); u10(); u11(); u12(); u13(); u14(); u15(); u16(); u18(); u19(); u20(); u21(); u22(); u23(); };
   }, [coupleId, couple?.isLongDistance, user?.uid]);
 
   // One-shot Moments archive peek + seasonal-pack dismissals — resolves
@@ -628,6 +632,22 @@ export default function HomeScreen() {
   // dares inside the live Truth or Dare game flow now, no separate
   // async lifecycle. No pending-inbox or completion notification lives
   // on Home anymore.)
+
+  // The partner asked to clear one part of the shared history and it needs
+  // my answer (Reset, Sep 19 2026). Top of the stack: it waits on me and
+  // lapses in seven days. Names the feature, this is inside the app.
+  for (const r of resetRequests) {
+    if (r.uid === uid) continue;
+    const row = RESET_ROWS.find((x) => x.key === r.key);
+    if (!row) continue;
+    list.unshift({
+      emoji: row.emoji,
+      title: `${partner?.name ?? 'Your partner'} asked to clear ${row.label}`,
+      subtitle: 'For both of you. Agree or say not now',
+      route: '/reset',
+      bg: '#FFF4CC',
+    });
+  }
 
   // Fantasy Wishes: any mutual matches
   const fwMatches = fwItems.filter(i => partnerId && isFWMatch(i, uid, partnerId));
@@ -1298,7 +1318,7 @@ export default function HomeScreen() {
   }
 
     return list;
-  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, mlDoc, couple?.createdAt, couple?.firstRitualCompletedAt, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory, blueprints, isSubscribed, coupleId]);
+  }, [challengeState, partnerId, partner?.name, (partner as any)?.loveLanguage, uid, notes, fwItems, resetRequests, dailyQDoc, dailyWishDoc, wyrSession, truthDareSession, intimacyEntries, profile?.features?.intimacyLog, moments, flashes, isLDR, nextVisit, couple?.nextVisitDate, suDoc, suHistory, wyrCustom, mlDoc, couple?.createdAt, couple?.firstRitualCompletedAt, dismissedKeys, bingoSession, todos, sensateProgress, profile?.name, tick, mySuEntry, moodHistory, blueprints, isSubscribed, coupleId]);
 
   // ── On this day ───────────────────────────────────────────────────────────────
   const { onThisDay, onThisDayYears } = useMemo(() => {

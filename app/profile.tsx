@@ -19,8 +19,6 @@ import { isAppLockEnabled, setAppLockEnabled, canUseAppLock, authenticate } from
 import { joinCouple, setCoupleStartDate, setLongDistance, setNextVisitDate } from '../services/coupleService';
 import { uploadProfilePhoto, UploadTooLargeError } from '../services/storageService';
 import { getHelpState, setHelpEnabled, resetHelp } from '../services/helpService';
-import { resetFantasyWishes } from '../services/fantasyWishesService';
-import { ConfirmModal } from '../components/ConfirmModal';
 import { BrandDatePicker } from '../components/BrandDatePicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -56,10 +54,6 @@ export default function ProfileScreen() {
   const [deletePw, setDeletePw] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [disconnectModal, setDisconnectModal] = useState(false);
-  // Reset section: rare, irreversible, and it touches the partner's data too,
-  // so it lives here behind a confirm and not on the feature's own screen.
-  const [confirmFwReset, setConfirmFwReset] = useState(false);
-  const [fwResetState, setFwResetState] = useState<'idle' | 'working' | 'done' | 'error'>('idle');
   const [disconnectError, setDisconnectError] = useState('');
   const [disconnecting, setDisconnecting] = useState(false);
   const [qrModal, setQrModal] = useState(false);
@@ -283,18 +277,6 @@ export default function ProfileScreen() {
 
   // Custom Modal instead of Alert.alert — Alert callbacks are unreliable, and
   // we need loading/error feedback that Alert can't provide.
-  const handleFwReset = async () => {
-    setConfirmFwReset(false);
-    if (!profile?.coupleId || fwResetState === 'working') return;
-    setFwResetState('working');
-    try {
-      await resetFantasyWishes(profile.coupleId);
-      setFwResetState('done');
-    } catch {
-      setFwResetState('error');
-    }
-  };
-
   const handleDisconnect = () => {
     setDisconnectError('');
     setDisconnectModal(true);
@@ -696,27 +678,18 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Reset: things that start over. Only shown to a paired couple. */}
+        {/* Reset: start over in one part of the app. Its own screen (app/reset.tsx):
+            ten destructive buttons do not belong in Profile itself. */}
         {!!partner && (
           <>
             <Text style={styles.sectionLabel}>Reset</Text>
             <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.row}
-                onPress={() => setConfirmFwReset(true)}
-                disabled={fwResetState === 'working'}
-                accessibilityRole="button"
-                accessibilityHint="Clears votes and matches for both of you"
-              >
+              <TouchableOpacity style={styles.row} onPress={() => router.push('/reset' as any)} accessibilityRole="button">
                 <View style={styles.rowTextStack}>
-                  <Text style={styles.rowLabel}>Start over in Fantasy Wishes</Text>
-                  <Text style={styles.rowHint}>
-                    {fwResetState === 'done' ? 'Cleared. The deck starts from the first card again.'
-                      : fwResetState === 'error' ? 'That did not work. Check your connection and try again.'
-                      : `Clears the votes and matches of both you and ${partner.name ?? 'your partner'}. Your own wishes stay.`}
-                  </Text>
+                  <Text style={styles.rowLabel}>Start over in part of the app</Text>
+                  <Text style={styles.rowHint}>Clear one part of your shared history. Your account and your pairing stay.</Text>
                 </View>
-                <Text style={styles.rowChevron}>{fwResetState === 'working' ? '…' : '›'}</Text>
+                <Text style={styles.rowChevron}>›</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -919,16 +892,6 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
-
-      <ConfirmModal
-        visible={confirmFwReset}
-        title="Start over in Fantasy Wishes?"
-        message={`This clears the votes, matches, hearts and replies of both you and ${partner?.name ?? 'your partner'}. Wishes you wrote yourselves stay. It cannot be undone.`}
-        confirmLabel="Start over"
-        destructive
-        onConfirm={handleFwReset}
-        onCancel={() => setConfirmFwReset(false)}
-      />
 
       {/* Disconnect couple */}
       <Modal visible={disconnectModal} transparent animationType="slide">

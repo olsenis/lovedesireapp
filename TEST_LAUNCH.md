@@ -624,6 +624,8 @@ Push arrives at all · discreet on · discreet off · the Daily ask push · Face
 
 ---
 
+- [ ] **Callables answer after the production deploy** ⚠️ : `rateLimitedJoin`, `acceptPairing`, `resetCoupleData` (and any other `onCall`) each need `allUsers` → `roles/run.invoker` on their Cloud Run service, or the app shows a generic error. Try a pairing and one small Reset row on the release build.
+
 ## 8. iOS permissions (5 tests)
 
 - [ ] **Face ID prompt text** 📱

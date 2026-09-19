@@ -2333,6 +2333,28 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
   1. A's turn; B tries to tap
   - **Expected:** Only A's tap opens modal.
 
+### Reset: start over in one part of the app (Sep 19 2026)
+- [ ] **The screen** : Profile → Reset → "Start over in part of the app" opens Reset: four rows under "You can clear these yourself", six under "These need both of you". An unpaired account has no Reset section in Profile.
+
+- [ ] **Small row, one person** 📱
+  1. A: Mood History → Clear → the confirm names B and says it cannot be undone → Clear
+  - **Expected:** The row says "Cleared…"; Mood History is empty on both phones and does not crash if B has it open. Same for Fantasy Wishes (own wishes stay), Memory Lane, Presence (back to Discover). If it fails with a generic error right after a deploy, the callable's Cloud Run invoker IAM binding is missing.
+
+- [ ] **Big row, both agree** 📱
+  1. A: Moments → "Ask Eva" → Ask. B (locked): push "Oli asked you something", body never names Moments
+  2. B: Home shows "Oli asked to clear Moments" → opens Reset → "Agree and clear" → confirm
+  - **Expected:** A's row showed "Waiting for Eva to agree" with Cancel. After B agrees: photos gone on both phones, `couples/{id}/moments` empty, Storage `couples/{id}/moments/` empty, the request doc gone, Home card gone.
+
+- [ ] **Not now, and Cancel** 📱 : B taps "Not now" → A's row is simply back to normal, nothing deleted, no "declined" anywhere. A asks again and taps Cancel → B's card disappears.
+
+- [ ] **Sunday Check-ins** (the one a client cannot delete) : after both agree, Past check-ins is empty, this week starts again, and the next set is a light one.
+
+- [ ] **Our Story** : only milestones you added are gone; "We started dating", "Our first shared fantasy" and the other automatic ones stay.
+
+- [ ] **Refusals** ⚠️ (dev console, `httpsCallable('resetCoupleData')`) : `confirm` by the person who asked → failed-precondition; `run` on `moments` → failed-precondition; key `todos` → invalid-argument; a user outside the couple → permission-denied; a client write to `couples/{id}/resetRequests/x` → denied by rules.
+
+- [ ] **Each feature opens on empty after its reset** : Intimacy Log, Daily, Sunday Check-in, Moments, Love Notes, Our Story, Memory Lane, Presence, Mood History, Fantasy Wishes show their empty state, not an error.
+
 ### Replies: whoever wrote first is on top (Sep 19 2026)
 - [ ] **Order follows time, not person** 📱
   1. On a fresh match (or a revealed Daily question, or a Sunday answer): A replies, then B replies
