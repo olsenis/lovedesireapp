@@ -2364,7 +2364,7 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 
 - [ ] **New content reaches everyone** : add a throwaway preset to `FANTASY_WISHES_PRESETS` locally → it is in the deck of an old and a new couple with no reload. Reword a preset that is already a match → Matches still shows the original text. Remove both again.
 
-- [ ] **Start over** : ↺ → confirm dialog names both of you → votes, matches, hearts gone for both, own wishes still there. Vote twice afterwards: no "Load 8 more" prompt yet.
+- [ ] **Start over** : there is no ↺ in the Fantasy Wishes header (only ☰ and + Add). Profile → Reset → "Start over in Fantasy Wishes" → the confirm names both of you → votes, matches, hearts gone for both, own wishes still there, the row says "Cleared…". With Fantasy Wishes open on the partner's phone: it falls back to the first card without a crash. Vote twice afterwards: no "Load 8 more" prompt yet. The Reset section is hidden for an unpaired account.
 
 - [ ] **Couple from before the change (Oli + Eva)** : within a few seconds of opening, `fantasyWishes` holds no doc with a `votes` field (only real couple-written wishes remain), Fantasy Wishes starts fresh, nothing crashes, and NO "✨ New wish added" toast appears on open (reopen three times). Test matches from before are gone on purpose.
 

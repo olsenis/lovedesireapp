@@ -13,8 +13,7 @@ import { HelpModal } from '../components/HelpModal';
 import { useToast } from '../components/Toast';
 import { notifyPartner } from '../services/notificationService';
 import { addTodo } from '../services/todoService';
-import { FantasyWishesItem, FWVote, FWState, CustomWish, subscribeFWState, subscribeCustomWishes, composeFWItems, orderFWDeck, cleanupLegacyFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, resetFantasyWishes, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
-import { ConfirmModal } from '../components/ConfirmModal';
+import { FantasyWishesItem, FWVote, FWState, CustomWish, subscribeFWState, subscribeCustomWishes, composeFWItems, orderFWDeck, cleanupLegacyFantasyWishes, addFantasyWishesItem, voteOnFantasyWish, isFWMatch, markFWAddToListAtomic, fwBothWantToAdd, setFWCategory, reactToFantasyWish, replyToFantasyWish } from '../services/fantasyWishesService';
 import { FANTASY_WISHES_CATEGORY_CONFIG, FW_CATEGORY_ORDER, FantasyWishesCategory } from '../constants/content';
 import { personalise } from '../services/personalise';
 import { seededPick } from '../services/seed';
@@ -68,8 +67,6 @@ export default function FantasyWishesScreen() {
   const [drawnId, setDrawnId] = useState<string | null>(null);
   const [hintDismissed, setHintDismissed] = useState(false);
   const [newText, setNewText] = useState('');
-  const [resetting, setResetting] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
   // Session-only skip set. Skipping doesn't record a vote — it just moves
   // the card to the back of the deck so the user can defer without either
   // saying yes/maybe/no or reloading the whole feature. Cleared on Reset.
@@ -249,28 +246,21 @@ export default function FantasyWishesScreen() {
     }
   };
 
-  // "Start over": clears BOTH partners' votes, matches, hearts and lines.
-  // The couple's own wishes stay. Always behind a confirm (it used to be a
-  // single tap on ↺).
-  const handleReset = async () => {
-    const id = profile?.coupleId;
-    if (!id || resetting) return;
-    setConfirmReset(false);
-    setResetting(true);
-    try {
-      await resetFantasyWishes(id);
-      setSkipped(new Set());
-      setDrawnId(null);
-      setDrawCount(0);
-      // A fresh deck starts a fresh session: no "Load 8 more" after two votes.
-      setVotedInSession(0);
-      setNextPromptAt(SESSION_BATCH);
-      setPausedForLater(false);
-      prevMatchIdsRef.current = null;
-    } finally {
-      setResetting(false);
-    }
-  };
+  // "Start over" lives in Profile → Reset (Sep 19 2026), not in this header:
+  // ↺ reads as "refresh" and sat next to the two controls used every day.
+  // If the partner starts over while this screen is open the state doc goes
+  // away: forget what was celebrated and skipped so a fresh deck behaves.
+  useEffect(() => {
+    if (!loaded || fwState) return;
+    prevMatchIdsRef.current = new Set();
+    setSkipped(new Set());
+    setDrawnId(null);
+    setDrawCount(0);
+    setVotedInSession(0);
+    setNextPromptAt(SESSION_BATCH);
+    setPausedForLater(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, fwState]);
 
   const handleAddToTogether = async (item: FantasyWishesItem) => {
     if (!coupleId || !user) return;
@@ -368,11 +358,6 @@ export default function FantasyWishesScreen() {
           <TouchableOpacity onPress={() => setShowCategories(true)} accessibilityRole="button" accessibilityLabel="Choose categories">
             <Text style={styles.resetBtn}>☰</Text>
           </TouchableOpacity>
-          {!!fwState && (
-            <TouchableOpacity onPress={() => setConfirmReset(true)} disabled={resetting} accessibilityRole="button" accessibilityLabel="Start over" accessibilityHint="Clears votes and matches for both of you">
-              <Text style={styles.resetBtn}>{resetting ? '…' : '↺'}</Text>
-            </TouchableOpacity>
-          )}
           <TouchableOpacity onPress={() => setShowAdd(true)} accessibilityRole="button" accessibilityLabel="Add wish">
             <Text style={styles.addBtn}>+ Add</Text>
           </TouchableOpacity>
@@ -597,15 +582,6 @@ export default function FantasyWishesScreen() {
         </View>
       </Modal>
 
-      <ConfirmModal
-        visible={confirmReset}
-        title="Start over?"
-        message={`This clears the votes, matches, hearts and replies of both you and ${partner?.name ?? 'your partner'}. Wishes you wrote yourselves stay. It cannot be undone.`}
-        confirmLabel="Start over"
-        destructive
-        onConfirm={handleReset}
-        onCancel={() => setConfirmReset(false)}
-      />
       <HelpModal
         visible={help.visible}
         title="Fantasy Wishes"
