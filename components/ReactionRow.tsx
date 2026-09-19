@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../constants/colors';
@@ -35,6 +35,7 @@ export function ReactionRow({ mine, theirs, partnerName, onReact, onReply, compa
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(mine.reply ?? '');
   const [sending, setSending] = useState(false);
+  const inputRef = useRef<TextInput>(null);
   const canWrite = !readOnly && !!onReact && !!onReply;
   if (readOnly && !mine.reaction && !theirs.reaction && !mine.reply && !theirs.reply) return null;
 
@@ -89,21 +90,29 @@ export function ReactionRow({ mine, theirs, partnerName, onReact, onReply, compa
           input that mounts inside a long scrolling reveal got scrolled off
           screen when the keyboard opened. Same keyboard-safe shape as the
           other sheets: spacer on top, the card shrinks with the keyboard. */}
-      <Modal visible={editing && canWrite} transparent animationType="slide" onRequestClose={() => setEditing(false)}>
+      <Modal
+        visible={editing && canWrite}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditing(false)}
+        // autoFocus inside a Modal is unreliable on Android (cursor shows,
+        // keyboard does not): focus once the sheet is actually on screen.
+        onShow={() => setTimeout(() => inputRef.current?.focus(), 80)}
+      >
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setEditing(false)} accessibilityLabel="Close" />
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>One line for {partnerName}</Text>
+            <Text style={styles.sheetTitle}>Reply to {partnerName}</Text>
             <TextInput
+              ref={inputRef}
               style={styles.input}
               value={draft}
               onChangeText={(t) => setDraft(t.slice(0, REPLY_MAX))}
-              placeholder="Say it in a sentence"
+              placeholder="A few words about this answer"
               placeholderTextColor={Colors.muted}
               maxLength={REPLY_MAX}
               multiline
               textAlignVertical="top"
-              autoFocus
               accessibilityLabel="Your reply"
             />
             <View style={styles.sheetBtns}>
