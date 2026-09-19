@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../hooks/useAuth';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
@@ -315,9 +316,19 @@ export default function StateUnionScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/* Same keyboard handling as Daily: the focused field scrolls up far
+          enough that Back / Save and next stay visible above the keyboard
+          (Sep 2026: the buttons used to sit under it on Android). */}
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={130}
+        keyboardOpeningTime={0}
+      >
         <Text style={styles.eyebrow}>{weekIdToLabel(weekId)}</Text>
         <Text style={styles.intro}>
           A short weekly ritual. 5 questions to keep you both close. Answer privately, reveal together.
@@ -719,7 +730,7 @@ export default function StateUnionScreen() {
               })}
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
       <HelpModal
         visible={help.visible}
