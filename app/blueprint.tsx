@@ -285,12 +285,11 @@ export default function BlueprintScreen() {
       <HelpModal
         visible={help.visible}
         title="The Lovers"
-        description={`15 quick questions about how you feel most alive in intimacy. When both of you have finished, the app shows how your two styles meet.`}
+        description={`15 quick questions about how you feel most alive in intimacy. When you have both finished, you see how your two styles meet.`}
         tips={[
-          `Five styles: Feeling, Sexual, Spark, Kinky, Explorer. None is better than another`,
+          `Five styles: Feeling, Sexual, Spark, Kinky, Explorer. None is better`,
           `Go with your gut, there are no right answers`,
-          `When ${partner?.name ?? 'your partner'} finishes too, you both see the pairing and three things to try`,
-          `+ Together List under a tip saves it to your shared list`,
+          `Together you get three things to try, each can go to your Together List`,
           `On Fridays, Home shows one tip for the weekend`,
         ]}
         onDismiss={help.dismiss}

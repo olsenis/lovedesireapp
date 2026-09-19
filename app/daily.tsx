@@ -869,13 +869,12 @@ export default function DailyScreen() {
       <HelpModal
         visible={help.visible}
         title="Daily"
-        description={`Every day a few picks to vote on and a few questions to answer. Votes stay hidden unless you both say Yes, and answers appear side by side once both of you have answered.`}
+        description={`A few picks to vote on and a few questions to answer, new every day. Nothing is shown until you have both answered.`}
         tips={[
-          `Picks: Yes or Not for me. A mutual Yes can go straight to your Together List`,
-          `Questions stay private until ${partnerName} has answered too. On either-or questions you can guess ${partnerName}'s pick first`,
-          `Ask ${partnerName} something › adds one question of your own a day, answered by both of you`,
-          `After a reveal, leave a ❤️ or one line under it`,
-          `Earlier days live in Our Story under Daily answers. Playful is free, Deep and Spicy are Premium`,
+          `Picks: Yes or Not for me. A Yes from both can go to your Together List`,
+          `Questions stay private until ${partnerName} has answered too`,
+          `Ask ${partnerName} something › adds one question of your own a day`,
+          `Earlier days are in Our Story. Deep and Spicy are Premium`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

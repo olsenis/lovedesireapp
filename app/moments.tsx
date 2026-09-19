@@ -303,7 +303,7 @@ export default function MomentsScreen() {
         title="Moments"
         description={`One photo a day from each of you, of whatever today looks like.`}
         tips={[
-          `Your photo stays hidden until ${partner?.name ?? 'your partner'} has taken one too, then both appear together`,
+          `Your photo stays hidden until ${partner?.name ?? 'your partner'} has taken one too`,
           `One a day each, so it takes seconds`,
           `Earlier days stay under Past moments`,
           `Open a photo to find the report link if something is not okay`,

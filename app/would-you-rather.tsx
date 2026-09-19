@@ -673,13 +673,12 @@ export default function WouldYouRatherScreen() {
         <HelpModal
           visible={help.visible}
           title="Would You Rather"
-          description={`Both of you answer the same question, then see each other's pick at the same moment. Matching is fun, not matching is the conversation.`}
+          description={`You both answer the same question and see each other's pick at the same moment.`}
           tips={[
             `Your answer stays hidden until ${partnerName} has answered too`,
-            `Five reveals a day, so there is something left for tomorrow`,
-            `Write one of your own for ${partnerName}, it goes to the front of the deck`,
-            `Packs are ten questions on one theme, played in order`,
-            `A match worth keeping can be saved to your Together List`,
+            `Five a day, so there is something left for tomorrow`,
+            `Write one of your own for ${partnerName}, or play a themed pack`,
+            `A match worth keeping can go to your Together List`,
           ]}
           onDismiss={help.dismiss}
           onDismissAll={help.dismissAll}

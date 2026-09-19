@@ -695,13 +695,12 @@ export default function StateUnionScreen() {
       <HelpModal
         visible={help.visible}
         title="Sunday Check-in"
-        description={`Once a week: five quick ratings and five questions about the two of you. Everything stays private until both of you have finished.`}
+        description={`Once a week: five quick ratings and five questions. Everything stays private until you have both finished.`}
         tips={[
-          `Rate the week from 1 to 5 on five things, then answer five questions in your own words`,
-          `The last step is optional: one small thing you will do for ${partnerName}. It stays hidden, and only what you did is ever shown`,
-          `When both are done, the answers appear side by side`,
-          `Leave a ❤️ or one line under an answer`,
-          `Past weeks stay in History`,
+          `Rate the week from 1 to 5, then answer in your own words. Short is fine`,
+          `When both are done, your answers appear side by side`,
+          `Leave a ❤️ or a reply under an answer`,
+          `The last step is optional and stays hidden from ${partnerName}`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

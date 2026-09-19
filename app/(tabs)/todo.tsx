@@ -382,7 +382,7 @@ export default function TogetherScreen() {
         tips={[
           `Tap + Add, then pick Daily Life, Date Ideas, Intimacy or Goals`,
           `Tap the circle when it is done. ${partner?.name ?? 'your partner'} sees it right away`,
-          `A mutual Yes in Daily, a Fantasy Wishes match or a Lovers tip can be saved here with one tap`,
+          `A Yes from both in Daily, a match or a Lovers tip can be saved here`,
           `Suggestions from ${partner?.name ?? 'your partner'} wait at the top until you answer them`,
         ]}
         onDismiss={help.dismiss}

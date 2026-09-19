@@ -323,7 +323,7 @@ export default function CalendarScreen() {
         tips={[
           `Add anniversaries, birthdays, firsts and small rituals`,
           `Keep it a surprise 🤫 hides what the day is from ${partnerName} until it arrives`,
-          `Your anniversary, a birthday and Valentine's Day appear on their own once the dates are set`,
+          `Your anniversary and birthdays appear on their own once the dates are set`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

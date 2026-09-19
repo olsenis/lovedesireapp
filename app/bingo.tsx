@@ -499,12 +499,11 @@ export default function ActivityCardsScreen() {
       <HelpModal
         visible={help.visible}
         title="Activity Cards"
-        description={`25 face-down cards, each with something to do together. You take turns picking, and nobody knows what is under a card until it is turned.`}
+        description={`25 face-down cards, each with something to do together. You take turns picking.`}
         tips={[
-          `Your turn: tap a card. Not feeling it? Pass and put it back, you have 2 passes`,
-          `Send it to ${partnerName}, who can do it now, keep it for later, or skip one card`,
-          `Done cards turn green and stay on the board`,
-          `+ Add your own card puts up to 5 of your own ideas into the next deck`,
+          `Your turn: tap a card. You can pass twice and put it back`,
+          `Send it to ${partnerName}, who can do it now, keep it for later, or skip once`,
+          `+ Add your own card puts your ideas into the next deck`,
           `↺ New deals a fresh deck any time`,
         ]}
         onDismiss={help.dismiss}

@@ -394,7 +394,7 @@ export default function IntimacyTrackerScreen() {
         description={`A private record of your closeness, shared by the two of you and nobody else.`}
         tips={[
           `Tap We were intimate, fill in what you like, and add one thing worth remembering`,
-          `Who started it and who it was for are written from your side, and read the right way round on ${partnerName}'s phone`,
+          `Who started it is written from your side and flips on ${partnerName}'s phone`,
           `Stats appear once there are 3 entries`,
           `If Premium ever ends, everything you logged stays readable`,
         ]}

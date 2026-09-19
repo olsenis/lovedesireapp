@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -17,21 +17,25 @@ export function HelpModal({ visible, title, description, tips, onDismiss, onDism
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>How it works</Text>
-          </View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.description}>{description}</Text>
-          {tips && tips.length > 0 && (
-            <View style={styles.tips}>
-              {tips.map((tip, i) => (
-                <View key={i} style={styles.tipRow}>
-                  <Text style={styles.tipDot}>·</Text>
-                  <Text style={styles.tipText}>{tip}</Text>
-                </View>
-              ))}
+          {/* Text scrolls, the two buttons stay put: on a small phone a long hint
+              used to push Got it off the screen (Sep 2026). */}
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>How it works</Text>
             </View>
-          )}
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.description}>{description}</Text>
+            {tips && tips.length > 0 && (
+              <View style={styles.tips}>
+                {tips.map((tip, i) => (
+                  <View key={i} style={styles.tipRow}>
+                    <Text style={styles.tipDot}>·</Text>
+                    <Text style={styles.tipText}>{tip}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
           <TouchableOpacity style={styles.gotItBtn} onPress={onDismiss} activeOpacity={0.85} accessibilityRole="button">
             <Text style={styles.gotItText}>Got it →</Text>
           </TouchableOpacity>
@@ -45,6 +49,8 @@ export function HelpModal({ visible, title, description, tips, onDismiss, onDism
 }
 
 const styles = StyleSheet.create({
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  scrollContent: { paddingBottom: Spacing.sm },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(61,26,36,0.55)',
@@ -58,6 +64,7 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     width: '100%',
     maxWidth: 400,
+    maxHeight: '86%',
     gap: Spacing.md,
   },
   badge: {

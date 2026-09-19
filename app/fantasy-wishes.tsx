@@ -588,13 +588,12 @@ export default function FantasyWishesScreen() {
       <HelpModal
         visible={help.visible}
         title="Fantasy Wishes"
-        description={`A private list of explicit sexual scenarios, every one of them for the two of you. Vote independently, only mutual Yes is ever revealed to both of you.`}
+        description={`Explicit scenarios for the two of you. You each vote in private, and only a Yes from both is ever shown.`}
         tips={[
-          `One card at a time, Yes or No. ${partner?.name ?? 'your partner'} never sees your choices, and a No is never shown`,
-          `Not sure yet? Skip for later sends the card to the back of the deck`,
-          `☰ at the top turns off any category that is not for the two of you. The deck starts gentle`,
-          `A mutual Yes lands in Matches. Add it to your Together List, leave a ❤️, or tap 🎲 Draw one for tonight`,
-          `A match only appears when you both say Yes, so a partner who says Yes to everything would learn your Yeses. Play it straight`,
+          `Yes or No, one card at a time. ${partner?.name ?? 'your partner'} never sees your votes`,
+          `Skip for later if you are not sure. ☰ turns off whole categories`,
+          `A Yes from both lands in Matches, where 🎲 draws one for tonight`,
+          `Someone who says Yes to everything would see all your Yeses. Vote honestly`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

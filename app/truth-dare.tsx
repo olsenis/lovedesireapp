@@ -558,13 +558,12 @@ export default function TruthDareScreen() {
         <HelpModal
           visible={help.visible}
           title="Truth or Dare"
-          description={`Two ways to play: Together Right Here on one phone, or Wherever You Are, where the card you pick lands on ${partnerName}'s phone.`}
+          description={`One phone between you, or each on your own phone. You pick the card, ${partnerName} plays it.`}
           tips={[
-            `Your turn: draw a Truth or a Dare and send it to ${partnerName}, or tap ✏️ and write your own`,
-            `Not the right card? Skip and get a different one before you send it`,
-            `Truth: ${partnerName} types or records the answer. Dare: ${partnerName} taps Dare completed when it is done`,
-            `Back keeps the game, return any time`,
-            `Sweet and Flirty are free, Spicy is Premium and asks both of you first`,
+            `Together Right Here: spin and play on this phone`,
+            `Wherever You Are: draw a Truth or a Dare, or tap ✏️ to write your own`,
+            `${partnerName} answers a Truth, or taps Dare completed`,
+            `Sweet and Flirty are free. Spicy is Premium and asks you both first`,
           ]}
           onDismiss={help.dismiss}
           onDismissAll={help.dismissAll}
