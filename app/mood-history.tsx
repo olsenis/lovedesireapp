@@ -206,7 +206,7 @@ export default function MoodHistoryScreen() {
                 <Text style={styles.statSub}>{moodLabel(myTop)}</Text>
               </View>
             )}
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, !myTop && { width: '100%' }]}>
               <Text style={styles.statNum}>{currentStreak}</Text>
               <Text style={styles.statLabel}>Day streak</Text>
               <Text style={styles.statSub}>{currentStreak > 0 ? 'days in a row' : 'Log today!'}</Text>
@@ -326,12 +326,16 @@ const styles = StyleSheet.create({
   moodEmoji: { fontSize: 28 },
   moodLabel: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted, marginTop: 2, textAlign: 'center' },
 
-  statsRow: { flexDirection: 'row', gap: Spacing.md, alignSelf: 'stretch' },
-  statCard: { flex: 1, minWidth: 0, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
+  // Fixed share, not flex: 1. Flex sizing here has broken twice (Aug 2026 one
+  // character per line, Sep 2026 on RN 0.86 one card collapsed and the other ran
+  // off the screen), both times because the row's width was resolved from the
+  // labels. A percentage is resolved from the screen and cannot be pushed.
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  statCard: { width: '48%', backgroundColor: Colors.white, borderRadius: Radius.xl, paddingVertical: Spacing.lg, paddingHorizontal: Spacing.sm, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
   statEmoji: { fontSize: 32 },
   statNum: { fontFamily: Fonts.heading, fontSize: 36, color: Colors.burgundy },
-  statLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
-  statSub: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted },
+  statLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center' },
+  statSub: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: Colors.muted, textAlign: 'center' },
 
   calendar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   calDay: { width: '13%', aspectRatio: 1, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
