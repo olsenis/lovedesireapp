@@ -882,7 +882,7 @@ export default function ProfileScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Disconnect couple</Text>
             <Text style={styles.modalHint}>
-              This will unlink you from {partner?.name ?? 'your partner'}. Your shared data stays for them, but you will need to pair again to reconnect.
+              This unlinks you from {partner?.name ?? 'your partner'}. Nothing is deleted: pair with {partner?.name ?? 'the same partner'} again and your shared history comes back. A new partner starts from a blank page and never sees it.
             </Text>
             {disconnectError ? <Text style={styles.errorText}>{disconnectError}</Text> : null}
             <View style={styles.modalBtns}>
