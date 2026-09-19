@@ -435,6 +435,118 @@ async function deleteDocDescendants(docRef: FirebaseFirestore.DocumentReference)
   }
 }
 
+// ─── Reset: start over in one part of the app (Sep 19 2026) ─────────────────
+// A couple clears ONE kind of shared history without touching the account or
+// the pairing. Small things (rebuildable or derived) one member may clear;
+// big things (something one of them wrote or photographed) need both: one
+// asks, the other confirms. Deleting happens here and not on the client
+// because the rules forbid a client from deleting Sunday Check-in docs,
+// Moments has files in Storage, and "both agreed" can only be checked here.
+//
+// Honest scope: the rules already let a member delete most couple docs
+// directly, so the two-person step is a guard against regret and anger, not
+// a security boundary. The target table is server-side so a client can never
+// name an arbitrary path.
+type ResetTarget = {
+  both: boolean;
+  collections?: string[];        // whole subcollections under the couple
+  docs?: string[];               // single docs, path relative to the couple
+  storage?: string[];            // Storage prefixes relative to couples/{id}/
+  // Keep a doc in a listed collection when this returns true.
+  keep?: (data: FirebaseFirestore.DocumentData) => boolean;
+};
+const RESET_TARGETS: Record<string, ResetTarget> = {
+  fantasyWishes: { both: false, docs: ['fwState/main'] },
+  moods:         { both: false, collections: ['moods'] },
+  memoryLane:    { both: false, collections: ['memoryLane'] },
+  presence:      { both: false, docs: ['sensate/progress'] },
+  intimacyLog:   { both: true,  collections: ['intimacyLog'] },
+  daily:         { both: true,  collections: ['dailyQuestions', 'dailyWishes'] },
+  sunday:        { both: true,  collections: ['stateUnion'] },
+  moments:       { both: true,  collections: ['moments'], storage: ['moments/'] },
+  notes:         { both: true,  collections: ['notes'], storage: ['voiceNotes/'] },
+  // Only what the couple added. A milestone the app noticed carries an
+  // autoKey, and its key is recorded on the couple doc so it is never made
+  // twice: deleting it would lose it for good.
+  ourStory:      { both: true,  collections: ['milestones'], keep: (d) => !!d.autoKey },
+};
+const RESET_REQUEST_TTL_MS = 7 * 24 * 3600_000;
+
+async function runReset(coupleId: string, target: ResetTarget): Promise<void> {
+  const coupleRef = db.doc(`couples/${coupleId}`);
+  for (const name of target.collections ?? []) {
+    const snap = await coupleRef.collection(name).get();
+    const doomed = target.keep ? snap.docs.filter((d) => !target.keep!(d.data())) : snap.docs;
+    for (const d of doomed) await deleteDocDescendants(d.ref);
+    if (doomed.length > 0) await batchDeleteDocs(doomed);
+  }
+  for (const path of target.docs ?? []) {
+    const ref = coupleRef.collection(path.split('/')[0]).doc(path.split('/')[1]);
+    await deleteDocDescendants(ref);
+    await ref.delete();
+  }
+  for (const prefix of target.storage ?? []) {
+    try { await storage.deleteFiles({ prefix: `couples/${coupleId}/${prefix}` }); } catch { /* nothing there */ }
+  }
+}
+
+export const resetCoupleData = onCall({ invoker: 'public' }, async (req) => {
+  if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in first.');
+  const uid = req.auth.uid;
+  const coupleId = String(req.data?.coupleId ?? '');
+  const key = String(req.data?.key ?? '');
+  const action = String(req.data?.action ?? '');
+  const target = Object.prototype.hasOwnProperty.call(RESET_TARGETS, key) ? RESET_TARGETS[key] : undefined;
+  if (!coupleId || coupleId.length > 64 || !target || !['run', 'request', 'confirm', 'cancel'].includes(action)) {
+    throw new HttpsError('invalid-argument', 'Unknown reset.');
+  }
+  const coupleRef = db.doc(`couples/${coupleId}`);
+  const couple = (await coupleRef.get()).data();
+  const members = [couple?.partner1Uid, couple?.partner2Uid].filter(Boolean) as string[];
+  if (!couple || !members.includes(uid)) throw new HttpsError('permission-denied', 'Not your couple.');
+  if (couple.archivedAt || members.length < 2) throw new HttpsError('failed-precondition', 'Only for a paired couple.');
+
+  // 10 actions an hour per person is far more than anyone needs.
+  const now = Date.now();
+  const rateRef = db.collection('rateLimits').doc(`reset_${uid}`);
+  const rateOk = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(rateRef);
+    const recent = ((snap.data()?.attempts ?? []) as number[]).filter((t) => now - t < 3600_000);
+    if (recent.length >= 10) return false;
+    tx.set(rateRef, { attempts: [...recent, now] }, { merge: true });
+    return true;
+  });
+  if (!rateOk) throw new HttpsError('resource-exhausted', 'Too many attempts. Try again later.');
+
+  const reqRef = coupleRef.collection('resetRequests').doc(key);
+  if (action === 'run') {
+    if (target.both) throw new HttpsError('failed-precondition', 'This one needs both of you.');
+    await runReset(coupleId, target);
+    console.log(`reset run ${key} couple=${hid(coupleId)} by=${hid(uid)}`);
+    return { ok: true, cleared: true };
+  }
+  if (action === 'request') {
+    if (!target.both) throw new HttpsError('failed-precondition', 'No request needed.');
+    await reqRef.set({ uid, at: now });
+    return { ok: true, cleared: false };
+  }
+  if (action === 'cancel') {
+    // Either the asker withdrawing or the partner saying "Not now". Same
+    // quiet result on purpose: no "declined" state is ever stored.
+    await reqRef.delete();
+    return { ok: true, cleared: false };
+  }
+  // confirm: only the OTHER member, only on a live request.
+  const pending = (await reqRef.get()).data();
+  if (!pending || pending.uid === uid || !members.includes(pending.uid) || now - Number(pending.at ?? 0) > RESET_REQUEST_TTL_MS) {
+    throw new HttpsError('failed-precondition', 'Nothing to confirm.');
+  }
+  await runReset(coupleId, target);
+  await reqRef.delete();
+  console.log(`reset confirm ${key} couple=${hid(coupleId)} by=${hid(uid)}`);
+  return { ok: true, cleared: true };
+});
+
 async function deleteCoupleData(coupleId: string): Promise<void> {
   const coupleRef = db.doc(`couples/${coupleId}`);
 

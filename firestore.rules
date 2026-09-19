@@ -272,6 +272,7 @@ service cloud.firestore {
           && subcollection != 'tonight'
           && subcollection != 'bingoCustom'
           && subcollection != 'wyrCustom'
+          && subcollection != 'resetRequests'
           && (!('fromUid'   in request.resource.data) || request.resource.data.fromUid   == request.auth.uid)
           // createdBy = auth.uid for user-authored docs. Auto-milestones in
           // Our Story write createdBy: "system" — allowed only when paired
@@ -317,6 +318,7 @@ service cloud.firestore {
           && subcollection != 'tonight'
           && subcollection != 'bingoCustom'
           && subcollection != 'wyrCustom'
+          && subcollection != 'resetRequests'
           && (!('fromUid'   in resource.data) || request.resource.data.fromUid   == resource.data.fromUid)
           && (!('createdBy' in resource.data) || request.resource.data.createdBy == resource.data.createdBy)
           && (!('loggedBy'  in resource.data) || request.resource.data.loggedBy  == resource.data.loggedBy)
@@ -398,7 +400,9 @@ service cloud.firestore {
           // once at create and never updated by a client. No other wildcard
           // collection carries a `questions` field.
           && !('questions' in request.resource.data.diff(resource.data).affectedKeys());
-        allow delete: if request.auth != null && isMemberOfCouple(coupleId) && subcollection != 'tonight';
+        // resetRequests (Sep 19 2026) is written only by the resetCoupleData
+        // callable: a member may READ a request, never create, change or remove one.
+        allow delete: if request.auth != null && isMemberOfCouple(coupleId) && subcollection != 'tonight' && subcollection != 'resetRequests';
       }
     }
 
