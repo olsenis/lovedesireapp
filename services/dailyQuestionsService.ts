@@ -230,6 +230,61 @@ export async function askCustomQuestion(coupleId: string, uid: string, text: str
   trackEvent('daily_custom_asked');
 }
 
+// Past answers archive (Sep 2026, USER_VOICE C3, pulled forward): every
+// Daily question BOTH partners answered on an earlier day, newest first.
+// Same promise as Daily itself: a question only one of you answered never
+// shows, not even your own side. Today is left to the Daily screen, where
+// the guess step on either-or questions still matters. One collection scan,
+// like getAllDailyMatches; page by month if this ever gets heavy.
+export interface DailyAnswerRow {
+  date: string;
+  gi: number;
+  text: string;
+  category: QuestionCategory | 'custom';
+  askedByUid?: string;
+  mine: string;
+  theirs: string;
+  myReaction: boolean;
+  theirReaction: boolean;
+  myReply?: string;
+  theirReply?: string;
+}
+
+export async function getAllRevealedDailyAnswers(
+  coupleId: string,
+  myUid: string,
+  partnerUid: string,
+  partner1Uid: string | undefined,
+): Promise<DailyAnswerRow[]> {
+  const snap = await getDocs(collection(db, 'couples', coupleId, 'dailyQuestions'));
+  const today = todayKey();
+  const rows: DailyAnswerRow[] = [];
+  for (const d of snap.docs) {
+    const data = d.data() as DailyQuestionDoc;
+    const date = data.date ?? d.id;
+    if (date === today) continue;
+    const candidates: { gi: number; text: string; category: DailyAnswerRow['category']; askedByUid?: string }[] = [];
+    (data.items ?? []).forEach((q, gi) => candidates.push({ gi, text: q.text, category: q.category }));
+    for (const [askerUid, c] of Object.entries(data.custom ?? {})) {
+      if (c?.text) candidates.push({ gi: customGi(partner1Uid, askerUid), text: c.text, category: 'custom', askedByUid: askerUid });
+    }
+    for (const c of candidates) {
+      if (!bothAnswered(data, c.gi, myUid, partnerUid)) continue;
+      const k = String(c.gi);
+      rows.push({
+        date, gi: c.gi, text: c.text, category: c.category, askedByUid: c.askedByUid,
+        mine: data.answers[myUid][k],
+        theirs: data.answers[partnerUid][k],
+        myReaction: !!data.reactions?.[myUid]?.[k],
+        theirReaction: !!data.reactions?.[partnerUid]?.[k],
+        myReply: data.replies?.[myUid]?.[k],
+        theirReply: data.replies?.[partnerUid]?.[k],
+      });
+    }
+  }
+  return rows.sort((a, b) => (a.date === b.date ? a.gi - b.gi : b.date.localeCompare(a.date)));
+}
+
 // A heart and one line on a revealed question (USER_VOICE C2). Empty
 // text removes the reply; `on` false removes the heart.
 export async function reactToDailyQuestion(coupleId: string, uid: string, globalIndex: number, on: boolean): Promise<void> {

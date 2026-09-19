@@ -875,7 +875,7 @@ export default function DailyScreen() {
           `Questions stay private until ${partnerName} has answered too. On either-or questions you can guess ${partnerName}'s pick first`,
           `Ask ${partnerName} something › adds one question of your own a day, answered by both of you`,
           `After a reveal, leave a ❤️ or one line under it`,
-          `Nothing comes back for weeks. Playful is free, Deep and Spicy are Premium`,
+          `Earlier days live in Our Story under Daily answers. Playful is free, Deep and Spicy are Premium`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
@@ -1055,6 +1055,9 @@ function DoneState({
         </TouchableOpacity>
       )}
       {/* Tomorrow copy varies by tier + draw state. */}
+      <TouchableOpacity onPress={() => router.push('/our-story?archive=answers' as any)} activeOpacity={0.7} accessibilityRole="button" style={{ marginTop: Spacing.md }}>
+        <Text style={styles.doneEarlier}>Earlier days ›</Text>
+      </TouchableOpacity>
       <Text style={styles.doneComeBack}>
         {!isSubscribed
           ? 'Or come back tomorrow for a fresh set ✨'
@@ -1480,6 +1483,7 @@ const styles = StyleSheet.create({
   upsellBody: { fontFamily: Fonts.body, fontSize: 14, color: Colors.blush, textAlign: 'center', lineHeight: 20 },
   upsellCta: { marginTop: Spacing.sm, backgroundColor: Colors.cream, paddingVertical: 10, paddingHorizontal: Spacing.lg, borderRadius: Radius.full },
   upsellCtaText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.burgundy },
+  doneEarlier: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy, textAlign: 'center' },
   doneComeBack: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center', marginTop: Spacing.md },
 
   // Matches modal

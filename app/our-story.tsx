@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../hooks/useAuth';
 import { useHelp } from '../hooks/useHelp';
@@ -21,6 +21,9 @@ import { subscribeMoments, MomentEntry } from '../services/momentService';
 import { subscribeChallenge, ChallengeState } from '../services/challengeService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../services/fantasyWishesService';
 import { getAllDailyMatches } from '../services/dailyWishService';
+import { getAllRevealedDailyAnswers, DailyAnswerRow } from '../services/dailyQuestionsService';
+import { personalise } from '../services/personalise';
+import { ReactionRow } from '../components/ReactionRow';
 import {
   getCompletedSundayCount,
   getAllCompletedSundayWeeks,
@@ -70,7 +73,13 @@ export default function OurStoryScreen() {
   const [sundayEntries, setSundayEntries] = useState<Record<string, { mine: StateUnionEntry | null; theirs: StateUnionEntry | null } | undefined>>({});
   const [expandedSundayWeek, setExpandedSundayWeek] = useState<string | null>(null);
   // Which archive sub-card is expanded in the modal detail view.
-  const [archiveDetail, setArchiveDetail] = useState<null | 'fantasy' | 'daily' | 'sundays' | 'loveLang'>(null);
+  const [archiveDetail, setArchiveDetail] = useState<null | 'fantasy' | 'daily' | 'sundays' | 'loveLang' | 'answers'>(null);
+  // Daily answers archive (C3): loaded the first time it is opened, not on
+  // mount, so Our Story's first paint never waits on a collection scan.
+  const [dailyAnswers, setDailyAnswers] = useState<DailyAnswerRow[] | null>(null);
+  const [answersLoading, setAnswersLoading] = useState(false);
+  const [openAnswerMonth, setOpenAnswerMonth] = useState<string | null>(null);
+  const { archive: archiveParam } = useLocalSearchParams<{ archive?: string }>();
   const [expandedLoveLangWeek, setExpandedLoveLangWeek] = useState<string | null>(null);
 
   // Form state
@@ -130,6 +139,45 @@ export default function OurStoryScreen() {
     })();
     return () => { cancelled = true; };
   }, [coupleId, couple?.partner1Uid, couple?.partner2Uid]);
+
+  const loadDailyAnswers = async () => {
+    if (dailyAnswers || answersLoading) return;
+    if (!coupleId || !couple?.partner1Uid || !couple?.partner2Uid) { setDailyAnswers([]); return; }
+    const partnerUid = couple.partner1Uid === uid ? couple.partner2Uid : couple.partner1Uid;
+    setAnswersLoading(true);
+    try {
+      const rows = await getAllRevealedDailyAnswers(coupleId, uid, partnerUid, couple.partner1Uid);
+      setDailyAnswers(rows);
+      setOpenAnswerMonth(rows[0]?.date.slice(0, 7) ?? null);
+    } catch {
+      setDailyAnswers([]);
+    } finally {
+      setAnswersLoading(false);
+    }
+  };
+  const openAnswersArchive = () => { setArchiveDetail('answers'); loadDailyAnswers(); };
+  // Deep link from Daily: /our-story?archive=answers
+  useEffect(() => {
+    if (archiveParam === 'answers' && coupleId && couple?.partner1Uid && couple?.partner2Uid && uid) openAnswersArchive();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [archiveParam, coupleId, couple?.partner1Uid, couple?.partner2Uid, uid]);
+  // month key (YYYY-MM) -> day key -> rows, both newest first
+  const answersByMonth = useMemo(() => {
+    const months: { key: string; label: string; days: { date: string; rows: DailyAnswerRow[] }[] }[] = [];
+    for (const r of dailyAnswers ?? []) {
+      const mk = r.date.slice(0, 7);
+      let m = months[months.length - 1];
+      if (!m || m.key !== mk) {
+        const [y, mo] = mk.split('-').map(Number);
+        m = { key: mk, label: new Date(y, mo - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }), days: [] };
+        months.push(m);
+      }
+      let day = m.days[m.days.length - 1];
+      if (!day || day.date !== r.date) { day = { date: r.date, rows: [] }; m.days.push(day); }
+      day.rows.push(r);
+    }
+    return months;
+  }, [dailyAnswers]);
 
   // Lazy-load a week's entries when the row is tapped in the Sunday
   // archive modal. Cached per weekId so re-expanding is instant.
@@ -417,7 +465,7 @@ export default function OurStoryScreen() {
             accessibilityRole="button"
           >
             <Text style={styles.archiveEmoji}>🕯️</Text>
-            <Text style={styles.archiveNum}>{sundayCount ?? '—'}</Text>
+            <Text style={styles.archiveNum}>{sundayCount ?? '·'}</Text>
             <Text style={styles.archiveLabel}>Sunday check-ins</Text>
             {(sundayCount ?? 0) > 0 && <Text style={styles.archiveTap}>View →</Text>}
           </TouchableOpacity>
@@ -433,6 +481,15 @@ export default function OurStoryScreen() {
             {loveLangWeeks.length > 0 && <Text style={styles.archiveTap}>View →</Text>}
           </TouchableOpacity>
         </View>
+        {/* Daily answers (C3): full width under the 2×2 so the grid stays even. */}
+        <TouchableOpacity style={styles.archiveWide} onPress={openAnswersArchive} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Daily answers from earlier days">
+          <Text style={styles.archiveEmoji}>💫</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.archiveWideTitle}>Daily answers</Text>
+            <Text style={styles.archiveLabel}>Every question you both answered, day by day</Text>
+          </View>
+          <Text style={styles.archiveTap}>View →</Text>
+        </TouchableOpacity>
 
         {milestones.length === 0 && (
           <View style={styles.empty}>
@@ -500,6 +557,7 @@ export default function OurStoryScreen() {
               <Text style={styles.modalTitle}>
                 {archiveDetail === 'fantasy' && '✨ Fantasy matches'}
                 {archiveDetail === 'daily' && '🌹 Daily matches'}
+                {archiveDetail === 'answers' && '💫 Daily answers'}
                 {archiveDetail === 'sundays' && '🕯️ Sunday check-ins'}
                 {archiveDetail === 'loveLang' && '💬 Love language weeks'}
               </Text>
@@ -522,6 +580,72 @@ export default function OurStoryScreen() {
                   <Text style={styles.archiveRowDate}>{m.date}</Text>
                 </View>
               ))}
+              {archiveDetail === 'answers' && (
+                <>
+                  {(answersLoading || !dailyAnswers) && <Text style={styles.archiveWeekLoading}>Loading…</Text>}
+                  {dailyAnswers && dailyAnswers.length === 0 && (
+                    <Text style={styles.archiveEmptyText}>
+                      Nothing here yet. A question shows up the day after both of you answered it in Daily.
+                    </Text>
+                  )}
+                  {dailyAnswers && dailyAnswers.length > 0 && (
+                    <Text style={styles.archiveHintText}>Only questions you both answered. Today's are still in Daily.</Text>
+                  )}
+                  {answersByMonth.map((m) => {
+                    const isOpen = openAnswerMonth === m.key;
+                    return (
+                      <View key={m.key} style={styles.archiveWeekBlock}>
+                        <TouchableOpacity
+                          style={styles.archiveWeekHeader}
+                          onPress={() => setOpenAnswerMonth(isOpen ? null : m.key)}
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.archiveWeekLabel}>{m.label}</Text>
+                          <Text style={styles.archiveWeekChevron}>{isOpen ? '▾' : '▸'}</Text>
+                        </TouchableOpacity>
+                        {isOpen && m.days.map((day) => (
+                          <View key={day.date}>
+                            <Text style={styles.archiveDayLabel}>
+                              {new Date(`${day.date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            </Text>
+                            {day.rows.map((r) => {
+                              const askerName = r.askedByUid ? (r.askedByUid === uid ? (profile?.name ?? 'You') : (partner?.name ?? 'Partner')) : null;
+                              return (
+                                <View key={`${r.date}-${r.gi}`} style={styles.archiveWeekQBlock}>
+                                  <Text style={styles.archiveAnswerPill}>
+                                    {askerName ? `FROM ${askerName.toUpperCase()}` : String(r.category).toUpperCase()}
+                                  </Text>
+                                  <Text style={styles.archiveWeekQ}>{askerName ? r.text : personalise(r.text, partner?.name)}</Text>
+                                  <View style={styles.archiveWeekAnswerRow}>
+                                    <View style={styles.archiveWeekAnswerCol}>
+                                      <Text style={styles.archiveWeekAnswerLabel}>You</Text>
+                                      <Text style={styles.archiveWeekAnswerText}>{r.mine}</Text>
+                                    </View>
+                                    <View style={styles.archiveWeekAnswerCol}>
+                                      <Text style={styles.archiveWeekAnswerLabel}>{partner?.name ?? 'Partner'}</Text>
+                                      <Text style={styles.archiveWeekAnswerText}>{r.theirs}</Text>
+                                    </View>
+                                  </View>
+                                  {(r.myReaction || r.theirReaction || r.myReply || r.theirReply) && (
+                                    <ReactionRow
+                                      mine={{ reaction: r.myReaction, reply: r.myReply }}
+                                      theirs={{ reaction: r.theirReaction, reply: r.theirReply }}
+                                      partnerName={partner?.name ?? 'Partner'}
+                                      compact
+                                      readOnly
+                                    />
+                                  )}
+                                </View>
+                              );
+                            })}
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  })}
+                </>
+              )}
               {archiveDetail === 'loveLang' && (
                 <>
                   {partnerLangLabel && (
@@ -588,8 +712,8 @@ export default function OurStoryScreen() {
                           <Text style={styles.archiveWeekLoading}>Loading…</Text>
                         )}
                         {isExpanded && entries && questions.map((q, i) => {
-                          const mine = entries.mine?.answers?.[String(i)] ?? '—';
-                          const theirs = entries.theirs?.answers?.[String(i)] ?? '—';
+                          const mine = entries.mine?.answers?.[String(i)] ?? '·';
+                          const theirs = entries.theirs?.answers?.[String(i)] ?? '·';
                           return (
                             <View key={i} style={styles.archiveWeekQBlock}>
                               <Text style={styles.archiveWeekQ}>{i + 1}. {q}</Text>
@@ -703,7 +827,7 @@ export default function OurStoryScreen() {
         tips={[
           `Firsts fill in on their own as you use the app`,
           `Tap one to add a note, + Add for a milestone of your own`,
-          `Your archive below keeps your matches and past weeks`,
+          `Your archive below keeps your matches, past weeks and every Daily answer you both gave`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
@@ -811,6 +935,10 @@ const styles = StyleSheet.create({
   archiveGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.lg },
   archiveCard: { flexBasis: '48%', flexGrow: 1, minWidth: 0, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, paddingVertical: Spacing.md, paddingHorizontal: Spacing.sm, alignItems: 'center', gap: 2 },
   archiveEmoji: { fontSize: 24, marginBottom: 2 },
+  archiveWide: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, marginTop: Spacing.sm },
+  archiveWideTitle: { fontFamily: Fonts.heading, fontSize: 20, color: Colors.burgundy },
+  archiveDayLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: Colors.muted, paddingHorizontal: Spacing.md, paddingTop: Spacing.md },
+  archiveAnswerPill: { fontFamily: Fonts.bodyBold, fontSize: 9, letterSpacing: 1.2, color: Colors.muted, marginBottom: 2 },
   archiveNum: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
   archiveLabel: { fontFamily: Fonts.body, fontSize: 11, color: Colors.muted, textAlign: 'center' },
   archiveTap: { fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.burgundy, marginTop: 2 },
