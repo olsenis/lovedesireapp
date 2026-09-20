@@ -1396,7 +1396,7 @@ export default function HomeScreen() {
               <View style={styles.avatarRing}>
                 <PartnerAvatar name={profile?.name ?? '?'} photoURL={profile?.photoURL} size={64} />
               </View>
-              <Text style={styles.avatarNameLight}>{profile?.name}</Text>
+              <Text style={styles.avatarNameLight} numberOfLines={1}>{profile?.name}</Text>
               {myTimezone && <Text style={styles.tzClock}>{myTimezone}</Text>}
               <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Mood history">
                 <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
@@ -1414,7 +1414,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.middleCol}>
               <Text style={styles.sinceLabel}>together since</Text>
-              <Text style={styles.sinceDate}>{togetherSince}</Text>
+              <Text style={styles.sinceDate} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{togetherSince}</Text>
               {(showBothEvents || showAnniversaryOnly) && anniversary && (
                 <TouchableOpacity
                   style={styles.anniversaryPill}
@@ -1427,7 +1427,9 @@ export default function HomeScreen() {
                     {anniversary.daysUntil <= 1 ? '🎉 Today!' : `🎉 ${anniversary.dateLabel}`}
                   </Text>
                   <Text style={styles.anniversaryDays}>
-                    {anniversary.daysUntil <= 1 ? `${anniversary.years} years` : `in ${anniversary.daysUntil} days · ${anniversary.years} yrs`}
+                    {anniversary.daysUntil <= 1
+                      ? `${anniversary.years} ${anniversary.years === 1 ? 'year' : 'years'}`
+                      : `in ${anniversary.daysUntil} days · ${anniversary.years} ${anniversary.years === 1 ? 'yr' : 'yrs'}`}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -1476,7 +1478,7 @@ export default function HomeScreen() {
               <View style={styles.avatarRing}>
                 <PartnerAvatar name={partner?.name ?? '?'} photoURL={partner?.photoURL} size={64} />
               </View>
-              <Text style={styles.avatarNameLight}>{partner?.name ?? '...'}</Text>
+              <Text style={styles.avatarNameLight} numberOfLines={1}>{partner?.name ?? '...'}</Text>
               {partnerTimezone && <Text style={styles.tzClock}>{partnerTimezone}</Text>}
               <View style={styles.moodPill} accessibilityLabel={partnerMood ? `${partner?.name ?? 'Partner'} is feeling ${moodLabel(partnerMood.emoji, partnerMood.label)}` : 'No mood yet'}>
                 <Text style={styles.moodPillEmoji}>{partnerMood?.emoji ?? '·'}</Text>
@@ -1942,9 +1944,12 @@ const styles = StyleSheet.create({
   // Top-aligned so both avatars and names sit on the same line even though my
   // column is taller (Tonight pill); the middle column centres itself instead.
   coupleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  avatarCol: { alignItems: 'center', gap: 8, minWidth: 96 },
+  // The two avatar columns have a FIXED width and the middle takes what is
+  // left. With minWidth + an unshrinkable middle, "September 2026" pushed the
+  // partner's avatar off the right edge on a 388dp phone (Sep 20 2026).
+  avatarCol: { alignItems: 'center', gap: 8, width: 96 },
   avatarRing: { borderRadius: Radius.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.28)', padding: 3 },
-  avatarNameLight: { fontFamily: Fonts.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+  avatarNameLight: { fontFamily: Fonts.bodyBold, fontSize: 13, color: 'rgba(255,255,255,0.85)', maxWidth: 96, textAlign: 'center' },
   tzClock: { fontFamily: Fonts.body, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1, letterSpacing: 0.3 },
   tonightPill: { marginTop: 6, borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   tonightPillOn: { backgroundColor: 'rgba(255,255,255,0.92)', borderColor: 'rgba(255,255,255,0.92)' },
@@ -1955,7 +1960,7 @@ const styles = StyleSheet.create({
   tonightBannerSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   moodPill: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 4 },
   moodPillEmoji: { fontSize: 18 },
-  middleCol: { alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', gap: 4 },
+  middleCol: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', gap: 4, paddingHorizontal: 2 },
   sinceLabel: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
   sinceDate: { fontFamily: Fonts.heading, fontSize: 20, color: '#FFFFFF', textAlign: 'center', lineHeight: 24 },
   anniversaryPill: { alignItems: 'center', gap: 1, marginTop: 2 },
