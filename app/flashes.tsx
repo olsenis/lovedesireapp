@@ -282,7 +282,7 @@ export default function FlashesScreen() {
                   <Text style={styles.tapToViewEmoji}>{isVoice ? '🎙' : '📸'}</Text>
                   <View style={styles.tapToViewText}>
                     <Text style={styles.tapToViewTitle}>{isVoice ? 'Tap to listen' : 'Tap to view'}</Text>
-                    <Text style={styles.tapToViewSub}>Disappears after opening · {formatCountdown(flash.expiresAt)} left</Text>
+                    <Text style={styles.tapToViewSub}>Gone in {formatCountdown(flash.expiresAt)}</Text>
                   </View>
                   <Text style={styles.tapToViewArrow}>›</Text>
                 </TouchableOpacity>
@@ -504,9 +504,12 @@ export default function FlashesScreen() {
       <HelpModal
         visible={help.visible}
         title="Tease"
-        description={`A photo, a short video or a voice note for ${partner?.name ?? 'your partner'} only, from right now.`}
+        description={`Something small from your day, for ${partner?.name ?? 'your partner'}'s eyes only.`}
         tips={[
-          `It disappears after opening, and after 24 hours either way`,
+          `🎙 🎥 📷 at the bottom: a voice note, a video up to 30 seconds, or a photo`,
+          `⊞ at the top picks one you already have on your phone`,
+          `Add a short caption if you like`,
+          `Everything is gone after 24 hours, opened or not`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
