@@ -11,7 +11,7 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { inviteMessage } from '../../constants/app';
 import { subscribeResetRequests, ResetRequest, RESET_ROWS, resetDateLabel, isOpenReset, resetAnswerFor } from '../../services/resetService';
-import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, moodLabel } from '../../services/moodService';
+import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, moodLabel, moodCaption } from '../../services/moodService';
 import { OwnWordsSheet } from '../../components/OwnWordsSheet';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
@@ -1403,6 +1403,7 @@ export default function HomeScreen() {
               <TouchableOpacity style={styles.moodPill} onPress={() => router.push('/mood-history' as any)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Mood history">
                 <Text style={styles.moodPillEmoji}>{myMood?.emoji ?? '+'}</Text>
               </TouchableOpacity>
+              {myMood && <Text style={styles.moodCaption} numberOfLines={2}>{moodCaption(myMood.emoji, myMood.label)}</Text>}
               <TouchableOpacity
                 style={[styles.tonightPill, myTonightLive && styles.tonightPillOn]}
                 onPress={handleTonightToggle}
@@ -1482,9 +1483,18 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.avatarNameLight} numberOfLines={1}>{partner?.name ?? '...'}</Text>
               {partnerTimezone && <Text style={styles.tzClock}>{partnerTimezone}</Text>}
-              <View style={styles.moodPill} accessibilityLabel={partnerMood ? `${partner?.name ?? 'Partner'} is feeling ${moodLabel(partnerMood.emoji, partnerMood.label)}` : 'No mood yet'}>
+              {/* Tappable once there is a mood: opens Mood History on Together. */}
+              <TouchableOpacity
+                style={styles.moodPill}
+                disabled={!partnerMood}
+                onPress={() => router.push('/mood-history?tab=together' as any)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={partnerMood ? `${partner?.name ?? 'Partner'} is feeling ${moodLabel(partnerMood.emoji, partnerMood.label)}. Open mood history` : 'No mood yet'}
+              >
                 <Text style={styles.moodPillEmoji}>{partnerMood?.emoji ?? '·'}</Text>
-              </View>
+              </TouchableOpacity>
+              {partnerMood && <Text style={styles.moodCaption} numberOfLines={2}>{moodCaption(partnerMood.emoji, partnerMood.label)}</Text>}
             </View>
           </View>
         </LinearGradient>
@@ -1944,6 +1954,8 @@ const styles = StyleSheet.create({
   tonightBannerSub: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted },
   moodPill: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.full, paddingHorizontal: 12, paddingVertical: 4 },
   moodPillEmoji: { fontSize: 18 },
+  // Inside the fixed 96dp avatar column; own words are 24 characters at most, so two lines always hold them.
+  moodCaption: { fontFamily: Fonts.bodyItalic, fontSize: 11, lineHeight: 14, color: 'rgba(255,255,255,0.75)', textAlign: 'center', maxWidth: 96, marginTop: -2 },
   middleCol: { flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', gap: 4, paddingHorizontal: 2 },
   sinceLabel: { fontFamily: Fonts.bodyItalic, fontSize: 11, color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
   sinceDate: { fontFamily: Fonts.heading, fontSize: 20, color: '#FFFFFF', textAlign: 'center', lineHeight: 24 },

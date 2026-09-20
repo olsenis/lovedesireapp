@@ -524,6 +524,12 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   1. Phone A: 💬 Own words → "Bone tired" → Set mood
   - **Expected:** A's pill shows 💬; B's push reads "Oli is feeling 💬 Bone tired" (or "Oli updated a mood" when discreet); Mood History shows "Bone tired" on the chip and in stats; Notes' trigger-mood picker and Memory Lane are unchanged (no 💬 there). Firestore: `label: "Bone tired"`.
 
+- [ ] **The partner can read the mood** 📱 (Sep 20 2026)
+  1. Phone A: 💬 Own words → "A bit tired but happy" → Set mood. Phone B: Home
+  - **Expected:** under A's pill on B's couple card: “A bit tired but happy” in quotes, two lines at most, avatars and names do not move (check on the narrower phone). A sets 🌀 → B reads "Overthinking". A's own card shows the same caption under A's pill. No mood yet → "·", no caption, the pill does nothing.
+  2. Phone B: tap A's pill
+  - **Expected:** Mood History opens on **Together**; a header "YOU / {partner}" above the rows; today's row shows both emoji with their words under them. B's own pill still opens Mood History on **Mine**.
+
 ### Home while unpaired (Sep 2026, USER_VOICE C6)
 - [ ] **While you wait card**
   1. Fresh account, skip pairing, land on Home

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
@@ -8,7 +8,7 @@ import { useCouple } from '../hooks/useCouple';
 import * as Haptics from 'expo-haptics';
 import { useSubscription } from '../hooks/useSubscription';
 import { notifyPartner } from '../services/notificationService';
-import { MoodEntry, MoodEmoji, MOOD_LABELS, ALL_MOODS, subscribeMoodHistory, setMood, getTodaysMood, subscribeToMoods, CUSTOM_MOOD, moodLabel } from '../services/moodService';
+import { MoodEntry, MoodEmoji, MOOD_LABELS, ALL_MOODS, subscribeMoodHistory, setMood, getTodaysMood, subscribeToMoods, CUSTOM_MOOD, moodLabel, moodCaption } from '../services/moodService';
 import { OwnWordsSheet } from '../components/OwnWordsSheet';
 import { unlockMoodNotes } from '../services/noteService';
 import { Colors } from '../constants/colors';
@@ -51,7 +51,9 @@ export default function MoodHistoryScreen() {
   const { partner } = useCouple(user?.uid, profile?.coupleId);
   const { isSubscribed } = useSubscription();
   const [moods, setMoods] = useState<MoodEntry[]>([]);
-  const [tab, setTab] = useState<'mine' | 'together'>('mine');
+  // ?tab=together: the partner's mood pill on Home opens this screen there.
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [tab, setTab] = useState<'mine' | 'together'>(params.tab === 'together' ? 'together' : 'mine');
   const [myMood, setMyMood] = useState<MoodEntry | null>(null);
   const [showOwnWords, setShowOwnWords] = useState(false);
   const [ownWords, setOwnWords] = useState('');
@@ -236,6 +238,11 @@ export default function MoodHistoryScreen() {
           </View>
 
           <Text style={styles.sectionLabel}>Last 14 days</Text>
+          <View style={styles.togetherHead}>
+            <View style={{ flex: 1 }} />
+            <Text style={styles.togetherHeadName} numberOfLines={1}>You</Text>
+            <Text style={styles.togetherHeadName} numberOfLines={1}>{partnerName}</Text>
+          </View>
           {last14Keys.map(k => {
             const myEntry = myMoods.find(m => dayKey(m.createdAt) === k);
             const partnerEntry = partnerMoods.find(m => dayKey(m.createdAt) === k);
@@ -247,11 +254,11 @@ export default function MoodHistoryScreen() {
                 <Text style={styles.togetherDate}>{label}</Text>
                 <View style={styles.togetherEmojis}>
                   <Text style={styles.togetherEmoji}>{myEntry?.emoji ?? '·'}</Text>
-                  <Text style={styles.togetherName}>You</Text>
+                  {myEntry && <Text style={styles.togetherName} numberOfLines={2}>{moodCaption(myEntry.emoji, myEntry.label)}</Text>}
                 </View>
                 <View style={styles.togetherEmojis}>
                   <Text style={styles.togetherEmoji}>{partnerEntry?.emoji ?? '·'}</Text>
-                  <Text style={styles.togetherName}>{partnerName}</Text>
+                  {partnerEntry && <Text style={styles.togetherName} numberOfLines={2}>{moodCaption(partnerEntry.emoji, partnerEntry.label)}</Text>}
                 </View>
               </View>
             );
@@ -321,7 +328,10 @@ const styles = StyleSheet.create({
 
   togetherRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md },
   togetherDate: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, flex: 1 },
-  togetherEmojis: { alignItems: 'center', gap: 2 },
+  // Fixed width so the two columns line up under the header and a long caption wraps instead of widening the row.
+  togetherEmojis: { alignItems: 'center', gap: 2, width: 84 },
+  togetherHead: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.md, gap: Spacing.md, marginBottom: -Spacing.sm },
+  togetherHeadName: { width: 84, textAlign: 'center', fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
   togetherEmoji: { fontSize: 24 },
-  togetherName: { fontFamily: Fonts.body, fontSize: 10, color: Colors.muted },
+  togetherName: { fontFamily: Fonts.body, fontSize: 10, lineHeight: 13, color: Colors.muted, textAlign: 'center' },
 });

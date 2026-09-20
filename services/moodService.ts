@@ -45,6 +45,14 @@ export function moodLabel(emoji: MoodEmoji | string, label?: string): string {
   return (MOOD_LABELS as Record<string, string>)[emoji] ?? 'a mood';
 }
 
+// The mood as a caption under an emoji (couple card, Mood History Together).
+// Own words are shown in quotes so they read as the person's words. Until
+// Sep 20 2026 the partner saw only the emoji: own words could not be read
+// anywhere, and 🌀 or 🙋 said little without their label.
+export function moodCaption(emoji: MoodEmoji | string, label?: string): string {
+  return emoji === CUSTOM_MOOD && label && label.trim() ? `“${label.trim()}”` : moodLabel(emoji, label);
+}
+
 export interface MoodEntry {
   id: string;
   uid: string;
