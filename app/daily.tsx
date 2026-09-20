@@ -1021,9 +1021,13 @@ function DoneState({
         </View>
       </View>
       {partnerBehind ? (
-        <Text style={styles.donePartnerHint}>
-          {partnerName} still has {totalCount - partnerDoneCount} to go
-        </Text>
+        <>
+          <Text style={styles.donePartnerHint}>
+            {partnerName} still has {totalCount - partnerDoneCount} to go
+          </Text>
+          {/* The day's real dead end: I am done and something waits on my partner. */}
+          <WhileYouWait exclude={['daily']} />
+        </>
       ) : (
         <Text style={styles.donePartnerHint}>You&apos;re both caught up ✓</Text>
       )}
@@ -1234,14 +1238,13 @@ function QuestionCard({
       )}
       {both && sides && <ReactionRow {...sides} partnerName={partnerName} onReact={onReact} onReply={onReply} />}
 
+      {/* No WhileYouWait here: a card mid-deck is not a dead end, and the box
+          pushed Next → below the fold (Sep 20 2026). It lives in DoneState. */}
       {mine && !both && !revealBlockedByGuess && (
-        <>
-          <View style={styles.waitBanner}>
-            <Text style={styles.waitText}>✓ Sent! Waiting for {partnerName}…</Text>
-            <Text style={styles.waitAnswer}>Your answer: {mine}</Text>
-          </View>
-          <WhileYouWait exclude={['daily']} />
-        </>
+        <View style={styles.waitBanner}>
+          <Text style={styles.waitText}>✓ Sent! Waiting for {partnerName}…</Text>
+          <Text style={styles.waitAnswer}>Your answer: {mine}</Text>
+        </View>
       )}
 
       {/* H28 safety net — reveal locked because user hasn't yet guessed
