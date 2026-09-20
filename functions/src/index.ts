@@ -653,6 +653,7 @@ export const resetCoupleData = onCall({ invoker: 'public' }, async (req) => {
   if (target.kind === 'derived') throw new HttpsError('failed-precondition', 'No request needed.');
 
   if (action === 'request') {
+    // set() without merge: a new request replaces an old answer notice.
     await reqRef.set({ uid, at: now, ...(target.kind === 'joint' ? { autoAt: now + RESET_COOLING_OFF_MS } : {}) });
     return { ok: true, cleared: false };
   }
@@ -663,15 +664,27 @@ export const resetCoupleData = onCall({ invoker: 'public' }, async (req) => {
     // ordinary request, but cannot stop a joint erasure: that would make one
     // person's right depend on the other.
     if (pending.uid !== uid && target.kind === 'joint') throw new HttpsError('failed-precondition', 'Only the person who started this can cancel it.');
-    await reqRef.delete();
+    const answered = !!pending.doneAt || !!pending.declinedAt;
+    if (pending.uid === uid) {
+      // The asker withdrawing, or closing the answer they were shown.
+      await reqRef.delete();
+    } else if (!answered) {
+      // The partner's "Not now": the request becomes the answer the asker
+      // reads, or the asker waits seven days for nothing (found on two
+      // phones, Sep 19 2026). Nothing is cleared and nothing else is kept.
+      await reqRef.set({ uid: pending.uid, at: Number(pending.at ?? now), declinedAt: now });
+    }
     return { ok: true, cleared: false };
   }
   // confirm: only the OTHER member, only on a live request.
-  if (!pending || pending.uid === uid || !members.includes(pending.uid) || now - Number(pending.at ?? 0) > RESET_REQUEST_TTL_MS) {
+  if (!pending || pending.doneAt || pending.declinedAt || pending.uid === uid || !members.includes(pending.uid) || now - Number(pending.at ?? 0) > RESET_REQUEST_TTL_MS) {
     throw new HttpsError('failed-precondition', 'Nothing to confirm.');
   }
   await target.all(coupleRef, coupleId);
-  await reqRef.delete();
+  // The request becomes the answer the asker reads ("{partner} agreed"). No
+  // autoAt on it, so runDueResets never sees it; the asker's OK removes it
+  // through `cancel`, and the client stops showing it after seven days.
+  await reqRef.set({ uid: pending.uid, at: Number(pending.at ?? now), doneAt: now, doneBy: uid });
   console.log(`reset confirm ${key} couple=${hid(coupleId)} by=${hid(uid)}`);
   return { ok: true, cleared: true };
 });

@@ -10,7 +10,7 @@ import { useCouple } from '../../hooks/useCouple';
 import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { inviteMessage } from '../../constants/app';
-import { subscribeResetRequests, ResetRequest, RESET_ROWS, resetDateLabel } from '../../services/resetService';
+import { subscribeResetRequests, ResetRequest, RESET_ROWS, resetDateLabel, isOpenReset, resetAnswerFor } from '../../services/resetService';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, CUSTOM_MOOD_MAX, moodLabel } from '../../services/moodService';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
@@ -637,9 +637,23 @@ export default function HomeScreen() {
   // my answer (Reset, Sep 19 2026). Top of the stack: it waits on me and
   // lapses in seven days. Names the feature, this is inside the app.
   for (const r of resetRequests) {
-    if (r.uid === uid) continue;
     const row = RESET_ROWS.find((x) => x.key === r.key);
     if (!row) continue;
+    // The partner's answer to MY request, until I tap OK on the Reset screen.
+    const answer = resetAnswerFor(r, uid);
+    if (answer) {
+      list.unshift({
+        emoji: row.emoji,
+        title: answer === 'agreed'
+          ? `${partner?.name ?? 'Your partner'} agreed to clear ${row.label}`
+          : `${partner?.name ?? 'Your partner'} said not now to clearing ${row.label}`,
+        subtitle: answer === 'agreed' ? 'Cleared for both of you. Open Reset to close this' : 'Nothing was cleared. Open Reset to close this',
+        route: '/reset',
+        bg: '#FFF4CC',
+      });
+      continue;
+    }
+    if (r.uid === uid || !isOpenReset(r)) continue;
     list.unshift({
       emoji: row.emoji,
       // A joint row (Intimacy Log) clears on its own date: the partner can

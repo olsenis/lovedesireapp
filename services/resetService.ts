@@ -69,7 +69,16 @@ export interface ResetRequest {
   uid: string;      // who asked
   at: number;
   autoAt?: number;  // joint rows only: when it clears without the partner
+  doneAt?: number;      // the partner agreed and it is cleared
+  declinedAt?: number;  // the partner said not now, nothing was cleared
+  doneBy?: string;
 }
+
+// A request that still waits for an answer (or for its date).
+export const isOpenReset = (r: ResetRequest): boolean => !r.doneAt && !r.declinedAt;
+// The partner's answer, shown to the person who asked until they tap OK.
+export const resetAnswerFor = (r: ResetRequest, myUid: string): 'agreed' | 'notNow' | null =>
+  r.uid !== myUid ? null : r.doneAt ? 'agreed' : r.declinedAt ? 'notNow' : null;
 
 const functions = getFunctions(app);
 
@@ -93,20 +102,27 @@ export async function confirmReset(coupleId: string, key: ResetKey): Promise<voi
   await call(coupleId, key, 'confirm');
   trackEvent('reset_confirmed');
 }
-// The asker withdrawing, or the partner's "Not now" on a personal row. The
-// callable refuses a partner's cancel on a joint row.
+// The asker withdrawing (or tapping OK on the partner's answer), or the
+// partner's "Not now" on a personal row, which the asker then reads as an
+// answer. The callable refuses a partner's cancel on a joint row.
 export async function cancelReset(coupleId: string, key: ResetKey): Promise<void> {
   await call(coupleId, key, 'cancel');
 }
 
-// Live requests only. A joint request stays live until its autoAt.
+// Live requests and fresh answers. A joint request stays live until its
+// autoAt; an answer is shown for seven days.
 export function subscribeResetRequests(coupleId: string, onChange: (reqs: ResetRequest[]) => void): Unsubscribe {
   return onSnapshot(collection(db, 'couples', coupleId, 'resetRequests'), (snap) => {
     const now = Date.now();
     onChange(
       snap.docs
-        .map((d) => ({ key: d.id as ResetKey, ...(d.data() as { uid: string; at: number; autoAt?: number }) }))
-        .filter((r) => RESET_ROWS.some((row) => row.key === r.key) && (r.autoAt ? true : now - (r.at ?? 0) <= RESET_REQUEST_TTL_MS)),
+        .map((d) => ({ key: d.id as ResetKey, ...(d.data() as Omit<ResetRequest, 'key'>) }))
+        .filter((r) => {
+          if (!RESET_ROWS.some((row) => row.key === r.key)) return false;
+          const answeredAt = r.doneAt ?? r.declinedAt;
+          if (answeredAt) return now - answeredAt <= RESET_REQUEST_TTL_MS;
+          return r.autoAt ? true : now - (r.at ?? 0) <= RESET_REQUEST_TTL_MS;
+        }),
     );
   }, () => onChange([]));
 }

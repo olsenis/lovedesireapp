@@ -9,7 +9,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { notifyPartner } from '../services/notificationService';
 import {
   RESET_ROWS, ResetRow, ResetKey, ResetRequest,
-  subscribeResetRequests, clearMine, requestReset, confirmReset, cancelReset, resetDateLabel,
+  subscribeResetRequests, clearMine, requestReset, confirmReset, cancelReset, resetDateLabel, isOpenReset, resetAnswerFor,
 } from '../services/resetService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -58,13 +58,26 @@ export default function ResetScreen() {
     }
   };
 
+  const pushAnswered = () => {
+    if (!coupleId) return;
+    // The asker reads the answer in the app (the callable leaves it on the
+    // request); this is the nudge to open it. The same neutral words for yes
+    // and for not now, so the lock screen says neither.
+    const title = `${profile?.name ?? 'Your partner'} answered you`;
+    notifyPartner(coupleId, uid, title, 'Open Profile, then Reset.', { title, body: 'Open the app to see.' }).catch(() => {});
+  };
+
   const onConfirmed = async () => {
     const p = pending;
     setPending(null);
     if (!p || !coupleId) return;
     const { row } = p;
     if (p.kind === 'mine') return act(row.key, () => clearMine(coupleId, row.key), row.kind === 'derived' ? 'all' : 'mine');
-    if (p.kind === 'confirm') return act(row.key, () => confirmReset(coupleId, row.key), 'all');
+    if (p.kind === 'confirm') {
+      await act(row.key, () => confirmReset(coupleId, row.key), 'all');
+      pushAnswered();
+      return;
+    }
     await act(row.key, () => requestReset(coupleId, row.key));
     // Neutral on the lock screen: never the subject of the request.
     const title = `${profile?.name ?? 'Your partner'} asked you something`;
@@ -72,7 +85,9 @@ export default function ResetScreen() {
   };
 
   const renderRow = (row: ResetRow) => {
-    const req = requests.find((r) => r.key === row.key);
+    const found = requests.find((r) => r.key === row.key);
+    const req = found && isOpenReset(found) ? found : undefined;
+    const answer = found ? resetAnswerFor(found, uid) : null;
     const mineReq = req?.uid === uid;
     const theirReq = !!req && !mineReq;
     const joint = row.kind === 'joint';
@@ -80,6 +95,8 @@ export default function ResetScreen() {
     const when = req?.autoAt ? resetDateLabel(req.autoAt) : '';
     const hint =
       failed === row.key ? 'That did not work. Check your connection and try again.'
+      : answer === 'agreed' ? `${partnerName} agreed. It is cleared for both of you and starts from empty again.`
+      : answer === 'notNow' ? `${partnerName} said not now, so nothing was cleared. Your own part is still yours to clear.`
       : theirReq && joint ? `${partnerName} is clearing this on ${when}. Agree and it clears now.`
       : theirReq ? `${partnerName} asked to clear this for both of you.`
       : mineReq && joint ? `Clears on ${when}. If ${partnerName} agrees it clears now. You can cancel until then.`
@@ -102,7 +119,11 @@ export default function ResetScreen() {
               </TouchableOpacity>
             )}
             {row.kind !== 'derived' && !!partner && (
-              theirReq ? (
+              answer ? (
+                <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => coupleId && act(row.key, () => cancelReset(coupleId, row.key))} accessibilityRole="button">
+                  <Text style={styles.quietBtnText}>OK</Text>
+                </TouchableOpacity>
+              ) : theirReq ? (
                 <>
                   <TouchableOpacity style={styles.dangerBtn} disabled={isBusy} onPress={() => setPending({ kind: 'confirm', row })} accessibilityRole="button">
                     <Text style={styles.dangerBtnText}>{joint ? 'Agree to clear it now' : 'Agree and clear'}</Text>
@@ -110,7 +131,7 @@ export default function ResetScreen() {
                   {/* No "Not now" on a joint row: the partner can speed an
                       erasure up, never stop it. */}
                   {!joint && (
-                    <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => coupleId && act(row.key, () => cancelReset(coupleId, row.key))} accessibilityRole="button">
+                    <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={async () => { if (!coupleId) return; await act(row.key, () => cancelReset(coupleId, row.key)); pushAnswered(); }} accessibilityRole="button">
                       <Text style={styles.quietBtnText}>Not now</Text>
                     </TouchableOpacity>
                   )}
