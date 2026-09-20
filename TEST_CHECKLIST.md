@@ -1863,6 +1863,7 @@ Multiplayer Truth or Dare, the merged Daily feature (actions + questions in one 
 
 ### Daily: "While you wait" only at the end of the day (Sep 20 2026)
 - [ ] **Mid-deck** : answer a question while the partner has not → the card shows only "✓ Sent! Waiting for Eva…" with your answer, and **Next →** is on screen without scrolling. No "While you wait" box.
+- [ ] **Partner count with a written question** 📱 : one of you writes a question, both of you finish every card in the category → both phones say "You're both caught up ✓" (before Sep 20 2026 both said "{partner} still has 1 to go", the written question was in the total but not in the partner's count).
 - [ ] **Done for today** 📱 : finish the deck while the partner has cards left → under "Eva still has N to go" the While you wait chips appear (Take today's Moment, Leave a Love Note). When the partner finishes → "You're both caught up ✓" and the chips are gone.
 
 ### Daily: ask your partner something (Sep 2026, USER_VOICE C2b)

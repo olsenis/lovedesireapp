@@ -419,18 +419,18 @@ export default function DailyScreen() {
 
   // Partner progress for the current category — used by DoneState to nudge
   // partner-still-catching-up messaging. Mirrors handled-check logic.
+  // Counted over the SAME rows as totalCount. It used to walk qDoc.items, which
+  // leaves out the couple-written questions (gi 1000 / 1001), so with one of
+  // those in the deck both phones said "{partner} still has 1 to go" for ever
+  // (found on two phones, Sep 20 2026).
   const partnerDoneCount = useMemo(() => {
     if (!partnerId) return 0;
-    let count = 0;
-    const dpSources = DP_SOURCES[selectedCat];
-    wishDoc?.items.forEach((item, gi) => {
-      if (dpSources.includes(item.category) && wishDoc.votes[partnerId]?.[gi] !== undefined) count++;
-    });
-    qDoc?.items.forEach((q, gi) => {
-      if (q.category === selectedCat && qDoc.answers?.[partnerId]?.[String(gi)]) count++;
-    });
-    return count;
-  }, [partnerId, selectedCat, wishDoc, qDoc]);
+    return rows.filter((r) =>
+      r.kind === 'action'
+        ? wishDoc?.votes?.[partnerId]?.[r.gi] !== undefined
+        : !!qDoc?.answers?.[partnerId]?.[String(r.gi)],
+    ).length;
+  }, [partnerId, rows, wishDoc, qDoc]);
 
   const allHandled = rows.length > 0 && rows.every(isHandled);
   const currentCard = deck[deckPos];
