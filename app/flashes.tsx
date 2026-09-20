@@ -507,7 +507,6 @@ export default function FlashesScreen() {
         description={`A photo, a short video or a voice note for ${partner?.name ?? 'your partner'} only, from right now.`}
         tips={[
           `It disappears after opening, and after 24 hours either way`,
-          `Report this tease is in the viewer if something is not okay`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
