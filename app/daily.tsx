@@ -202,7 +202,9 @@ export default function DailyScreen() {
 
   const cfg = QUESTION_CATEGORY_CONFIG[selectedCat];
 
-  // "Ask {partner} something" (USER_VOICE C2b): one couple-written
+  // "Write your own question" (USER_VOICE C2b; the link read "Ask {partner}
+  // something" until Sep 20 2026, which sounded like a nudge to go and talk
+  // rather than a card you compose): one couple-written
   // question per person per day, shown in every category, same mutual
   // reveal as the pool questions. gi is derived from the couple's slots.
   const [showAsk, setShowAsk] = useState(false);
@@ -593,7 +595,7 @@ export default function DailyScreen() {
 
       {qDoc && !qDoc.custom?.[uid] && (
         <TouchableOpacity style={styles.askLink} onPress={() => setShowAsk(true)} activeOpacity={0.7} accessibilityRole="button">
-          <Text style={styles.askLinkText}>Ask {partnerName} something ›</Text>
+          <Text style={styles.askLinkText}>Write your own question ›</Text>
         </TouchableOpacity>
       )}
 
@@ -837,12 +839,12 @@ export default function DailyScreen() {
         </View>
       </Modal>
 
-      {/* Ask {partner} something (C2b) */}
+      {/* Write your own question (C2b) */}
       <Modal visible={showAsk} transparent animationType="slide" onRequestClose={() => setShowAsk(false)}>
         <View style={styles.guessOverlay}>
           <View style={styles.guessSheet}>
-            <Text style={styles.guessSheetTitle}>Ask {partnerName} something</Text>
-            <Text style={styles.guessSheetHint}>One question, answered by both of you, revealed together. One a day.</Text>
+            <Text style={styles.guessSheetTitle}>Write your own question</Text>
+            <Text style={styles.guessSheetHint}>{partnerName} and you both answer it, and the answers are revealed together. One a day.</Text>
             <TextInput
               style={styles.askInput}
               value={askText}
@@ -873,7 +875,7 @@ export default function DailyScreen() {
         tips={[
           `Picks: Yes or Not for me. A Yes from both can go to your Together List`,
           `Questions stay private until ${partnerName} has answered too`,
-          `Ask ${partnerName} something › adds one question of your own a day`,
+          `Write your own question › adds one to today's cards, once a day`,
           `Your past answers are kept in Our Story. Deep and Spicy are Premium`,
         ]}
         onDismiss={help.dismiss}
