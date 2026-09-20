@@ -2355,7 +2355,7 @@ Paid Bingo-style activities, double-blind fantasy voting, daily 4-category picks
 
 - [ ] **Refusals** ⚠️ (dev console) : `confirm` by the person who asked; `mine` on `intimacyLog`; `request` on `memoryLane`; an unknown key; a user outside the couple; a client write to `couples/{id}/resetRequests/x` (rules).
 
-- [ ] **The texts say what the code does** : in-app Privacy Policy §6 and §7, the site's privacy policy, FAQ and support page all describe "your part at once, your partner's with agreement, about-both by either of you after seven days". No page says shared data stays until the partner deletes.
+- [ ] **The texts say what the code does** : the Delete account sheet in Profile ("...everything you made here, and what is about both of you at once... What Eva made stays with Eva."; open it and Cancel), the Disconnect sheet (ends with "To erase instead, use Reset."), the site FAQ "What if my partner and I break up?" (nothing deleted, same partner gets the history back, a new partner never sees it), the Terms §3 and §9, in-app Privacy Policy §6 and §7, the site's privacy policy, FAQ and support page all describe "your part at once, your partner's with agreement, about-both by either of you after seven days". No page says shared data stays until the partner deletes.
 
 ### Replies: whoever wrote first is on top (Sep 19 2026)
 - [ ] **Order follows time, not person** 📱

@@ -918,7 +918,7 @@ export default function ProfileScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Disconnect couple</Text>
             <Text style={styles.modalHint}>
-              This unlinks you from {partner?.name ?? 'your partner'}. Nothing is deleted: pair with {partner?.name ?? 'the same partner'} again and your shared history comes back. A new partner starts from a blank page and never sees it.
+              This unlinks you from {partner?.name ?? 'your partner'}. Nothing is deleted: pair with {partner?.name ?? 'the same partner'} again and your shared history comes back. A new partner starts from a blank page and never sees it. To erase instead, use Reset.
             </Text>
             {disconnectError ? <Text style={styles.errorText}>{disconnectError}</Text> : null}
             <View style={styles.modalBtns}>
@@ -939,7 +939,10 @@ export default function ProfileScreen() {
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Delete account</Text>
             <Text style={styles.modalHint}>
-              This permanently deletes your account. Your couple's shared data will remain until {partner?.name ?? 'your partner'} also deletes their account.
+              {/* Must say what deleteUserCascade does (eraseOwnContributions, Sep 19 2026). */}
+              {partner
+                ? `This permanently deletes your account, everything you made here, and what is about both of you at once (the Intimacy Log, Fantasy Wishes matches). What ${partner.name ?? 'your partner'} made stays with ${partner.name ?? 'your partner'}.`
+                : 'This permanently deletes your account and everything you made here.'}
             </Text>
             <TextInput style={styles.modalInput} placeholder="Enter your password to confirm"
               placeholderTextColor={Colors.muted} value={deletePw} onChangeText={setDeletePw} secureTextEntry autoFocus />
