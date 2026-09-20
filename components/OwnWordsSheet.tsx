@@ -35,7 +35,6 @@ export function OwnWordsSheet({ visible, initial, onCancel, onSave }: {
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.sheet}>
           <Text style={styles.title}>In your own words</Text>
-          <Text style={styles.hint}>A few words are enough.</Text>
           <TextInput
             ref={inputRef}
             style={styles.input}
@@ -48,6 +47,14 @@ export function OwnWordsSheet({ visible, initial, onCancel, onSave }: {
             onSubmitEditing={save}
             accessibilityLabel="Your mood in your own words"
           />
+          {/* The limit is said out loud: the field used to stop taking letters
+              at 24 without a word (found on a phone, Sep 20 2026). */}
+          <View style={styles.underRow}>
+            <Text style={styles.hint}>A few words are enough.</Text>
+            <Text style={[styles.count, words.length >= CUSTOM_MOOD_MAX && styles.countFull]} accessibilityLabel={`${words.length} of ${CUSTOM_MOOD_MAX} characters`}>
+              {words.length}/{CUSTOM_MOOD_MAX}
+            </Text>
+          </View>
           <View style={styles.btns}>
             <TouchableOpacity style={styles.cancel} onPress={onCancel} accessibilityRole="button">
               <Text style={styles.cancelText}>Cancel</Text>
@@ -66,7 +73,10 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.sm, paddingBottom: Spacing.xxl },
   title: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
+  underRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   hint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
+  count: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, fontVariant: ['tabular-nums'] },
+  countFull: { fontFamily: Fonts.bodyBold, color: Colors.burgundy },
   input: { fontFamily: Fonts.body, fontSize: 16, color: Colors.text, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md },
   btns: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
   cancel: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },

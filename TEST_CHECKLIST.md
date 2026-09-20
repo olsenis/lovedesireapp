@@ -524,6 +524,7 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   1. Phone A: 💬 Own words → "Bone tired" → Set mood
   - **Expected:** A's pill shows 💬; B's push reads "Oli is feeling 💬 Bone tired" (or "Oli updated a mood" when discreet); Mood History shows "Bone tired" on the chip and in stats; Notes' trigger-mood picker and Memory Lane are unchanged (no 💬 there). Firestore: `label: "Bone tired"`.
 
+- [ ] **Own words sheet and Mine tab** (Sep 20 2026) : the sheet shows "A few words are enough." and a counter "n/24" that turns burgundy at 24, where typing stops; after Set mood the chip in the picker still reads "Own words" and is highlighted (it never prints the words); the Mine tab card reads "Days logged · in the last 30 days" and matches the filled days in the calendar below; the word "streak" appears nowhere.
 - [ ] **The partner can read the mood** 📱 (Sep 20 2026)
   1. Phone A: 💬 Own words → "A bit tired but happy" → Set mood. Phone B: Home
   - **Expected:** under A's pill on B's couple card: “A bit tired but happy” in quotes, two lines at most, avatars and names do not move (check on the narrower phone). A sets 🌀 → B reads "Overthinking". A's own card shows the same caption under A's pill. No mood yet → "·", no caption, the pill does nothing.

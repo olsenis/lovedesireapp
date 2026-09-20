@@ -33,18 +33,6 @@ function mostFrequent(entries: MoodEntry[]): MoodEmoji | null {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as MoodEmoji;
 }
 
-function streak(myMoods: MoodEntry[]): number {
-  let count = 0;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(today); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    if (myMoods.some(m => dayKey(m.createdAt) === key)) count++;
-    else break;
-  }
-  return count;
-}
-
 export default function MoodHistoryScreen() {
   const { user, profile } = useAuth();
   const help = useHelp('mood-history');
@@ -108,7 +96,9 @@ export default function MoodHistoryScreen() {
   });
 
   const myTop = mostFrequent(myMoods);
-  const currentStreak = streak(myMoods);
+  // A plain count, never a streak: no streaks and no pressure words is a
+  // product rule (VOICE.md), and the paywall says "No streaks" out loud.
+  const daysLogged = days.filter((d) => !!d.entry).length;
 
   // Together stats (last 14 days)
   const last14Keys = Array.from({ length: 14 }, (_, i) => {
@@ -171,7 +161,8 @@ export default function MoodHistoryScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Describe your mood in your own words">
                 <Text style={styles.moodEmoji}>{CUSTOM_MOOD}</Text>
-                <Text style={styles.moodLabel} numberOfLines={1}>{myMood?.emoji === CUSTOM_MOOD && myMood.label ? myMood.label : 'Own words'}</Text>
+                {/* A picker button, not a display: the words are read on Home and in Together. */}
+                <Text style={styles.moodLabel}>Own words</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -193,9 +184,9 @@ export default function MoodHistoryScreen() {
               </View>
             )}
             <View style={[styles.statCard, !myTop && { width: '100%' }]}>
-              <Text style={styles.statNum}>{currentStreak}</Text>
-              <Text style={styles.statLabel}>Day streak</Text>
-              <Text style={styles.statSub}>{currentStreak > 0 ? 'days in a row' : 'Log today!'}</Text>
+              <Text style={styles.statNum}>{daysLogged}</Text>
+              <Text style={styles.statLabel}>Days logged</Text>
+              <Text style={styles.statSub}>{daysLogged > 0 ? 'in the last 30 days' : 'Your moods will show here'}</Text>
             </View>
           </View>
 
