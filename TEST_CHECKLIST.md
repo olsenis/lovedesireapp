@@ -1587,11 +1587,11 @@ Feature merged into Special Days (`app/calendar.tsx`). The `/countdown` route no
 Feature removed pre-launch. The `/time-capsules` route no longer exists, `services/timeCapsuleService.ts` is deleted, and the Firestore rules block for `/timeCapsules/{id}` is gone. Any pre-launch test seals are cleaned up by the GDPR cascade in `functions/src/index.ts` (still walks the subcollection as a legacy safety net). If the feature is ever brought back, its tests should live here again.
 
 ### Our Story: Daily answers archive (Sep 19 2026, USER_VOICE C3)
-- [ ] **Earlier days, both sides** 📱
+- [ ] **Past answers, both sides** 📱
   1. Couple with a few days of Daily behind them → Us → Our Story → "Daily answers"
   - **Expected:** Months newest first, the newest open; under each day the questions you BOTH answered with "You" and the partner's name side by side, a small PLAYFUL / DEEP / SPICY or "FROM …" label, hearts and replies visible and not editable. A question only one of you answered is missing on BOTH phones. Today is not there.
 
-- [ ] **The way in from Daily**: finish the day → "Earlier days ›" under the stats → Our Story opens with the archive already showing.
+- [ ] **The way in from Daily**: finish the day → "Your past answers, in Our Story ›" at the very bottom of "Done for today", under the tomorrow line → Our Story opens with the archive already showing.
 
 - [ ] **No Premium needed**: flip `isPremium` off → Deep and Spicy answers from earlier days are still listed.
 

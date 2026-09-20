@@ -874,7 +874,7 @@ export default function DailyScreen() {
           `Picks: Yes or Not for me. A Yes from both can go to your Together List`,
           `Questions stay private until ${partnerName} has answered too`,
           `Ask ${partnerName} something › adds one question of your own a day`,
-          `Earlier days are in Our Story. Deep and Spicy are Premium`,
+          `Your past answers are kept in Our Story. Deep and Spicy are Premium`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
@@ -1058,9 +1058,6 @@ function DoneState({
         </TouchableOpacity>
       )}
       {/* Tomorrow copy varies by tier + draw state. */}
-      <TouchableOpacity onPress={() => router.push('/our-story?archive=answers' as any)} activeOpacity={0.7} accessibilityRole="button" style={{ marginTop: Spacing.md }}>
-        <Text style={styles.doneEarlier}>Earlier days ›</Text>
-      </TouchableOpacity>
       <Text style={styles.doneComeBack}>
         {!isSubscribed
           ? 'Or come back tomorrow for a fresh set ✨'
@@ -1068,6 +1065,12 @@ function DoneState({
             ? 'Fresh set every morning ✨'
             : "You've drawn everything today, fresh set tomorrow ✨"}
       </Text>
+      {/* Last on the screen, after today and tomorrow, and named for what it
+          is and where it goes. As "Earlier days ›" between Draw more and the
+          tomorrow line it read like a way to get older cards (Sep 20 2026). */}
+      <TouchableOpacity onPress={() => router.push('/our-story?archive=answers' as any)} activeOpacity={0.7} accessibilityRole="button" style={{ marginTop: Spacing.md }}>
+        <Text style={styles.doneEarlier}>Your past answers, in Our Story ›</Text>
+      </TouchableOpacity>
     </View>
   );
 }
