@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
+import * as ScreenCapture from 'expo-screen-capture';
 import { isAppLockEnabled, setAppLockEnabled, authenticate, LOCK_AFTER_MS } from '../services/appLockService';
 
 // One instance, mounted in app/_layout.tsx (USER_VOICE A7).
@@ -33,6 +34,20 @@ export function useAppLock(): {
       if (on) setLocked(true);
     });
   }, []);
+
+  // Android takes the app-switcher snapshot BEFORE JavaScript hears about the
+  // state change, so the cover below is never in the picture there (seen on a
+  // phone, Sep 20 2026: the couple card with a mood in plain view). The only
+  // thing Android honours is FLAG_SECURE, which expo-screen-capture sets: the
+  // switcher shows a blank card, and screenshots are blocked too, while the
+  // lock is on. iOS reports 'inactive' in time, so the cover does the work
+  // there and screenshots stay possible.
+  const SECURE_KEY = 'app-lock';
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    if (enabled) ScreenCapture.preventScreenCaptureAsync(SECURE_KEY).catch(() => {});
+    else ScreenCapture.allowScreenCaptureAsync(SECURE_KEY).catch(() => {});
+  }, [enabled]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state: AppStateStatus) => {

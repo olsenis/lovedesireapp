@@ -4128,7 +4128,7 @@ Profile screen controls, payment paywall, help system, legal viewers.
 
 - [ ] **App switcher shows nothing** 📱 🔒
   1. Lock on; open Fantasy Wishes; swipe up to the app switcher
-  - **Expected:** The preview card is a blank cream screen with the wordmark, not the wish text.
+  - **Expected:** iOS: the preview card is a blank cream screen with the wordmark, not the wish text. Android: the card is blank (FLAG_SECURE; the cream cover cannot be in the snapshot there), and a screenshot attempt inside the app is refused while the lock is on; with the lock off, the card shows the app and screenshots work again. (Sep 20 2026: before the fix Android showed the couple card in full.)
 
 - [ ] **Turn off requires Face ID; no passcode on the phone blocks turning on** ⚠️
   - **Expected:** Switch OFF → prompt → off, no more prompts. On a phone with no passcode or biometrics the switch stays off with "Set a passcode first". The setting is per phone: the partner's phone is unaffected.

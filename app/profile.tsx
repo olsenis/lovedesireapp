@@ -575,7 +575,11 @@ export default function ProfileScreen() {
           <View style={styles.row}>
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>Lock the app</Text>
-              <Text style={styles.rowHint}>Face ID or your phone passcode every time the app opens, and after a minute in the background. This phone only.</Text>
+              <Text style={styles.rowHint}>
+                {Platform.OS === 'android'
+                  ? 'Your fingerprint or phone passcode every time the app opens, and after a minute in the background. The app switcher shows a blank card and screenshots are off while this is on. This phone only.'
+                  : 'Face ID or your phone passcode every time the app opens, and after a minute in the background. This phone only.'}
+              </Text>
             </View>
             {Platform.OS === 'web' ? (
               <Text style={styles.notifOff}>Phone only</Text>
