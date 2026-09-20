@@ -11,7 +11,8 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { inviteMessage } from '../../constants/app';
 import { subscribeResetRequests, ResetRequest, RESET_ROWS, resetDateLabel, isOpenReset, resetAnswerFor } from '../../services/resetService';
-import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, CUSTOM_MOOD_MAX, moodLabel } from '../../services/moodService';
+import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, moodLabel } from '../../services/moodService';
+import { OwnWordsSheet } from '../../components/OwnWordsSheet';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
 import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
 import { subscribeSensateProgress, SensateProgress } from '../../services/sensateService';
@@ -1695,30 +1696,13 @@ export default function HomeScreen() {
       )}
 
       {/* Own words mood sheet (C4) */}
-      <Modal visible={showOwnWords} transparent animationType="slide" onRequestClose={() => setShowOwnWords(false)}>
-        <View style={styles.ownOverlay}>
-          <View style={styles.ownSheet}>
-            <Text style={styles.ownTitle}>In your own words</Text>
-            <Text style={styles.ownHint}>One or two words. {partner?.name ?? 'Your partner'} sees them on Home.</Text>
-            <TextInput
-              style={styles.ownInput}
-              value={ownWords}
-              onChangeText={(t) => setOwnWords(t.slice(0, CUSTOM_MOOD_MAX))}
-              placeholder="Bone tired, buzzing, soft…"
-              placeholderTextColor={Colors.muted}
-              maxLength={CUSTOM_MOOD_MAX}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={() => { if (ownWords.trim()) { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, ownWords.trim()); } }}
-              accessibilityLabel="Your mood in your own words"
-            />
-            <View style={styles.ownBtns}>
-              <TouchableOpacity style={styles.ownCancel} onPress={() => setShowOwnWords(false)} accessibilityRole="button"><Text style={styles.ownCancelText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.ownSave, !ownWords.trim() && { opacity: 0.5 }]} disabled={!ownWords.trim()} onPress={() => { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, ownWords.trim()); }} accessibilityRole="button"><Text style={styles.ownSaveText}>Set mood</Text></TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <OwnWordsSheet
+        visible={showOwnWords}
+        initial={ownWords}
+        partnerName={partner?.name ?? 'Your partner'}
+        onCancel={() => setShowOwnWords(false)}
+        onSave={(words) => { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, words); }}
+      />
 
       {/* Tonight's Ritual section removed July 2026 — Questions Game merged
           into Daily and its own dedicated ritual row became redundant with
@@ -2001,16 +1985,6 @@ const styles = StyleSheet.create({
   moodBtn: { alignItems: 'center', width: '22%', paddingVertical: Spacing.sm, borderRadius: Radius.md, backgroundColor: Colors.cream, borderWidth: 1, borderColor: Colors.border },
   moodEmoji: { fontSize: 26 },
   moodLabel: { fontFamily: Fonts.body, fontSize: 9, color: Colors.muted, textAlign: 'center', marginTop: 2 },
-  ownOverlay: { flex: 1, backgroundColor: 'rgba(61,26,36,0.5)', justifyContent: 'flex-end' },
-  ownSheet: { backgroundColor: Colors.cream, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.xl, gap: Spacing.sm, paddingBottom: Spacing.xxl },
-  ownTitle: { fontFamily: Fonts.heading, fontSize: 24, color: Colors.burgundy },
-  ownHint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.muted },
-  ownInput: { fontFamily: Fonts.body, fontSize: 16, color: Colors.text, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginTop: Spacing.xs },
-  ownBtns: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  ownCancel: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
-  ownCancelText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.muted },
-  ownSave: { flex: 1, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center', backgroundColor: Colors.burgundy },
-  ownSaveText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
 
   nudgeLabel: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: Spacing.sm },
   nudgeCard: { flexDirection: 'row', alignItems: 'center', borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.sm, gap: Spacing.md, borderWidth: 1, borderColor: Colors.border, ...Shadow.sm },
