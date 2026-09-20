@@ -76,7 +76,8 @@ export interface ResetRequest {
 
 // A request that still waits for an answer (or for its date).
 export const isOpenReset = (r: ResetRequest): boolean => !r.doneAt && !r.declinedAt;
-// The partner's answer, shown to the person who asked until they tap OK.
+// The partner's answer, shown to the person who asked until they have read it
+// on the Reset screen (leaving the screen removes it through `cancel`).
 export const resetAnswerFor = (r: ResetRequest, myUid: string): 'agreed' | 'notNow' | null =>
   r.uid !== myUid ? null : r.doneAt ? 'agreed' : r.declinedAt ? 'notNow' : null;
 
@@ -102,7 +103,7 @@ export async function confirmReset(coupleId: string, key: ResetKey): Promise<voi
   await call(coupleId, key, 'confirm');
   trackEvent('reset_confirmed');
 }
-// The asker withdrawing (or tapping OK on the partner's answer), or the
+// The asker withdrawing (or having read the partner's answer), or the
 // partner's "Not now" on a personal row, which the asker then reads as an
 // answer. The callable refuses a partner's cancel on a joint row.
 export async function cancelReset(coupleId: string, key: ResetKey): Promise<void> {

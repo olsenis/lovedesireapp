@@ -682,7 +682,7 @@ export const resetCoupleData = onCall({ invoker: 'public' }, async (req) => {
   }
   await target.all(coupleRef, coupleId);
   // The request becomes the answer the asker reads ("{partner} agreed"). No
-  // autoAt on it, so runDueResets never sees it; the asker's OK removes it
+  // autoAt on it, so runDueResets never sees it; the asker reading it removes it
   // through `cancel`, and the client stops showing it after seven days.
   await reqRef.set({ uid: pending.uid, at: Number(pending.at ?? now), doneAt: now, doneBy: uid });
   console.log(`reset confirm ${key} couple=${hid(coupleId)} by=${hid(uid)}`);

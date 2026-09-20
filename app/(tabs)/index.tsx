@@ -639,7 +639,8 @@ export default function HomeScreen() {
   for (const r of resetRequests) {
     const row = RESET_ROWS.find((x) => x.key === r.key);
     if (!row) continue;
-    // The partner's answer to MY request, until I tap OK on the Reset screen.
+    // The partner's answer to MY request, until I have read it on the Reset
+    // screen (leaving that screen closes it).
     const answer = resetAnswerFor(r, uid);
     if (answer) {
       list.unshift({
@@ -647,7 +648,7 @@ export default function HomeScreen() {
         title: answer === 'agreed'
           ? `${partner?.name ?? 'Your partner'} agreed to clear ${row.label}`
           : `${partner?.name ?? 'Your partner'} said not now to clearing ${row.label}`,
-        subtitle: answer === 'agreed' ? 'Cleared for both of you. Open Reset to close this' : 'Nothing was cleared. Open Reset to close this',
+        subtitle: answer === 'agreed' ? 'Cleared for both of you' : 'Nothing was cleared',
         route: '/reset',
         bg: '#FFF4CC',
       });

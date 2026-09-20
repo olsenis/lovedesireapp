@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -39,6 +39,21 @@ export default function ResetScreen() {
   useEffect(() => {
     if (!coupleId) return;
     return subscribeResetRequests(coupleId, setRequests);
+  }, [coupleId]);
+
+  // The partner's answer to my request is read here, so reading it is what
+  // closes it: no button. It stays on the row for this visit and is removed
+  // when I leave the screen, which also takes the Home card away. (A first
+  // version had an "OK" button; on a phone nobody could tell what it did.)
+  // Only keys that are STILL an answer when I leave: if I asked again in the
+  // meantime the doc is a live request and must not be withdrawn.
+  const answeredKeys = useRef<ResetKey[]>([]);
+  useEffect(() => {
+    answeredKeys.current = requests.filter((r) => resetAnswerFor(r, uid)).map((r) => r.key);
+  }, [requests, uid]);
+  useEffect(() => () => {
+    if (!coupleId) return;
+    for (const key of answeredKeys.current) cancelReset(coupleId, key).catch(() => {});
   }, [coupleId]);
 
   const act = async (key: ResetKey, fn: () => Promise<void>, mark?: 'mine' | 'all') => {
@@ -96,7 +111,7 @@ export default function ResetScreen() {
     const hint =
       failed === row.key ? 'That did not work. Check your connection and try again.'
       : answer === 'agreed' ? `${partnerName} agreed. It is cleared for both of you and starts from empty again.`
-      : answer === 'notNow' ? `${partnerName} said not now, so nothing was cleared. Your own part is still yours to clear.`
+      : answer === 'notNow' ? `${partnerName} said not now, so nothing was cleared. Your own part is still yours to clear, and you can ask again.`
       : theirReq && joint ? `${partnerName} is clearing this on ${when}. Agree and it clears now.`
       : theirReq ? `${partnerName} asked to clear this for both of you.`
       : mineReq && joint ? `Clears on ${when}. If ${partnerName} agrees it clears now. You can cancel until then.`
@@ -119,11 +134,7 @@ export default function ResetScreen() {
               </TouchableOpacity>
             )}
             {row.kind !== 'derived' && !!partner && (
-              answer ? (
-                <TouchableOpacity style={styles.quietBtn} disabled={isBusy} onPress={() => coupleId && act(row.key, () => cancelReset(coupleId, row.key))} accessibilityRole="button">
-                  <Text style={styles.quietBtnText}>OK</Text>
-                </TouchableOpacity>
-              ) : theirReq ? (
+              theirReq ? (
                 <>
                   <TouchableOpacity style={styles.dangerBtn} disabled={isBusy} onPress={() => setPending({ kind: 'confirm', row })} accessibilityRole="button">
                     <Text style={styles.dangerBtnText}>{joint ? 'Agree to clear it now' : 'Agree and clear'}</Text>
