@@ -598,6 +598,13 @@ export default function DailyScreen() {
           <Text style={styles.askLinkText}>Write your own question ›</Text>
         </TouchableOpacity>
       )}
+      {/* One a day. The link used to vanish without a word once it was used,
+          which on a phone looked like a missing feature (Sep 20 2026). */}
+      {qDoc && !!qDoc.custom?.[uid] && (
+        <View style={styles.askLink}>
+          <Text style={styles.askLinkDone}>Your question is in today&apos;s cards. A new one tomorrow.</Text>
+        </View>
+      )}
 
       <KeyboardAwareScrollView
         ref={scrollRef}
@@ -1382,6 +1389,7 @@ const styles = StyleSheet.create({
   pillRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   askLink: { alignItems: 'center', paddingVertical: 6 },
   askLinkText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  askLinkDone: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
   askInput: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, minHeight: 90, textAlignVertical: 'top', marginTop: Spacing.sm },
   askBtn: { flex: 1, backgroundColor: Colors.burgundy, paddingVertical: 12, borderRadius: Radius.full, alignItems: 'center' },
   askBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
