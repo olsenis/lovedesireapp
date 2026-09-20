@@ -1699,7 +1699,6 @@ export default function HomeScreen() {
       <OwnWordsSheet
         visible={showOwnWords}
         initial={ownWords}
-        partnerName={partner?.name ?? 'Your partner'}
         onCancel={() => setShowOwnWords(false)}
         onSave={(words) => { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, words); }}
       />

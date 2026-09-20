@@ -177,7 +177,6 @@ export default function MoodHistoryScreen() {
           <OwnWordsSheet
             visible={showOwnWords}
             initial={ownWords}
-            partnerName={partnerName}
             onCancel={() => setShowOwnWords(false)}
             onSave={(words) => { setShowOwnWords(false); handleMoodPick(CUSTOM_MOOD, words); }}
           />

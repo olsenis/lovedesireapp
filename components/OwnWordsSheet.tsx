@@ -11,10 +11,9 @@ import { Spacing, Radius } from '../constants/spacing';
 // Android keyboard (focus on onShow instead, like ReactionRow), nothing moved
 // the sheet above the keyboard, and the placeholder ("Bone tired, buzzing,
 // soft…") was idiom that a second-language reader cannot use as an example.
-export function OwnWordsSheet({ visible, initial, partnerName, onCancel, onSave }: {
+export function OwnWordsSheet({ visible, initial, onCancel, onSave }: {
   visible: boolean;
   initial?: string;
-  partnerName: string;
   onCancel: () => void;
   onSave: (words: string) => void;
 }) {
@@ -36,7 +35,7 @@ export function OwnWordsSheet({ visible, initial, partnerName, onCancel, onSave 
       <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.sheet}>
           <Text style={styles.title}>In your own words</Text>
-          <Text style={styles.hint}>A few words are enough. {partnerName} sees them on Home.</Text>
+          <Text style={styles.hint}>A few words are enough.</Text>
           <TextInput
             ref={inputRef}
             style={styles.input}
