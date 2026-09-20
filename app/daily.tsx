@@ -1018,7 +1018,10 @@ function DoneState({
     <View style={styles.doneWrap}>
       <Text style={styles.doneEmoji}>✨</Text>
       <Text style={styles.doneTitle}>Done for today</Text>
-      <View style={styles.doneStatsRow}>
+      {/* The two numbers open the same sheet as "Reveals ›" in the summary card
+          above. A separate "View all matches ›" button stood here until Sep 20
+          2026: a second, louder door to the same place. */}
+      <TouchableOpacity style={styles.doneStatsRow} onPress={onOpenMatches} activeOpacity={0.7} disabled={matchesCount + revealedCount === 0} accessibilityRole="button" accessibilityLabel={`${matchesCount} matches, ${revealedCount} revealed. Open today's reveals`}>
         <View style={styles.doneStat}>
           <Text style={styles.doneStatNum}>{matchesCount}</Text>
           <Text style={styles.doneStatLabel}>{matchesCount === 1 ? 'match' : 'matches'}</Text>
@@ -1028,7 +1031,7 @@ function DoneState({
           <Text style={styles.doneStatNum}>{revealedCount}</Text>
           <Text style={styles.doneStatLabel}>revealed</Text>
         </View>
-      </View>
+      </TouchableOpacity>
       {partnerBehind ? (
         <>
           <Text style={styles.donePartnerHint}>
@@ -1039,11 +1042,6 @@ function DoneState({
         </>
       ) : (
         <Text style={styles.donePartnerHint}>You&apos;re both caught up ✓</Text>
-      )}
-      {matchesCount > 0 && (
-        <TouchableOpacity style={styles.doneMatchesBtn} onPress={onOpenMatches} accessibilityRole="button">
-          <Text style={styles.doneMatchesBtnText}>View all matches ›</Text>
-        </TouchableOpacity>
       )}
       {canDrawMore && (
         <TouchableOpacity style={styles.drawMoreBtn} onPress={onDrawMore} accessibilityRole="button" accessibilityLabel={`Draw more cards. ${bonusDrawsLeft} draws left today`}>
@@ -1484,8 +1482,6 @@ const styles = StyleSheet.create({
   doneStatLabel: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted, letterSpacing: 0.4, textTransform: 'uppercase' },
   doneStatDivider: { width: 1, height: 40, backgroundColor: Colors.border },
   donePartnerHint: { fontFamily: Fonts.bodyItalic, fontSize: 14, color: Colors.muted, textAlign: 'center', marginTop: Spacing.sm },
-  doneMatchesBtn: { marginTop: Spacing.lg, backgroundColor: Colors.burgundy, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full },
-  doneMatchesBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.cream },
   drawMoreBtn: { marginTop: Spacing.md, backgroundColor: Colors.blush, paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl, borderRadius: Radius.full, alignItems: 'center', gap: 2, borderWidth: 1, borderColor: Colors.rose },
   drawMoreBtnText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.burgundy },
   drawMoreBtnHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted },
