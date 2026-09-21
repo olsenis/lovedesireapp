@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LOVE_LANGUAGE_TYPE_CONFIG, LOVE_LANGUAGE_COMPATIBILITY, LoveLanguage, LoveLanguagePairKey } from '../constants/content';
+import { QUIZ_QUESTIONS, LOVE_LANGUAGE_LABELS, LOVE_LANGUAGE_TYPE_CONFIG, LOVE_LANGUAGE_COMPATIBILITY, fillLoveLanguageRoles, LoveLanguage, LoveLanguagePairKey } from '../constants/content';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import {
@@ -120,6 +120,14 @@ export default function QuizScreen() {
     const reverse = `${partnerLanguage}-${primary}` as LoveLanguagePairKey;
     return LOVE_LANGUAGE_COMPATIBILITY[forward] ?? LOVE_LANGUAGE_COMPATIBILITY[reverse];
   }, [primary, partnerLanguage]);
+  // Role tokens ({gifts}, {time}…) become "you" for my own language and the
+  // partner's name for the other; {partner} is filled as everywhere else.
+  const say = (text: string) => personalise(fillLoveLanguageRoles(text, primary, partner?.name), partner?.name);
+  // Shared tips plus the ones written for MY language. Advice addressed to the
+  // partner is shown on the partner's phone, not mine.
+  const myTips: string[] = (compatibility?.tips ?? [])
+    .filter((t) => typeof t === 'string' || t.for === primary)
+    .map((t) => (typeof t === 'string' ? t : t.text));
 
   return (
     <View style={styles.screen}>
@@ -177,11 +185,11 @@ export default function QuizScreen() {
           {/* Feels most loved by / less meaningful */}
           <View style={styles.traitRow}>
             <View style={[styles.traitCard, styles.traitOn]}>
-              <Text style={styles.traitTitle}>Feels most loved by</Text>
-              <Text style={styles.traitText}>{myTypeConfig.mostLovedBy}</Text>
+              <Text style={styles.traitTitle}>You feel most loved by</Text>
+              <Text style={styles.traitText}>{personalise(myTypeConfig.mostLovedBy, partner?.name)}</Text>
             </View>
             <View style={[styles.traitCard, styles.traitOff]}>
-              <Text style={styles.traitTitle}>Less meaningful</Text>
+              <Text style={styles.traitTitle}>Means less to you</Text>
               <Text style={styles.traitText}>{myTypeConfig.lessMeaningful}</Text>
             </View>
           </View>
@@ -194,7 +202,7 @@ export default function QuizScreen() {
                 <Text style={styles.partnerEmoji}>{partnerTypeConfig.emoji}</Text>
                 <View style={styles.partnerInfo}>
                   <Text style={styles.partnerLabel}>{partnerTypeConfig.label}</Text>
-                  <Text style={styles.partnerDesc}>{partnerTypeConfig.description}</Text>
+                  <Text style={styles.partnerDesc}>{personalise(partnerTypeConfig.aboutPartner, partner?.name)}</Text>
                 </View>
               </View>
 
@@ -203,19 +211,19 @@ export default function QuizScreen() {
                   <Text style={styles.compatTitle}>
                     {myTypeConfig.emoji} {myTypeConfig.label} + {partnerTypeConfig.emoji} {partnerTypeConfig.label}
                   </Text>
-                  <Text style={styles.compatText}>{personalise(compatibility.summary, partner?.name)}</Text>
+                  <Text style={styles.compatText}>{say(compatibility.summary)}</Text>
 
                   <View style={styles.compatSection}>
                     <Text style={styles.compatSectionLabel}>⚠ Watch out for</Text>
-                    <Text style={styles.compatChallenge}>{personalise(compatibility.challenge, partner?.name)}</Text>
+                    <Text style={styles.compatChallenge}>{say(compatibility.challenge)}</Text>
                   </View>
 
                   <View style={styles.compatSection}>
                     <Text style={styles.compatSectionLabel}>✦ Try this</Text>
-                    {compatibility.tips.map((tip, i) => (
+                    {myTips.map((tip, i) => (
                       <View key={i} style={styles.tipRow}>
                         <Text style={styles.tipDot}>·</Text>
-                        <Text style={styles.tipText}>{personalise(tip, partner?.name)}</Text>
+                        <Text style={styles.tipText}>{say(tip)}</Text>
                       </View>
                     ))}
                   </View>

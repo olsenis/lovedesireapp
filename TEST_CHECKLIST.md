@@ -540,6 +540,12 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 - [ ] **Migration** : an account that had reminders before the change opens the screen → its own reminders are listed as before and the switch still pauses them; the legacy docs with that `createdBy` are gone from `couples/{id}/reminders`.
 - [ ] **Dev build** : the notification arrives at the set time with the message as its body; switching the reminder off stops it.
 
+### Love Language result: who is who, plain English (Sep 21 2026)
+- [ ] **My card** : headings read "You feel most loved by" and "Means less to you"; the text names the partner ("time with Eva"), not "your partner", while paired.
+- [ ] **Partner card** : under "EVA'S LANGUAGE" the line is ABOUT Eva ("Eva feels loved through small gifts…"), never "You feel loved…". The Monday screen "Speak Eva's language" shows the same line.
+- [ ] **Compatibility, both phones** 📱 : in a mixed pair the "Watch out for" text says "You" for my own language and the partner's name for the other (A: "Eva may spend a week… and hand it to you"; B: "You may spend a week… Oli may take it warmly…"). No "the gifts partner" / "the time partner" anywhere. "Try this" shows the shared tips and the ones for MY language (two or three), and the two phones show different personal tips. No `{…}` token is ever visible.
+- [ ] **A result from an earlier couple** : a person who took the quiz with a former partner shows up with their language on the new partner's card at once (no "Waiting for…").
+
 ### Home while unpaired (Sep 2026, USER_VOICE C6)
 - [ ] **While you wait card**
   1. Fresh account, skip pairing, land on Home

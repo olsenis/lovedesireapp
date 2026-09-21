@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
-import { LoveLanguage, LOVE_LANGUAGE_LABELS } from '../constants/content';
+import { LoveLanguage, LOVE_LANGUAGE_LABELS, LOVE_LANGUAGE_TYPE_CONFIG } from '../constants/content';
 import { pickWeeklyActions } from '../services/loveLanguageNudgeService';
 import { getRecentPlan } from '../services/sundayPlanService';
 import { personalise } from '../services/personalise';
@@ -14,13 +14,8 @@ import { useTrackScreen } from '../hooks/useTrackScreen';
 
 // Short one-liner per language explaining what it is — kept subtle so
 // the actions get the visual weight, not the theory.
-const LANGUAGE_HINT: Record<LoveLanguage, (name: string) => string> = {
-  words: (name) => `${name} feels loved when you say it, appreciation, notice, spoken affection.`,
-  acts: (name) => `${name} feels loved when you do it, small chores handled, effort taken off ${name}'s plate.`,
-  gifts: (name) => `${name} feels loved when you think of ${name}, a token that says "I saw this, thought of you".`,
-  time: (name) => `${name} feels loved when you show up, undivided attention, present, phone away.`,
-  touch: (name) => `${name} feels loved when you reach, hugs, hand-holds, contact that is not asking for more.`,
-};
+// The partner-voiced line lives in LOVE_LANGUAGE_TYPE_CONFIG.aboutPartner, shared
+// with the quiz result's partner card (one source since Sep 21 2026).
 
 const LANGUAGE_EMOJI: Record<LoveLanguage, string> = {
   words: '💬', acts: '🛠️', gifts: '🎁', time: '⏳', touch: '🤝',
@@ -81,7 +76,7 @@ export default function LoveLanguageNudgeScreen() {
               <Text style={styles.heroEmoji}>{LANGUAGE_EMOJI[partnerLang]}</Text>
               <Text style={styles.heroLabel}>{partnerName}'s language</Text>
               <Text style={styles.heroLang}>{LOVE_LANGUAGE_LABELS[partnerLang].label}</Text>
-              <Text style={styles.heroHint}>{LANGUAGE_HINT[partnerLang](partnerName)}</Text>
+              <Text style={styles.heroHint}>{personalise(LOVE_LANGUAGE_TYPE_CONFIG[partnerLang].aboutPartner, partner?.name)}</Text>
             </View>
 
             {myPlan.length > 0 && (

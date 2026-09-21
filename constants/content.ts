@@ -1000,16 +1000,21 @@ export const LOVE_LANGUAGE_LABELS: Record<LoveLanguage, { label: string; emoji: 
   touch: { label: 'Physical Touch',       emoji: '🤝', description: 'You feel loved through physical connection, hugs, holding hands, being close.' },
 };
 
-// Extended per-type config for the upgraded Love Language result screen
-// (mirrors BLUEPRINT_TYPE_CONFIG shape). Adds a color for the hero gradient
-// + border tints, a "feels most loved by" chip string, and a "less
-// meaningful" chip string. LOVE_LANGUAGE_LABELS above stays as-is for
-// downstream code (Sunday nudge, Insight card) that only needs the basics.
+// Extended per-type config for the Love Language result screen (mirrors
+// BLUEPRINT_TYPE_CONFIG). `description` speaks to the person whose result it
+// is; `aboutPartner` says the same thing TO the other person, about them,
+// and is what the partner card and the Monday "Speak {partner}'s language"
+// screen show (until Sep 21 2026 the partner card reused `description`, so
+// Oli read "You feel loved through tokens" under "OLA'S LANGUAGE").
+// {partner} / {Partner} are filled by personalise(). Plain English on
+// purpose: many couples read this as a second language, so no idiom ("land
+// deepest", "off your plate", "one eye on the door", "tokens").
 export const LOVE_LANGUAGE_TYPE_CONFIG: Record<LoveLanguage, {
   label: string;
   emoji: string;
   color: string;
   description: string;
+  aboutPartner: string;
   mostLovedBy: string;
   lessMeaningful: string;
 }> = {
@@ -1017,191 +1022,226 @@ export const LOVE_LANGUAGE_TYPE_CONFIG: Record<LoveLanguage, {
     label: 'Words of Affirmation',
     emoji: '💬',
     color: '#E3F2FD',
-    description: 'You feel loved when you hear it. Kind words, spoken and written, land deepest for you.',
-    mostLovedBy: 'Spoken appreciation, love notes, being told what your partner sees in you',
-    lessMeaningful: 'Silent gestures without acknowledgement, gifts that arrive with no words',
+    description: 'You feel loved when you hear it. Kind words, spoken or written, mean the most to you.',
+    aboutPartner: '{Partner} feels loved when you say it. Kind words, spoken or written, mean the most to {partner}.',
+    mostLovedBy: 'Being thanked out loud, love notes, hearing what {partner} sees in you',
+    lessMeaningful: 'Kind acts with nothing said, gifts that come without a word',
   },
   acts: {
     label: 'Acts of Service',
     emoji: '🙌',
     color: '#E8F5E9',
-    description: 'You feel loved when someone shows up and does it. Effort taken off your plate speaks louder than any speech.',
-    mostLovedBy: 'Chores handled without asking, meals cooked, small tasks quietly done for you',
-    lessMeaningful: 'Compliments while you carry the whole load alone, promises without follow-through',
+    description: 'You feel loved when someone does something for you. Help with your day says more than any speech.',
+    aboutPartner: '{Partner} feels loved when you do something helpful. Help with the day says more to {partner} than any speech.',
+    mostLovedBy: 'Chores done without asking, a meal cooked, small tasks quietly done for you',
+    lessMeaningful: 'Compliments while you do all the work alone, promises that are not kept',
   },
   gifts: {
     label: 'Receiving Gifts',
     emoji: '🎁',
     color: '#FFF3E0',
-    description: 'You feel loved through tokens. Not the price, the thought behind it, the "I saw this and thought of you".',
-    mostLovedBy: 'Something small and specific, chosen because your partner knew you would love it',
-    lessMeaningful: 'Words alone without any concrete token, generic gifts that could be for anyone',
+    description: 'You feel loved through small gifts. Not the price, the thought: "I saw this and thought of you".',
+    aboutPartner: '{Partner} feels loved through small gifts. Not the price, the thought: "I saw this and thought of you".',
+    mostLovedBy: 'Something small and specific, chosen because {partner} knew you would love it',
+    lessMeaningful: 'Words with nothing to hold, gifts that could be for anyone',
   },
   time: {
     label: 'Quality Time',
     emoji: '⏱️',
     color: '#F3E5F5',
-    description: 'You feel loved when someone gives you their full attention. Phones down, present, together.',
-    mostLovedBy: 'Undivided attention, long unhurried conversations, being with your partner without other distractions',
-    lessMeaningful: 'Being in the same room while attention is elsewhere, hurried presence with one eye on the door',
+    description: 'You feel loved when you get full attention. Phones down, present, together.',
+    aboutPartner: '{Partner} feels loved when you give your full attention. Phone down, present, together.',
+    mostLovedBy: 'Full attention, long conversations with no hurry, time with {partner} and nothing else going on',
+    lessMeaningful: 'Being in the same room while attention is somewhere else, time together that feels rushed',
   },
   touch: {
     label: 'Physical Touch',
     emoji: '🤝',
     color: '#FCE4EC',
-    description: 'You feel loved through touch. Hugs, holding hands, hand on the back, the language of closeness without words.',
-    mostLovedBy: 'Being pulled close, a hand on your arm mid-conversation, hugs that linger past two seconds',
-    lessMeaningful: 'Kind words from across the room, care shown from a distance, gestures without contact',
+    description: 'You feel loved through touch. Hugs, holding hands, a hand on your back. Closeness without words.',
+    aboutPartner: '{Partner} feels loved through touch. Hugs, holding hands, a hand on the back. Closeness without words.',
+    mostLovedBy: 'Being pulled close, a hand on your arm while you talk, hugs that last a little longer',
+    lessMeaningful: 'Kind words from across the room, care shown from a distance',
   },
 };
 
-// Pair compatibility guides for the Love Language result screen. Keyed
-// `${primary}-${partnerPrimary}` in a canonical order (see below). Renders
-// in the compatibility card when both partners have completed the quiz.
-// Authored via memory/love_language_compatibility_prompt.md. Partial<>
-// during the agent-authored fill-in; the quiz.tsx lookup falls back to
-// a "guide coming" state if a key is missing so the build never breaks
-// mid-authoring.
+// Pair guides for the Love Language result screen, keyed
+// `${languageA}-${languageB}` in one canonical order (the screen checks both).
+//
+// WHO IS WHO (Sep 21 2026). Mixed pairs used to say "the gifts partner" and
+// "the time partner" and left the reader to work out which one they were. Now:
+//   - In `summary` and `challenge`, a role token names a PERSON by language:
+//     {gifts} {time} {words} {acts} {touch}, or capitalised at a sentence start.
+//     The screen fills it with "you" / "You" for the viewer's own language and
+//     the partner's name for the other (`fillLoveLanguageRoles`). So Oli reads
+//     "Ola may spend a week finding the right thing and give it to you".
+//     RULES for writing with role tokens: follow the token with a modal or a
+//     past form only ("may", "can", "might", "will"), never a bare present verb
+//     ("{gifts} spends" breaks for "you"), and never a possessive ("{gifts}'s").
+//   - A tip is either a string (for both of you) or `{ for, text }`: advice for
+//     the person with that language, written to that person. Each viewer sees
+//     the shared tips and their own, never advice addressed to the other one.
+//   - {partner} still means "the other person", filled by personalise().
+// Same-language pairs have no roles, only shared tips.
+//
+// Copy bar: plain English, short sentences, no idiom (the first version had
+// "runs on", "currency", "fills the tank", "scoreboard", "lands wide of the
+// target", "low-fanfare", "different channels", "linger over", "payoff"), no
+// pronouns for the partner, no em dashes.
 export type LoveLanguagePairKey = `${LoveLanguage}-${LoveLanguage}`;
+export type LoveLanguageTip = string | { for: LoveLanguage; text: string };
 export interface LoveLanguageCompatEntry {
   summary: string;
   challenge: string;
-  tips: string[];
+  tips: LoveLanguageTip[];
 }
+
+// Fills role tokens from the viewer's side. `myLang` is the viewer's language.
+export function fillLoveLanguageRoles(text: string, myLang: LoveLanguage, partnerName: string | undefined | null): string {
+  const name = partnerName?.trim() || 'your partner';
+  const Name = name.charAt(0).toUpperCase() + name.slice(1);
+  return text.replace(/\{(words|acts|gifts|time|touch|Words|Acts|Gifts|Time|Touch)\}/g, (_m, role: string) => {
+    const capital = role[0] === role[0].toUpperCase();
+    const mine = role.toLowerCase() === myLang;
+    if (mine) return capital ? 'You' : 'you';
+    return capital ? Name : name;
+  });
+}
+
 export const LOVE_LANGUAGE_COMPATIBILITY: Partial<Record<LoveLanguagePairKey, LoveLanguageCompatEntry>> = {
   'words-words': {
-    summary: "You both feel most loved through spoken and written appreciation, which means your relationship naturally runs on more verbal warmth than most couples ever build.",
-    challenge: "Praise can become currency you both spend so freely that the weight drains out, and the specific compliments stop registering under the general ones.",
+    summary: 'You both feel most loved through kind words, spoken or written. Your relationship has more spoken warmth in it than most.',
+    challenge: 'When praise comes all the time, it can start to sound the same. The general compliments hide the specific ones.',
     tips: [
-      "Once a week, say something specific you noticed instead of a general 'you're amazing'.",
-      "Ask {partner} which compliment landed hardest this week, and why.",
-      "Write one down and leave it in a spot {partner} will find later. A written line carries longer than a spoken one.",
+      "Once a week, say one specific thing you noticed, instead of a general \"you're amazing\".",
+      'Ask {partner} which kind words meant the most this week, and why.',
+      'Write one line down and leave it where {partner} will find it later. Written words last longer than spoken ones.',
     ],
   },
   'acts-acts': {
-    summary: "You both express love by doing, taking things off each other's plate, showing up with quiet effort rather than announcements.",
-    challenge: "Two givers can leave both of you feeling permanently on duty, endlessly reaching to serve the other while neither of you learns to sit still and receive.",
+    summary: 'You both show love by doing things for each other, quietly, without making a show of it.',
+    challenge: 'When both of you always give, both of you can feel like you are always working. Neither of you learns to sit still and receive.',
     tips: [
-      "Once a week, one of you does nothing while the other handles everything, then swap who receives.",
-      "Name the acts out loud sometimes. Silent service can go invisible even to another acts person.",
-      "Notice when {partner} tries to help, and let it happen instead of insisting you've got it.",
+      'Once a week, one of you rests while the other takes care of everything. Swap the next week.',
+      'Say out loud what you did sometimes. Quiet help is easy to miss, even for someone who helps the same way.',
+      "When {partner} tries to help, let it happen instead of saying you've got it.",
     ],
   },
   'gifts-gifts': {
-    summary: "You both feel most loved when the other has thought of you enough to pick or make something specific. The object itself is proof you were on your partner's mind.",
-    challenge: "Gift exchange can start feeling transactional when it only happens on the same dates each year, the meaning drains out when it turns into a scoreboard of who gave last.",
+    summary: 'You both feel most loved when the other has thought of you enough to choose or make something specific. The gift shows that you were thought of.',
+    challenge: 'If gifts only come on the same dates every year, giving can start to feel like a duty, or like keeping count of who gave last.',
     tips: [
-      "Give a small thing on a random Tuesday with no occasion attached.",
-      "Skip the wrapping sometimes and hand it over with the story of why you saw it and thought of {partner}.",
-      "Once a month, give something you made rather than something you bought.",
+      'Give something small on an ordinary Tuesday, for no reason.',
+      'Skip the wrapping sometimes. Hand it over and tell {partner} why you saw it and thought of {partner}.',
+      'Once a month, give something you made instead of something you bought.',
     ],
   },
   'time-time': {
-    summary: "You both feel most loved when the other puts the phone down and is fully present, no half-attention, no divided focus.",
-    challenge: "Two time-focused partners can build a bubble that quietly shrinks to just the two of you, and the outside world starts feeling like an interruption to protect against rather than a shared life to live in.",
+    summary: 'You both feel most loved when the other puts the phone down and is fully there. No half attention.',
+    challenge: 'Two people who love time together can end up doing everything as a pair, until friends, family and plans start to feel like interruptions.',
     tips: [
-      "Pick one evening a week that's phones-off, no laptops, no TV humming in the background.",
-      "Do one activity outside the house together each week that isn't just eating. Movement widens the bubble.",
-      "Ask {partner} what kind of attention would land best that night. Silence together counts, so does deep conversation. Name it.",
+      'Pick one evening a week with phones off, no laptops, no TV on in the background.',
+      'Each week, do one thing together outside the house that is not just eating.',
+      'Ask {partner} what kind of attention would feel best tonight. Being quiet together counts. So does a long talk. Say which.',
     ],
   },
   'touch-touch': {
-    summary: "You both feel most loved through physical contact, sitting close, holding hands, a hand on the back in passing. The body is where love registers first for both of you.",
-    challenge: "Touch can become so automatic that it stops registering, or the two of you may narrow it down to sexual contact only and lose the everyday closeness that fills the tank.",
+    summary: 'You both feel most loved through touch: sitting close, holding hands, a hand on the back in passing.',
+    challenge: 'Touch can become so normal that you stop noticing it. Or it slowly becomes only sexual, and the everyday closeness gets lost.',
     tips: [
-      "Add one deliberate non-sexual touch each morning before either of you leaves. Make it slow enough to notice.",
-      "Try a new form of touch tonight, a scalp rub, feet in each other's lap, a hug that lasts past the awkward point.",
-      "When {partner} reaches for you, don't reach back immediately. Let the hand rest on you for a beat first.",
+      'Add one slow, non-sexual touch every morning before either of you leaves. Slow enough to notice.',
+      "Try a new kind of touch tonight: a head rub, feet in each other's lap, a hug that lasts longer than usual.",
+      'When {partner} reaches for you, do not rush to reach back. Let the hand rest on you for a moment first.',
     ],
   },
   'words-acts': {
-    summary: "One of you shows love by saying it, the other by doing it. Both are real effort, but they land in different registers, and each of you may miss what the other has actually offered.",
-    challenge: "The doing partner can spend hours on tasks and feel unseen when a quick 'thanks' is all that comes back, while the speaking partner can offer beautiful sentences and feel unheard when the reply is a favor rather than a warm sentence in return.",
+    summary: 'One of you shows love by saying it, the other by doing it. Both take real effort, and each of you can miss what the other is giving.',
+    challenge: '{Acts} may spend hours on tasks and feel unseen when only a quick "thanks" comes back. {Words} may say something beautiful and feel unheard when the answer is a favor instead of kind words.',
     tips: [
-      "If you're the words partner, name the act out loud when {partner} does something. 'You made coffee, thank you, that made the morning easier.'",
-      "If you're the acts partner, pair one act each day with a short sentence about why you did it. Words turn the act visible.",
-      "Once a week, each of you does the other's language: one picks up a chore, the other writes a note.",
+      { for: 'words', text: 'When {partner} does something, say it out loud: "You made coffee, thank you, that made my morning easier."' },
+      { for: 'acts', text: 'Once a day, add one short sentence to something you do: why you did it. The words make the act visible.' },
+      "Once a week, each of you uses the other's language: one does a chore, the other writes a note.",
     ],
   },
   'words-gifts': {
-    summary: "Both of you show love through something tangible you chose on purpose, a sentence built for the moment or an object picked with the other in mind. You share the instinct to make care specific.",
-    challenge: "The words partner may feel a thoughtful gift is not quite complete without something said, and the gifts partner may feel a spoken line dissolves too quickly compared to something that can be held onto.",
+    summary: 'You both show love with something chosen on purpose: a sentence made for the moment, or a gift picked with the other in mind.',
+    challenge: '{Words} may feel that a gift is not complete until something is said. {Gifts} may feel that spoken words are gone too fast, compared with something to keep.',
     tips: [
-      "Pair the two. When you give {partner} an object, include a written line about why you picked it.",
-      "If you're the words partner, give an object occasionally, chosen with care, and let it speak alongside your sentence.",
-      "If you're the gifts partner, read the note out loud before unwrapping. Give the words their own moment first.",
+      'Use both. When you give {partner} something, add a written line about why you chose it.',
+      { for: 'words', text: 'Sometimes give a small gift, chosen with care, together with your words.' },
+      { for: 'gifts', text: 'Read the note out loud before you open the gift. Give the words their own moment first.' },
     ],
   },
   'words-time': {
-    summary: "Both languages live in shared presence, one of you needs spoken warmth, the other needs undivided attention. A long unhurried conversation with the phones away delivers both at once.",
-    challenge: "The words partner may fill the shared time with talking and leave the time partner feeling more performed at than accompanied, while the time partner may go quiet inside that shared presence and leave the words partner wondering if anything is wrong.",
+    summary: 'Both languages need you to be together. One of you needs kind words, the other needs full attention. A long talk with the phones away gives both.',
+    challenge: '{Words} may fill the time with talking, and {time} may start to feel talked at instead of kept company. {Time} may go quiet, and {words} may start to wonder if something is wrong.',
     tips: [
-      "Set aside a weekly slot for uninterrupted conversation. No task, no screen, just each other and one topic.",
-      "If you're the words partner, leave silence sometimes. The presence itself is what {partner} is hearing.",
-      "If you're the time partner, name what you're feeling out loud once in a while. The quiet is peace for you but it can read as distance to {partner}.",
+      'Set a weekly time for talking with no interruptions. No task, no screen, just the two of you and one topic.',
+      { for: 'words', text: 'Leave some silence. For {partner}, being there is what counts.' },
+      { for: 'time', text: 'Say what you feel out loud now and then. Quiet is peace for you, but to {partner} it can look like distance.' },
     ],
   },
   'words-touch': {
-    summary: "One of you feels loved through what is said, the other through what is felt. Both are direct expressions of care, but neither translates automatically into the other.",
-    challenge: "The words partner may talk while the touch partner just wants to be held quietly, and the touch partner may reach out silently while the words partner is waiting for the sentence that would make the moment land.",
+    summary: 'One of you feels loved through what is said, the other through what is felt. Both are direct ways to show care, and neither one replaces the other.',
+    challenge: '{Words} may keep talking when {touch} would rather just be held. {Touch} may reach out without a word while {words} may be waiting to hear something.',
     tips: [
-      "Pair a spoken line with the touch. 'I love this' while your hand is on {partner}'s back does both jobs.",
-      "If you're the touch partner, say the thing you're feeling out loud sometimes, even one word. It fills the gap the touch cannot.",
-      "If you're the words partner, put the sentence into a slow hand-hold or a hug that lasts longer than usual. Let {partner} feel what you would normally say.",
+      "Use both at once. \"I love this\" with your hand on {partner}'s back does both.",
+      { for: 'touch', text: 'Say what you feel out loud sometimes, even one word. It gives {partner} what touch cannot.' },
+      { for: 'words', text: 'Put your words into a slow hand-hold or a longer hug. Let {partner} feel what you would normally say.' },
     ],
   },
   'acts-gifts': {
-    summary: "Both of you express love through effort you can point at, one by doing, the other by choosing. You share the instinct to externalize care into something visible.",
-    challenge: "The acts partner may work through a long list of chores and feel outdone by a wrapped object that took less time, while the gifts partner may hand over something carefully chosen and feel like it disappeared next to the pile of completed tasks.",
+    summary: 'You both show love through effort that can be seen: one by doing, the other by choosing.',
+    challenge: '{Acts} may finish a long list of chores and feel that one wrapped gift got more attention. {Gifts} may give something chosen with care and feel it was not noticed next to all the finished tasks.',
     tips: [
-      "Once a month, do a task and present it as a gift. Fill the car with gas and tie a ribbon on the key. Fold the laundry and leave it on the bed with a note.",
-      "If you're the gifts partner, give something that shrinks {partner}'s workload, a delivery pass, a cleaning voucher, tickets that come with everything already arranged.",
-      "Notice out loud what {partner} just did or gave. Both languages need the recognition to feel counted.",
+      'Once a month, do a task and give it as a gift. Fill the car with fuel and tie a ribbon on the key. Fold the laundry and leave it on the bed with a note.',
+      { for: 'gifts', text: 'Give something that makes life easier for {partner}: a meal delivered, a cleaning booked, tickets with everything arranged.' },
+      'Say out loud what {partner} just did or gave. Both languages need to be noticed to count.',
     ],
   },
   'acts-time': {
-    summary: "One of you shows love by doing things, the other feels loved by being with the one they love. This is the classic mix-up where all the effort in the world lands wide of the target.",
-    challenge: "The acts partner may be busy in the kitchen making dinner for the time partner while the time partner sits in the next room feeling alone, wondering why the one person in the world is somewhere else.",
+    summary: 'One of you shows love by doing things. The other feels loved by simply being together. This is the most common mix-up: a lot of effort that does not reach the other person.',
+    challenge: '{Acts} may be busy in the kitchen making dinner while {time} may be sitting in the next room, feeling alone.',
     tips: [
-      "If you're the acts partner, fold the laundry on the couch instead of the bedroom. Cook alongside {partner} rather than cooking for {partner}. Turn tasks into shared time.",
-      "If you're the time partner, notice the act and thank {partner} for the effort before asking for presence. That recognition refills the tank enough for the attention to come next.",
-      "Once a week, one of you drops the to-do list entirely and joins the other in whatever is already happening.",
+      { for: 'acts', text: 'Fold the laundry on the couch, not in the bedroom. Cook with {partner}, not only for {partner}. Make tasks into time together.' },
+      { for: 'time', text: 'Notice what {partner} did and say thank you before you ask for attention. Being thanked makes it easier to stop and sit down.' },
+      'Once a week, one of you drops the to-do list and joins the other in whatever is already happening.',
     ],
   },
   'acts-touch': {
-    summary: "The acts partner shows love through doing things; the touch partner shows love through physical closeness. Both are steady, low-fanfare kinds of care delivered in completely different channels.",
-    challenge: "The acts partner may complete every chore on the list and still feel like nothing quite reaches the touch partner, who was mostly hoping to be held for ten minutes instead.",
+    summary: 'One of you shows love by doing things, the other through physical closeness. Both are steady, quiet kinds of care, shown in very different ways.',
+    challenge: '{Acts} may finish every chore and still feel that nothing reaches {touch}. {Touch} may have been hoping, more than anything, to be held for ten minutes.',
     tips: [
-      "If you're the acts partner, pause on the way past and put a hand on {partner}'s shoulder for a full breath before you keep moving through the task.",
-      "If you're the touch partner, reach out physically when {partner} finishes something. A hug reads as thanks more clearly than a sentence for someone who reads bodies.",
-      "Once a day, do one act together with contact, cook side by side, fold laundry on the same couch. The task stops being a solo shift.",
+      { for: 'acts', text: "When you walk past, stop and put a hand on {partner}'s shoulder for one full breath before you go on with the task." },
+      { for: 'touch', text: 'When {partner} finishes something, go over and give a hug. It says thank you in your own language.' },
+      'Once a day, do one task together and close to each other: cook side by side, fold laundry on the same couch.',
     ],
   },
   'gifts-time': {
-    summary: "One of you shows love with a specific object chosen for the other, the other feels loved when the phone goes down and full attention arrives. Both are thoughtful, both take real intention, they just occupy different channels.",
-    challenge: "The gifts partner may spend a week finding the perfect thing and hand it over during a rushed evening, while the time partner may accept it warmly but quietly wish that same effort had gone into a fully-attentive dinner instead.",
+    summary: 'One of you shows love with something chosen for the other. The other feels loved when the phone goes down and full attention arrives. Both take thought. You just show it in different ways.',
+    challenge: '{Gifts} may spend a week finding the right thing and hand it over on a busy evening. {Time} may take it warmly and still wish the same effort had gone into a calm dinner together.',
     tips: [
-      "If you're the gifts partner, give the object in a moment where the whole evening is also free. Pair the gift with the time to enjoy it together.",
-      "If you're the time partner, linger over the gift. Ask why {partner} chose it. Turn the unwrapping into the shared time you were hoping to spend.",
-      "Occasionally give an experience rather than an object, tickets, a booked evening, a planned walk. It's a gift shaped like time.",
+      { for: 'gifts', text: 'Give the gift when the whole evening is free. Give it together with the time to enjoy it.' },
+      { for: 'time', text: 'Take your time with the gift. Ask why {partner} chose it. Make the unwrapping the time together you were hoping for.' },
+      'Sometimes give an experience instead of a thing: tickets, a booked evening, a planned walk. It is a gift made of time.',
     ],
   },
   'gifts-touch': {
-    summary: "One of you shows love through a chosen object, the other through physical closeness. Both are quiet, unshowy expressions of care, but they land in completely different places on the body and in the mind.",
-    challenge: "The gifts partner may give something thoughtful and feel it slip past unfelt, because for the touch partner the wrapped object is one step removed from the person on the other side of it.",
+    summary: 'One of you shows love through a chosen gift, the other through physical closeness. Both are quiet ways to show care, and they feel very different to receive.',
+    challenge: '{Gifts} may give something thoughtful and feel it was not really received. For {touch}, a wrapped gift can feel further away than the person who is giving it.',
     tips: [
-      "If you're the gifts partner, hand the gift over with a long hug rather than across a table. Deliver it through your body, not just your hands.",
-      "If you're the touch partner, hold the object for a moment when receiving it, look at it in {partner}'s presence, then reach for {partner}. Bridge the two.",
-      "Occasionally give a gift that is inherently tactile, a soft blanket, cozy clothing, a massage oil to use together the same night.",
+      { for: 'gifts', text: 'Give the gift with a long hug, not across a table.' },
+      { for: 'touch', text: 'Hold the gift for a moment, look at it while {partner} is there, then reach for {partner}.' },
+      'Sometimes give something made to be touched: a soft blanket, comfortable clothes, massage oil to use together that night.',
     ],
   },
   'time-touch': {
-    summary: "Both languages live in physical presence, one of you needs the attention, the other needs the contact. Sitting shoulder to shoulder for a long unhurried evening delivers both at once.",
-    challenge: "The time partner may sit fully attentive with the phone away and feel like everything is being given, while the touch partner is quietly aching for the arm that never comes around across two feet of couch.",
+    summary: 'Both languages need you to be in the same place. One of you needs the attention, the other needs the contact. A long evening sitting close together gives both.',
+    challenge: '{Time} may sit with the phone away, giving full attention, and feel that this is everything. {Touch} may be waiting for an arm that never comes across the space between you on the couch.',
     tips: [
-      "Sit on the same couch, not opposite chairs. Close the physical gap by default and the attention gets easier.",
-      "If you're the time partner, reach out first sometimes, a hand on {partner}'s leg while you talk. It doesn't interrupt the conversation, it completes it.",
-      "If you're the touch partner, name the touch you want out loud rather than hoping it happens. 'Come sit closer' is a small ask with a large payoff.",
+      'Sit on the same couch, not in chairs across from each other. When you are close, attention comes more easily.',
+      { for: 'time', text: "Reach out first sometimes: a hand on {partner}'s leg while you talk. It does not interrupt the conversation, it adds to it." },
+      { for: 'touch', text: 'Ask for the touch you want instead of hoping for it. "Come sit closer" is a small thing to ask.' },
     ],
   },
 };
