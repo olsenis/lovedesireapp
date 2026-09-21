@@ -2935,6 +2935,7 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
 
 - [ ] **Former partner's plan is not offered** : a plan made while paired with Eva does not appear after pairing with Ola.
 
+- [ ] **"Need an idea?" fills the name** : tap it in the plan step → the field reads "...with Eva", never "{partner}"; the plan card, the tick card, the Monday screen and the partner's "🎁 did this for you" never show a "{partner}" token (a done item written before Sep 21 2026 reads "...with you" on the partner's side). With nothing ticked the tick card's button reads "Not this time", with a tick "Save". The reveal says "See you next Sunday". The pulse comparison uses the partner's first name and its labels stay on one line on a narrow phone.
 - [ ] **The plan is shown back to me** : after finishing the check-in with a plan, the finished screen shows "Your little something for Eva · only you see this" with my items, whether or not Eva has finished; on Monday (a new ISO week) opening the Sunday Check-in still shows the card on the first step; Eva's phone never shows it; once I finish the next check-in the card gives way to "Last time you planned" with ticks, and after Save it is gone. Past check-ins never lists a plan, only "🎁 did this for you" items.
 - [ ] **Monday screen** : Love Language nudge shows "From your Sunday Check-in · only you see this" above "3 more ideas for this week".
 

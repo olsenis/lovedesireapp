@@ -715,7 +715,7 @@ export default function OurStoryScreen() {
                           <View style={styles.archiveWeekQBlock}>
                             <Text style={styles.archiveWeekQ}>🎁 {partner?.name ?? 'Partner'} did this for you, on purpose</Text>
                             {entries.theirs.doneForPartner.map((t, i) => (
-                              <Text key={i} style={styles.archiveWeekAnswerText}>{t}</Text>
+                              <Text key={i} style={styles.archiveWeekAnswerText}>{t.replace(/\{partner\}/gi, 'you')}</Text>
                             ))}
                           </View>
                         )}

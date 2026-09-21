@@ -35,6 +35,7 @@ import { ReactionRow } from '../components/ReactionRow';
 import { useCurrentWeekId } from '../hooks/useCurrentWeekId';
 import { Colors } from '../constants/colors';
 import { WhileYouWait } from '../components/WhileYouWait';
+import { personalise } from '../services/personalise';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
 import { useTrackScreen } from '../hooks/useTrackScreen';
@@ -73,6 +74,9 @@ export default function StateUnionScreen() {
   const uid = user?.uid ?? '';
   const partnerId = couple?.partner1Uid === uid ? couple?.partner2Uid : couple?.partner1Uid;
   const partnerName = partner?.name ?? 'Partner';
+  // First name only where a row is tight (the pulse comparison wrapped its
+  // labels on a narrow phone with "Oli Olsen" in every row).
+  const partnerFirst = partnerName.split(' ')[0];
   const coupleId = profile?.coupleId;
   const weekId = useCurrentWeekId();
   useTrackScreen('sunday_checkin');
@@ -270,7 +274,7 @@ export default function StateUnionScreen() {
     setSavingDone(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const done = openPlan.items.filter((_, i) => doneTicks[i]);
+      const done = openPlan.items.filter((_, i) => doneTicks[i]).map((t) => personalise(t, partner?.name));
       if (done.length > 0) await submitDoneForPartner(coupleId, weekId, uid, done);
       await resolvePlan(uid, openPlan.weekId, done.length);
       setOpenPlan(null);
@@ -451,7 +455,10 @@ export default function StateUnionScreen() {
               <TouchableOpacity
                 onPress={() => {
                   // Fills the first empty field (or the last one) with the next idea.
-                  const idea = ideaFor(partner?.loveLanguage, ideaTaps);
+                  // The pools are written with {partner}; fill the name before it lands
+                  // in the field, or the plan is saved as "...with {partner}" (seen on a
+                  // phone, Sep 21 2026).
+                  const idea = personalise(ideaFor(partner?.loveLanguage, ideaTaps), partner?.name);
                   setIdeaTaps((n) => n + 1);
                   setPlanDraft((prev) => {
                     const at = prev.findIndex((v) => !v.trim());
@@ -525,7 +532,7 @@ export default function StateUnionScreen() {
         {showRecentPlan && recentPlan && (
           <View style={styles.thisPlanCard}>
             <Text style={styles.thisPlanLabel}>Your little something for {partnerName} · only you see this</Text>
-            {recentPlan.items.map((t, i) => (<Text key={i} style={styles.thisPlanItem}>{t}</Text>))}
+            {recentPlan.items.map((t, i) => (<Text key={i} style={styles.thisPlanItem}>{personalise(t, partner?.name)}</Text>))}
           </View>
         )}
 
@@ -550,7 +557,7 @@ export default function StateUnionScreen() {
                   <View style={[styles.planTickBox, on && styles.planTickBoxOn]}>
                     {on && <Text style={styles.planTickMark}>✓</Text>}
                   </View>
-                  <Text style={styles.planTickText}>{item}</Text>
+                  <Text style={styles.planTickText}>{personalise(item, partner?.name)}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -562,7 +569,7 @@ export default function StateUnionScreen() {
               disabled={savingDone}
               accessibilityRole="button"
             >
-              {savingDone ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1}>Save</Text>}
+              {savingDone ? <ActivityIndicator color={Colors.cream} /> : <Text style={styles.primaryBtnText} numberOfLines={1}>{openPlan.items.some((_, i) => doneTicks[i]) ? 'Save' : 'Not this time'}</Text>}
             </TouchableOpacity>
           </View>
         )}
@@ -571,13 +578,13 @@ export default function StateUnionScreen() {
         {both && partnerId && (
           <View style={styles.revealCard}>
             <Text style={styles.revealTitle}>You both checked in 💗</Text>
-            <Text style={styles.revealNextHint}>See you next Monday</Text>
+            <Text style={styles.revealNextHint}>See you next Sunday</Text>
 
             {!!partnerEntry?.doneForPartner?.length && (
               <View style={styles.doneBlock}>
                 <Text style={styles.doneTitle}>🎁 {partnerName} did this for you, on purpose</Text>
                 {partnerEntry.doneForPartner.map((t, i) => (
-                  <Text key={i} style={styles.doneItem}>{t}</Text>
+                  <Text key={i} style={styles.doneItem}>{t.replace(/\{partner\}/gi, 'you')}</Text>
                 ))}
               </View>
             )}
@@ -600,7 +607,7 @@ export default function StateUnionScreen() {
                         <Text style={styles.pulseCompareScore}>
                           You <Text style={styles.pulseCompareNum}>{mine}</Text>
                           <Text style={styles.pulseCompareSep}>  ·  </Text>
-                          {partnerName} <Text style={styles.pulseCompareNum}>{theirs}</Text>
+                          {partnerFirst} <Text style={styles.pulseCompareNum}>{theirs}</Text>
                         </Text>
                         <Text style={[styles.pulseIndicator, matched ? styles.pulseMatch : styles.pulseGap]}>
                           {matched ? '✓' : '↕'}
@@ -686,7 +693,7 @@ export default function StateUnionScreen() {
                           <View style={styles.doneBlock}>
                             <Text style={styles.doneTitle}>🎁 {partnerName} did this for you, on purpose</Text>
                             {historyEntries[h.weekId]!.theirs!.doneForPartner!.map((t, i) => (
-                              <Text key={i} style={styles.doneItem}>{t}</Text>
+                              <Text key={i} style={styles.doneItem}>{t.replace(/\{partner\}/gi, 'you')}</Text>
                             ))}
                           </View>
                         )}
