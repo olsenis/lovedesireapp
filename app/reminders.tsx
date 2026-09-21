@@ -69,7 +69,7 @@ export default function RemindersScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button">
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Flirt Reminders</Text>
+        <Text style={styles.title}>Reminders</Text>
         <TouchableOpacity onPress={() => setShowCreate(true)} accessibilityRole="button">
           <Text style={styles.addBtn}>+ New</Text>
         </TouchableOpacity>
@@ -185,7 +185,7 @@ export default function RemindersScreen() {
 
       <HelpModal
         visible={help.visible}
-        title="Flirt Reminders"
+        title="Reminders"
         description={personalise('Reminders you set for yourself to do something sweet for {partner}. They arrive as notifications on this phone.', partnerName)}
         tips={[
           `Tap a suggestion or + New, then set a time and the days`,
