@@ -244,19 +244,24 @@ export default function StateUnionScreen() {
     return () => { cancelled = true; };
   }, [coupleId, uid, iCompleted]);
 
-  // THIS week's plan, shown back to me on the finished screen. It used to be
-  // visible only on the Monday love-language screen, so someone who forgot
-  // what they wrote had nowhere obvious to look (asked on a phone, Sep 21
-  // 2026). Same private doc; a list and nothing else: no counts, no ticks.
-  const [thisPlan, setThisPlan] = useState<string[]>([]);
+  // My newest unanswered plan, shown back to me. It used to be visible only on
+  // the Monday love-language screen, so someone who forgot what they wrote had
+  // nowhere obvious to look (asked on a phone, Sep 21 2026). NOT limited to
+  // this ISO week: the week turns over on Sunday night, hours after the plan
+  // is written, so "this week's plan" would be gone by Monday morning. Shown
+  // when the screen is opened during the week (first step) and on the finished
+  // screen, and hidden once the tick card below is asking about the same plan.
+  // Same private doc; a list and nothing else: no counts, no ticks.
+  const [recentPlan, setRecentPlan] = useState<SundayPlan | null>(null);
   useEffect(() => {
-    if (!coupleId || !uid || !iCompleted) { setThisPlan([]); return; }
+    if (!coupleId || !uid) { setRecentPlan(null); return; }
     let cancelled = false;
-    getRecentPlan(uid, coupleId)
-      .then((p) => { if (!cancelled) setThisPlan(p && p.weekId === weekId ? p.items : []); })
-      .catch(() => {});
+    getRecentPlan(uid, coupleId).then((p) => { if (!cancelled) setRecentPlan(p); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [coupleId, uid, iCompleted, weekId]);
+  }, [coupleId, uid, iCompleted, weekId, openPlan]);
+  const showRecentPlan = !!recentPlan
+    && (iCompleted || step === 'pulse')
+    && !(iCompleted && openPlan && openPlan.weekId === recentPlan.weekId);
 
   // Only what I ticked is written where the partner can read it. Nothing
   // ticked writes nothing. Either way the plan is closed and never asked again.
@@ -517,10 +522,10 @@ export default function StateUnionScreen() {
           </>
         )}
 
-        {iCompleted && thisPlan.length > 0 && (
+        {showRecentPlan && recentPlan && (
           <View style={styles.thisPlanCard}>
             <Text style={styles.thisPlanLabel}>Your little something for {partnerName} · only you see this</Text>
-            {thisPlan.map((t, i) => (<Text key={i} style={styles.thisPlanItem}>{t}</Text>))}
+            {recentPlan.items.map((t, i) => (<Text key={i} style={styles.thisPlanItem}>{t}</Text>))}
           </View>
         )}
 
