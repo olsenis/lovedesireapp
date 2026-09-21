@@ -86,7 +86,9 @@ export default function LoveLanguageNudgeScreen() {
 
             {myPlan.length > 0 && (
               <View style={styles.planCard}>
-                <Text style={styles.planLabel}>You already planned, only you can see this</Text>
+                {/* Says where it came from: "You already planned" left the tester asking
+                    who wrote it and in which feature (Sep 21 2026). */}
+                <Text style={styles.planLabel}>From your Sunday Check-in · only you see this</Text>
                 {myPlan.map((t, i) => (<Text key={i} style={styles.planItem}>{t}</Text>))}
               </View>
             )}
