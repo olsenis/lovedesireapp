@@ -582,7 +582,8 @@ export default function StateUnionScreen() {
 
             {!!partnerEntry?.doneForPartner?.length && (
               <View style={styles.doneBlock}>
-                <Text style={styles.doneTitle}>🎁 {partnerName} did this for you, on purpose</Text>
+                <Text style={styles.doneTitle}>🎁 A little something from {partnerName}</Text>
+                <Text style={styles.doneSub}>Planned ahead, and done.</Text>
                 {partnerEntry.doneForPartner.map((t, i) => (
                   <Text key={i} style={styles.doneItem}>{t.replace(/\{partner\}/gi, 'you')}</Text>
                 ))}
@@ -691,7 +692,8 @@ export default function StateUnionScreen() {
                       <View style={styles.historyAnswers}>
                         {!!historyEntries[h.weekId]?.theirs?.doneForPartner?.length && (
                           <View style={styles.doneBlock}>
-                            <Text style={styles.doneTitle}>🎁 {partnerName} did this for you, on purpose</Text>
+                            <Text style={styles.doneTitle}>🎁 A little something from {partnerName}</Text>
+                <Text style={styles.doneSub}>Planned ahead, and done.</Text>
                             {historyEntries[h.weekId]!.theirs!.doneForPartner!.map((t, i) => (
                               <Text key={i} style={styles.doneItem}>{t.replace(/\{partner\}/gi, 'you')}</Text>
                             ))}
@@ -795,6 +797,7 @@ const styles = StyleSheet.create({
   planTickText: { flex: 1, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 21 },
   doneBlock: { backgroundColor: Colors.blush, borderRadius: Radius.lg, padding: Spacing.md, marginTop: Spacing.md, gap: 4 },
   doneTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.burgundy },
+  doneSub: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.muted, marginBottom: 2 },
   doneItem: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 21 },
   waitHint: { fontFamily: Fonts.bodyItalic, fontSize: 13, color: Colors.muted, textAlign: 'center' },
 

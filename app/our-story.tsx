@@ -713,7 +713,7 @@ export default function OurStoryScreen() {
                         )}
                         {isExpanded && !!entries?.theirs?.doneForPartner?.length && (
                           <View style={styles.archiveWeekQBlock}>
-                            <Text style={styles.archiveWeekQ}>🎁 {partner?.name ?? 'Partner'} did this for you, on purpose</Text>
+                            <Text style={styles.archiveWeekQ}>🎁 A little something from {partner?.name ?? 'your partner'}</Text>
                             {entries.theirs.doneForPartner.map((t, i) => (
                               <Text key={i} style={styles.archiveWeekAnswerText}>{t.replace(/\{partner\}/gi, 'you')}</Text>
                             ))}
