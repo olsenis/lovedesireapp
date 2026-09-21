@@ -540,6 +540,9 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
 - [ ] **Migration** : an account that had reminders before the change opens the screen → its own reminders are listed as before and the switch still pauses them; the legacy docs with that `createdBy` are gone from `couples/{id}/reminders`.
 - [ ] **Dev build** : the notification arrives at the set time with the message as its body; switching the reminder off stops it.
 
+### Monday actions do not repeat (Sep 21 2026)
+- [ ] **Same trio on both phones, new trio each week** 📱 : "Speak Eva's language" shows the same three actions on both phones in the same week; over six weeks no action appears twice (Our Story → Love Language weeks lists them). Set the phone's date forward a week at a time to check quickly.
+
 ### Love Language result: who is who, plain English (Sep 21 2026)
 - [ ] **My card** : headings read "You feel most loved by" and "Means less to you"; the text names the partner ("time with Eva"), not "your partner", while paired.
 - [ ] **Partner card** : under "EVA'S LANGUAGE" the line is ABOUT Eva ("Eva feels loved through small gifts…"), never "You feel loved…". The Monday screen "Speak Eva's language" shows the same line.

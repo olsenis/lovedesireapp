@@ -72,10 +72,54 @@ export async function cancelLoveLanguageNudge(): Promise<void> {
   }
 }
 
-// Deterministic 3-action pick from the partner's language pool. Uses
-// (yyyy-ww)+coupleId as seed so both partners see the SAME three actions
-// when they open the nudge screen in the same week — natural talking
-// point when they compare notes.
+// Three actions a week from the partner's language pool, the SAME three on
+// both phones (nothing is stored: the pick is computed from the week and the
+// couple id), and NO REPEATS inside a cycle (Sep 21 2026).
+//
+// Until then every week was an independent shuffle of the pool, so about four
+// weeks in ten brought back something from the week before. Now the pool is
+// dealt like a deck: one seeded shuffle per cycle, three cards a week, and a
+// new shuffle when the deck runs out (20 actions = 6 weeks without a repeat).
+// A new cycle opens with what the last one did NOT deal recently, so an action
+// never comes back sooner than about half a cycle.
+// Weeks are counted from a fixed Monday, so any past week can be recomputed
+// (Our Story's archive does exactly that).
+//
+// AFTER LAUNCH DO NOT CHANGE THIS FUNCTION OR REORDER A POOL: both would
+// rewrite every couple's past weeks in Our Story. Add new actions at the END
+// of a pool only if that is acceptable too (it reshuffles future cycles and,
+// because the pool length changes, past ones): prefer a new pool version.
+const PER_WEEK = 3;
+const EPOCH_MONDAY = Date.UTC(2024, 0, 1, 12); // Monday 1 Jan 2024, noon UTC (DST-safe)
+const WEEK_MS = 7 * 24 * 3600_000;
+const deckCache = new Map<string, string[][]>();
+
+function weekIndex(when: Date): number {
+  const noon = Date.UTC(when.getFullYear(), when.getMonth(), when.getDate(), 12);
+  return Math.max(0, Math.round((noon - EPOCH_MONDAY) / WEEK_MS));
+}
+
+// decks[c] = the order of cycle c. Built from cycle 0 so each cycle can avoid
+// the previous cycle's closing three. A few hundred tiny shuffles at most.
+function decksUpTo(language: LoveLanguage, coupleId: string, cycle: number, pool: string[], weeksPerCycle: number): string[][] {
+  const key = `${coupleId}|${language}|${pool.length}`;
+  const decks = deckCache.get(key) ?? [];
+  for (let c = decks.length; c <= cycle; c++) {
+    let deck = seededShuffle(pool, `${coupleId}-${language}-cycle${c}`);
+    if (c > 0) {
+      // What the previous cycle dealt in its second half goes to the back of
+      // this one, so nothing returns sooner than about half a cycle (with 20
+      // actions: never sooner than 4 weeks; simulated over two years).
+      const used = weeksPerCycle * PER_WEEK;
+      const recent = new Set(decks[c - 1].slice(used - Math.floor(weeksPerCycle / 2) * PER_WEEK, used));
+      deck = [...deck.filter((a) => !recent.has(a)), ...deck.filter((a) => recent.has(a))];
+    }
+    decks.push(deck);
+  }
+  deckCache.set(key, decks);
+  return decks;
+}
+
 export function pickWeeklyActions(
   language: LoveLanguage,
   coupleId: string,
@@ -83,9 +127,13 @@ export function pickWeeklyActions(
 ): string[] {
   const pool = LOVE_LANGUAGE_ACTIONS[language] ?? [];
   if (pool.length === 0) return [];
-  const seed = `${weekKey(when)}-${coupleId}`;
-  const shuffled = seededShuffle(pool, seed);
-  return shuffled.slice(0, Math.min(3, shuffled.length));
+  if (pool.length <= PER_WEEK) return pool.slice();
+  const weeksPerCycle = Math.floor(pool.length / PER_WEEK);
+  const w = weekIndex(weekAnchor(when));
+  const cycle = Math.floor(w / weeksPerCycle);
+  const pos = w % weeksPerCycle;
+  const deck = decksUpTo(language, coupleId, cycle, pool, weeksPerCycle)[cycle];
+  return deck.slice(pos * PER_WEEK, pos * PER_WEEK + PER_WEEK);
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────
