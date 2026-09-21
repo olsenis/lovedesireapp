@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useAuth } from '../hooks/useAuth';
-import { MAX_PLANS, PLAN_MAX_LENGTH, SundayPlan, savePlan, getOpenPlan, resolvePlan, ideaFor } from '../services/sundayPlanService';
+import { MAX_PLANS, PLAN_MAX_LENGTH, SundayPlan, savePlan, getOpenPlan, getRecentPlan, resolvePlan, ideaFor } from '../services/sundayPlanService';
 import { useHelp } from '../hooks/useHelp';
 import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
@@ -243,6 +243,20 @@ export default function StateUnionScreen() {
     getOpenPlan(uid, coupleId).then((p) => { if (!cancelled) setOpenPlan(p); }).catch(() => {});
     return () => { cancelled = true; };
   }, [coupleId, uid, iCompleted]);
+
+  // THIS week's plan, shown back to me on the finished screen. It used to be
+  // visible only on the Monday love-language screen, so someone who forgot
+  // what they wrote had nowhere obvious to look (asked on a phone, Sep 21
+  // 2026). Same private doc; a list and nothing else: no counts, no ticks.
+  const [thisPlan, setThisPlan] = useState<string[]>([]);
+  useEffect(() => {
+    if (!coupleId || !uid || !iCompleted) { setThisPlan([]); return; }
+    let cancelled = false;
+    getRecentPlan(uid, coupleId)
+      .then((p) => { if (!cancelled) setThisPlan(p && p.weekId === weekId ? p.items : []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [coupleId, uid, iCompleted, weekId]);
 
   // Only what I ticked is written where the partner can read it. Nothing
   // ticked writes nothing. Either way the plan is closed and never asked again.
@@ -503,6 +517,13 @@ export default function StateUnionScreen() {
           </>
         )}
 
+        {iCompleted && thisPlan.length > 0 && (
+          <View style={styles.thisPlanCard}>
+            <Text style={styles.thisPlanLabel}>Your little something for {partnerName} · only you see this</Text>
+            {thisPlan.map((t, i) => (<Text key={i} style={styles.thisPlanItem}>{t}</Text>))}
+          </View>
+        )}
+
         {/* ─── An earlier plan of mine: tick what happened ───
             Private to me. Ticked items become `doneForPartner` on my entry
             for this week; an unticked plan closes without a trace. */}
@@ -732,6 +753,9 @@ const styles = StyleSheet.create({
   progressDotDone: { backgroundColor: Colors.rose },
   progressDotActive: { backgroundColor: Colors.burgundy, transform: [{ scale: 1.3 }] },
 
+  thisPlanCard: { backgroundColor: Colors.blush, borderRadius: Radius.lg, padding: Spacing.md, gap: 4 },
+  thisPlanLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: Colors.burgundy },
+  thisPlanItem: { fontFamily: Fonts.body, fontSize: 15, color: Colors.text, lineHeight: 21 },
   questionLabel: { fontFamily: Fonts.body, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: Colors.muted, textAlign: 'center' },
   questionText: { fontFamily: Fonts.headingItalic, fontSize: 22, color: Colors.burgundy, textAlign: 'center', lineHeight: 30 },
 

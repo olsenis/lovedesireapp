@@ -2935,6 +2935,7 @@ Insights & rituals: love language quiz, 10-question pulse, weekly Sunday check-i
 
 - [ ] **Former partner's plan is not offered** : a plan made while paired with Eva does not appear after pairing with Ola.
 
+- [ ] **The plan is shown back to me** : after finishing the check-in with a plan, the finished screen shows "Your little something for Eva · only you see this" with my items, whether or not Eva has finished; Eva's phone never shows it; next week the card is gone and "Last time you planned" asks what happened.
 - [ ] **Monday screen** : Love Language nudge shows "From your Sunday Check-in · only you see this" above "3 more ideas for this week".
 
 - [ ] **No leftovers** : no "Call it", "predicted" or "called x of y" anywhere on the Sunday screen, old weeks included.
