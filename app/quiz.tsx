@@ -103,7 +103,12 @@ export default function QuizScreen() {
   // Partner-side reveal + compatibility lookup
   const partnerUid = partner?.uid;
   const partnerResult = partnerUid ? coupleResults[partnerUid] : undefined;
-  const partnerLanguage = partnerResult?.language;
+  // The result is the person's own and follows them on the profile; the full
+  // result in couples/{id}/loveLanguages does not exist in a NEW couple until
+  // the quiz is taken again (A1: nothing is copied over). Without the profile
+  // fallback the partner of someone who took the quiz in an earlier couple
+  // would read "Waiting for Oli to complete the quiz" for ever (Sep 21 2026).
+  const partnerLanguage: LoveLanguage | undefined = partnerResult?.language ?? ((partner as any)?.loveLanguage as LoveLanguage | undefined);
   const myTypeConfig = LOVE_LANGUAGE_TYPE_CONFIG[primary];
   const partnerTypeConfig = partnerLanguage ? LOVE_LANGUAGE_TYPE_CONFIG[partnerLanguage] : undefined;
   // Compatibility keyed `${primary}-${partnerPrimary}`. Author's canonical
@@ -182,7 +187,7 @@ export default function QuizScreen() {
           </View>
 
           {/* Partner result */}
-          {partnerResult && partnerTypeConfig ? (
+          {partnerTypeConfig ? (
             <>
               <Text style={styles.sectionLabel}>{partner?.name ?? 'Your partner'}'s language</Text>
               <View style={[styles.partnerCard, { backgroundColor: partnerTypeConfig.color }]}>
