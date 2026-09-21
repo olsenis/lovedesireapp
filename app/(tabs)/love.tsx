@@ -43,6 +43,9 @@ const DISCOVER = [
   { emoji: '📖', title: 'Our Story',         subtitle: 'Timeline of your milestones, met to married and beyond', route: '/our-story',          bg: '#FFF0F3', paid: false },
   { emoji: '💬', title: 'Love Language',     subtitle: 'Discover how you each feel most loved',                  route: '/quiz',               bg: '#E3F2FD', paid: false },
   { emoji: '💕', title: "Speak {partner}'s language", subtitle: "3 fresh ways every week to speak {partner}'s language", route: '/love-language-nudge', bg: '#FCE4EC', paid: false },
+  // Moved here from Profile Sep 21 2026: a private prompt to do something for
+  // the partner, the same kind of thing as the row above. Not a setting.
+  { emoji: '🔔', title: 'Flirt Reminders',   subtitle: 'Private nudges to do something sweet for {partner}',     route: '/reminders',          bg: '#FFF8E1', paid: false },
 ];
 
 // Same divider shape as Home ("─── LABEL ───") so the two hubs share a visual

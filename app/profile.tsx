@@ -710,20 +710,13 @@ export default function ProfileScreen() {
         {/* Reminders & tools — utility screens that used to live on the Us tab.
             Moved here July 2026 so the Us tab could focus on emotional rituals
             rather than admin. These are reachable but don't clutter the fun. */}
-        <Text style={styles.sectionLabel}>Reminders & tools</Text>
+        {/* Flirt Reminders moved to the Us tab Sep 21 2026 (a feature, not a setting). */}
+        <Text style={styles.sectionLabel}>Tools</Text>
         <View style={styles.card}>
           <TouchableOpacity style={styles.row} onPress={() => router.push('/calendar' as any)} accessibilityRole="button">
             <View style={styles.rowTextStack}>
               <Text style={styles.rowLabel}>✨ Special Days</Text>
               <Text style={styles.rowHint}>Anniversaries, birthdays, first times: dates worth remembering</Text>
-            </View>
-            <Text style={styles.rowChevron}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => router.push('/reminders' as any)} accessibilityRole="button">
-            <View style={styles.rowTextStack}>
-              <Text style={styles.rowLabel}>🔔 Flirt Reminders</Text>
-              <Text style={styles.rowHint}>Daily nudges to keep the spark alive</Text>
             </View>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>

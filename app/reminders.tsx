@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Switch, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
-import { FlirtReminder, DAY_LABELS, REMINDER_SUGGESTIONS, subscribeReminders, addReminder, toggleReminder, deleteReminder, scheduleReminderNotifications, cancelReminderNotifications } from '../services/reminderService';
+import { useCouple } from '../hooks/useCouple';
+import { personalise } from '../services/personalise';
+import { FlirtReminder, DAY_LABELS, REMINDER_SUGGESTIONS, subscribeReminders, addReminder, toggleReminder, deleteReminder, migrateLegacyReminders, scheduleReminderNotifications, cancelReminderNotifications } from '../services/reminderService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
@@ -27,17 +29,29 @@ export default function RemindersScreen() {
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const help = useHelp('reminders');
 
-  const coupleId = profile?.coupleId;
+  // Private to me (users/{uid}/private/flirtReminders), so this screen needs
+  // no couple; the partner's name is only used in the copy.
+  const uid = user?.uid;
+  const { partner } = useCouple(uid, profile?.coupleId);
+  const partnerName = partner?.name;
 
   useEffect(() => {
-    if (!coupleId) return;
-    return subscribeReminders(coupleId, setReminders);
-  }, [coupleId]);
+    if (!uid) return;
+    return subscribeReminders(uid, setReminders);
+  }, [uid]);
+
+  // One time: my reminders from the old shared collection. Waits for the
+  // profile, or an empty private doc would be written before the couple id is
+  // known and the migration would never run.
+  useEffect(() => {
+    if (!uid || !profile) return;
+    migrateLegacyReminders(uid, profile.coupleId).catch(() => {});
+  }, [uid, !!profile, profile?.coupleId]);
 
   const handleSave = async () => {
-    if (!message.trim() || !coupleId || !user) return;
+    if (!message.trim() || !uid) return;
     const hhmm = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
-    const saved = await addReminder(coupleId, { message: message.trim(), time: hhmm, days, active: true, createdBy: user.uid });
+    const saved = await addReminder(uid, { message: message.trim(), time: hhmm, days, active: true });
     scheduleReminderNotifications(saved);
     setMessage(''); setShowCreate(false);
   };
@@ -63,7 +77,7 @@ export default function RemindersScreen() {
 
       <ScrollView contentContainerStyle={styles.list}>
         <Text style={styles.desc}>
-          Get nudged throughout the day to do something sweet or flirty for your partner 💝
+          {personalise('Private reminders to do something sweet for {partner}. Only you see them.', partnerName)}
         </Text>
 
         {reminders.map((r) => (
@@ -79,11 +93,11 @@ export default function RemindersScreen() {
             <View style={styles.cardRight}>
               <Switch
                 value={r.active}
-                onValueChange={(val) => { if (coupleId) { toggleReminder(coupleId, r.id, val); if (val) scheduleReminderNotifications({ ...r, active: true }); else cancelReminderNotifications(r.id); } }}
+                onValueChange={(val) => { if (uid) { toggleReminder(uid, r.id, val); if (val) scheduleReminderNotifications({ ...r, active: true }); else cancelReminderNotifications(r.id); } }}
                 trackColor={{ false: Colors.border, true: Colors.rose }}
                 thumbColor={r.active ? Colors.burgundy : Colors.muted}
               />
-              <TouchableOpacity onPress={() => { if (coupleId) { deleteReminder(coupleId, r.id); cancelReminderNotifications(r.id); } }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Delete reminder">
+              <TouchableOpacity onPress={() => { if (uid) { deleteReminder(uid, r.id); cancelReminderNotifications(r.id); } }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Delete reminder">
                 <Text style={styles.deleteBtn}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -94,7 +108,7 @@ export default function RemindersScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🔔</Text>
             <Text style={styles.emptyTitle}>No reminders yet</Text>
-            <Text style={styles.emptyText}>Set up daily nudges to keep the spark alive</Text>
+            <Text style={styles.emptyText}>Pick a suggestion below, or write your own.</Text>
             <TouchableOpacity style={styles.emptyBtn} onPress={() => setShowCreate(true)} accessibilityRole="button">
               <Text style={styles.emptyBtnText}>Create first reminder</Text>
             </TouchableOpacity>
@@ -102,9 +116,13 @@ export default function RemindersScreen() {
         )}
 
         <Text style={styles.suggestTitle}>Suggestions</Text>
-        {REMINDER_SUGGESTIONS.map((s) => (
+        {REMINDER_SUGGESTIONS.map((raw) => {
+          // Filled with the name here, so the saved message and the
+          // notification read "Tell Ola one thing you love".
+          const s = personalise(raw, partnerName);
+          return (
           <TouchableOpacity
-            key={s}
+            key={raw}
             style={styles.suggestion}
             onPress={() => { setMessage(s); setShowCreate(true); }}
             activeOpacity={0.8}
@@ -112,7 +130,8 @@ export default function RemindersScreen() {
             <Text style={styles.suggestionText}>{s}</Text>
             <Text style={styles.suggestionPlus}>+</Text>
           </TouchableOpacity>
-        ))}
+          );
+        })}
       </ScrollView>
 
       <Modal visible={showCreate} transparent animationType="slide">
@@ -122,7 +141,7 @@ export default function RemindersScreen() {
 
             <TextInput
               style={styles.input}
-              placeholder="What should you do for your partner?"
+              placeholder={personalise('What will you do for {partner}?', partnerName)}
               placeholderTextColor={Colors.muted}
               value={message}
               onChangeText={setMessage}
@@ -167,12 +186,11 @@ export default function RemindersScreen() {
       <HelpModal
         visible={help.visible}
         title="Flirt Reminders"
-        description={`Nudges you schedule for yourself, delivered as notifications on this phone: a prompt to do something sweet or flirty for your partner.`}
+        description={personalise('Reminders you set for yourself to do something sweet for {partner}. They arrive as notifications on this phone.', partnerName)}
         tips={[
-          `Tap + New to create a reminder`,
-          `Set a time and which days of the week`,
-          `The switch turns a reminder on or off without deleting it`,
-          `Tap a Suggestion to pre-fill the message`,
+          `Tap a suggestion or + New, then set a time and the days`,
+          `The switch pauses a reminder without deleting it`,
+          personalise('{Partner} never sees these', partnerName),
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

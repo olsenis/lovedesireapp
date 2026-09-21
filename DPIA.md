@@ -35,7 +35,7 @@ Grouped by feature area:
 | Feature area | Data processed | Sensitivity | Legal basis |
 |---|---|---|---|
 | Account + pairing | Email, display name, profile photo, birthday (optional), push token, invite code | Standard personal | Art. 6(1)(b) contract |
-| Shared couple content | Todos, notes (text + voice), memories, moments photos, calendar dates, reminders, sparks | Personal + some intimate imagery | Art. 6(1)(b) contract |
+| Shared couple content | Todos, notes (text + voice), memories, moments photos, calendar dates, sparks (Flirt Reminders left this row Sep 21 2026: they are per-user private data now, readable only by the person who wrote them) | Personal + some intimate imagery | Art. 6(1)(b) contract |
 | Mood check-ins | Emoji + optional note, timestamp, uid; paid Kinky/Horny moods reveal sexual state | **Special-category (Art. 9)** — mental/emotional wellbeing, sex-life signal | **Art. 9(2)(a) explicit consent** at mood submission |
 | Sunday Check-in | 5 numeric dimension scores (closeness, physical intimacy, communication, appreciation, alignment) + 5 open-text answers | **Special-category (Art. 9)** — relational + sex-life signal | **Art. 9(2)(a) explicit consent** at feature enable |
 | Intimacy Log | Per-user private opt-in; entries with initiatedBy, types, mood, optional star rating, optional location, notes | **Special-category (Art. 9)** — direct sex-life record | **Art. 9(2)(a) explicit consent** at opt-in toggle |

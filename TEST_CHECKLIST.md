@@ -531,6 +531,15 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   2. Phone B: tap A's pill
   - **Expected:** Mood History opens on **Together**; a header "YOU / {partner}" above the rows; today's row shows both emoji with their words under them. B's own pill still opens Mood History on **Mine**.
 
+### Flirt Reminders: private, on the Us tab (Sep 21 2026)
+- [ ] **Where it lives** : Us tab, last section, after "Speak Eva's language": 🔔 Flirt Reminders, "Private nudges to do something sweet for Eva". Profile no longer has the row; its section is called "Tools" and holds Special Days.
+- [ ] **The partner never sees them** 📱 ⚠️
+  1. Phone A: Flirt Reminders → tap "Tell Eva one thing you love ❤️" → save
+  - **Expected:** A's list shows it with the time and days. Phone B: Flirt Reminders is EMPTY (B's own list). Firestore: the reminder is in `users/{A}/private/flirtReminders.items`; nothing new under `couples/{id}/reminders`. Before Sep 21 2026 B saw A's reminder, could switch it on (notification on B's phone) and delete it.
+- [ ] **By name** : every suggestion and the placeholder use the partner's name, no "them" / "their" / "your partner" while paired; the saved message carries the name. Unpaired: "your partner".
+- [ ] **Migration** : an account that had reminders before the change opens the screen → its own reminders are listed as before and the switch still pauses them; the legacy docs with that `createdBy` are gone from `couples/{id}/reminders`.
+- [ ] **Dev build** : the notification arrives at the set time with the message as its body; switching the reminder off stops it.
+
 ### Home while unpaired (Sep 2026, USER_VOICE C6)
 - [ ] **While you wait card**
   1. Fresh account, skip pairing, land on Home

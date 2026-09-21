@@ -53,7 +53,7 @@ Living overview of every feature, content pool size, and connection between feat
       ├─ mood-history       Home  (tap mood)
       ├─ calendar           Profile > Reminders & tools
       ├─ countdown          Profile > Reminders & tools
-      ├─ reminders          Profile > Reminders & tools ("Flirt Reminders")
+      ├─ reminders          Us tab, last section ("Flirt Reminders"; private per person since Sep 21 2026, was Profile > Reminders & tools)
       ├─ profile
       └─ upgrade
 ```
