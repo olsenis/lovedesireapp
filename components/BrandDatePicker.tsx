@@ -188,12 +188,16 @@ export function BrandDatePicker({
       {show && Platform.OS === 'android' && (
         <DateTimePicker
           value={androidDate ?? value ?? initialValue ?? new Date()}
-          mode={mode === 'datetime' && androidStep === 'time' ? 'time' : 'date'}
+          // 'time' opens the clock at once; 'datetime' goes date then time.
+          // Until Sep 23 2026 this only knew 'date' and 'datetime', so
+          // Reminders (mode="time") opened a calendar on Android.
+          mode={mode === 'time' || (mode === 'datetime' && androidStep === 'time') ? 'time' : 'date'}
           display="default"
           onValueChange={handleAndroidChange}
           onDismiss={closePicker}
-          maximumDate={androidStep === 'date' ? maximumDate : undefined}
-          minimumDate={androidStep === 'date' ? minimumDate : undefined}
+          maximumDate={mode !== 'time' && androidStep === 'date' ? maximumDate : undefined}
+          minimumDate={mode !== 'time' && androidStep === 'date' ? minimumDate : undefined}
+          is24Hour
         />
       )}
     </>

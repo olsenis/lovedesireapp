@@ -538,6 +538,7 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   - **Expected:** A's list shows it with the time and days. Phone B: Reminders is EMPTY (B's own list). Firestore: the reminder is in `users/{A}/private/flirtReminders.items`; nothing new under `couples/{id}/reminders`. Before Sep 21 2026 B saw A's reminder, could switch it on (notification on B's phone) and delete it.
 - [ ] **By name** : every suggestion and the placeholder use the partner's name, no "them" / "their" / "your partner" while paired; the saved message carries the name. Unpaired: "your partner".
 - [ ] **Migration** : an account that had reminders before the change opens the screen → its own reminders are listed as before and the switch still pauses them; the legacy docs with that `createdBy` are gone from `couples/{id}/reminders`.
+- [ ] **Time picker on Android** : + New → tap the time field → a clock opens (24-hour), not a calendar; the chosen HH:MM shows in the field. (Sep 23 2026: it opened a calendar.)
 - [ ] **Dev build** : the notification arrives at the set time with the message as its body; switching the reminder off stops it.
 
 ### Monday actions do not repeat (Sep 21 2026)
