@@ -32,7 +32,12 @@ export default function RemindersScreen() {
   // day could be saved and nothing was ever booked.
   const [repeat, setRepeat] = useState<'weekly' | 'once'>('weekly');
   const [onceDate, setOnceDate] = useState<Date | null>(null);
-  const canSave = !!message.trim() && (repeat === 'weekly' ? days.length > 0 : !!onceDate);
+  // A once-reminder must be in the future: today with a time already passed
+  // would be saved, never booked, and dropped from the list at once.
+  const onceMoment = onceDate ? new Date(onceDate.getFullYear(), onceDate.getMonth(), onceDate.getDate(), time.getHours(), time.getMinutes(), 0, 0).getTime() : 0;
+  const oncePast = repeat === 'once' && !!onceDate && onceMoment <= Date.now();
+  const canSave = !!message.trim() && (repeat === 'weekly' ? days.length > 0 : !!onceDate && !oncePast);
+  const closeCreate = () => { setShowCreate(false); setRepeat('weekly'); setOnceDate(null); };
   const help = useHelp('reminders');
 
   // Private to me (users/{uid}/private/flirtReminders), so this screen needs
@@ -55,14 +60,14 @@ export default function RemindersScreen() {
   }, [uid, !!profile, profile?.coupleId]);
 
   const handleSave = async () => {
-    if (!message.trim() || !uid) return;
+    if (!canSave || !uid) return;
     const hhmm = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
     const date = repeat === 'once' && onceDate
       ? `${onceDate.getFullYear()}-${String(onceDate.getMonth() + 1).padStart(2, '0')}-${String(onceDate.getDate()).padStart(2, '0')}`
       : undefined;
     const saved = await addReminder(uid, { message: message.trim(), time: hhmm, days: date ? [] : days, active: true, ...(date ? { date } : {}) });
     scheduleReminderNotifications(saved);
-    setMessage(''); setOnceDate(null); setRepeat('weekly'); setShowCreate(false);
+    setMessage(''); closeCreate();
   };
 
   const whenLabel = (r: FlirtReminder) => {
@@ -207,11 +212,12 @@ export default function RemindersScreen() {
               <>
                 <Text style={styles.modalLabel}>Date</Text>
                 <BrandDatePicker value={onceDate} onChange={setOnceDate} placeholder="Pick a date" minimumDate={new Date()} />
+                {oncePast && <Text style={styles.pastHint}>That time has passed today. Pick a later time or another day.</Text>}
               </>
             )}
 
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)} accessibilityRole="button">
+              <TouchableOpacity style={styles.cancelBtn} onPress={closeCreate} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, !canSave && { opacity: 0.4 }]} disabled={!canSave} onPress={handleSave} accessibilityRole="button" accessibilityState={{ disabled: !canSave }}>
@@ -307,6 +313,7 @@ const styles = StyleSheet.create({
   input: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border },
   modalLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   daysRow: { flexDirection: 'row', gap: Spacing.xs },
+  pastHint: { fontFamily: Fonts.bodyItalic, fontSize: 12, color: Colors.burgundy },
   modeBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   dayBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
   dayActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
