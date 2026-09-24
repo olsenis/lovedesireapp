@@ -11,6 +11,7 @@ import { logout } from '../../services/authService';
 import { notifyPartner } from '../../services/notificationService';
 import { inviteMessage } from '../../constants/app';
 import { subscribeResetRequests, ResetRequest, RESET_ROWS, resetDateLabel, isOpenReset, resetAnswerFor } from '../../services/resetService';
+import { formatClock } from '../../services/clock';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, moodLabel, moodCaption } from '../../services/moodService';
 import { OwnWordsSheet } from '../../components/OwnWordsSheet';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
@@ -151,7 +152,7 @@ function getLanguageTip(language: string | undefined, partnerName: string): Lang
 function timeInZone(tz?: string): string | null {
   if (!tz) return null;
   try {
-    return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+    return formatClock(new Date(), tz);
   } catch {
     return null;
   }

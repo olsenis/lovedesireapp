@@ -1,4 +1,5 @@
 import { doc, setDoc, deleteDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { formatClock } from './clock';
 import { db } from './firebase';
 import { trackEvent } from './statsService';
 
@@ -77,5 +78,5 @@ export function tonightMatchKey(mine: TonightSignal, theirs: TonightSignal): str
 }
 
 export function formatClearTime(expiresAt: number): string {
-  return new Date(expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return formatClock(new Date(expiresAt));
 }

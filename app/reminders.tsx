@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
 import { useCouple } from '../hooks/useCouple';
 import { personalise } from '../services/personalise';
+import { formatClockHHmm } from '../services/clock';
 import { FlirtReminder, DAY_LABELS, REMINDER_SUGGESTIONS, subscribeReminders, addReminder, toggleReminder, deleteReminder, migrateLegacyReminders, scheduleReminderNotifications, cancelReminderNotifications } from '../services/reminderService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
@@ -105,7 +106,7 @@ export default function RemindersScreen() {
             <View style={styles.cardLeft}>
               <Text style={styles.cardMessage}>{r.message}</Text>
               <View style={styles.cardMetaRow}>
-                <Text style={styles.cardTime}>{r.time}</Text>
+                <Text style={styles.cardTime}>{formatClockHHmm(r.time)}</Text>
                 <Text style={styles.cardDot}>·</Text>
                 <Text style={styles.cardMeta}>{whenLabel(r)}</Text>
               </View>

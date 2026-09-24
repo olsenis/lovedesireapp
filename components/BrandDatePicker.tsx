@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius } from '../constants/spacing';
+import { formatClock } from '../services/clock';
 
 type Props = {
   value: Date | null;
@@ -43,13 +44,12 @@ export function BrandDatePicker({
 
   const format = (d: Date) => {
     if (mode === 'time') {
-      return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return formatClock(d);
     }
     if (hideYear) return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long' });
     const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     if (mode === 'datetime') {
-      const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-      return `${dateStr}, ${timeStr}`;
+      return `${dateStr}, ${formatClock(d)}`;
     }
     return dateStr;
   };
@@ -197,7 +197,6 @@ export function BrandDatePicker({
           onDismiss={closePicker}
           maximumDate={mode !== 'time' && androidStep === 'date' ? maximumDate : undefined}
           minimumDate={mode !== 'time' && androidStep === 'date' ? minimumDate : undefined}
-          is24Hour
         />
       )}
     </>

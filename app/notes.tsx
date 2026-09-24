@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatClock } from '../services/clock';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
@@ -100,8 +101,7 @@ function voiceNoteTitle(note: LoveNote): string {
   if (note.openAt < AUTO_UNLOCK_SENTINEL && note.openAt > note.createdAt + 60 * 60 * 1000) {
     const d = new Date(note.openAt);
     const dateStr = d.toLocaleDateString('en-GB', { month: 'short', day: '2-digit' });
-    const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-    return `For ${dateStr} at ${timeStr}`;
+    return `For ${dateStr} at ${formatClock(d)}`;
   }
   return 'Voice note';
 }
@@ -613,7 +613,7 @@ export default function NotesScreen() {
                 />
                 {customDate ? (
                   <Text style={styles.sadHint}>
-                    Opens {customDate.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })} at {customDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })}
+                    Opens {customDate.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'short' })} at {formatClock(customDate)}
                   </Text>
                 ) : (
                   <Text style={styles.sadHint}>Pick any future date and time.</Text>
