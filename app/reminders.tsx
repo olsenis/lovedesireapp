@@ -27,6 +27,12 @@ export default function RemindersScreen() {
     return d;
   });
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  // Weekly (time + weekdays) or Once (time + a date). Save stays disabled until
+  // the mode has what it needs; until Sep 24 2026 a weekly reminder with no
+  // day could be saved and nothing was ever booked.
+  const [repeat, setRepeat] = useState<'weekly' | 'once'>('weekly');
+  const [onceDate, setOnceDate] = useState<Date | null>(null);
+  const canSave = !!message.trim() && (repeat === 'weekly' ? days.length > 0 : !!onceDate);
   const help = useHelp('reminders');
 
   // Private to me (users/{uid}/private/flirtReminders), so this screen needs
@@ -51,9 +57,18 @@ export default function RemindersScreen() {
   const handleSave = async () => {
     if (!message.trim() || !uid) return;
     const hhmm = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
-    const saved = await addReminder(uid, { message: message.trim(), time: hhmm, days, active: true });
+    const date = repeat === 'once' && onceDate
+      ? `${onceDate.getFullYear()}-${String(onceDate.getMonth() + 1).padStart(2, '0')}-${String(onceDate.getDate()).padStart(2, '0')}`
+      : undefined;
+    const saved = await addReminder(uid, { message: message.trim(), time: hhmm, days: date ? [] : days, active: true, ...(date ? { date } : {}) });
     scheduleReminderNotifications(saved);
-    setMessage(''); setShowCreate(false);
+    setMessage(''); setOnceDate(null); setRepeat('weekly'); setShowCreate(false);
+  };
+
+  const whenLabel = (r: FlirtReminder) => {
+    if (!r.date) return r.days.map((d) => DAY_LABELS[d]).join(', ');
+    const [y, m, d] = r.date.split('-').map(Number);
+    return `Once, ${new Date(y, m - 1, d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}`;
   };
 
   const toggleDay = (d: number) => {
@@ -87,7 +102,7 @@ export default function RemindersScreen() {
               <View style={styles.cardMetaRow}>
                 <Text style={styles.cardTime}>{r.time}</Text>
                 <Text style={styles.cardDot}>·</Text>
-                <Text style={styles.cardMeta}>{r.days.map((d) => DAY_LABELS[d]).join(', ')}</Text>
+                <Text style={styles.cardMeta}>{whenLabel(r)}</Text>
               </View>
             </View>
             <View style={styles.cardRight}>
@@ -158,24 +173,48 @@ export default function RemindersScreen() {
             />
 
 
-            <Text style={styles.modalLabel}>Days</Text>
+            <Text style={styles.modalLabel}>Repeat</Text>
             <View style={styles.daysRow}>
-              {DAY_LABELS.map((label, i) => (
+              {(['weekly', 'once'] as const).map((m) => (
                 <TouchableOpacity
-                  key={label}
-                  style={[styles.dayBtn, days.includes(i) && styles.dayActive]}
-                  onPress={() => toggleDay(i)}
-                 accessibilityRole="button">
-                  <Text style={[styles.dayText, days.includes(i) && styles.dayTextActive]}>{label}</Text>
+                  key={m}
+                  style={[styles.modeBtn, repeat === m && styles.dayActive]}
+                  onPress={() => setRepeat(m)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: repeat === m }}
+                >
+                  <Text style={[styles.dayText, repeat === m && styles.dayTextActive]}>{m === 'weekly' ? 'Weekly' : 'Once'}</Text>
                 </TouchableOpacity>
               ))}
             </View>
+
+            {repeat === 'weekly' ? (
+              <>
+                <Text style={styles.modalLabel}>Days</Text>
+                <View style={styles.daysRow}>
+                  {DAY_LABELS.map((label, i) => (
+                    <TouchableOpacity
+                      key={label}
+                      style={[styles.dayBtn, days.includes(i) && styles.dayActive]}
+                      onPress={() => toggleDay(i)}
+                     accessibilityRole="button">
+                      <Text style={[styles.dayText, days.includes(i) && styles.dayTextActive]}>{label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalLabel}>Date</Text>
+                <BrandDatePicker value={onceDate} onChange={setOnceDate} placeholder="Pick a date" minimumDate={new Date()} />
+              </>
+            )}
 
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreate(false)} accessibilityRole="button">
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={handleSave} accessibilityRole="button">
+              <TouchableOpacity style={[styles.saveBtn, !canSave && { opacity: 0.4 }]} disabled={!canSave} onPress={handleSave} accessibilityRole="button" accessibilityState={{ disabled: !canSave }}>
                 <Text style={styles.saveBtnText}>Save 🔔</Text>
               </TouchableOpacity>
             </View>
@@ -188,7 +227,8 @@ export default function RemindersScreen() {
         title="Reminders"
         description={personalise('Reminders you set for yourself to do something sweet for {partner}. They arrive as notifications on this phone.', partnerName)}
         tips={[
-          `Tap a suggestion or + New, then set a time and the days`,
+          `Tap a suggestion or + New, then set a time`,
+          `Weekly on the days you pick, or once on a date`,
           `The switch pauses a reminder without deleting it`,
           personalise('{Partner} never sees these', partnerName),
         ]}
@@ -267,6 +307,7 @@ const styles = StyleSheet.create({
   input: { backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, fontFamily: Fonts.body, fontSize: 15, color: Colors.text, borderWidth: 1, borderColor: Colors.border },
   modalLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, color: Colors.muted },
   daysRow: { flexDirection: 'row', gap: Spacing.xs },
+  modeBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.full, borderWidth: 1, borderColor: Colors.border },
   dayBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
   dayActive: { backgroundColor: Colors.burgundy, borderColor: Colors.burgundy },
   dayText: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.muted },

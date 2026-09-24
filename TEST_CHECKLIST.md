@@ -531,6 +531,11 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   2. Phone B: tap A's pill
   - **Expected:** Mood History opens on **Together**; a header "YOU / {partner}" above the rows; today's row shows both emoji with their words under them. B's own pill still opens Mood History on **Mine**.
 
+### Special Days: the bell (Sep 24 2026)
+- [ ] **Per phone** 📱 : Special Days → tap 🔕 on Anniversary → 🔔. Close and reopen → still 🔔. Ola's phone → still 🔕 (the choice is this phone's, nothing in Firestore). Works on auto rows (Valentine's, birthday, anniversary), on my dates, and on a partner's secret date.
+- [ ] **Delete clears it** : 🔔 on a date I added → ✕ → the row is gone and, if I add the same date again, it starts 🔕.
+- [ ] **Dev build** : with 🔔 on a date 8+ days away: "{label} is in a week" at 09:00 seven days before, "{label} is today 💝" at 09:00 on the day; a partner's secret date says "A surprise from Oli is in a week".
+
 ### Reminders (ex Flirt Reminders): private, on the Us tab (Sep 21 2026)
 - [ ] **Where it lives** : Us tab, last section, after "Speak Eva's language": 🔔 Reminders, "Private nudges to do something sweet for Eva". Profile no longer has the row; its section is called "Tools" and holds Special Days.
 - [ ] **The partner never sees them** 📱 ⚠️
@@ -538,6 +543,8 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   - **Expected:** A's list shows it with the time and days. Phone B: Reminders is EMPTY (B's own list). Firestore: the reminder is in `users/{A}/private/flirtReminders.items`; nothing new under `couples/{id}/reminders`. Before Sep 21 2026 B saw A's reminder, could switch it on (notification on B's phone) and delete it.
 - [ ] **By name** : every suggestion and the placeholder use the partner's name, no "them" / "their" / "your partner" while paired; the saved message carries the name. Unpaired: "your partner".
 - [ ] **Migration** : an account that had reminders before the change opens the screen → its own reminders are listed as before and the switch still pauses them; the legacy docs with that `createdBy` are gone from `couples/{id}/reminders`.
+- [ ] **Weekly needs a day, Once needs a date** : + New with a message → Save is greyed while no weekday is selected; tap "Once" → the Days row becomes a Date field and Save is greyed until a date is picked (dates before today cannot be picked). (Sep 24 2026: a weekly reminder with no day could be saved and nothing was ever booked.)
+- [ ] **Once** : Once + a date + 18:00 → the row reads "18:00 · Once, Sat 23 Nov"; the switch pauses it; after the moment has passed the row is gone the next time the screen opens. Dev build: one notification at that moment, none the week after.
 - [ ] **Time picker on Android** : + New → tap the time field → a clock opens (24-hour), not a calendar; the chosen HH:MM shows in the field. (Sep 23 2026: it opened a calendar.)
 - [ ] **Dev build** : the notification arrives at the set time with the message as its body; switching the reminder off stops it.
 

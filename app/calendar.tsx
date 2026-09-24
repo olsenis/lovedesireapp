@@ -7,6 +7,7 @@ import { HelpModal } from '../components/HelpModal';
 import { useCouple } from '../hooks/useCouple';
 import { ImportantDate, subscribeDates, addImportantDate, deleteImportantDate } from '../services/importantDateService';
 import { BrandDatePicker } from '../components/BrandDatePicker';
+import { getSpecialDayReminders, setSpecialDayReminder, rescheduleSpecialDayReminders, clearSpecialDayReminder } from '../services/specialDayReminderService';
 import { Colors } from '../constants/colors';
 import { Fonts } from '../constants/fonts';
 import { Spacing, Radius, Shadow } from '../constants/spacing';
@@ -74,6 +75,9 @@ export default function CalendarScreen() {
   // partner's ledger until the day arrives. Ported from the old
   // Countdowns screen when we merged its unique feature over.
   const [addSecret, setAddSecret] = useState(false);
+  // Per-phone "remind me" choices (services/specialDayReminderService.ts).
+  const [bells, setBells] = useState<Record<string, true>>({});
+  useEffect(() => { getSpecialDayReminders().then(setBells); }, []);
 
   useEffect(() => {
     if (!profile?.coupleId) return;
@@ -154,6 +158,17 @@ export default function CalendarScreen() {
     return entries;
   }, [dates, effectiveBirthday, partnerName, couple?.startDate, user?.uid]);
 
+  // Book the next occurrence for every row with the bell on, each time the
+  // ledger changes (open, add, delete, bell toggled).
+  useEffect(() => {
+    const targets = ledger.map((e) => ({
+      key: e.key,
+      label: e.isSecret ? `A surprise from ${partnerName}` : e.label,
+      next: e.nextOccurrence,
+    }));
+    rescheduleSpecialDayReminders(targets, bells).catch(() => {});
+  }, [ledger, bells, partnerName]);
+
   // Group by bucket, preserving sort order inside each group.
   const grouped = useMemo(() => {
     const groups: Record<'thisMonth' | 'nextThree' | 'later', LedgerEntry[]> = {
@@ -204,7 +219,7 @@ export default function CalendarScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.introHint}>
-          A ledger of the dates that matter to you both. Anniversaries, birthdays, first times, small rituals worth remembering.
+          A ledger of the dates that matter to you both. Anniversaries, birthdays, first times, small rituals worth remembering. Tap the bell to be reminded a week before and on the day, on this phone.
         </Text>
 
         {ledger.length === 0 ? (
@@ -234,9 +249,18 @@ export default function CalendarScreen() {
                           </Text>
                           <Text style={styles.rowWhen}>{formatWhen(entry)}</Text>
                         </View>
+                        <TouchableOpacity
+                          onPress={() => setSpecialDayReminder(entry.key, !bells[entry.key]).then(setBells)}
+                          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                          accessibilityRole="switch"
+                          accessibilityState={{ checked: !!bells[entry.key] }}
+                          accessibilityLabel={`Remind me about ${entry.isSecret ? 'this day' : entry.label}, a week before and on the day`}
+                        >
+                          <Text style={[styles.bell, !bells[entry.key] && styles.bellOff]}>{bells[entry.key] ? '🔔' : '🔕'}</Text>
+                        </TouchableOpacity>
                         {entry.userDate && !entry.isSecret && entry.userDate.createdBy === user?.uid && (
                           <TouchableOpacity
-                            onPress={() => profile?.coupleId && deleteImportantDate(profile.coupleId, entry.userDate!.id)}
+                            onPress={() => { if (profile?.coupleId) { deleteImportantDate(profile.coupleId, entry.userDate!.id); clearSpecialDayReminder(entry.key).then(() => getSpecialDayReminders().then(setBells)); } }}
                             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                             accessibilityRole="button"
                             accessibilityLabel={`Delete ${entry.label}`}
@@ -324,6 +348,7 @@ export default function CalendarScreen() {
           `Add anniversaries, birthdays, firsts and small rituals`,
           `Keep it a surprise 🤫 hides what the day is from ${partnerName} until it arrives`,
           `Your anniversary and birthdays appear on their own once the dates are set`,
+          `🔔 on a row reminds you a week before and on the day, on this phone only`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}
@@ -373,6 +398,8 @@ const styles = StyleSheet.create({
   rowLabel: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.text },
   rowWhen: { fontFamily: Fonts.body, fontSize: 12, color: Colors.muted },
   deleteBtn: { fontFamily: Fonts.body, fontSize: 16, color: Colors.muted, padding: 4 },
+  bell: { fontSize: 16, padding: 4 },
+  bellOff: { opacity: 0.35 },
 
   emptyCard: {
     backgroundColor: Colors.white,

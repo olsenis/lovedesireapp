@@ -19,7 +19,8 @@ export interface FlirtReminder {
   id: string;
   message: string;
   time: string; // "HH:mm"
-  days: number[]; // 0=Sun, 1=Mon ... 6=Sat
+  days: number[]; // 0=Sun, 1=Mon ... 6=Sat (empty for a once-reminder)
+  date?: string;  // YYYY-MM-DD: a ONE-OFF reminder on that date at `time` (Sep 24 2026); `days` is ignored
   active: boolean;
   createdAt: number;
 }
@@ -53,9 +54,22 @@ async function readItems(uid: string): Promise<FlirtReminder[]> {
   return clean(snap.data()?.items);
 }
 
+// The moment a once-reminder fires (or would have), as ms; Infinity for weekly.
+export function reminderMoment(r: FlirtReminder): number {
+  if (!r.date) return Infinity;
+  const [y, m, d] = r.date.split('-').map(Number);
+  const [hh, mm] = r.time.split(':').map(Number);
+  return new Date(y, m - 1, d, hh, mm, 0, 0).getTime();
+}
+
 export function subscribeReminders(uid: string, onChange: (reminders: FlirtReminder[]) => void): Unsubscribe {
   return onSnapshot(ref(uid), (snap) => {
-    onChange(clean(snap.data()?.items).sort((a, b) => a.createdAt - b.createdAt));
+    const all = clean(snap.data()?.items);
+    // A once-reminder that has fired is dropped the next time the list is
+    // read, so old ones do not pile up. One write, only when something went.
+    const live = all.filter((r) => reminderMoment(r) > Date.now());
+    if (live.length !== all.length) setDoc(ref(uid), { items: live }, { merge: true }).catch(() => {});
+    onChange(live.sort((a, b) => a.createdAt - b.createdAt));
   }, () => onChange([]));
 }
 
@@ -114,6 +128,16 @@ export async function scheduleReminderNotifications(reminder: FlirtReminder): Pr
   await cancelReminderNotifications(reminder.id);
   if (!reminder.active) return;
   const [hour, minute] = reminder.time.split(':').map(Number);
+  if (reminder.date) {
+    const when = new Date(reminderMoment(reminder));
+    if (when.getTime() <= Date.now()) return;
+    await Notifications.scheduleNotificationAsync({
+      identifier: `reminder-${reminder.id}-once`,
+      content: { title: 'Love Desire 💝', body: reminder.message, sound: true },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+    });
+    return;
+  }
   for (const day of reminder.days) {
     await Notifications.scheduleNotificationAsync({
       identifier: notifIdForDay(reminder.id, day),
@@ -135,4 +159,5 @@ export async function cancelReminderNotifications(reminderId: string): Promise<v
       await Notifications.cancelScheduledNotificationAsync(notifIdForDay(reminderId, day));
     } catch { /* already cancelled */ }
   }
+  try { await Notifications.cancelScheduledNotificationAsync(`reminder-${reminderId}-once`); } catch { /* not scheduled */ }
 }
