@@ -3,12 +3,10 @@
 // app was forced to en-GB 24-hour, which reads wrong to a US user, and the
 // Android time picker was forced to a 24-hour dial. Notifications are booked
 // by hour and minute and never depended on this.
+// Throws on an invalid timeZone, on purpose: the LDR clock on Home catches
+// that and shows no clock, which beats showing the wrong one.
 export function formatClock(d: Date, timeZone?: string): string {
-  try {
-    return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', ...(timeZone ? { timeZone } : {}) }).format(d);
-  } catch {
-    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  }
+  return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', ...(timeZone ? { timeZone } : {}) }).format(d);
 }
 
 // "HH:mm" (how Reminders stores a time) shown the same way.
