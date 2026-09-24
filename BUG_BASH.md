@@ -27,6 +27,8 @@ Goal: be better than the shelf where it counts (COMPETITORS.md §5): reliable on
 
 **Sep 21 2026, still round 3 (Oli + Ola):** Reminders (ex Flirt Reminders) made private per person and moved from Profile to the Us tab (`650afe7`, `409f658`); Love Language result from an earlier couple counts in the new one (`f63baa8`); the private Sunday plan is shown back to its writer on the Sunday screen and says where it came from on the Monday screen (`a8e5bd6`, `4f99de3`, `b781d8e`); "Need an idea?" no longer saves a literal `{partner}`, "See you next Sunday", "Not this time" on an unticked plan, first name in the pulse comparison (`2d72568`); "A little something from {name} · Planned ahead, and done." replaces "did this for you, on purpose" (`c79552d`). PASSED on two phones: the whole "A little something" chain (plan → tick → the partner's 🎁). **Re-test next Sunday, Sep 27:** Evu-listinn item 29.
 
+**Sep 23 to 24 2026:** Reminders time field opened a calendar on Android (`caf6202`); Reminders Weekly / Once and a 🔔 on Special Days (`132a4cd`, `5d99a85`); clocks follow the phone's 12 / 24-hour setting (`7f5e0a5`, `63cf991`). PASSED on two phones: Once, the bell per phone, 12-hour display. Óli: test the Together List more closely later.
+
 Not in this sprint, on purpose: home-screen widget (native, after the first EAS build), new games (Scratch Cards, Óli's idea of Sep 17, is designed in POST_LAUNCH and filed as USER_VOICE_TODO C15), content pools, the name (decide, do not build). Everything else that surfaced this week is filed in POST_LAUNCH C1 or MARKETING §10.
 
 ### Proposed from review mining (USER_VOICE.md §7, Sep 13 2026), not started, awaiting pick
