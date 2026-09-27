@@ -37,7 +37,8 @@ Length budget: at most 4 tips, each under about 84 characters, description plus 
 > One small thing a day for 30 days, done by both of you.
 
 - Reconnect and Spark are gentle and free. Fire and Desire are explicit and Premium
-- Tap a program to read its 30 days. Before you start, change or reorder any day
+- Tap a program to read its 30 days. Before you start, change or reorder any day  _(when isSubscribed)_
+  - otherwise: Tap a program to read its 30 days. Before you start, each of you can change 2 days
 - A day counts when both of you have tapped Mark as done ✓
 - 🎲 Veto (2 each) skips the day's task. Periods, illness or travel count as a pause
 

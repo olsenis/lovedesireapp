@@ -62,7 +62,12 @@ for (const file of [...walk(path.join(ROOT, 'app')), ...walk(path.join(ROOT, 'co
         if (name === 'description') card.description = fill(textOf(a.initializer, src));
         if (name === 'tips') {
           const arr = a.initializer.expression;
-          if (arr && ts.isArrayLiteralExpression(arr)) card.tips = arr.elements.map((e) => fill(textOf(e, src)));
+          if (arr && ts.isArrayLiteralExpression(arr)) {
+            card.tips = arr.elements.map((e) => fill(textOf(e, src)));
+            // A tip that differs by a condition (Premium or not): keep the other wording too.
+            card.alts = arr.elements.map((e) => (ts.isConditionalExpression(e)
+              ? { when: e.condition.getText(src), text: fill(textOf(e.whenFalse, src)) } : null));
+          }
         }
       }
       cards.push(card);
@@ -80,7 +85,7 @@ md += `| Card | Key | Where | Tips | Characters | Budget |\n|---|---|---|---|---
 const problems = [];
 for (const c of cards) {
   const total = c.description.length + c.tips.reduce((n, t) => n + t.length, 0);
-  const long = c.tips.filter((t) => t.length > MAX_TIP);
+  const long = [...c.tips, ...(c.alts || []).filter(Boolean).map((a) => a.text)].filter((t) => t.length > MAX_TIP);
   const bad = [];
   if (c.tips.length > MAX_TIPS) bad.push(`${c.tips.length} tips`);
   if (long.length) bad.push(`${long.length} long tip${long.length > 1 ? 's' : ''}`);
@@ -92,7 +97,11 @@ for (const c of cards) {
 md += `\n`;
 for (const c of cards) {
   md += `## ${c.title}\n\n\`${c.key}\` · [${c.file}:${c.line}](${encodeURI(c.file)}#L${c.line})\n\n> ${c.description}\n\n`;
-  for (const t of c.tips) md += `- ${t}${t.length > MAX_TIP ? `  _(${t.length} characters)_` : ''}\n`;
+  c.tips.forEach((t, i) => {
+    const alt = c.alts && c.alts[i];
+    md += `- ${t}${t.length > MAX_TIP ? `  _(${t.length} characters)_` : ''}${alt ? `  _(when ${alt.when})_` : ''}\n`;
+    if (alt) md += `  - otherwise: ${alt.text}${alt.text.length > MAX_TIP ? `  _(${alt.text.length} characters)_` : ''}\n`;
+  });
   md += `\n`;
 }
 fs.writeFileSync(path.join(ROOT, 'HINTS.md'), md, 'utf8');
