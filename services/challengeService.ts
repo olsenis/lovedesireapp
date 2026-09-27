@@ -1,6 +1,6 @@
 import { doc, setDoc, updateDoc, onSnapshot, runTransaction, Unsubscribe } from 'firebase/firestore';
 import { db } from './firebase';
-import { ChallengeProgram } from '../constants/content';
+import { ChallengeProgram, CHALLENGE_PROGRAMS } from '../constants/content';
 import { trackEvent } from './statsService';
 
 export interface ChallengeState {
@@ -29,10 +29,35 @@ export function subscribeChallenge(coupleId: string, onChange: (state: Challenge
   });
 }
 
-// Paid programs, mirrored from app/challenge.tsx PAID_PROGRAMS. Duplicated
-// here (small, stable set) so the service transaction can enforce paywall
-// server-side without a cross-import from a screen component.
-const PAID_PROGRAMS_SET = new Set<ChallengeProgram>(['fire', 'desire']);
+// Paid programs. The screen and Home import this set.
+export const PAID_PROGRAMS_SET = new Set<ChallengeProgram>(['fire', 'desire']);
+
+// ── One lookup for "what is the task on day N" (Sep 27 2026) ──
+// `day` is the DISPLAY day (1..30, what currentDay and completedDays hold).
+// A Premium couple may have reordered the program in setup: dayOrder[day - 1]
+// is the slot shown on that day, and customTasks is keyed by SLOT. Until this
+// helper the active screen looked the task up by `t.day === currentDay` and
+// ignored the order, so a reordered program played in its original order.
+export function challengeSlotFor(state: Pick<ChallengeState, 'dayOrder'>, day: number): number {
+  const order = state.dayOrder;
+  return order && order.length === 30 && order[day - 1] ? order[day - 1] : day;
+}
+
+export function challengeTaskText(state: ChallengeState, day: number): string {
+  if (!state.program) return '';
+  const slot = challengeSlotFor(state, day);
+  return state.customTasks?.[slot] ?? CHALLENGE_PROGRAMS[state.program]?.find((t) => t.day === slot)?.text ?? '';
+}
+
+// What a vetoed day reads as. Reconnect, Spark and Distance are not sexual
+// programs, so the line about sex is only right for Fire and Desire. The
+// prefix is what the screen keys on (FREE_DAY_PREFIX), keep it.
+export const FREE_DAY_PREFIX = '🎲 Free day';
+export function freeDayLine(program: ChallengeProgram | null): string {
+  return program === 'fire' || program === 'desire'
+    ? `${FREE_DAY_PREFIX}, just have sex however you like.`
+    : `${FREE_DAY_PREFIX}, today's task is skipped.`;
+}
 
 // Start enters setup phase first so partners can edit days. Runs inside a
 // transaction that reads couple.isPremium server-side and no-ops if a
@@ -179,7 +204,8 @@ export async function vetoDay(coupleId: string, uid: string, _state: ChallengeSt
       completedBy: updatedBy,
       completedDays: newCompleted,
       currentDay: nextDay,
-      [`customTasks.${day}`]: '🎲 Free day, just have sex however you like.',
+      // Keyed by SLOT, like every other custom task.
+      [`customTasks.${challengeSlotFor(current, day)}`]: freeDayLine(current.program),
       [`vetoesUsed.${uid}`]: used + 1,
     });
   });

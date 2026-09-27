@@ -15,7 +15,7 @@ import { formatClock } from '../../services/clock';
 import { ALL_MOODS, MOOD_LABELS, MoodEmoji, setMood, getTodaysMood, subscribeToMoods, subscribeMoodHistory, MoodEntry, CUSTOM_MOOD, moodLabel, moodCaption } from '../../services/moodService';
 import { OwnWordsSheet } from '../../components/OwnWordsSheet';
 import { getWeeklyGuessStats } from '../../services/dailyQuestionsService';
-import { subscribeChallenge, ChallengeState } from '../../services/challengeService';
+import { subscribeChallenge, ChallengeState, challengeTaskText, PAID_PROGRAMS_SET } from '../../services/challengeService';
 import { subscribeSensateProgress, SensateProgress } from '../../services/sensateService';
 import { subscribeNotes, LoveNote, unlockMoodNotes, unlockVisitNotes } from '../../services/noteService';
 import { subscribeFantasyWishes, FantasyWishesItem, isFWMatch } from '../../services/fantasyWishesService';
@@ -584,26 +584,34 @@ export default function HomeScreen() {
   const nudges = useMemo<NudgeItem[]>(() => {
     const list: NudgeItem[] = [];
 
-    // Challenge: partner marked today but user hasn't
-    if (challengeState?.phase === 'active' && partnerId) {
-    const day = challengeState.currentDay;
-    // completedBy entries can be a plain uid (marked done) or `veto:<uid>` (vetoed).
-    // Match strictly by partnerId so the user doesn't see "your turn" when THEY
-    // vetoed the day themselves — previously `id.startsWith('veto:')` matched
-    // any veto regardless of author.
-    const iMarked = (challengeState.completedBy[day] ?? []).some(id => id === uid || id === `veto:${uid}`);
-    const partnerMarked = (challengeState.completedBy[day] ?? []).some(id => id === partnerId || id === `veto:${partnerId}`);
-    if (partnerMarked && !iMarked) {
-      const cfg = challengeState.program ? CHALLENGE_PROGRAM_CONFIG[challengeState.program] : null;
-      list.push({
-        emoji: cfg?.emoji ?? '🗓️',
-        title: `Challenge day ${day}`,
-        subtitle: `${partner?.name ?? 'Partner'} marked it done, your turn ✓`,
-        route: '/challenge',
-        bg: cfg?.color ?? '#FFF9C4',
-      });
+    // 30-Day Challenge: today's task, every day while a challenge is running
+    // and I have not marked it (Sep 27 2026; before, a card only appeared once
+    // the partner had marked the day). One card: when the partner is already
+    // done it says so instead of the task. Fire and Desire are paid programs,
+    // so their card is a write nudge and needs Premium. No count of missed
+    // days and no streak.
+    if (challengeState?.phase === 'active' && challengeState.program && partnerId
+      && (isSubscribed || !PAID_PROGRAMS_SET.has(challengeState.program))) {
+      const day = challengeState.currentDay;
+      // completedBy entries can be a plain uid (marked done) or `veto:<uid>` (vetoed).
+      // Match strictly by uid so a veto by one of us is never read as the other's.
+      const marks = challengeState.completedBy[day] ?? [];
+      const iMarked = marks.some(id => id === uid || id === `veto:${uid}`);
+      const partnerMarked = marks.some(id => id === partnerId || id === `veto:${partnerId}`);
+      if (!iMarked) {
+        const cfg = CHALLENGE_PROGRAM_CONFIG[challengeState.program];
+        const task = personalise(challengeTaskText(challengeState, day), partner?.name);
+        list.push({
+          emoji: cfg?.emoji ?? '🗓️',
+          title: `Day ${day} · ${cfg?.label ?? 'Challenge'}`,
+          subtitle: partnerMarked
+            ? `${partner?.name ?? 'Partner'} marked it done, your turn ✓`
+            : task.length > 72 ? `${task.slice(0, 70).trimEnd()}…` : task,
+          route: '/challenge',
+          bg: cfg?.color ?? '#FFF9C4',
+        });
+      }
     }
-  }
 
   // Love Notes: unread notes ready to open. Differentiates voice notes
   // (🎤 + "voice message" copy) so they read distinctly from text notes

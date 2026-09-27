@@ -531,6 +531,14 @@ Bottom tab bar with three tabs (Home/Discover/Us — was "Love" pre-July 2026). 
   2. Phone B: tap A's pill
   - **Expected:** Mood History opens on **Together**; a header "YOU / {partner}" above the rows; today's row shows both emoji with their words under them. B's own pill still opens Mood History on **Mine**.
 
+### 30-Day Challenge: Back, free day, Home card (Sep 27 2026)
+- [ ] **Back opens the list** 📱 : Discover → 30-Day Challenge → tap Reconnect → ‹ Back → the program list, Reconnect reads "In setup · continue ›" → tap Spark → Spark's days → ‹ Back → list → ‹ Back → Discover → open again → the list (nothing was edited). Android's hardware back in setup does the same as ‹ Back.
+- [ ] **Edits are kept and guarded** : edit one day in Spark → leave → open again → lands in Spark's setup. ‹ Back → list → tap Reconnect → "Switch program?" sheet; "Keep it" changes nothing, "Switch" opens Reconnect's days.
+- [ ] **Free day fits the program** : start Reconnect, 🎲 Veto → Completed shows "🎲 Free day, today's task is skipped."; the same on Fire reads "just have sex however you like."
+- [ ] **Today's task on Home** 📱 : with a challenge running both phones show "Day 1 · Reconnect" with the task text under "Waiting for you". A marks it → A's card is gone, B's subtitle becomes "Oli marked it done, your turn ✓". B marks → both show "Day 2 · …". Fire / Desire after Premium ends: no card.
+- [ ] **Reorder is honoured** 🔒 Premium : in setup drag day 5 to the top → Start Challenge → day 1 on the screen and on Home is that task.
+- [ ] **Hint on the first visit** : Profile → Help → reset hints → open 30-Day Challenge → the card shows on the program list.
+
 ### Special Days: the bell (Sep 24 2026)
 - [ ] **Per phone** 📱 : Special Days → tap 🔕 on Anniversary → 🔔. Close and reopen → still 🔔. Ola's phone → still 🔕 (the choice is this phone's, nothing in Firestore). Works on auto rows (Valentine's, birthday, anniversary), on my dates, and on a partner's secret date.
 - [ ] **Delete clears it** : 🔔 on a date I added → ✕ → the row is gone and, if I add the same date again, it starts 🔕.

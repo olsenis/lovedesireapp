@@ -29,6 +29,8 @@ Goal: be better than the shelf where it counts (COMPETITORS.md §5): reliable on
 
 **Sep 23 to 24 2026:** Reminders time field opened a calendar on Android (`caf6202`); Reminders Weekly / Once and a 🔔 on Special Days (`132a4cd`, `5d99a85`); clocks follow the phone's 12 / 24-hour setting (`7f5e0a5`, `63cf991`). PASSED on two phones: Once, the bell per phone, 12-hour display. Óli: test the Together List more closely later.
 
+**Sep 27 2026:** HINTS.md, every hint card in one generated file, seven cards fixed (`db86590`, `5d7e6c8`); 30-Day Challenge: Back opens the program list, free day per program, today's task on Home, a Premium reorder is honoured once the challenge starts (this commit). Not yet seen on a phone.
+
 Not in this sprint, on purpose: home-screen widget (native, after the first EAS build), new games (Scratch Cards, Óli's idea of Sep 17, is designed in POST_LAUNCH and filed as USER_VOICE_TODO C15), content pools, the name (decide, do not build). Everything else that surfaced this week is filed in POST_LAUNCH C1 or MARKETING §10.
 
 ### Proposed from review mining (USER_VOICE.md §7, Sep 13 2026), not started, awaiting pick

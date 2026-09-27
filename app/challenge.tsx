@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, BackHandler } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Sortable from 'react-native-sortables';
@@ -12,6 +12,7 @@ import { notifyPartner } from '../services/notificationService';
 import {
   ChallengeState, subscribeChallenge, startChallenge, activateChallenge,
   editTask, markDayComplete, vetoDay, resetChallenge, reorderChallenge, MAX_EDITS, MAX_VETOES,
+  PAID_PROGRAMS_SET, challengeTaskText, FREE_DAY_PREFIX,
 } from '../services/challengeService';
 import { ChallengeTask } from '../constants/content';
 import { CHALLENGE_PROGRAMS, CHALLENGE_ALTERNATES, CHALLENGE_PROGRAM_CONFIG, ChallengeProgram } from '../constants/content';
@@ -28,7 +29,7 @@ const BASE_PROGRAMS: ChallengeProgram[] = ['reconnect', 'spark', 'fire', 'desire
 // Programs that require a paid subscription. Free users see them with 🔒
 // and get routed to /upgrade when they try to start one, per the free/paid
 // split documented in CLAUDE.md.
-const PAID_PROGRAMS: Set<ChallengeProgram> = new Set(['fire', 'desire']);
+const PAID_PROGRAMS: Set<ChallengeProgram> = PAID_PROGRAMS_SET;
 
 export default function ChallengeScreen() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -47,6 +48,14 @@ export default function ChallengeScreen() {
   const [editDay, setEditDay] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
   const help = useHelp('challenge');
+  // The program list shown OVER an existing setup (Sep 27 2026). Tapping a
+  // program writes the shared setup doc, so "having a look" used to trap the
+  // couple inside that program: Back left for Discover and reopening came
+  // straight back in. null = not chosen yet: a setup nobody has edited opens on
+  // the list (they were only looking), one with edits opens in setup.
+  const [browsing, setBrowsing] = useState<boolean | null>(null);
+  // A program picked while another setup with edits exists: confirm first.
+  const [switchTo, setSwitchTo] = useState<ChallengeProgram | null>(null);
   useTrackScreen('challenge');
 
   const coupleId = profile?.coupleId;
@@ -62,8 +71,10 @@ export default function ChallengeScreen() {
     return unsub;
   }, [coupleId, authLoading]);
 
-  const handleStart = (program: ChallengeProgram) => {
+  const handleStart = (program: ChallengeProgram, confirmedSwitch = false) => {
     if (starting) return;
+    // The program already in setup: go back in, nothing is written.
+    if (state?.phase === 'setup' && state.program === program) { setBrowsing(false); return; }
     // Paywall: Fire + Desire are premium-only per CLAUDE.md free/paid split.
     // Free users see the card with 🔒 and get sent to /upgrade if they tap it.
     if (PAID_PROGRAMS.has(program) && !isSubscribed) {
@@ -71,6 +82,8 @@ export default function ChallengeScreen() {
       router.push('/upgrade' as any);
       return;
     }
+    // Another setup with edits would be replaced: ask first.
+    if (state?.phase === 'setup' && state.program && hasInvestment && !confirmedSwitch) { setSwitchTo(program); return; }
     // Show desire modal before coupleId check so warning always appears
     if (program === 'desire') { setPendingProgram(program); setDesireModal(true); return; }
     if (!coupleId) { setStartError('Account not ready yet, try again shortly.'); return; }
@@ -83,6 +96,7 @@ export default function ChallengeScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       await startChallenge(coupleId!, program);
+      setBrowsing(false);
     } catch (e: any) {
       setStartError(e?.code === 'permission-denied' ? 'Could not start the challenge, please try again.' : 'Could not start the challenge, please try again.');
     } finally {
@@ -192,6 +206,35 @@ export default function ChallengeScreen() {
     if (hasInvestment) setResetConfirmVisible(true);
     else handleReset();
   };
+
+  const inSetup = !!state?.program && state.phase === 'setup';
+  const showPicker = !state || !state.program || (inSetup && (browsing ?? !hasInvestment));
+
+  // Android's hardware back does what ‹ Back does in setup: the program list.
+  useEffect(() => {
+    if (!inSetup || showPicker) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setBrowsing(true); return true; });
+    return () => sub.remove();
+  }, [inSetup, showPicker]);
+
+  // One card for every view, so it shows on the FIRST visit (it used to be
+  // rendered only in the active phase, weeks in, with a tip about editing days
+  // that can no longer be done there). Neutral on purpose: true for all programs.
+  const helpCard = (
+    <HelpModal
+      visible={help.visible}
+      title="30-Day Challenge"
+      description="One small thing a day for 30 days, done by both of you."
+      tips={[
+        `Reconnect and Spark are gentle and free. Fire and Desire are explicit and Premium`,
+        `Tap a program to read its 30 days. Before you start, each of you can change 2 days`,
+        `A day counts when both of you have tapped Mark as done ✓`,
+        `🎲 Veto (2 each) skips the day's task. Periods, illness or travel count as a pause`,
+      ]}
+      onDismiss={help.dismiss}
+      onDismissAll={help.dismissAll}
+    />
+  );
   const handleResetConfirm = async () => {
     setResetConfirmVisible(false);
     await handleReset();
@@ -211,7 +254,7 @@ export default function ChallengeScreen() {
   }
 
   // ─── Program picker ─────────────────────────────────────────────────────────
-  if (!state || !state.program) {
+  if (showPicker) {
     return (
       <View style={styles.screen}>
         <View style={styles.header}>
@@ -239,12 +282,24 @@ export default function ChallengeScreen() {
                   </View>
                 </View>
                 <Text style={[styles.programStart, { color: cfg.textColor }]}>
-                  {starting ? 'Starting…' : locked ? 'Premium, tap to unlock →' : 'Start this program →'}
+                  {starting ? 'Starting…' : locked ? 'Premium, tap to unlock →' : inSetup && state?.program === p ? 'In setup · continue ›' : 'Start this program →'}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
+
+        {helpCard}
+        <ConfirmModal
+          visible={!!switchTo}
+          title="Switch program?"
+          message="You'll lose your edits, vetoes, and any reorder in the program you were setting up. This can't be undone."
+          confirmLabel="Switch"
+          cancelLabel="Keep it"
+          destructive
+          onConfirm={() => { const p = switchTo; setSwitchTo(null); if (p) handleStart(p, true); }}
+          onCancel={() => setSwitchTo(null)}
+        />
 
         {/* Desire content warning modal */}
         <Modal visible={desireModal} transparent animationType="slide">
@@ -284,6 +339,8 @@ export default function ChallengeScreen() {
     );
   }
 
+  // showPicker already covers this case; the line narrows the type for what follows.
+  if (!state || !state.program) return null;
   const cfg = CHALLENGE_PROGRAM_CONFIG[state.program];
   const tasks = CHALLENGE_PROGRAMS[state.program];
   const myEditsUsed = state.editsUsed?.[uid] ?? 0;
@@ -351,8 +408,10 @@ export default function ChallengeScreen() {
           {/* Back is now a pure navigation affordance — leaves setup in
               place. Discarding setup is the explicit "Choose a different
               program" link below with its own confirm. Previously Back
-              silently wiped 2 edits + reorder, which read as a bug. */}
-          <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
+              silently wiped 2 edits + reorder, which read as a bug.
+              Sep 27 2026: Back opens the program list (nothing is deleted);
+              leaving for Discover is Back on that list. */}
+          <TouchableOpacity onPress={() => setBrowsing(true)} style={styles.back} accessibilityRole="button" accessibilityLabel="Back"><Text style={styles.backText}>‹ Back</Text></TouchableOpacity>
           <Text style={styles.title}>Review Days</Text>
           <View style={{ width: 60 }} />
         </View>
@@ -417,28 +476,11 @@ export default function ChallengeScreen() {
           <TouchableOpacity style={[styles.activateBtn, { backgroundColor: cfg.textColor }]} onPress={handleActivate} activeOpacity={0.85} accessibilityRole="button">
             <Text style={styles.activateBtnText}>Start Challenge →</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleResetPress} style={styles.cancelLink} accessibilityRole="button">
+          <TouchableOpacity onPress={() => setBrowsing(true)} style={styles.cancelLink} accessibilityRole="button">
             <Text style={styles.cancelLinkText}>Choose a different program</Text>
           </TouchableOpacity>
         </ScrollView>
-
-        {/* Confirm-modal path only fires when there's setup investment
-            to lose (edits, vetoes, or a custom day order). Fresh setups
-            reset silently. See handleResetPress + hasSetupInvestment. */}
-        {/* Setup-phase confirm — this render block only runs when
-            state.phase === 'setup', so copy is hard-coded to that case.
-            The active-phase render at end of file has its own ConfirmModal
-            with the reset-in-progress copy. */}
-        <ConfirmModal
-          visible={resetConfirmVisible}
-          title="Discard setup?"
-          message="You'll lose your edits, vetoes, and any reorder. This can't be undone."
-          confirmLabel="Discard"
-          cancelLabel="Keep editing"
-          destructive
-          onConfirm={handleResetConfirm}
-          onCancel={() => setResetConfirmVisible(false)}
-        />
+        {helpCard}
 
         {/* Edit day modal */}
         <Modal visible={editModal} transparent animationType="slide">
@@ -480,12 +522,12 @@ export default function ChallengeScreen() {
   }
 
   // ─── Active phase ────────────────────────────────────────────────────────────
-  const todayTask = tasks.find((t) => t.day === state.currentDay);
-  const todayText = state.customTasks?.[state.currentDay] ?? todayTask?.text ?? '';
+  const todayText = challengeTaskText(state, state.currentDay);
+  const todayTask = todayText ? { day: state.currentDay, text: todayText } : undefined;
   const myMarked = (state.completedBy[state.currentDay] ?? []).includes(uid);
   const bothMarked = (state.completedBy[state.currentDay] ?? []).length >= 2;
   const progress = Math.round((state.completedDays.length / 30) * 100);
-  const isVetoDay = state.customTasks?.[state.currentDay]?.startsWith('🎲 Free day');
+  const isVetoDay = todayText.startsWith(FREE_DAY_PREFIX);
 
   return (
     <View style={styles.screen}>
@@ -545,8 +587,8 @@ export default function ChallengeScreen() {
             <Text style={styles.sectionLabel}>Completed</Text>
             <View style={styles.daysGrid}>
               {state.completedDays.map((d) => {
-                const t = state.customTasks?.[d] ?? tasks.find((x) => x.day === d)?.text;
-                const isVeto = t?.startsWith('🎲 Free day');
+                const t = challengeTaskText(state, d);
+                const isVeto = t.startsWith(FREE_DAY_PREFIX);
                 return (
                   <View key={d} style={[styles.completedDay, { backgroundColor: cfg.color }]}>
                     <Text style={[styles.completedDayNum, { color: cfg.textColor }]}>{isVeto ? '🎲' : d}</Text>
@@ -559,19 +601,7 @@ export default function ChallengeScreen() {
         )}
       </ScrollView>
 
-      <HelpModal
-        visible={help.visible}
-        title="30-Day Challenge"
-        description={`One small thing a day for 30 days, done by both of you. Pick Reconnect, Spark, Fire or Desire.`}
-        tips={[
-          `Before you start, each of you can edit 2 days. Refresh suggests another idea`,
-          `A day counts when both of you have tapped Mark as done ✓`,
-          `🎲 Veto (2 each) skips the day's task. Periods, illness or travel count as a pause`,
-          `Reconnect and Spark are free. Fire and Desire are Premium, and Desire is 18+`,
-        ]}
-        onDismiss={help.dismiss}
-        onDismissAll={help.dismissAll}
-      />
+      {helpCard}
       {/* Active-phase Reset confirm — this render block only runs when
           state.phase === 'active', so copy is hard-coded to that case.
           The setup-phase render above has its own ConfirmModal. */}
