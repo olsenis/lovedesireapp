@@ -8,7 +8,7 @@ Length budget: at most 4 tips, each under about 84 characters, description plus 
 
 | Card | Key | Where | Tips | Characters | Budget |
 |---|---|---|---|---|---|
-| 30-Day Challenge | `challenge` | [app/challenge.tsx:224](app/challenge.tsx#L224) | 4 | 356 | ok |
+| 30-Day Challenge | `challenge` | [app/challenge.tsx:224](app/challenge.tsx#L224) | 4 | 352 | ok |
 | Activity Cards | `bingo` | [app/bingo.tsx:499](app/bingo.tsx#L499) | 4 | 289 | ok |
 | Daily | `daily` | [app/daily.tsx:878](app/daily.tsx#L878) | 4 | 364 | ok |
 | Fantasy Wishes | `fantasy-wishes` | [app/fantasy-wishes.tsx:585](app/fantasy-wishes.tsx#L585) | 4 | 362 | ok |
@@ -37,7 +37,7 @@ Length budget: at most 4 tips, each under about 84 characters, description plus 
 > One small thing a day for 30 days, done by both of you.
 
 - Reconnect and Spark are gentle and free. Fire and Desire are explicit and Premium
-- Tap a program to read its 30 days. Before you start, each of you can change 2 days
+- Tap a program to read its 30 days. Before you start, change or reorder any day
 - A day counts when both of you have tapped Mark as done ✓
 - 🎲 Veto (2 each) skips the day's task. Periods, illness or travel count as a pause
 
