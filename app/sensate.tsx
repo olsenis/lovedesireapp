@@ -888,15 +888,12 @@ export default function SensateScreen() {
       <HelpModal
         visible={help.visible}
         title="Presence"
-        description="A slow-touch practice inspired by decades of sex therapy research (Masters & Johnson, 1970). Use it for reconnection after a busy stretch, if performance pressure has crept in, or before and after time apart."
+        description="A slow-touch practice in four stages, for when you want to feel close again with no pressure."
         tips={[
-          '4 stages, done in order over weeks (not one evening)',
-          'Stage 1 Discover: non-genital touch, sensation only',
-          'Stage 2 Connect: full body, turn-taking, no goal',
-          'Stage 3 Together: mutual touch, no turn-taking',
-          'Stage 4 Flow: open-ended, allow whatever comes',
-          'Try each stage twice before moving on. Once a week works well.',
-          "This isn't a game, it's practice. No goal, no performance.",
+          'Four stages, in order, over weeks: Discover, Connect, Together, Flow',
+          'Each stage tells you what to do. Touch, notice, and let that be all',
+          'Try a stage twice before you move on. Once a week works well',
+          'There is no goal and nothing to get right',
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

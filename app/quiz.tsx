@@ -277,9 +277,9 @@ export default function QuizScreen() {
         title="Love Language Quiz"
         description={`10 questions that reveal how you feel most loved: words, acts, gifts, time or touch.`}
         tips={[
-          `A or B, go with your gut`,
+          `A or B. Pick the one that feels right first`,
           `${partnerName} sees your result without you sending anything`,
-          `Every Monday, Home suggests three small things in ${partnerName}'s language`,
+          `Every Monday you get three small things to do in ${partnerName}'s language`,
           `Retake it whenever it stops feeling true`,
         ]}
         onDismiss={help.dismiss}

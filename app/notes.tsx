@@ -813,7 +813,7 @@ export default function NotesScreen() {
         title="Love Notes"
         description={`Write something ${partnerName} can only open when the moment comes.`}
         tips={[
-          `Tap Write, then choose when it opens: Right now, tonight, this weekend or a date you pick`,
+          `Tap Write and choose when it opens: now, tonight, this weekend or a date`,
           `Or tie it to a moment: a mood ${partnerName} logs, When you miss me, When you can't sleep`,
           `${partnerName} sees that a note is waiting, never what it says`,
           `Tap a note that is ready to open it`,

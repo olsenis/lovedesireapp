@@ -266,7 +266,8 @@ export default function MoodHistoryScreen() {
         tips={[
           `Set today's mood here or on Home`,
           `💬 Own words lets you say it your way, and ${partnerName} sees exactly that`,
-          `The calendar shows your month, the chart shows the days you both logged`,
+          `Mine shows your last 30 days, Together shows both of you day by day`,
+          `Tap ${partnerName}'s mood on Home to open Together`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

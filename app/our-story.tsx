@@ -835,7 +835,7 @@ export default function OurStoryScreen() {
         tips={[
           `Firsts fill in on their own as you use the app`,
           `Tap one to add a note, + Add for a milestone of your own`,
-          `Your archive below keeps your matches, past weeks and every Daily answer you both gave`,
+          `Your archive below keeps matches, past weeks and every Daily answer`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

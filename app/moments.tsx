@@ -306,7 +306,6 @@ export default function MomentsScreen() {
           `Your photo stays hidden until ${partner?.name ?? 'your partner'} has taken one too`,
           `One a day each, so it takes seconds`,
           `Earlier days stay under Past moments`,
-          `Open a photo to find the report link if something is not okay`,
         ]}
         onDismiss={help.dismiss}
         onDismissAll={help.dismissAll}

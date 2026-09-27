@@ -288,7 +288,7 @@ export default function BlueprintScreen() {
         description={`15 quick questions about how you feel most alive in intimacy. When you have both finished, you see how your two styles meet.`}
         tips={[
           `Five styles: Feeling, Sexual, Spark, Kinky, Explorer. None is better`,
-          `Go with your gut, there are no right answers`,
+          `Pick what feels right first. There are no right answers`,
           `Together you get three things to try, each can go to your Together List`,
           `On Fridays, Home shows one tip for the weekend`,
         ]}
