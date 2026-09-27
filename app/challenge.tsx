@@ -566,7 +566,7 @@ export default function ChallengeScreen() {
         tips={[
           `Before you start, each of you can edit 2 days. Refresh suggests another idea`,
           `A day counts when both of you have tapped Mark as done ✓`,
-          `🎲 Veto (2 each) drops the day's plan so you can just have sex instead`,
+          `🎲 Veto (2 each) skips the day's task. Periods, illness or travel count as a pause`,
           `Reconnect and Spark are free. Fire and Desire are Premium, and Desire is 18+`,
         ]}
         onDismiss={help.dismiss}
